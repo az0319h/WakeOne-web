@@ -1,0 +1,94 @@
+---
+description: WakeOne 핵심 컨벤션 — 스택, 데이터 패턴, 코드 스타일. 모든 에이전트의 작업 상한.
+alwaysApply: true
+---
+
+# WakeOne Core Conventions
+
+## 대화창 출력 규칙 (사람 확인용)
+
+비-trivial 작업 시작 시, 대화창에 아래 문구를 그대로 출력한 뒤 작업한다.
+
+> WakeOne 핵심 컨벤션 — 스택, 데이터 패턴, 코드 스타일. 모든 에이전트의 작업 상한에 대한 전역 문서를 확인하고 작업을 수행합니다.
+
+## 스택 요약
+
+- **Framework**: Next.js 16 App Router + React 19 + TypeScript 5.7 (strict)
+- **Styling**: Tailwind CSS v4 (`@import 'tailwindcss'` 문법만 사용, v3 문법 금지)
+- **UI**: shadcn/ui New York 스타일 (60개 컴포넌트 설치됨)
+- **Auth**: Supabase Auth (Clerk 제거 예정)
+- **DB**: Supabase (Postgres + RLS + Edge Functions)
+- **Package Manager**: Bun (preferred)
+
+## 데이터 레이어 패턴 (필수)
+
+### Service Layer (변경 불가 구조)
+```
+src/features/{feature}/api/
+  types.ts    ← 타입 계약 (응답 형태, 필터, 페이로드)
+  service.ts  ← 데이터 접근 함수 (백엔드 교체 시 이 파일만 수정)
+  queries.ts  ← React Query options + key factory
+```
+컴포넌트는 `service.ts`만 호출한다. DB 직접 접근 금지.
+
+### React Query 패턴
+```tsx
+// 서버: void (fire-and-forget) + dehydrate
+void queryClient.prefetchQuery(entityQueryOptions(filters));
+return <HydrationBoundary state={dehydrate(queryClient)}>
+
+// 클라이언트: useSuspenseQuery (useQuery 금지)
+const { data } = useSuspenseQuery(entityQueryOptions(filters));
+```
+
+### Query Key Factory
+```ts
+export const entityKeys = {
+  all: ['entities'] as const,
+  list: (f: Filters) => [...entityKeys.all, 'list', f] as const,
+  detail: (id: number) => [...entityKeys.all, 'detail', id] as const
+};
+```
+
+### URL 상태
+- 서버: `searchParamsCache` (nuqs)
+- 클라이언트: `useQueryStates` + `shallow: true`
+
+## 컴포넌트 컨벤션 (필수)
+
+| 항목 | 규칙 |
+|------|------|
+| 아이콘 | `Icons.*` from `@/components/icons` 만 사용. `@tabler/icons-react` 직접 import **금지** |
+| 클래스 병합 | 항상 `cn()` 사용 |
+| 페이지 헤더 | `PageContainer` props (`pageTitle`, `pageDescription`, `pageHeaderAction`) 사용. `<Heading>` 직접 import **금지** |
+| shadcn 수정 | `src/components/ui/` 직접 수정 **금지** — 확장(extend)만 허용 |
+| 컴포넌트 선언 | `function ComponentName() {}` (함수 선언식) |
+| Props 인터페이스 | `{ComponentName}Props` 네이밍 |
+| Server Component | 기본값. `'use client'`는 브라우저 API/훅 필요 시만 |
+
+## 폼
+`useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form` 사용.
+`AppField` render props 내부에서 `useState` 사용 금지 — 별도 컴포넌트로 분리.
+
+## Supabase 보안 (필수)
+
+- `SUPABASE_SERVICE_ROLE_KEY` → 서버 전용, `NEXT_PUBLIC_` 접두사 **절대 금지**
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` → 클라이언트 안전
+- Route Handler에는 반드시 인증 검사 포함
+- views는 기본 RLS 우회 → `security_invoker = true` 필수
+
+## 코드 스타일 (Prettier)
+
+```json
+{ "singleQuote": true, "jsxSingleQuote": true, "semi": true,
+  "trailingComma": "none", "tabWidth": 2, "arrowParens": "always" }
+```
+
+## 참조 문서 (on-demand)
+
+| 문서 | 용도 |
+|------|------|
+| `docs/forms.md` | TanStack Form + Zod 폼 시스템 |
+| `docs/themes.md` | OKLCH 테마, 신규 테마 추가 |
+| `docs/nav-rbac.md` | 네비게이션 RBAC |
+| `docs/plans/{feature}-plan.md` | 기획 문서 (기능별) |
