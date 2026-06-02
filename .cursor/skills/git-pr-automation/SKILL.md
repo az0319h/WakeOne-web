@@ -40,10 +40,12 @@ disable-model-invocation: true
 - 규칙: `<type>/<slug>`
 - 예: `feat/user-table-filter`, `fix/login-redirect`
 - 이미 존재하면 숫자 suffix를 붙인다 (`-2`, `-3`).
+- `type`은 반드시 `feat|fix|docs|style|refactor|test|chore` 중 하나만 사용한다.
 
 ### 3) 커밋 메시지/PR 초안 생성 (미리보기)
 
 - `.cursor/skills/conventional-korean-commit/SKILL.md` 규칙으로 커밋 메시지 초안을 생성
+- 커밋 타입은 반드시 `feat|fix|docs|style|refactor|test|chore` 중 하나로 제한한다.
 - `.github/pull_request_template.md`를 채운 PR 제목/본문 초안을 생성
 - 사용자에게 아래 형식으로 먼저 출력:
 
@@ -89,17 +91,37 @@ EOF
 ### 5) PR 생성
 
 - 제목: 커밋 제목과 동일
-- 본문: `.github/pull_request_template.md` 구조를 채운다 (이미지 섹션은 빈값 허용)
+- 본문: `.github/pull_request_template.md`의 **모든 섹션을 실제 텍스트로 채운다**
 - `gh pr create --title ... --body ...`
+- PR 유형 체크 항목도 아래 7종으로만 매핑한다:
+  - Feature → `feat`
+  - Bugfix → `fix`
+  - Docs → `docs`
+  - Refactor → `refactor`
+  - Style → `style`
+  - Test → `test`
+  - Chore → `chore`
 
-본문 최소 포함 섹션:
+본문 필수 섹션(누락 금지):
 
-- 요약
+- PR 유형
+- 요약 (Why)
+- 현재 동작 (Current Behavior)
+- 변경 후 동작 (New Behavior)
 - 관련 이슈
-- 변경 내용
-- 테스트 계획
+- 테스트 계획(로컬/기능)
 - 체크리스트
+- Breaking Change 여부
+- 리뷰어 참고사항
 - 리스크 및 롤백
+
+### 6) 템플릿 파일 검증 (필수)
+
+- PR 생성 전 `.github/pull_request_template.md` 존재 여부를 확인한다.
+- 파일이 없으면 아래를 수행한다:
+  1. 사용자에게 템플릿 부재를 즉시 보고
+  2. PR 생성 단계 중단
+  3. 템플릿 생성/복구 후 재시도 안내
 
 ## 실패 처리
 

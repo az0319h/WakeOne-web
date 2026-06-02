@@ -1,6 +1,6 @@
 ---
 name: conventional-korean-commit
-description: Conventional Commits 형식으로 한국어 커밋 메시지를 생성한다. 커밋 타입(feat/fix/docs/refactor/test/chore 등) 분류가 필요하거나 커밋 메시지 표준화를 원할 때 사용한다.
+description: Conventional Commits 형식으로 한국어 커밋 메시지를 생성한다. 커밋 타입은 feat/fix/docs/style/refactor/test/chore 7종만 허용한다.
 disable-model-invocation: true
 ---
 
@@ -19,6 +19,8 @@ disable-model-invocation: true
 
 ## 타입 가이드
 
+허용 타입은 아래 7종으로 고정한다.
+
 - `feat`: 사용자 기능 추가
 - `fix`: 버그 수정
 - `docs`: 문서 변경
@@ -26,6 +28,8 @@ disable-model-invocation: true
 - `refactor`: 리팩터링(기능 변화 없음)
 - `test`: 테스트 추가/수정
 - `chore`: 설정/빌드/잡무성 변경
+
+허용되지 않는 타입(`ci`, `build`, `perf`, `revert` 등)은 사용하지 않는다.
 
 ## 생성 절차
 

@@ -29,16 +29,16 @@ model: inherit
 
 ## 사용 스킬
 
-1. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/verifier/SKILL.md`
+1. `./.cursor/skills/verifier/SKILL.md`
    — 전체 워크플로 오케스트레이터 (이 파일을 먼저 읽는다)
 
-2. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/react-doctor/SKILL.md`
+2. `./.cursor/skills/react-doctor/SKILL.md`
    — React/Next.js 정적 감사
 
-3. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/grinding-until-pass/SKILL.md`
+3. `./.cursor/skills/grinding-until-pass/SKILL.md`
    — 빌드 통과까지 자율 수정 루프
 
-4. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/next-best-practices/SKILL.md`
+4. `./.cursor/skills/next-best-practices/SKILL.md`
    — Next.js App Router 컨벤션 체크
 
 ## 완료 조건
