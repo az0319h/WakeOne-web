@@ -22,16 +22,16 @@ model: inherit
 
 ## 사용 스킬 (순서대로 실행)
 
-1. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/planner/SKILL.md`
+1. `./.cursor/skills/planner/SKILL.md`
    — 전체 워크플로 오케스트레이터 (이 파일을 먼저 읽는다)
 
-2. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/deep-interview/SKILL.md`
+2. `./.cursor/skills/deep-interview/SKILL.md`
    — Phase 1: 요구사항 구체화 인터뷰
 
-3. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/battle-plan/SKILL.md`
+3. `./.cursor/skills/battle-plan/SKILL.md`
    — Phase 2: 범위·정찰·리스크·추정·승인
 
-4. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/requirements-pipeline/SKILL.md`
+4. `./.cursor/skills/requirements-pipeline/SKILL.md`
    — Phase 3: PRD 생성 (Express 모드, stages/ 파일 포함)
 
 ## 산출물

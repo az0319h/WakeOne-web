@@ -18,8 +18,8 @@ model: inherit
 
 ## 사용 스킬 (순서)
 
-1. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/conventional-korean-commit/SKILL.md`
-2. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/git-pr-automation/SKILL.md`
+1. `./.cursor/skills/conventional-korean-commit/SKILL.md`
+2. `./.cursor/skills/git-pr-automation/SKILL.md`
 
 ## 기본 동작 (승인 기반 2단계)
 

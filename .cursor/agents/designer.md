@@ -23,16 +23,16 @@ model: inherit
 
 ## 사용 스킬 (순서대로 참조)
 
-1. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/designer/SKILL.md`
+1. `./.cursor/skills/designer/SKILL.md`
    — 전체 워크플로 오케스트레이터 (이 파일을 먼저 읽는다)
 
-2. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/ui-design-brain/SKILL.md`
+2. `./.cursor/skills/ui-design-brain/SKILL.md`
    — 60개 UI 컴포넌트 best practice · 레이아웃 패턴
 
-3. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/shadcn/SKILL.md`
+3. `./.cursor/skills/shadcn/SKILL.md`
    — shadcn MCP 사용법 · 컴포넌트 설치·조합 가이드
 
-4. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/web-design-guidelines/SKILL.md`
+4. `./.cursor/skills/web-design-guidelines/SKILL.md`
    — Vercel 웹 인터페이스 가이드라인 (접근성·UX 감사용)
 
 ## 산출물

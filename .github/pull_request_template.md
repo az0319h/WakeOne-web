@@ -1,99 +1,88 @@
 <!--
-PR을 올려주셔서 감사합니다.
-빠르고 품질 높은 리뷰를 위해 충분한 맥락을 작성해 주세요.
-이 템플릿은 스타가 높은 오픈소스 프로젝트(예: facebook/react)의 관행을 참고해
-WakeOne 컨벤션에 맞게 조정했습니다.
+Thanks for submitting a pull request.
+Please provide enough context for fast and high-quality review.
+This template follows high-star OSS patterns (React / Angular / Kubernetes)
+and is adapted to WakeOne conventions.
 -->
 
-## 요약
+## PR 유형
 
-<!-- 이 PR이 무엇을 왜 변경하는지 작성해 주세요. (1~3개 불릿) -->
+<!-- 해당 항목에 체크하세요 -->
+
+- [ ] Feature (`feat`)
+- [ ] Bugfix (`fix`)
+- [ ] Docs (`docs`)
+- [ ] Style (`style`)
+- [ ] Refactor (`refactor`)
+- [ ] Test (`test`)
+- [ ] Chore (`chore`)
+
+## 요약 (Why)
+
+<!-- 무엇을 왜 바꾸는지 2~4줄로 설명 -->
 
 -
+
+## 현재 동작 (Current Behavior)
+
+<!-- 기존에 어떤 문제가 있었는지 -->
+
 -
+
+## 변경 후 동작 (New Behavior)
+
+<!-- 이번 PR로 어떤 점이 달라지는지 -->
+
 -
 
 ## 관련 이슈
 
-<!-- 이슈 연결: Closes #123, Related #456 -->
+<!-- Closes #123, Related #456 / 없으면 N/A -->
 
--
-
-## 변경 내용
-
-<!-- 변경 사항을 상위 수준에서 정리해 주세요. (리뷰어 이해 중심) -->
-
-- **기능/API**
-- **UI/UX**
-- **데이터/DB**
-- **리팩터링**
-
-## 스크린샷 / 녹화 (UI 변경 시)
-
-<!-- 전/후 스크린샷 또는 짧은 영상 -->
-
-| 변경 전 | 변경 후 |
-| ------ | ----- |
-|        |       |
+- N/A
 
 ## 테스트 계획
 
-<!-- 실제 검증 절차와 결과를 구체적으로 작성해 주세요 -->
-
-### 로컬 체크
+### 로컬 검증
 
 - [ ] `bun run tsc --noEmit`
 - [ ] `bun run lint:strict`
 - [ ] `bun run build`
 
-### 기능 체크
+### 기능 검증
 
-- [ ] 정상 시나리오(Happy path) 확인
+- [ ] 정상 시나리오 확인
 - [ ] 에러/빈 상태/로딩 상태 확인
-- [ ] 권한/인증 관련 경로 확인 (해당 시)
-- [ ] 모바일/반응형 동작 확인 (UI 변경 시)
+- [ ] 권한/인증 시나리오 확인 (해당 시)
+- [ ] 모바일/반응형 확인 (UI 변경 시)
 
 ## 체크리스트
 
-### 아키텍처 / 컨벤션
-
+- [ ] TypeScript strict 유지 (`any` 추가 없음)
 - [ ] 서비스 레이어 패턴 준수 (`types.ts -> service.ts -> queries.ts`)
-- [ ] React Query 패턴 준수 (`useSuspenseQuery`, 적절한 invalidate)
-- [ ] 컴포넌트에서 DB 직접 접근 없음
+- [ ] React Query 패턴 준수 (`useSuspenseQuery`, invalidate 반영)
+- [ ] 아이콘 규칙 준수 (`@/components/icons`만 사용)
+- [ ] 페이지 헤더 규칙 준수 (`PageContainer` props 사용)
+- [ ] 폼 변경 시 Zod + `useAppForm` 적용
+- [ ] DB/API 변경 시 SQL/RLS/auth check 반영
+- [ ] 문서/플랜 업데이트 (필요 시)
 
-### 코드 품질
+## Breaking Change 여부
 
-- [ ] TypeScript strict 안전성 유지 (`any` 타입 도입 없음)
-- [ ] `@tabler/icons-react` 직접 import 없음 (`@/components/icons` 사용)
-- [ ] 페이지 헤더에 `PageContainer` props 사용 (페이지 수정 시)
-- [ ] 필요한 곳에 `cn()`으로 클래스 병합
+- [ ] Yes
+- [ ] No
 
-### 폼 변경 (해당 시)
-
-- [ ] Zod 스키마 추가/수정
-- [ ] 필드 단위 + 제출 단위 검증 반영
-- [ ] `useAppForm` + `useFormFields<T>()` 사용
-
-### 데이터베이스 / API 변경 (해당 시)
-
-- [ ] `supabase/sql/NN_description.sql` 형식으로 SQL 마이그레이션 추가
-- [ ] 관련 범위의 RLS / `security_invoker` 검토
-- [ ] Route Handler 인증 검사 포함
-
-### 문서화
-
-- [ ] 동작/계약 변경 시 문서 또는 plan 파일 업데이트
-
-## 리스크 및 롤백
-
-<!-- 무엇이 깨질 수 있는지, 빠르게 롤백하는 방법은 무엇인지 -->
-
-- **리스크:**
-- **롤백 방법:**
+<!-- Yes 인 경우 하위에 상세 작성 -->
+BREAKING CHANGE:
 
 ## 리뷰어 참고사항
 
-<!-- 리뷰어가 특히 집중해서 봐야 할 내용 -->
+<!-- 리뷰어가 집중해서 봐야 할 포인트 -->
 
-- **중점 확인 영역:**
-- **알고 있는 트레이드오프:**
+- 중점 확인 영역:
+- 트레이드오프:
+
+## 리스크 및 롤백
+
+- 리스크:
+- 롤백 방법:

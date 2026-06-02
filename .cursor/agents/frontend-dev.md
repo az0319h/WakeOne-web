@@ -34,8 +34,8 @@ Next.js App Router 기반 UI 구현. React Query, shadcn/ui, TanStack Form 사�
 
 ## 사용 스킬
 
-1. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/next-best-practices/SKILL.md`
-2. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/vercel-react-best-practices/SKILL.md`
-3. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/vercel-composition-patterns/SKILL.md`
-4. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/tanstack-form/SKILL.md`
-5. `/Users/hoon/Desktop/WakeOne-web/.cursor/skills/shadcn/SKILL.md`
+1. `./.cursor/skills/next-best-practices/SKILL.md`
+2. `./.cursor/skills/vercel-react-best-practices/SKILL.md`
+3. `./.cursor/skills/vercel-composition-patterns/SKILL.md`
+4. `./.cursor/skills/tanstack-form/SKILL.md`
+5. `./.cursor/skills/shadcn/SKILL.md`
