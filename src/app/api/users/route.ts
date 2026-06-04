@@ -122,7 +122,10 @@ export async function GET(request: NextRequest) {
             ? [row.organization_memberships]
             : [];
         const primaryMembership = memberships[0];
-        const organizationCode = primaryMembership?.organizations?.code ?? null;
+        const organizationEntity = Array.isArray(primaryMembership?.organizations)
+          ? primaryMembership.organizations[0]
+          : primaryMembership?.organizations ?? null;
+        const organizationCode = organizationEntity?.code ?? null;
 
         return {
           id: row.user_id,
