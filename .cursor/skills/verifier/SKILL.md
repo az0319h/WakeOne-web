@@ -1,10 +1,10 @@
 ---
 name: verifier
 description: |
-  WakeOne 확인팀 오케스트레이터. 기능 개발 마무리 시 실행한다.
-  dev 서버 기동 확인 → lint → tsc → react-doctor → build 순으로 검증하고,
-  실패 시 원인 팀에 재작업 요청 후 다시 검증 루프를 돌린다.
-  빌드 성공이 확인될 때까지 루프를 반복한다. 성공 전까지 완료 보고하지 않는다.
+  WakeOne 확인팀. dev 준비 후 Playwright MCP로 기획 AC를 1차 게이트 검증하고,
+  통과 후 tsc → lint → react-doctor → build를 실행한다.
+  AC 브라우저 실패(기획) 시 /planner 재기획. 구현 실패 시 FE/BE 후 1단계부터 재검증.
+  /run 완료 보고 전 2단계 skip 불가.
 disable-model-invocation: true
 ---
 
@@ -12,133 +12,118 @@ disable-model-invocation: true
 
 ## 역할
 
-구현이 "완료"라고 주장되어도 **직접 실행해서 증명**한다.
-빌드가 통과될 때까지 루프를 멈추지 않는다.
+구현 완료 주장을 **브라우저(기획 AC) → 정적·빌드** 순으로 검증한다.
+기획이 현실과 맞지 않으면 **구현·빌드 통과 전에** `/planner`로 되돌린다.
 
 ---
 
-## 검증 체크리스트 (순서대로)
+## 검증 체크리스트 (순서 고정)
 
-| 단계 | 명령 | 기준 |
-|------|------|------|
-| 1. 타입 검사 | `bun run tsc --noEmit` | 타입 에러 0개 |
-| 2. Lint | `bun run lint:strict` | 경고 0개 |
-| 3. React 진단 | `npx react-doctor@latest --verbose --diff` | 점수 회귀 없음 |
-| 4. Dev 서버 | `bun run dev` (5초 기동 확인 후 종료) | 에러 없이 기동 |
-| 5. Build | `bun run build` | 빌드 성공 (exit 0) |
+| 단계 | 명령 / 도구 | 기준 |
+|------|-------------|------|
+| 1. Dev 준비 | `npm run dev` 기동·유지 | `E2E_BASE_URL`(기본 localhost:3000) 응답 |
+| 2. **브라우저 AC (1차 게이트)** | **Playwright MCP** | `docs/plans/{feature}-plan.md` AC **전항목** 통과 |
+| 3. 타입 | `npx tsc --noEmit` | 타입 에러 0 |
+| 4. Lint | `npm run lint:strict` | 경고 0 |
+| 5. React | `npx react-doctor@latest --verbose --diff` | 점수 회귀 없음 |
+| 6. Build | `npm run build` | exit 0 |
 
-모든 단계를 순서대로 실행한다. 한 단계라도 실패하면 즉시 분류 단계로 진입한다.
+> 2단계: `.cursor/skills/playwright-mcp-verifier/SKILL.md`
 
----
-
-## 실패 분류 & 재작업 요청
-
-> 참조: `.cursor/skills/grinding-until-pass/SKILL.md` (자율 수정 루프)
-
-실패 로그를 분석해 원인 팀을 판단한다.
-
-| 실패 패턴 | 원인 팀 | 재작업 요청 |
-|----------|--------|-----------|
-| 타입 에러, import 오류, React 훅 규칙, 컴포넌트 구조 | `/frontend-dev` | FE 수정 요청 |
-| SQL 오류, API route 오류, Supabase 연결, 환경변수 누락 | `/backend-dev` | BE 수정 요청 |
-| 범위 불명확, AC 미달, 기능 자체 변경 필요 | `/planner` | 기획 재검토 요청 |
-| 컴포넌트 구조 불일치, shadcn 미설치, 레이아웃 오류 | `/designer` | 디자인 재검토 요청 |
-
-**재작업 요청 시 포함할 내용:**
-```
-팀: {팀명}
-실패 단계: {타입/Lint/react-doctor/dev/build}
-에러 로그:
-{핵심 에러 메시지 발췌}
-수정 요청: {구체적으로 무엇을 고쳐야 하는지}
-```
+**2단계를 3~6단계보다 먼저 실행한다.** 2단계 실패 시 3~6단계로 넘어가지 않는다.
 
 ---
 
-## 반복 루프 (빌드 성공까지)
+## 2단계 실패 → 팀 라우팅 (필수)
 
-> 참조: `.cursor/skills/grinding-until-pass/SKILL.md`
+| 판단 | 증상 예 | 다음 팀 | 재검증 |
+|------|---------|---------|--------|
+| **기획** | AC 모호, 누락, 잘못된 URL/플로우, 기획과 화면 불일치 | **`/planner`** | plan 수정 후 **1단계부터** |
+| **구현** | 리다이렉트·로그인·RLS·폼·토스트·레이아웃 버그 | `/frontend-dev` 또는 `/backend-dev` | 수정 후 **1단계부터** |
+| **환경** | MCP 미연결, dev 미기동, E2E 계정 없음 | 사용자·환경 해결 | 해결 후 **1단계부터** |
+
+기획 vs 구현이 애매하면 **기획(`/planner`) 우선** 검토한다.
+
+**재작업 요청 (planner 예시):**
+```
+팀: /planner
+실패 단계: 2. Playwright MCP (브라우저 AC)
+기획서: docs/plans/{feature}-plan.md
+실패 AC: #{번호} — {기대} vs {실제}
+스크린샷/URL: {증거}
+수정 요청: AC·플로우·완료 기준을 브라우저에서 검증 가능하게 수정
+```
+
+---
+
+## 반복 루프
 
 ```
-[검증 실행]
-    ↓ 실패
-[원인 분류 & 팀 재작업 요청]
-    ↓ 수정 완료 보고
-[검증 재실행] ← 처음부터 다시
-    ↓ 성공
+[1. dev 준비]
+    ↓
+[2. Playwright AC] ──기획 실패──→ /planner → plan 수정 → 1부터 재실행
+    ↓ 구현 실패
+    FE/BE 수정 → 1부터 재실행
+    ↓ 통과
+[3. tsc → 4. lint → 5. react-doctor → 6. build]
+    ↓ 실패 → 해당 팀 수정 → 1부터 재실행 (2단계 브라우저 반드시 재실행)
+    ↓ 전부 통과
 [완료 보고]
 ```
 
-- 재작업 후 반드시 **1단계(타입 검사)부터 다시** 실행한다
-- 같은 에러가 3회 이상 반복되면 `/planner`에 범위 재검토를 요청한다
-- 자체 수정 가능한 에러(오타, import 경로, 누락된 세미콜론)는 직접 수정 후 루프 계속
+- 재작업 후 **항상 1단계(dev)부터** (dev 유지 중이면 2단계부터 가능하나, AC 재검증은 필수)
+- 같은 AC 실패 3회 → `/planner`에 AC·범위 전면 재검토
 
 ---
 
 ## 성공 기준 & 완료 보고
 
-**모든 단계 pass** 후에만 아래 완료 보고를 출력한다.
+**2단계 + 6단계 pass** 후에만 출력.
 
 ```
 ✅ 검증 완료: {기능명}
+기획서: docs/plans/{feature}-plan.md
 
 검증 결과:
-- tsc --noEmit : ✅ 통과
-- lint:strict   : ✅ 통과 (경고 0개)
-- react-doctor  : ✅ 점수 회귀 없음
-- dev 서버      : ✅ 정상 기동
-- build         : ✅ 성공
+- Playwright MCP (1차 AC): ✅ {통과}/{전체}
+- tsc --noEmit            : ✅
+- lint:strict             : ✅
+- react-doctor            : ✅
+- build                   : ✅
 
 반복 횟수: {N}회
-수정된 팀: {팀명 목록 또는 없음}
+수정된 팀: {planner|FE|BE|없음}
 
-다음 단계: PR 생성 (CodeRabbit은 PR 단계에서 실행)
+다음 단계: PR 생성
 ```
 
 ---
 
-## Next.js + Supabase + TypeScript 체크 기준
+## `/run` 파이프라인 규칙
 
-> 참조: `.cursor/skills/react-doctor/SKILL.md` (react-doctor 스캔)
-> 참조: `.cursor/skills/next-best-practices/SKILL.md` (Next.js 컨벤션)
+- `/verifier`는 구현 팀(FE/BE) **이후** 실행
+- **2단계 실패로 `/run` 완료 보고 금지** — planner 또는 구현 팀 수정 후 verifier 재호출
+- `E2E_SKIP_BROWSER=1`은 **로컬 임시 디버그용**이며 `/run`·완료 보고에 사용하지 않는다
 
-빌드 성공 후 추가로 아래 항목을 점검한다:
+---
 
-**Next.js App Router**
-- [ ] `'use client'` 지시어가 필요한 곳에만 있는가?
-- [ ] Server Component에서 브라우저 API 사용하지 않는가?
-- [ ] `HydrationBoundary` + `dehydrate` 패턴이 맞는가?
-- [ ] `useSuspenseQuery` (not `useQuery`) 사용하는가?
+## Next.js + Supabase + TypeScript 체크 (3~6단계 통과 후)
 
-**Supabase**
-- [ ] `SUPABASE_SERVICE_ROLE_KEY`가 `NEXT_PUBLIC_` 없이 서버 전용인가?
-- [ ] Route Handler에 인증 검사가 있는가?
-- [ ] RLS 정책이 적용된 테이블인가? (views는 `security_invoker = true`)
+> `react-doctor`, `next-best-practices` 참조
 
-**TypeScript**
-- [ ] `any` 타입 사용 없는가?
-- [ ] `types.ts → service.ts → queries.ts` 레이어 순서가 맞는가?
-- [ ] 환경변수 타입 안전하게 처리했는가?
-
-**WakeOne 컨벤션**
-- [ ] 아이콘은 `Icons.*` from `@/components/icons` 만 사용하는가?
-- [ ] `PageContainer` props으로 헤더 처리했는가?
-- [ ] `cn()` 으로 클래스 병합하는가?
-- [ ] `src/components/ui/` 수정 없이 확장했는가?
-
-점검 중 문제 발견 시 해당 팀에 수정 요청 후 루프 재실행한다.
+빌드 성공 후 컨벤션 체크리스트 점검. 문제 시 해당 팀 재작업 → **1단계부터** 재검증.
 
 ---
 
 ## NEVER
 
-- 빌드 미통과 상태에서 완료 보고하지 않는다
-- 에러 분류 없이 모든 실패를 `/frontend-dev`에 떠넘기지 않는다
-- CodeRabbit을 이 단계에서 실행하지 않는다 (PR 단계 전용)
-- 자체 수정 시 새 기능을 추가하지 않는다 (최소 수정만)
+- 2단계 skip 후 완료 보고 (`/run` 포함)
+- 브라우저 AC 기획 실패를 planner 없이 FE만으로 땜질
+- 2단계 실패 상태에서 build만 맞추고 완료 처리
+- MCP 미연결을 skip 사유로 완료 처리
 
 ## ALWAYS
 
-- 재작업 후 1단계(tsc)부터 다시 실행한다
-- 실패 로그 전문을 팀에 전달한다
-- 빌드 성공까지 루프를 반복한다
+- `docs/plans/{feature}-plan.md` 경로를 prompt에 명시
+- AC 번호별 통과/실패를 1:1 보고
+- 기획 실패 시 `/planner` 재호출을 완료 보고에 명시

@@ -38,3 +38,11 @@ model: inherit
 
 - `docs/plans/{feature-slug}-plan.md` — 신규 생성 또는 기존 수정 (수정 이력 추가)
 - 채팅: `/designer`, `/backend-dev`, `/frontend-dev` 팀 전달 요약
+
+## verifier 피드백 (브라우저 AC 1차 게이트)
+
+`/verifier` 2단계(Playwright MCP)에서 **기획 AC가 브라우저에서 성립하지 않으면** 이 에이전트로 되돌아온다.
+
+- AC는 **검증 가능한 URL·동작·한국어 문구**로 작성한다.
+- 실패 수신 시: 해당 AC 번호·기대 vs 실제·스크린샷 근거를 반영해 plan을 수정한다.
+- plan 수정 후 `/designer` → FE/BE → `/verifier` 순으로 파이프라인 재개한다.

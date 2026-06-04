@@ -22,3 +22,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# playwright (MCP storage state / future e2e)
+playwright/.auth/
+playwright-report/
+test-results/

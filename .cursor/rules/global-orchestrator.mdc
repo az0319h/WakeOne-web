@@ -85,7 +85,7 @@ alwaysApply: true
 | 2 | `/designer` | UI 구조, 컴포넌트 선정, 레이아웃 설계 | planner 산출물 |
 | 3 | `/frontend-dev` | Next.js, React Query, shadcn 구현 | planner + designer 산출물 |
 | 4 | `/backend-dev` | Supabase SQL, API Route Handler, service 레이어 | planner 산출물 |
-| 5 | `/verifier` | tsc → lint → react-doctor → dev → build 검증 루프 | 구현 완료 후 |
+| 5 | `/verifier` | dev → **Playwright MCP(기획 AC 1차)** → tsc → lint → react-doctor → build. AC 기획 실패 → `/planner` | 구현 완료 후 |
 
 ### 호출 규칙
 
@@ -94,7 +94,7 @@ alwaysApply: true
   (예: BE 변경 없음 → `/backend-dev` 생략)
 - **`core-conventions.mdc`가 모든 Subagent 작업의 상한**이다.
   Subagent 지침과 충돌 시 `core-conventions.mdc`가 우선한다.
-- `/verifier` 빌드 성공 확인 전까지 완료 보고하지 않는다.
+- `/verifier` **브라우저 AC(2단계) + build** 통과 전까지 완료 보고하지 않는다. AC 기획 실패 시 `/planner`로 되돌린다.
 
 ---
 
@@ -107,7 +107,7 @@ alwaysApply: true
   - `/designer` → `docs/plans/{feature}-plan.md` 확인
   - `/frontend-dev` → `docs/plans/{feature}-plan.md` + 디자인 산출물 확인
   - `/backend-dev` → `docs/plans/{feature}-plan.md` 확인
-  - `/verifier` → 빌드 실패 시 원인 팀에 재작업 요청 후 루프
+  - `/verifier` → AC 브라우저 실패(기획) 시 `/planner`, 구현·빌드 실패 시 해당 팀 → 1단계부터 재검증
 
 ---
 
