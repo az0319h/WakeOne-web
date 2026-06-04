@@ -1,18 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminSession } from '@/features/auth/api/admin.server';
+import { createClient } from '@/lib/supabase/server';
+import { inviteUserWithTemporaryPassword } from '@/features/users/api/invite.server';
 import type { User } from '@/features/users/api/types';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-function getAdminClient() {
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Missing SUPABASE environment variables for server admin operations');
-  }
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-}
 
 function parseCsvParam(value: string | null): string[] {
   if (!value) return [];
@@ -23,65 +13,44 @@ function parseCsvParam(value: string | null): string[] {
 }
 
 export async function GET(request: NextRequest) {
+  const adminCheck = await requireAdminSession();
+  if (!adminCheck.ok) {
+    return adminCheck.response;
+  }
+
   try {
     const { searchParams } = request.nextUrl;
-    const supabase = getAdminClient();
+    const supabase = await createClient();
 
     const page = Number(searchParams.get('page') ?? 1);
     const limit = Number(searchParams.get('limit') ?? 10);
     const search = searchParams.get('search');
     const sortRaw = searchParams.get('sort');
-
     const systemRoles = parseCsvParam(searchParams.get('systemRoles'));
-    const organizations = parseCsvParam(searchParams.get('organizations'));
-    const departments = parseCsvParam(searchParams.get('departments'));
-    const orgRoles = parseCsvParam(searchParams.get('orgRoles'));
 
-    let query = supabase
-      .from('profiles')
-      .select(
-        `
+    let query = supabase.from('profiles').select(
+      `
         user_id,
         email,
         first_name,
         last_name,
         phone,
         system_role,
+        password_set_at,
         created_at,
-        updated_at,
-        organization_memberships!left(
-          organization_id,
-          department,
-          org_role,
-          invite_status,
-          is_primary,
-          organizations!left(code)
-        )
+        updated_at
       `,
-        { count: 'exact' }
-      )
-      .eq('organization_memberships.is_primary', true);
+      { count: 'exact' }
+    );
 
     if (systemRoles.length > 0) {
       query = query.in('system_role', systemRoles);
     }
 
-    if (organizations.length > 0) {
-      query = query.in('organization_memberships.organizations.code', organizations);
-    }
-
-    if (departments.length > 0) {
-      query = query.in('organization_memberships.department', departments);
-    }
-
-    if (orgRoles.length > 0) {
-      query = query.in('organization_memberships.org_role', orgRoles);
-    }
-
     if (search) {
       const escaped = search.replaceAll(',', ' ');
       query = query.or(
-        `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%,organization_memberships.department.ilike.%${escaped}%`
+        `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%`
       );
     }
 
@@ -92,7 +61,13 @@ export async function GET(request: NextRequest) {
         const sortItems = JSON.parse(sortRaw) as Array<{ id: string; desc: boolean }>;
         if (sortItems.length > 0) {
           const candidate = sortItems[0];
-          const allowedColumns = ['first_name', 'email', 'system_role', 'created_at'];
+          const allowedColumns = [
+            'first_name',
+            'email',
+            'system_role',
+            'created_at',
+            'password_set_at'
+          ];
           if (allowedColumns.includes(candidate.id)) {
             sortColumn = candidate.id;
             sortDesc = candidate.desc;
@@ -115,33 +90,17 @@ export async function GET(request: NextRequest) {
     }
 
     const users: User[] =
-      data?.map((row) => {
-        const memberships = Array.isArray(row.organization_memberships)
-          ? row.organization_memberships
-          : row.organization_memberships
-            ? [row.organization_memberships]
-            : [];
-        const primaryMembership = memberships[0];
-        const organizationEntity = Array.isArray(primaryMembership?.organizations)
-          ? primaryMembership.organizations[0]
-          : primaryMembership?.organizations ?? null;
-        const organizationCode = organizationEntity?.code ?? null;
-
-        return {
-          id: row.user_id,
-          first_name: row.first_name,
-          last_name: row.last_name,
-          email: row.email,
-          phone: row.phone,
-          system_role: row.system_role,
-          organization: organizationCode,
-          department: primaryMembership?.department ?? null,
-          org_role: primaryMembership?.org_role ?? null,
-          invite_status: primaryMembership?.invite_status ?? null,
-          created_at: row.created_at,
-          updated_at: row.updated_at
-        } satisfies User;
-      }) ?? [];
+      data?.map((row) => ({
+        id: row.user_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        email: row.email,
+        phone: row.phone,
+        system_role: row.system_role,
+        invite_status: row.password_set_at ? 'accepted' : 'pending',
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      })) ?? [];
 
     return NextResponse.json({
       success: true,
@@ -159,51 +118,37 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const adminCheck = await requireAdminSession();
+  if (!adminCheck.ok) {
+    return adminCheck.response;
+  }
+
   try {
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Missing SUPABASE env vars'
-        },
-        { status: 500 }
-      );
-    }
-
     const body = await request.json();
-    const authHeader = request.headers.get('authorization');
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
 
-    if (!authHeader) {
+    if (!email) {
       return NextResponse.json(
-        { success: false, message: 'Missing authorization token' },
-        { status: 401 }
+        { success: false, message: '이메일을 입력해 주세요.' },
+        { status: 400 }
       );
     }
 
-    const functionUrl = `${supabaseUrl}/functions/v1/invite-user`;
-    const response = await fetch(functionUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: authHeader,
-        apikey: serviceRoleKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { success: false, message: result.error ?? 'Failed to invite user' },
-        { status: response.status }
+        { success: false, message: '올바른 이메일 주소를 입력해 주세요.' },
+        { status: 400 }
       );
     }
+
+    const { userId } = await inviteUserWithTemporaryPassword(email);
 
     return NextResponse.json(
       {
         success: true,
-        message: result.message ?? 'Invite sent successfully',
-        user_id: result.user_id
+        message: '초대 메일을 발송했습니다. 임시 비밀번호가 포함되어 있습니다.',
+        user_id: userId
       },
       { status: 201 }
     );

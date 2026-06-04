@@ -1,23 +1,18 @@
 import * as z from 'zod';
 
-export const userSchema = z.object({
-  first_name: z.string().min(2, 'First name must be at least 2 characters'),
-  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  phone: z.string().min(1, 'Phone number is required'),
+export const inviteUserSchema = z.object({
+  email: z.string().email('올바른 이메일 주소를 입력해 주세요.')
+});
+
+export type InviteUserFormValues = z.infer<typeof inviteUserSchema>;
+
+export const userUpdateSchema = z.object({
+  first_name: z.string().max(100),
+  last_name: z.string().max(100),
+  phone: z.string().max(50).nullable().optional(),
   system_role: z.enum(['admin', 'user'], {
-    message: 'Please select a system role'
-  }),
-  organization: z.enum(['wake', 'sans', 'ansan'], {
-    message: 'Please select an organization'
-  }),
-  department: z.string().min(1, 'Please select a department'),
-  org_role: z.enum(['owner', 'manager', 'member', 'viewer'], {
-    message: 'Please select an organization role'
-  }),
-  invite_status: z.enum(['pending', 'accepted', 'expired'], {
-    message: 'Please select an invite status'
+    message: '시스템 역할을 선택해 주세요.'
   })
 });
 
-export type UserFormValues = z.infer<typeof userSchema>;
+export type UserUpdateFormValues = z.infer<typeof userUpdateSchema>;

@@ -1,5 +1,9 @@
--- 01_auth_rbac_base.sql
--- Auth + RBAC base schema for invite-only access.
+-- File: 01_auth_rbac_base.sql
+-- Plan: 01_supabase-auth-login-plan.md
+-- Date: 2026-06-04
+-- Status: Completed
+-- Remote migration: auth_rbac_base (20260604050942)
+-- Summary: Auth + RBAC base schema (profiles, org tables — org removed in 04)
 
 create extension if not exists pgcrypto;
 

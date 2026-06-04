@@ -19,7 +19,7 @@ model: inherit
 
 ```
 1. Dev 서버 준비     → npm run dev 기동·유지 (E2E_BASE_URL 접근 가능)
-2. Playwright MCP   → docs/plans/{feature}-plan.md AC 전항목 (1차 게이트)
+2. Playwright MCP   → docs/plans/{NN}_*-plan.md (사용자 지정) AC 전항목 (1차 게이트)
 3. tsc --noEmit
 4. lint:strict
 5. react-doctor

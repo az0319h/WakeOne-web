@@ -21,15 +21,20 @@ MCP 확인 없이 SQL/Route Handler/Service 레이어를 수정하지 않는다.
    - `src/app/api/*` Route Handler
    - `src/features/*/api/service.ts`
    - 필요 시 타입/검증 로직
-4. **CRUD verification**
+4. **MCP deploy (필수)**
+   - `supabase/sql/NN_*.sql` 작성 후 **반드시** `apply_migration`으로 원격 Supabase에 적용한다.
+   - 적용 전·후 `list_migrations` / `list_tables`(또는 `execute_sql`)로 상태를 확인하고 완료 보고에 **적용 여부**를 명시한다.
+   - `apply_migration` 실패 시 완료 보고 금지 — 원인·수동 조치를 사용자에게 전달한다.
+5. **CRUD verification**
    - Create/Read/Update/Delete 경로가 모두 동작하도록 점검한다.
-5. **Deploy readiness**
-   - 환경변수, Edge Function, RLS 정책, 배포 시 필요 명령을 정리한다.
+6. **Deploy readiness**
+   - 환경변수, Edge Function, RLS 정책, Dashboard Redirect URL 등을 정리한다.
 
 ## SQL numbering policy (strict)
 
 - 경로: `supabase/sql/`
 - 규칙: `NN_description.sql` (`NN`은 2자리 증가 숫자)
+- **파일 최상단 메타 (필수):** `File`, `Plan`, `Date`, `Status` (`Completed` | `In Progress` | `Approved` | `Cancelled`), `Remote migration`, `Summary` — `docs/plans/README.md` 참고
 - 현재 기준 시작점: `01_auth_rbac_base.sql`
 - 다음 파일부터 `02_...sql`, `03_...sql` 순으로 누적한다.
 

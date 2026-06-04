@@ -21,17 +21,14 @@ import { useFilteredNavGroups } from '@/hooks/use-nav';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
-import type { AuthProfile } from '@/features/auth/api/types';
+import { useNavAccess } from '@/contexts/nav-access';
 import { NavUser } from '../nav-user';
 import { Icons } from '../icons';
 
-interface AppSidebarProps {
-  profile: AuthProfile | null;
-}
-
-export default function AppSidebar({ profile }: AppSidebarProps) {
+export default function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
+  const profile = useNavAccess();
   const filteredGroups = useFilteredNavGroups(navGroups);
 
   React.useEffect(() => {

@@ -1,6 +1,6 @@
 ---
 name: planner
-description: 기획팀. 새 기능 설계 및 기존 기능 수정·리팩터·마이그레이션 등 비-trivial 작업 전에 호출한다. deep-interview → battle-plan → requirements-pipeline 순으로 실행해 docs/plans/{feature}-plan.md 를 생성(신규) 또는 수정(기존)하고 다음 팀에 전달할 요약을 출력한다.
+description: 기획팀. 사용자와 deep-interview 후 battle-plan·plan 문서화. `/run`에서는 사용자 지시 없이 다음 팀(designer/FE/BE)을 호출하지 않는다. docs/plans/{NN}_{feature}-plan.md (README 번호 규칙).
 model: inherit
 ---
 
@@ -13,11 +13,16 @@ model: inherit
 ## 담당
 
 새 기능 설계 또는 기존 기능 수정 시 요구사항을 구체화해 실행 가능한 기획 문서를 만든다.
-코딩은 기획 문서가 승인된 후에야 시작한다.
+코딩은 기획 문서가 **사용자 승인(`go`)** 된 후에야 시작한다.
+
+## `/run` 시 필수
+
+- 사용자가 **목표·범위**를 주지 않으면 질문만 하고 **plan 파일·다음 스프린트 기획을 만들지 않는다**.
+- planner 완료 후 designer/FE/BE/verifier **자동 호출 금지** — `global-orchestrator.mdc` §2-1 단계 키워드 대기.
 
 ## 작업 전 확인
 
-1. `docs/plans/` 에 해당 feature plan 파일이 있는지 확인 (수정 유형 판단)
+1. `docs/plans/README.md` 번호 규칙 + 기존 `NN_*-plan.md` 목록 확인 (수정 vs 신규)
 2. 관련 기능의 기존 코드 구조 탐색 (추측 금지)
 
 ## 사용 스킬 (순서대로 실행)
@@ -36,8 +41,8 @@ model: inherit
 
 ## 산출물
 
-- `docs/plans/{feature-slug}-plan.md` — 신규 생성 또는 기존 수정 (수정 이력 추가)
-- 채팅: `/designer`, `/backend-dev`, `/frontend-dev` 팀 전달 요약
+- `docs/plans/{NN}_{feature-slug}-plan.md` — `go` 승인 후 저장 (수정 이력 추가)
+- 채팅: plan 경로 + 요약만. **다음 팀 호출 문구는 사용자에게 안내** (`다음: designer` 등)
 
 ## verifier 피드백 (브라우저 AC 1차 게이트)
 

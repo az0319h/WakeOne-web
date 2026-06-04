@@ -2,6 +2,7 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { usersQueryOptions } from '../api/queries';
+import { getUsersServer } from '../api/service.server';
 import { UsersTable } from './users-table';
 
 export default function UserListingPage() {
@@ -9,9 +10,6 @@ export default function UserListingPage() {
   const search = searchParamsCache.get('name');
   const pageLimit = searchParamsCache.get('perPage');
   const systemRoles = searchParamsCache.get('system_role');
-  const organizations = searchParamsCache.get('organization');
-  const departments = searchParamsCache.get('department');
-  const orgRoles = searchParamsCache.get('org_role');
   const sort = searchParamsCache.get('sort');
 
   const filters = {
@@ -19,15 +17,15 @@ export default function UserListingPage() {
     limit: pageLimit,
     ...(search && { search }),
     ...(systemRoles && { systemRoles }),
-    ...(organizations && { organizations }),
-    ...(departments && { departments }),
-    ...(orgRoles && { orgRoles }),
     ...(sort && { sort })
   };
 
   const queryClient = getQueryClient();
 
-  void queryClient.prefetchQuery(usersQueryOptions(filters));
+  void queryClient.prefetchQuery({
+    ...usersQueryOptions(filters),
+    queryFn: () => getUsersServer(filters)
+  });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

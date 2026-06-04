@@ -1,6 +1,11 @@
 import { Icons } from '@/components/icons';
 
+export type SystemRole = 'admin' | 'user';
+
 export interface PermissionCheck {
+  /** Supabase `profiles.system_role` — navigation visibility (UX only). */
+  systemRole?: SystemRole;
+  /** @deprecated Clerk-era fields — ignored by `checkNavAccess`. */
   permission?: string;
   plan?: string;
   feature?: string;

@@ -30,7 +30,7 @@
 ## 4) 기획 문서/인증 1차
 
 - [x] 레거시 제거: `docs/plans/auth-rbac-supabase-plan.md`
-- [x] 기획서 복원: `docs/plans/supabase-auth-login-plan.md`
+- [x] 기획서 복원: `docs/plans/01_supabase-auth-login-plan.md`
 - [x] SQL 복원: `supabase/sql/02_auth_user_auto_profile.sql`, `03_fix_profiles_rls_recursion.sql`
 - [x] 앱 코드 재구현 (기획서 §구현 상태) — `/run` 완료
 - [ ] **git commit** 권장

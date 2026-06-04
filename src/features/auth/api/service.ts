@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/client';
 import type { AuthProfile, SignInPayload } from './types';
 import { AUTH_ERROR_MESSAGES } from './types';
 
-const PROFILE_COLUMNS = 'user_id, email, first_name, last_name, system_role';
+const PROFILE_COLUMNS =
+  'user_id, email, first_name, last_name, phone, system_role, password_set_at';
 
 async function fetchProfile(userId: string): Promise<AuthProfile | null> {
   const supabase = createClient();

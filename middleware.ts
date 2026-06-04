@@ -31,6 +31,18 @@ function isAuthPath(pathname: string): boolean {
   return pathname === '/auth' || pathname.startsWith('/auth/');
 }
 
+function isSetPasswordPath(pathname: string): boolean {
+  return pathname === '/auth/set-password';
+}
+
+function isSignInPath(pathname: string): boolean {
+  return pathname === '/auth/sign-in' || pathname.startsWith('/auth/sign-in/');
+}
+
+function needsPasswordSetup(profile: { password_set_at: string | null } | null): boolean {
+  return !!profile && profile.password_set_at === null;
+}
+
 function copyCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((cookie) => {
     to.cookies.set(cookie.name, cookie.value, cookie);
@@ -59,10 +71,38 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const { response, user } = await updateSession(request);
+  const { response, user, profile } = await updateSession(request);
 
   if (isAuthPath(pathname)) {
-    if (user) {
+    if (!user) {
+      return response;
+    }
+
+    const pendingPassword = needsPasswordSetup(profile);
+
+    if (isSetPasswordPath(pathname)) {
+      if (!pendingPassword) {
+        const dashboardUrl = request.nextUrl.clone();
+        dashboardUrl.pathname = '/dashboard/overview';
+        dashboardUrl.search = '';
+        const redirectResponse = NextResponse.redirect(dashboardUrl);
+        copyCookies(response, redirectResponse);
+        return redirectResponse;
+      }
+
+      return response;
+    }
+
+    if (pendingPassword) {
+      const setPasswordUrl = request.nextUrl.clone();
+      setPasswordUrl.pathname = '/auth/set-password';
+      setPasswordUrl.search = '';
+      const redirectResponse = NextResponse.redirect(setPasswordUrl);
+      copyCookies(response, redirectResponse);
+      return redirectResponse;
+    }
+
+    if (isSignInPath(pathname)) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/dashboard/overview';
       dashboardUrl.search = '';
@@ -71,16 +111,43 @@ export async function middleware(request: NextRequest) {
       return redirectResponse;
     }
 
-    return response;
-  }
-
-  if (isDashboardPath(pathname) && !user) {
-    const signInUrl = request.nextUrl.clone();
-    signInUrl.pathname = '/auth/sign-in';
-    signInUrl.searchParams.set('redirectTo', pathname);
-    const redirectResponse = NextResponse.redirect(signInUrl);
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = '/dashboard/overview';
+    dashboardUrl.search = '';
+    const redirectResponse = NextResponse.redirect(dashboardUrl);
     copyCookies(response, redirectResponse);
     return redirectResponse;
+  }
+
+  if (isDashboardPath(pathname)) {
+    if (!user) {
+      const signInUrl = request.nextUrl.clone();
+      signInUrl.pathname = '/auth/sign-in';
+      signInUrl.searchParams.set('redirectTo', pathname);
+      const redirectResponse = NextResponse.redirect(signInUrl);
+      copyCookies(response, redirectResponse);
+      return redirectResponse;
+    }
+
+    if (needsPasswordSetup(profile)) {
+      const setPasswordUrl = request.nextUrl.clone();
+      setPasswordUrl.pathname = '/auth/set-password';
+      setPasswordUrl.search = '';
+      const redirectResponse = NextResponse.redirect(setPasswordUrl);
+      copyCookies(response, redirectResponse);
+      return redirectResponse;
+    }
+
+    if (pathname === '/dashboard/users' || pathname.startsWith('/dashboard/users/')) {
+      if (profile?.system_role !== 'admin') {
+        const overviewUrl = request.nextUrl.clone();
+        overviewUrl.pathname = '/dashboard/overview';
+        overviewUrl.search = '?accessDenied=users';
+        const redirectResponse = NextResponse.redirect(overviewUrl);
+        copyCookies(response, redirectResponse);
+        return redirectResponse;
+      }
+    }
   }
 
   return response;

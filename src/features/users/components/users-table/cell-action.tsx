@@ -13,7 +13,7 @@ import type { User } from '../../api/types';
 import { Icons } from '@/components/icons';
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { notifyError, notifySuccess } from '@/lib/notify';
 import { UserFormSheet } from '../user-form-sheet';
 
 interface CellActionProps {
@@ -27,12 +27,12 @@ export function CellAction({ data }: CellActionProps) {
   const deleteMutation = useMutation({
     ...deleteUserMutation,
     onSuccess: () => {
-      toast.success('User deleted successfully');
+      notifySuccess('사용자가 삭제되었습니다.');
       setDeleteOpen(false);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : 'Failed to delete user';
-      toast.error(message);
+      const message = error instanceof Error ? error.message : '삭제에 실패했습니다.';
+      notifyError(message);
     }
   });
 
@@ -55,10 +55,10 @@ export function CellAction({ data }: CellActionProps) {
         <DropdownMenuContent align='end'>
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Icons.edit className='mr-2 h-4 w-4' /> Update
+            <Icons.edit className='mr-2 h-4 w-4' /> 수정
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setDeleteOpen(true)}>
-            <Icons.trash className='mr-2 h-4 w-4' /> Delete
+            <Icons.trash className='mr-2 h-4 w-4' /> 삭제
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

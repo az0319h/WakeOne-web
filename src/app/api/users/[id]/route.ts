@@ -1,69 +1,68 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminSession } from '@/features/auth/api/admin.server';
+import { z } from 'zod';
 
 type Params = { params: Promise<{ id: string }> };
 
+const updateUserSchema = z.object({
+  first_name: z.string().max(100).optional(),
+  last_name: z.string().max(100).optional(),
+  phone: z.string().max(50).nullable().optional(),
+  system_role: z.enum(['admin', 'user']).optional()
+});
+
+function getServiceRoleClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing SUPABASE environment variables for server admin operations');
+  }
+
+  return createServiceClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+}
+
 export async function PUT(request: NextRequest, { params }: Params) {
+  const adminCheck = await requireAdminSession();
+  if (!adminCheck.ok) {
+    return adminCheck.response;
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const parsed = updateUserSchema.safeParse(body);
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: 'Missing SUPABASE env vars' },
-        { status: 500 }
+        { success: false, message: '입력값이 올바르지 않습니다.' },
+        { status: 400 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
+    const updates = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, value]) => value !== undefined)
+    );
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { success: false, message: '수정할 항목이 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = getServiceRoleClient();
 
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({
-        first_name: body.first_name,
-        last_name: body.last_name,
-        phone: body.phone,
-        system_role: body.system_role
-      })
+      .update(updates)
       .eq('user_id', id);
 
     if (profileError) {
       return NextResponse.json({ success: false, message: profileError.message }, { status: 400 });
-    }
-
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('code', body.organization)
-      .single();
-
-    if (orgError || !org) {
-      return NextResponse.json({ success: false, message: 'Organization not found' }, { status: 400 });
-    }
-
-    const { error: membershipError } = await supabase
-      .from('organization_memberships')
-      .upsert(
-        {
-          user_id: id,
-          organization_id: org.id,
-          department: body.department,
-          org_role: body.org_role,
-          invite_status: body.invite_status,
-          is_primary: body.organization === 'wake'
-        },
-        { onConflict: 'user_id,organization_id,department' }
-      );
-
-    if (membershipError) {
-      return NextResponse.json(
-        { success: false, message: membershipError.message },
-        { status: 400 }
-      );
     }
 
     return NextResponse.json({ success: true, message: 'User updated successfully' });
@@ -74,22 +73,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(request: NextRequest, { params }: Params) {
+  const adminCheck = await requireAdminSession();
+  if (!adminCheck.ok) {
+    return adminCheck.response;
+  }
+
   try {
     const { id } = await params;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json(
-        { success: false, message: 'Missing SUPABASE env vars' },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
-
+    const supabase = getServiceRoleClient();
     const { error } = await supabase.auth.admin.deleteUser(id);
 
     if (error) {
