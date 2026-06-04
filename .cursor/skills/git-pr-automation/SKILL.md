@@ -46,6 +46,7 @@ disable-model-invocation: true
 
 - `.cursor/skills/conventional-korean-commit/SKILL.md` 규칙으로 커밋 메시지 초안을 생성
 - 커밋 타입은 반드시 `feat|fix|docs|style|refactor|test|chore` 중 하나로 제한한다.
+- 커밋 제목은 반드시 **명사형 종결**로 생성한다. (`~한다`/`~했습니다` 금지)
 - `.github/pull_request_template.md`를 채운 PR 제목/본문 초안을 생성
 - 사용자에게 아래 형식으로 먼저 출력:
 
