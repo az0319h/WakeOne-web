@@ -14,11 +14,11 @@
 
 ## 2) `middleware.ts` 생성
 
-- [ ] `middleware.ts` 파일 생성
-- [ ] 환경별 허용 URL 정책 반영
+- [x] `middleware.ts` 파일 생성
+- [x] 환경별 허용 URL 정책 반영
   - 로컬: `http://localhost:3000`
   - 배포: `.env`의 배포 도메인
-- [ ] 로컬/배포 각각 동작 확인
+- [x] 로컬/배포 각각 동작 확인
 
 ## 3) Auth 정리 작업 (완료)
 
