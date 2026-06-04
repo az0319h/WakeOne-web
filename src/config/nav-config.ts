@@ -169,12 +169,6 @@ export const navGroups: NavGroup[] = [
             url: '/dashboard/notifications',
             icon: 'notification',
             shortcut: ['n', 'n']
-          },
-          {
-            title: 'Login',
-            shortcut: ['l', 'l'],
-            url: '/auth/sign-in',
-            icon: 'login'
           }
         ]
       }

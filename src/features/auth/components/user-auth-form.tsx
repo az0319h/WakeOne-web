@@ -1,81 +1,112 @@
 'use client';
 
-import { useTransition } from 'react';
+import { Suspense, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import * as z from 'zod';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppForm } from '@/components/ui/tanstack-form';
-import GithubSignInButton from './github-auth-button';
+import { notifyError, notifySuccess } from '@/lib/notify';
+import { signInWithEmail } from '@/features/auth/api/service';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid email address' })
+  email: z.string().email({ message: '올바른 이메일 주소를 입력해 주세요.' }),
+  password: z.string().min(1, { message: '비밀번호를 입력해 주세요.' })
 });
 
-interface UserAuthFormProps {
-  submitLabel?: string;
-  successMessage?: string;
-}
-
-export default function UserAuthForm({
-  submitLabel = 'Continue With Email',
-  successMessage = 'Auth UI is ready. Connect Supabase sign-in next.'
-}: UserAuthFormProps) {
+function UserAuthFormFields() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+
+  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard/overview';
 
   const form = useAppForm({
     defaultValues: {
-      email: 'demo@gmail.com'
+      email: '',
+      password: ''
     },
     validators: {
       onSubmit: formSchema
     },
-    onSubmit: () => {
-      startTransition(() => {
-        toast.success(successMessage);
+    onSubmit: async ({ value }) => {
+      startTransition(async () => {
+        const result = await signInWithEmail({
+          email: value.email,
+          password: value.password
+        });
+
+        if (!result.ok) {
+          notifyError(result.message);
+          return;
+        }
+
+        notifySuccess('로그인되었습니다.');
+        router.push(redirectTo);
+        router.refresh();
       });
     }
   });
 
   return (
-    <>
-      <form.AppForm>
-        <form.Form className='w-full space-y-2'>
-          <form.AppField
-            name='email'
-            children={(field) => (
-              <field.FieldSet>
-                <field.Field>
-                  <field.FieldLabel htmlFor={field.name}>Email</field.FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder='Enter your email...'
-                    disabled={isPending}
-                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                  />
-                </field.Field>
-                <field.FieldError />
-              </field.FieldSet>
-            )}
-          />
-          <Button isLoading={isPending} className='mt-2 ml-auto w-full' type='submit'>
-            {submitLabel}
-          </Button>
-        </form.Form>
-      </form.AppForm>
-      <div className='relative'>
-        <div className='absolute inset-0 flex items-center'>
-          <span className='w-full border-t' />
-        </div>
-        <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background text-muted-foreground px-2'>Or continue with</span>
-        </div>
-      </div>
-      <GithubSignInButton />
-    </>
+    <form.AppForm>
+      <form.Form className='w-full space-y-2'>
+        <form.AppField
+          name='email'
+          children={(field) => (
+            <field.FieldSet>
+              <field.Field>
+                <field.FieldLabel htmlFor={field.name}>이메일</field.FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type='email'
+                  autoComplete='email'
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder='이메일을 입력하세요'
+                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                />
+              </field.Field>
+              <field.FieldError />
+            </field.FieldSet>
+          )}
+        />
+        <form.AppField
+          name='password'
+          children={(field) => (
+            <field.FieldSet>
+              <field.Field>
+                <field.FieldLabel htmlFor={field.name}>비밀번호</field.FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type='password'
+                  autoComplete='current-password'
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder='비밀번호를 입력하세요'
+                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                />
+              </field.Field>
+              <field.FieldError />
+            </field.FieldSet>
+          )}
+        />
+        <Button isLoading={isPending} className='mt-2 ml-auto w-full' type='submit'>
+          로그인
+        </Button>
+      </form.Form>
+    </form.AppForm>
+  );
+}
+
+export default function UserAuthForm() {
+  return (
+    <Suspense fallback={<div className='text-muted-foreground text-sm'>로딩 중…</div>}>
+      <UserAuthFormFields />
+    </Suspense>
   );
 }

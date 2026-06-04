@@ -27,12 +27,13 @@
 - [x] 환경변수/설정 파일의 불필요 항목 제거
 - [x] Supabase Auth 기준으로 대체 경로 정리
 
-## 4) 기획 문서/관련 파일 정리
+## 4) 기획 문서/인증 1차
 
-- [ ] 아래 문서 검토 후 제거 여부 확정
-  - `docs/plans/auth-rbac-supabase-plan.md`
-- [ ] 기획 문서 제거 시 관련 참조 파일도 함께 정리
-  - 기획은 에초에 처음부터 다시 작업을 할 예정
+- [x] 레거시 제거: `docs/plans/auth-rbac-supabase-plan.md`
+- [x] 기획서 복원: `docs/plans/supabase-auth-login-plan.md`
+- [x] SQL 복원: `supabase/sql/02_auth_user_auto_profile.sql`, `03_fix_profiles_rls_recursion.sql`
+- [x] 앱 코드 재구현 (기획서 §구현 상태) — `/run` 완료
+- [ ] **git commit** 권장
 
 ## 5) 최종 검증
 
