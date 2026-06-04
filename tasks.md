@@ -14,10 +14,10 @@
 
 ## 2) `middleware.ts` 생성
 
-- [x] `middleware.ts` 파일 생성
+- [x] 프로젝트 루트 `middleware.ts` 생성 (`src/proxy.ts` 제거)
 - [x] 환경별 허용 URL 정책 반영
   - 로컬: `http://localhost:3000`
-  - 배포: `.env`의 배포 도메인
+  - 배포: `.env`의 `NEXT_PUBLIC_APP_URL` (필수)
 - [x] 로컬/배포 각각 동작 확인
 
 ## 3) Auth 정리 작업 (완료)
