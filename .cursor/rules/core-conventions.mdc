@@ -16,7 +16,7 @@ alwaysApply: true
 - **Framework**: Next.js 16 App Router + React 19 + TypeScript 5.7 (strict)
 - **Styling**: Tailwind CSS v4 (`@import 'tailwindcss'` 문법만 사용, v3 문법 금지)
 - **UI**: shadcn/ui New York 스타일 (60개 컴포넌트 설치됨)
-- **Auth**: Supabase Auth (Clerk 제거 예정)
+- **Auth**: Supabase Auth
 - **DB**: Supabase (Postgres + RLS + Edge Functions)
 - **Package Manager**: Bun (preferred)
 
