@@ -1,4 +1,9 @@
--- 2026-06-04: profiles RLS 무한 재귀 수정 (정책 내 profiles 서브쿼리 → security definer 함수)
+-- File: 03_fix_profiles_rls_recursion.sql
+-- Plan: 01_supabase-auth-login-plan.md
+-- Date: 2026-06-04
+-- Status: Completed
+-- Remote migration: fix_profiles_rls_recursion (20260604053602)
+-- Summary: profiles RLS 재귀 수정 (is_system_admin security definer)
 
 create or replace function public.is_system_admin()
 returns boolean

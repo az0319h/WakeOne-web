@@ -31,7 +31,7 @@ alwaysApply: true
 | 폼 작업 | `docs/forms.md` |
 | 테마/UI 토큰 | `docs/themes.md` |
 | 네비·RBAC | `docs/nav-rbac.md` |
-| 기능 구현 | `docs/plans/{feature}-plan.md` (있으면) |
+| 기능 구현 | `docs/plans/{NN}_{feature}-plan.md` (사용자·planner가 지정, [README](../../docs/plans/README.md)) |
 
 ---
 
@@ -57,12 +57,28 @@ alwaysApply: true
 - 행동: 분석, 설명, 질의응답, 아이디어 토론만 수행
 - 금지: planner/designer/frontend-dev/backend-dev/verifier 워크플로우 실행 금지
 
-### B) 실행 모드 (전체 워크플로우 실행)
+### B) 실행 모드 (`/run` — 단계별 승인 필수)
 
 - 조건: 사용자 입력이 `/run`으로 시작
-- 행동: 아래 3번의 순서대로 Subagent 워크플로우 실행
+- **기본:** 한 번에 Subagent 전체를 돌리지 **않는다**. 각 단계 종료 후 **사용자 지시가 있을 때만** 다음 단계로 진행한다.
+- **예외:** 사용자가 같은 메시지에 **「한 번에 진행」**을 명시한 경우에만 승인 생략 가능.
+- **기획(planner):** 사용자와 **함께** deep-interview → battle-plan → plan 문서화. **사용자가 다음 기능·범위를 정하지 않으면** planner가 임의로「다음 스프린트」기획을 만들지 **않는다**.
+- **plan 문서:** `docs/plans/{NN}_{slug}-plan.md` ([README](../../docs/plans/README.md)). 신규 번호는 기존 최대 `NN`+1. 사용자 승인 전 **신규 plan 파일 생성 금지** (`/run`에서 Express 자동 기획 금지).
+- 허용되는 Subagent 순서(각 단계 사이 사용자 지시 필요):
   - `/planner` → `/designer` → `/frontend-dev` → `/backend-dev` → `/verifier`
 - 참고: `commit-pr` 에이전트는 이 전체 워크플로우에 포함하지 않는다.
+
+#### `/run` 단계 진행 키워드 (기본)
+
+| 다음 단계 | 사용자가 보낼 지시 (예) |
+|-----------|-------------------------|
+| planner 시작 | `/run` + **무엇을 할지** 명시 (기능·수정 범위). 범위 없으면 planner는 **질문만** 하고 중단 |
+| designer | `다음: designer` 또는 `/designer` |
+| frontend-dev | `다음: frontend` 또는 `/frontend-dev` |
+| backend-dev | `다음: backend` 또는 `/backend-dev` |
+| verifier | `다음: verifier` 또는 `/verifier` |
+
+planner 내부: Phase 2 battle-plan 종료 시 사용자 **`go`** (또는 `진행`/`proceed`) 후에만 Phase 3 PRD·`docs/plans/` 저장.
 
 ### C) 직접 호출 모드 (즉시 실행)
 
@@ -75,9 +91,10 @@ alwaysApply: true
 
 ## 3. Subagent 순차 호출 (비-trivial 개발 워크플로)
 
-기능 개발 요청 시 **아래 순서**로 Subagent를 호출한다.
-각 단계 완료 후 요약 출력 → 다음 단계 진행 전 사용자 승인.
-(사용자가 "한 번에 진행"이라고 하면 승인 생략 가능)
+기능 개발 요청 시 **아래 순서**로 Subagent를 호출할 **수 있다**.
+**`/run`이면:** 각 단계 완료 후 요약만 출력하고 **중단**한다. 다음 Subagent는 §2-1 표의 **사용자 지시**가 있을 때만 호출한다.
+**`/run`이 아니고** 단일 에이전트 직접 호출이면 해당 에이전트만 실행한다.
+(사용자가 **「한 번에 진행」**을 명시한 `/run`만 단계 승인 생략 가능)
 
 | 순서 | Subagent | 담당 | 입력 |
 |------|----------|------|------|
@@ -104,9 +121,9 @@ alwaysApply: true
 - 오케스트레이션 파이프라인 없이 해당 에이전트만 실행된다.
 - 단, `core-conventions.mdc`는 alwaysApply로 항상 주입된다.
 - 각 에이전트는 **자신의 업스트림 산출물**을 먼저 확인한다:
-  - `/designer` → `docs/plans/{feature}-plan.md` 확인
-  - `/frontend-dev` → `docs/plans/{feature}-plan.md` + 디자인 산출물 확인
-  - `/backend-dev` → `docs/plans/{feature}-plan.md` 확인
+  - `/designer` → 지정된 `docs/plans/{NN}_*-plan.md` 확인
+  - `/frontend-dev` → 동일 plan + 디자인 산출물 확인
+  - `/backend-dev` → 동일 plan 확인
   - `/verifier` → AC 브라우저 실패(기획) 시 `/planner`, 구현·빌드 실패 시 해당 팀 → 1단계부터 재검증
 
 ---

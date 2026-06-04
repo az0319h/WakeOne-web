@@ -91,4 +91,4 @@ export const entityKeys = {
 | `docs/forms.md` | TanStack Form + Zod 폼 시스템 |
 | `docs/themes.md` | OKLCH 테마, 신규 테마 추가 |
 | `docs/nav-rbac.md` | 네비게이션 RBAC |
-| `docs/plans/{feature}-plan.md` | 기획 문서 (기능별) |
+| `docs/plans/{NN}_{feature}-plan.md` | 기획 문서 (번호·[README](../docs/plans/README.md)) |

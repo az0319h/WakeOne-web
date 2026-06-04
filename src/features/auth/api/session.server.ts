@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import type { AuthProfile } from './types';
 
-const PROFILE_COLUMNS = 'user_id, email, first_name, last_name, system_role';
+const PROFILE_COLUMNS =
+  'user_id, email, first_name, last_name, phone, system_role, password_set_at';
 
 export async function getSessionUser() {
   const supabase = await createClient();

@@ -1,8 +1,9 @@
 # Supabase Auth 로그인/로그아웃 기획서
 
 > Date: 2026-06-04  
-> Status: Approved (복원: 2026-06-04)  
+> Status: Completed  
 > Author: planner  
+> **SQL:** `01`~`03` · Remote migrations applied · **PR #7** merged  
 > **기준 문서:** 인증 1차 범위는 이 파일만 사용. `auth-rbac-supabase-plan.md`는 삭제됨(레거시).
 
 ## 한 줄 요약
@@ -72,7 +73,8 @@ Supabase 이메일/비밀번호로 sign-in·로그아웃을 연동하고, **`aut
 
 - 공개 sign-up, OAuth(GitHub 버튼 제거)
 - 관리자 초대 UI / Edge Function
-- RBAC 메뉴 필터링 고도화
+- RBAC 메뉴 필터링 고도화 → **02에서 Users admin만** (전역 nav는 02 범위)
+- 사용자 초대·프로필 단순화 → **[02_user-invite-profiles-plan.md](./02_user-invite-profiles-plan.md)**
 - 프로필 온보딩(필수 입력 강제)
 - API Route Handler 전역 인증
 - Playwright Test CI 스위트 (MCP 스모크는 verifier 6단계)

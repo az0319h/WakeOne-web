@@ -6,7 +6,10 @@ import { InfobarProvider } from '@/components/ui/infobar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import { Suspense } from 'react';
 import { getSessionProfile } from '@/features/auth/api/session.server';
+import { NavAccessProvider } from '@/contexts/nav-access';
+import { AccessDeniedToast } from '@/components/dashboard/access-denied-toast';
 
 export const metadata: Metadata = {
   title: 'Next Shadcn Dashboard Starter',
@@ -23,17 +26,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const profile = await getSessionProfile();
 
   return (
-    <KBar>
-      <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar profile={profile} />
-        <SidebarInset>
-          <Header />
-          <InfobarProvider defaultOpen={false}>
-            {children}
-            <InfoSidebar side='right' />
-          </InfobarProvider>
-        </SidebarInset>
-      </SidebarProvider>
-    </KBar>
+    <NavAccessProvider profile={profile}>
+      <KBar>
+        <SidebarProvider defaultOpen={defaultOpen}>
+          <AppSidebar />
+          <SidebarInset>
+            <Header />
+            <Suspense fallback={null}>
+              <AccessDeniedToast />
+            </Suspense>
+            <InfobarProvider defaultOpen={false}>
+              {children}
+              <InfoSidebar side='right' />
+            </InfobarProvider>
+          </SidebarInset>
+        </SidebarProvider>
+      </KBar>
+    </NavAccessProvider>
   );
 }

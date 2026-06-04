@@ -1,4 +1,9 @@
--- 2026-06-04: auth.users 생성 시 profiles 자동 생성 (이메일만, 이름 빈 값)
+-- File: 02_auth_user_auto_profile.sql
+-- Plan: 01_supabase-auth-login-plan.md
+-- Date: 2026-06-04
+-- Status: Completed
+-- Remote migration: auth_user_auto_profile (20260604053327)
+-- Summary: auth.users INSERT → profiles 자동 생성, ensure_profile_for_user RPC
 
 create or replace function public.handle_new_user()
 returns trigger

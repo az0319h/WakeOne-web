@@ -25,8 +25,8 @@ disable-model-invocation: true
 
 | 유형 | 판단 기준 | 문서 처리 |
 |------|----------|----------|
-| **신규** | 새 기능, 새 페이지, 새 API | `docs/plans/{feature}-plan.md` 신규 생성 |
-| **수정** | 기존 기능 변경·리팩터·마이그레이션·버그 수정 범위 확장 | 기존 plan 파일 있으면 로드 후 **수정 이력 섹션 추가**, 없으면 신규 생성 |
+| **신규** | 새 기능, 새 페이지, 새 API | `docs/plans/{NN}_{feature}-plan.md` 신규 (`NN` = README 최대+1) |
+| **수정** | 기존 기능 변경·리팩터·마이그레이션·버그 수정 범위 확장 | 기존 `NN_*-plan.md` 로드 후 **수정 이력 섹션 추가**, 없으면 사용자와 번호·slug 확정 후 신규 |
 
 수정 유형이면 Phase 2 정찰 단계에서 **기존 plan 파일과 실제 코드 모두** 탐색한다.
 
@@ -42,7 +42,18 @@ Phase 4  문서 저장 & 팀 전달 요약 출력
 ```
 
 각 Phase는 사용자 확인 후 다음으로 진행한다.
-요청이 이미 구체적이면 Phase 1을 건너뛰고 Phase 2부터 시작한다.
+
+### `/run` 모드 (오케스트레이터 B) — **필수**
+
+- **Phase 1 (deep-interview) 생략 금지.** 사용자와 항목을 하나씩 확정할 때까지 질문한다. 범위·목표가 비어 있으면 **plan 파일을 만들지 않고** 질문만 한다.
+- **「다음 스프린트」자동 기획 금지** — 코드 정찰만으로 신규 `docs/plans/` 문서를 쓰지 않는다. 사용자가 기능·범위를 말한 경우에만 진행한다.
+- **Express 모드 자동 생략 금지** — requirements-pipeline Express는 사용자가 `go` 한 **이후**에만 실행한다.
+- plan 저장 경로: `docs/plans/{NN}_{slug}-plan.md` — `NN`은 [docs/plans/README.md](../../../docs/plans/README.md) 규칙(최대+1).
+- planner 종료 후 **designer/FE/BE/verifier를 호출하지 않는다** — 사용자 `다음: designer` 등 지시 대기.
+
+### 일반 `/planner` 직접 호출
+
+- 요청이 이미 구체적이어도, battle-plan Step 5 **`go` 없이** Phase 3·파일 저장하지 않는다.
 
 ---
 
@@ -130,7 +141,7 @@ Phase 1–2에서 수집한 컨텍스트를 그대로 사용한다.
 
 산출 문서 저장 경로:
 ```
-docs/plans/{feature-slug}-plan.md
+docs/plans/{NN}_{feature-slug}-plan.md
 ```
 
 문서 저장 전 사용자에게 경로를 확인한다.
@@ -141,13 +152,13 @@ docs/plans/{feature-slug}-plan.md
 
 ### 4-1. 문서 저장
 
-`docs/plans/{feature-slug}-plan.md` 에 저장한다.
+`docs/plans/{NN}_{feature-slug}-plan.md` 에 저장한다.
 
 **신규** 파일 구조:
 ```md
 # {기능명} 기획서
 > Date: {YYYY-MM-DD}
-> Status: Draft | Approved
+> Status: Draft | Approved | In Progress | Completed | Cancelled
 > Author: planner
 
 ## 한 줄 요약
@@ -192,7 +203,7 @@ docs/plans/{feature-slug}-plan.md
 
 ```
 📋 기획 완료: {기능명}
-문서: docs/plans/{feature-slug}-plan.md
+문서: docs/plans/{NN}_{feature-slug}-plan.md
 
 — /designer 에게 —
 UI 범위: {UI 요구사항 2–3줄 요약}

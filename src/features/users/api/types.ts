@@ -2,9 +2,6 @@ export type UserFilters = {
   page?: number;
   limit?: number;
   systemRoles?: string;
-  organizations?: string;
-  departments?: string;
-  orgRoles?: string;
   search?: string;
   sort?: string;
 };
@@ -26,22 +23,18 @@ export type User = {
   email: string;
   phone: string | null;
   system_role: 'admin' | 'user';
-  organization: 'wake' | 'sans' | 'ansan' | null;
-  department: string | null;
-  org_role: 'owner' | 'manager' | 'member' | 'viewer' | null;
-  invite_status: 'pending' | 'accepted' | 'expired' | null;
+  invite_status: 'pending' | 'accepted';
   created_at: string;
   updated_at: string;
 };
 
-export type UserMutationPayload = {
-  first_name: string;
-  last_name: string;
+export type InvitePayload = {
   email: string;
-  phone: string;
-  system_role: 'admin' | 'user';
-  organization: 'wake' | 'sans' | 'ansan';
-  department: string;
-  org_role: 'owner' | 'manager' | 'member' | 'viewer';
-  invite_status: 'pending' | 'accepted' | 'expired';
+};
+
+export type UserUpdatePayload = {
+  first_name?: string;
+  last_name?: string;
+  phone?: string | null;
+  system_role?: 'admin' | 'user';
 };

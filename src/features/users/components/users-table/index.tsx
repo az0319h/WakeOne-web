@@ -17,9 +17,6 @@ export function UsersTable() {
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
     system_role: parseAsString,
-    organization: parseAsString,
-    department: parseAsString,
-    org_role: parseAsString,
     sort: getSortingStateParser(columnIds).withDefault([])
   });
 
@@ -28,9 +25,6 @@ export function UsersTable() {
     limit: params.perPage,
     ...(params.name && { search: params.name }),
     ...(params.system_role && { systemRoles: params.system_role }),
-    ...(params.organization && { organizations: params.organization }),
-    ...(params.department && { departments: params.department }),
-    ...(params.org_role && { orgRoles: params.org_role }),
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 

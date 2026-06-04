@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,21 +13,17 @@ import {
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { useMutation } from '@tanstack/react-query';
-import { createUserMutation, updateUserMutation } from '../api/mutations';
+import { inviteUserMutation, updateUserMutation } from '../api/mutations';
 import type { User } from '../api/types';
-import { toast } from 'sonner';
-import * as z from 'zod';
-import { userSchema, type UserFormValues } from '../schemas/user';
+import { Input } from '@/components/ui/input';
+import { notifyError, notifySuccess } from '@/lib/notify';
 import {
-  DEPARTMENT_OPTIONS_BY_ORG,
-  INVITE_STATUS_OPTIONS,
-  ORG_ROLE_OPTIONS,
-  ORGANIZATION_OPTIONS,
-  SYSTEM_ROLE_OPTIONS
-} from './users-table/options';
-import { useStore } from '@tanstack/react-form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FieldLabel } from '@/components/ui/field';
+  inviteUserSchema,
+  userUpdateSchema,
+  type InviteUserFormValues,
+  type UserUpdateFormValues
+} from '../schemas/user';
+import { SYSTEM_ROLE_OPTIONS } from './users-table/options';
 
 interface UserFormSheetProps {
   user?: User;
@@ -39,77 +35,87 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
   const isEdit = !!user;
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const createMutation = useMutation({
-    ...createUserMutation,
-    onSuccess: () => {
-      toast.success('User created successfully');
+  const inviteMutation = useMutation({
+    ...inviteUserMutation,
+    onSuccess: (data) => {
+      notifySuccess(data.message ?? '초대 메일을 발송했습니다. 임시 비밀번호가 포함되어 있습니다.');
       onOpenChange(false);
-      form.reset();
+      inviteForm.reset();
       setApiError(null);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : 'Failed to create user';
+      const message = error instanceof Error ? error.message : '초대에 실패했습니다.';
       setApiError(message);
-      toast.error(message);
+      notifyError(message);
     }
   });
 
   const updateMutation = useMutation({
     ...updateUserMutation,
     onSuccess: () => {
-      toast.success('User updated successfully');
+      notifySuccess('사용자 정보가 저장되었습니다.');
       onOpenChange(false);
       setApiError(null);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : 'Failed to update user';
+      const message = error instanceof Error ? error.message : '저장에 실패했습니다.';
       setApiError(message);
-      toast.error(message);
+      notifyError(message);
     }
   });
 
-  const form = useAppForm({
+  const inviteForm = useAppForm({
     defaultValues: {
-      first_name: user?.first_name ?? '',
-      last_name: user?.last_name ?? '',
-      email: user?.email ?? '',
-      phone: user?.phone ?? '',
-      system_role: user?.system_role ?? 'user',
-      organization: user?.organization ?? 'wake',
-      department: user?.department ?? '',
-      org_role: user?.org_role ?? 'member',
-      invite_status: user?.invite_status ?? 'pending'
-    } as UserFormValues,
+      email: ''
+    } as InviteUserFormValues,
     validators: {
-      onSubmit: userSchema
+      onSubmit: inviteUserSchema
     },
     onSubmit: async ({ value }) => {
       setApiError(null);
-      if (isEdit) {
-        await updateMutation.mutateAsync({ id: user.id, values: value });
-      } else {
-        await createMutation.mutateAsync(value);
-      }
+      await inviteMutation.mutateAsync({ email: value.email.trim().toLowerCase() });
     }
   });
 
-  const { FormTextField, FormSelectField } = useFormFields<UserFormValues>();
-  const organization = useStore(form.store, (state) => state.values.organization);
-  const departmentOptions = useMemo(() => {
-    return DEPARTMENT_OPTIONS_BY_ORG[organization] ?? [];
-  }, [organization]);
+  const editForm = useAppForm({
+    defaultValues: {
+      first_name: user?.first_name ?? '',
+      last_name: user?.last_name ?? '',
+      phone: user?.phone ?? '',
+      system_role: user?.system_role ?? 'user'
+    } as UserUpdateFormValues,
+    validators: {
+      onSubmit: userUpdateSchema
+    },
+    onSubmit: async ({ value }) => {
+      if (!user) {
+        return;
+      }
+      setApiError(null);
+      await updateMutation.mutateAsync({
+        id: user.id,
+        values: {
+          first_name: value.first_name,
+          last_name: value.last_name,
+          phone: value.phone || null,
+          system_role: value.system_role
+        }
+      });
+    }
+  });
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const { FormTextField, FormSelectField } = useFormFields<UserUpdateFormValues>();
+  const isPending = inviteMutation.isPending || updateMutation.isPending;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className='flex flex-col'>
         <SheetHeader>
-          <SheetTitle>{isEdit ? 'Edit User' : 'New User'}</SheetTitle>
+          <SheetTitle>{isEdit ? '사용자 수정' : '사용자 초대'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? 'Update the user details below.'
-              : 'Fill in the details to create a new user.'}
+              ? '이름·연락처·시스템 역할을 수정합니다.'
+              : '이메일만 입력하면 임시 비밀번호가 포함된 초대 메일이 발송됩니다. 수신자는 로그인 페이지에서 바로 로그인할 수 있습니다.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -120,147 +126,61 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
         ) : null}
 
         <div className='flex-1 overflow-auto'>
-          <form.AppForm>
-            <form.Form id='user-form-sheet' className='space-y-4'>
-              <div className='grid grid-cols-2 gap-4'>
-                <FormTextField
-                  name='first_name'
-                  label='First Name'
-                  required
-                  placeholder='John'
-                  validators={{
-                    onBlur: z.string().min(2, 'First name must be at least 2 characters')
-                  }}
+          {isEdit ? (
+            <editForm.AppForm>
+              <editForm.Form id='user-form-sheet' className='space-y-4'>
+                <div className='grid grid-cols-2 gap-4'>
+                  <FormTextField name='first_name' label='이름' placeholder='이름' />
+                  <FormTextField name='last_name' label='성' placeholder='성' />
+                </div>
+                <FormTextField name='phone' label='연락처' type='tel' placeholder='010-0000-0000' />
+                <FormSelectField
+                  name='system_role'
+                  label='시스템 역할'
+                  options={SYSTEM_ROLE_OPTIONS}
+                  placeholder='역할 선택'
                 />
-                <FormTextField
-                  name='last_name'
-                  label='Last Name'
-                  required
-                  placeholder='Doe'
-                  validators={{
-                    onBlur: z.string().min(2, 'Last name must be at least 2 characters')
-                  }}
-                />
-              </div>
-
-              <FormTextField
-                name='email'
-                label='Email'
-                required
-                type='email'
-                placeholder='john@example.com'
-                validators={{
-                  onBlur: z.string().email('Please enter a valid email')
-                }}
-              />
-
-              <FormTextField
-                name='phone'
-                label='Phone'
-                required
-                type='tel'
-                placeholder='(555) 123-4567'
-                validators={{
-                  onBlur: z.string().min(1, 'Phone number is required')
-                }}
-              />
-
-              <FormSelectField
-                name='system_role'
-                label='System Role'
-                required
-                options={SYSTEM_ROLE_OPTIONS}
-                placeholder='Select system role'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select a system role')
-                }}
-              />
-
-              <FormSelectField
-                name='organization'
-                label='Organization'
-                required
-                options={ORGANIZATION_OPTIONS}
-                placeholder='Select organization'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select an organization')
-                }}
-              />
-
-              <form.AppField
-                name='department'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select a department')
-                }}
-              >
-                {(field) => (
-                  <div className='space-y-2'>
-                    <FieldLabel htmlFor='department'>
-                      Department <span>*</span>
-                    </FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={field.handleChange}
-                      onOpenChange={(open) => {
-                        if (!open) field.handleBlur();
-                      }}
-                      disabled={departmentOptions.length === 0}
-                    >
-                      <SelectTrigger id='department' aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}>
-                        <SelectValue
-                          placeholder={
-                            departmentOptions.length === 0
-                              ? 'No department available'
-                              : 'Select department'
-                          }
+              </editForm.Form>
+            </editForm.AppForm>
+          ) : (
+            <inviteForm.AppForm>
+              <inviteForm.Form id='user-form-sheet' className='space-y-4'>
+                <inviteForm.AppField
+                  name='email'
+                  children={(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          이메일 <span className='text-destructive'>*</span>
+                        </field.FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type='email'
+                          autoComplete='email'
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder='user@example.com'
+                          aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                         />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departmentOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {field.state.meta.errors.length > 0 ? (
-                      <p className='text-destructive text-sm'>{String(field.state.meta.errors[0])}</p>
-                    ) : null}
-                  </div>
-                )}
-              </form.AppField>
-
-              <FormSelectField
-                name='org_role'
-                label='Organization Role'
-                required
-                options={ORG_ROLE_OPTIONS}
-                placeholder='Select organization role'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select an organization role')
-                }}
-              />
-
-              <FormSelectField
-                name='invite_status'
-                label='Invite Status'
-                required
-                options={INVITE_STATUS_OPTIONS}
-                placeholder='Select invite status'
-                validators={{
-                  onBlur: z.string().min(1, 'Please select an invite status')
-                }}
-              />
-            </form.Form>
-          </form.AppForm>
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                />
+              </inviteForm.Form>
+            </inviteForm.AppForm>
+          )}
         </div>
 
         <SheetFooter>
           <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
-            Cancel
+            취소
           </Button>
           <Button type='submit' form='user-form-sheet' isLoading={isPending}>
-            <Icons.check /> {isEdit ? 'Update User' : 'Create User'}
+            <Icons.check className='mr-2 h-4 w-4' />
+            {isEdit ? '저장' : '초대 보내기'}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -274,7 +194,7 @@ export function UserFormSheetTrigger() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Icons.add className='mr-2 h-4 w-4' /> Add User
+        <Icons.add className='mr-2 h-4 w-4' /> 사용자 초대
       </Button>
       <UserFormSheet open={open} onOpenChange={setOpen} />
     </>

@@ -5,7 +5,7 @@
 ## 설계 원칙
 
 1. **dev 기동**
-2. **Playwright MCP** — `docs/plans/*-plan.md` AC 전항목 (**tsc/build보다 먼저**)
+2. **Playwright MCP** — `docs/plans/NN_*-plan.md` AC 전항목 (**tsc/build보다 먼저**)
 3. AC 실패(기획) → **`/planner`** 재기획
 4. AC 통과 후 → tsc → lint → react-doctor → build
 

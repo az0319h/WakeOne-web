@@ -1,10 +1,13 @@
 import { redirect } from 'next/navigation';
-import { getSessionUser } from '@/features/auth/api/session.server';
+import { getSessionProfile } from '@/features/auth/api/session.server';
 
 export default async function Page() {
-  const user = await getSessionUser();
+  const profile = await getSessionProfile();
 
-  if (user) {
+  if (profile) {
+    if (!profile.password_set_at) {
+      redirect('/auth/set-password');
+    }
     redirect('/dashboard/overview');
   }
 

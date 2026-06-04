@@ -1,9 +1,13 @@
+export type SystemRole = 'admin' | 'user';
+
 export type AuthProfile = {
   user_id: string;
   email: string;
   first_name: string;
   last_name: string;
-  system_role: string;
+  phone: string | null;
+  system_role: SystemRole;
+  password_set_at: string | null;
 };
 
 export type SignInPayload = {
