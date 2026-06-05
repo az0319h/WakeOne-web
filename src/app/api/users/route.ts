@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
         phone,
         system_role,
         password_set_at,
+        status,
+        deactivated_at,
         created_at,
         updated_at
       `,
@@ -98,6 +100,7 @@ export async function GET(request: NextRequest) {
         phone: row.phone,
         system_role: row.system_role,
         invite_status: row.password_set_at ? 'accepted' : 'pending',
+        status: row.status,
         created_at: row.created_at,
         updated_at: row.updated_at
       })) ?? [];
@@ -154,6 +157,13 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    const isClientError =
+      message === '이미 등록된 이메일입니다.' ||
+      message.includes('이미 등록') ||
+      message.includes('duplicate');
+    return NextResponse.json(
+      { success: false, message },
+      { status: isClientError ? 400 : 500 }
+    );
   }
 }

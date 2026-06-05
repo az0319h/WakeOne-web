@@ -1,6 +1,5 @@
 import PageContainer from '@/components/layout/page-container';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProfileForm } from '@/features/auth/components/profile-form';
+import { ProfilePageContent } from '@/features/auth/components/profile-page-content';
 import { getSessionProfile } from '@/features/auth/api/session.server';
 import { redirect } from 'next/navigation';
 
@@ -15,23 +14,16 @@ export default async function ProfilePage() {
     redirect('/auth/sign-in');
   }
 
+  if (profile.status === 'inactive') {
+    redirect('/auth/sign-in?accountDisabled=1');
+  }
+
   return (
     <PageContainer
       pageTitle='프로필'
-      pageDescription='이름·연락처 등 본인 정보를 수정합니다.'
+      pageDescription='계정 정보와 보안 설정을 관리합니다.'
     >
-      <Card>
-        <CardHeader>
-          <CardTitle>내 프로필</CardTitle>
-          <CardDescription>
-            초대 시 등록된 이메일은 변경할 수 없습니다. 이름과 연락처는 자유롭게 수정할 수
-            있습니다.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm profile={profile} />
-        </CardContent>
-      </Card>
+      <ProfilePageContent profile={profile} />
     </PageContainer>
   );
 }

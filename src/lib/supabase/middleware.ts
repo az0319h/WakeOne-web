@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 export type SessionProfileFlags = {
   password_set_at: string | null;
   system_role: 'admin' | 'user';
+  status: 'active' | 'inactive';
 };
 
 export async function updateSession(request: NextRequest) {
@@ -38,25 +39,32 @@ export async function updateSession(request: NextRequest) {
   });
 
   const {
-    data: { user }
+    data: { user: authUser }
   } = await supabase.auth.getUser();
 
+  let sessionUser = authUser;
   let profile: SessionProfileFlags | null = null;
 
-  if (user) {
+  if (authUser) {
     const { data } = await supabase
       .from('profiles')
-      .select('password_set_at, system_role')
-      .eq('user_id', user.id)
+      .select('password_set_at, system_role, status')
+      .eq('user_id', authUser.id)
       .maybeSingle();
 
     if (data) {
       profile = {
         password_set_at: data.password_set_at,
-        system_role: data.system_role
+        system_role: data.system_role,
+        status: data.status
       };
+
+      if (data.status === 'inactive') {
+        await supabase.auth.signOut();
+        sessionUser = null;
+      }
     }
   }
 
-  return { response: supabaseResponse, user, profile };
+  return { response: supabaseResponse, user: sessionUser, profile };
 }

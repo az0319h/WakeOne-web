@@ -1,0 +1,109 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '@/components/ui/sheet';
+import { Icons } from '@/components/icons';
+import { notifyError, notifySuccess } from '@/lib/notify';
+import { changePassword } from '@/features/auth/api/profile.client';
+import { signOut } from '@/features/auth/api/service';
+import {
+  changePasswordSchema,
+  type ChangePasswordFormValues
+} from '@/features/auth/schemas/password';
+
+export function ProfilePasswordSheet() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+
+  const form = useAppForm({
+    defaultValues: {
+      current_password: '',
+      new_password: '',
+      confirm_password: ''
+    } as ChangePasswordFormValues,
+    validators: {
+      onSubmit: changePasswordSchema
+    },
+    onSubmit: async ({ value }) => {
+      setIsPending(true);
+      try {
+        await changePassword(value);
+        notifySuccess('비밀번호가 변경되었습니다. 다시 로그인해 주세요.');
+        setOpen(false);
+        form.reset();
+        await signOut();
+        router.push('/auth/sign-in');
+        router.refresh();
+      } catch (error) {
+        notifyError(
+          error instanceof Error ? error.message : '비밀번호 변경에 실패했습니다.'
+        );
+      } finally {
+        setIsPending(false);
+      }
+    }
+  });
+
+  const { FormTextField } = useFormFields<ChangePasswordFormValues>();
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant='outline' type='button'>
+          <Icons.lock className='mr-2 h-4 w-4' />
+          비밀번호 변경
+        </Button>
+      </SheetTrigger>
+      <SheetContent className='flex flex-col'>
+        <SheetHeader>
+          <SheetTitle>비밀번호 변경</SheetTitle>
+          <SheetDescription>
+            변경 후 모든 기기에서 로그아웃됩니다. 변경한 비밀번호로 다시 로그인해 주세요.
+          </SheetDescription>
+        </SheetHeader>
+        <form.AppForm>
+          <form.Form className='flex flex-1 flex-col gap-4 py-4'>
+            <FormTextField
+              name='current_password'
+              label='현재 비밀번호'
+              id='profile-password-current'
+              type='password'
+              autoComplete='current-password'
+            />
+            <FormTextField
+              name='new_password'
+              label='새 비밀번호'
+              id='profile-password-new'
+              type='password'
+              autoComplete='new-password'
+            />
+            <FormTextField
+              name='confirm_password'
+              label='비밀번호 확인'
+              id='profile-password-confirm'
+              type='password'
+              autoComplete='new-password'
+            />
+            <SheetFooter className='mt-auto px-0'>
+              <Button type='submit' isLoading={isPending}>
+                변경 저장
+              </Button>
+            </SheetFooter>
+          </form.Form>
+        </form.AppForm>
+      </SheetContent>
+    </Sheet>
+  );
+}

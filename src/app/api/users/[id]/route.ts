@@ -1,6 +1,7 @@
-import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminSession } from '@/features/auth/api/admin.server';
+import { adminBanUser, adminSignOutGlobal } from '@/lib/auth/admin-auth';
+import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import { z } from 'zod';
 
 type Params = { params: Promise<{ id: string }> };
@@ -11,19 +12,6 @@ const updateUserSchema = z.object({
   phone: z.string().max(50).nullable().optional(),
   system_role: z.enum(['admin', 'user']).optional()
 });
-
-function getServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Missing SUPABASE environment variables for server admin operations');
-  }
-
-  return createServiceClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-}
 
 export async function PUT(request: NextRequest, { params }: Params) {
   const adminCheck = await requireAdminSession();
@@ -56,10 +44,31 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const supabase = getServiceRoleClient();
 
-    const { error: profileError } = await supabase
+    const { data: target, error: fetchError } = await supabase
       .from('profiles')
-      .update(updates)
-      .eq('user_id', id);
+      .select('status')
+      .eq('user_id', id)
+      .maybeSingle();
+
+    if (fetchError) {
+      return NextResponse.json({ success: false, message: fetchError.message }, { status: 400 });
+    }
+
+    if (!target) {
+      return NextResponse.json(
+        { success: false, message: '사용자를 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    if (target.status === 'inactive') {
+      return NextResponse.json(
+        { success: false, message: '비활성화된 사용자는 수정할 수 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    const { error: profileError } = await supabase.from('profiles').update(updates).eq('user_id', id);
 
     if (profileError) {
       return NextResponse.json({ success: false, message: profileError.message }, { status: 400 });
@@ -80,14 +89,56 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
   try {
     const { id } = await params;
-    const supabase = getServiceRoleClient();
-    const { error } = await supabase.auth.admin.deleteUser(id);
 
-    if (error) {
-      return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+    if (id === adminCheck.userId) {
+      return NextResponse.json(
+        { success: false, message: '본인 계정은 비활성화할 수 없습니다.' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ success: true, message: 'User deleted successfully' });
+    const supabase = getServiceRoleClient();
+
+    const { data: target, error: fetchError } = await supabase
+      .from('profiles')
+      .select('status')
+      .eq('user_id', id)
+      .maybeSingle();
+
+    if (fetchError) {
+      return NextResponse.json({ success: false, message: fetchError.message }, { status: 400 });
+    }
+
+    if (!target) {
+      return NextResponse.json(
+        { success: false, message: '사용자를 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    if (target.status === 'inactive') {
+      return NextResponse.json(
+        { success: false, message: '이미 비활성화된 사용자입니다.' },
+        { status: 400 }
+      );
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        status: 'inactive',
+        deactivated_at: new Date().toISOString()
+      })
+      .eq('user_id', id);
+
+    if (profileError) {
+      return NextResponse.json({ success: false, message: profileError.message }, { status: 400 });
+    }
+
+    await adminSignOutGlobal(id);
+    await adminBanUser(id);
+
+    return NextResponse.json({ success: true, message: '사용자가 비활성화되었습니다.' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
     return NextResponse.json({ success: false, message }, { status: 500 });

@@ -29,7 +29,7 @@ export async function updateUser(id: string, data: UserUpdatePayload) {
 }
 
 export async function deleteUser(id: string) {
-  return apiClient(`/users/${id}`, {
+  return apiClientWithMessage<{ success: boolean; message: string }>(`/users/${id}`, {
     method: 'DELETE'
   });
 }

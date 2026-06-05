@@ -68,6 +68,20 @@ export const columns: ColumnDef<User>[] = [
     }
   },
   {
+    id: 'status',
+    accessorKey: 'status',
+    header: '계정 상태',
+    cell: ({ cell }) => {
+      const status = cell.getValue<User['status']>();
+      const isActive = status === 'active';
+      return (
+        <Badge variant={isActive ? 'outline' : 'destructive'}>
+          {isActive ? '활성' : '비활성'}
+        </Badge>
+      );
+    }
+  },
+  {
     id: 'actions',
     cell: ({ row }) => <CellAction data={row.original} />
   }

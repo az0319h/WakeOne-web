@@ -35,17 +35,19 @@ export function TextField({
   const isValid = useStore(field.store, (s) => s.meta.isValid);
   const isValidating = useStore(field.store, (s) => s.meta.isValidating);
   const value = useStore(field.store, (s) => s.value) as string | number;
+  const { id: inputIdProp, ...restInputProps } = inputProps;
+  const inputId = inputIdProp ?? field.name;
 
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel htmlFor={field.name}>
+        <FieldLabel htmlFor={inputId}>
           {label}
           {required && ' *'}
         </FieldLabel>
         <div className='relative'>
           <Input
-            id={field.name}
+            id={inputId}
             type={type}
             value={value ?? ''}
             onBlur={field.handleBlur}
@@ -59,7 +61,7 @@ export function TextField({
             }}
             aria-invalid={isTouched && !isValid}
             className={className}
-            {...inputProps}
+            {...restInputProps}
           />
           {isValidating && (
             <div className='absolute top-1/2 right-3 -translate-y-1/2'>

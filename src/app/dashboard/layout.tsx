@@ -10,6 +10,7 @@ import { Suspense } from 'react';
 import { getSessionProfile } from '@/features/auth/api/session.server';
 import { NavAccessProvider } from '@/contexts/nav-access';
 import { AccessDeniedToast } from '@/components/dashboard/access-denied-toast';
+import { ProfileStatusRealtime } from '@/features/auth/components/profile-status-realtime';
 
 export const metadata: Metadata = {
   title: 'Next Shadcn Dashboard Starter',
@@ -35,6 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Suspense fallback={null}>
               <AccessDeniedToast />
             </Suspense>
+            {profile ? <ProfileStatusRealtime profile={profile} /> : null}
             <InfobarProvider defaultOpen={false}>
               {children}
               <InfoSidebar side='right' />
