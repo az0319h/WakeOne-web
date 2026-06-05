@@ -1,5 +1,16 @@
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { AuthProfile } from './types';
+
+export type SessionResult =
+  | { ok: true; userId: string; profile: AuthProfile }
+  | { ok: false; response: NextResponse };
+
+const UNAUTHORIZED_MESSAGE = '인증이 필요합니다.';
+const INACTIVE_MESSAGE = '비활성화된 계정입니다.';
+const PASSWORD_REQUIRED_MESSAGE = '비밀번호 설정이 필요합니다.';
 
 const PROFILE_COLUMNS =
   'user_id, email, first_name, last_name, phone, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
@@ -52,4 +63,112 @@ export async function getSessionProfile(): Promise<AuthProfile | null> {
   }
 
   return (ensured as AuthProfile | null) ?? null;
+}
+
+export async function requireSession(): Promise<SessionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: UNAUTHORIZED_MESSAGE },
+        { status: 401 }
+      )
+    };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select(PROFILE_COLUMNS)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: profileError.message },
+        { status: 500 }
+      )
+    };
+  }
+
+  if (!profile || profile.status === 'inactive') {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: INACTIVE_MESSAGE },
+        { status: 403 }
+      )
+    };
+  }
+
+  if (profile.password_set_at === null) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: PASSWORD_REQUIRED_MESSAGE },
+        { status: 403 }
+      )
+    };
+  }
+
+  return { ok: true, userId: user.id, profile: profile as AuthProfile };
+}
+
+async function getRequestPathname(): Promise<string> {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname');
+
+  if (pathname) {
+    return pathname;
+  }
+
+  const nextUrl = headersList.get('next-url');
+
+  if (nextUrl) {
+    try {
+      return new URL(nextUrl).pathname;
+    } catch {
+      // ignore malformed header
+    }
+  }
+
+  return '/dashboard/overview';
+}
+
+export async function requireDashboardSession(): Promise<AuthProfile> {
+  const user = await getSessionUser();
+
+  if (!user) {
+    const pathname = await getRequestPathname();
+    redirect(`/auth/sign-in?redirectTo=${encodeURIComponent(pathname)}`);
+  }
+
+  const profile = await getSessionProfile();
+
+  if (!profile || profile.status === 'inactive') {
+    redirect('/auth/sign-in?accountDisabled=1');
+  }
+
+  if (profile.password_set_at === null) {
+    redirect('/auth/set-password');
+  }
+
+  return profile;
+}
+
+export async function requireAdminPage(): Promise<AuthProfile> {
+  const profile = await requireDashboardSession();
+
+  if (profile.system_role !== 'admin') {
+    redirect('/dashboard/overview?accessDenied=users');
+  }
+
+  return profile;
 }

@@ -4,8 +4,7 @@ import { searchParamsCache } from '@/lib/searchparams';
 import type { SearchParams } from 'nuqs/server';
 import { usersInfoContent } from '@/features/users/info-content';
 import { UserFormSheetTrigger } from '@/features/users/components/user-form-sheet';
-import { redirect } from 'next/navigation';
-import { getSessionProfile } from '@/features/auth/api/session.server';
+import { requireAdminPage } from '@/features/auth/api/session.server';
 
 export const metadata = {
   title: 'Dashboard: Users'
@@ -16,11 +15,7 @@ type PageProps = {
 };
 
 export default async function UsersPage(props: PageProps) {
-  const profile = await getSessionProfile();
-
-  if (profile?.system_role !== 'admin') {
-    redirect('/dashboard/overview?accessDenied=users');
-  }
+  await requireAdminPage();
 
   const searchParams = await props.searchParams;
   searchParamsCache.parse(searchParams);

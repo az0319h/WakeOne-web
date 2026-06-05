@@ -7,7 +7,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { Suspense } from 'react';
-import { getSessionProfile } from '@/features/auth/api/session.server';
+import { requireDashboardSession } from '@/features/auth/api/session.server';
 import { NavAccessProvider } from '@/contexts/nav-access';
 import { AccessDeniedToast } from '@/components/dashboard/access-denied-toast';
 import { ProfileStatusRealtime } from '@/features/auth/components/profile-status-realtime';
@@ -22,9 +22,10 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const profile = await requireDashboardSession();
+
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
-  const profile = await getSessionProfile();
 
   return (
     <NavAccessProvider profile={profile}>
@@ -36,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Suspense fallback={null}>
               <AccessDeniedToast />
             </Suspense>
-            {profile ? <ProfileStatusRealtime profile={profile} /> : null}
+            <ProfileStatusRealtime profile={profile} />
             <InfobarProvider defaultOpen={false}>
               {children}
               <InfoSidebar side='right' />
