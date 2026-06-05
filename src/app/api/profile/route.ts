@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { requireSession } from '@/features/auth/api/session.server';
 import { createClient } from '@/lib/supabase/server';
 
 const PROFILE_SELECT_COLUMNS =
@@ -23,17 +24,9 @@ const patchProfileSchema = z.object({
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, message: '인증이 필요합니다.' },
-        { status: 401 }
-      );
+    const session = await requireSession();
+    if (!session.ok) {
+      return session.response;
     }
 
     const body = await request.json();
@@ -56,6 +49,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { first_name, last_name, phone, food_restrictions } = parsed.data;
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('profiles')
@@ -65,7 +59,7 @@ export async function PATCH(request: NextRequest) {
         phone: phone ?? null,
         food_restrictions: food_restrictions ?? null
       })
-      .eq('user_id', user.id)
+      .eq('user_id', session.userId)
       .select(PROFILE_SELECT_COLUMNS)
       .single();
 

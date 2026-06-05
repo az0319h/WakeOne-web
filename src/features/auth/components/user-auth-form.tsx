@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useAppForm } from '@/components/ui/tanstack-form';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { signInWithEmail } from '@/features/auth/api/service';
+import { sanitizeRedirectTo } from '@/lib/auth/safe-redirect';
 
 const formSchema = z.object({
   email: z.string().email({ message: '올바른 이메일 주소를 입력해 주세요.' }),
@@ -19,7 +20,10 @@ function UserAuthFormFields() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard/overview';
+  const redirectTo = sanitizeRedirectTo(
+    searchParams.get('redirectTo'),
+    '/dashboard/overview'
+  );
 
   const form = useAppForm({
     defaultValues: {

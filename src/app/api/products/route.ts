@@ -16,9 +16,15 @@
 // ============================================================
 
 import { fakeProducts } from '@/constants/mock-api';
+import { requireSession } from '@/features/auth/api/session.server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  const session = await requireSession();
+  if (!session.ok) {
+    return session.response;
+  }
+
   const { searchParams } = request.nextUrl;
 
   const page = Number(searchParams.get('page') ?? 1);
@@ -39,6 +45,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await requireSession();
+  if (!session.ok) {
+    return session.response;
+  }
+
   const body = await request.json();
   const data = await fakeProducts.createProduct(body);
   return NextResponse.json(data, { status: 201 });

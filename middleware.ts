@@ -1,8 +1,27 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+  getAdminAccessDeniedParam,
+  isAdminDashboardPath
+} from '@/config/admin-routes';
 import { updateSession } from '@/lib/supabase/middleware';
 
 const LOCAL_ALLOWED_ORIGIN = 'http://localhost:3000';
+
+const UNAUTHORIZED_JSON = {
+  success: false,
+  message: '인증이 필요합니다.'
+} as const;
+
+const INACTIVE_JSON = {
+  success: false,
+  message: '비활성화된 계정입니다.'
+} as const;
+
+const PASSWORD_REQUIRED_JSON = {
+  success: false,
+  message: '비밀번호 설정이 필요합니다.'
+} as const;
 
 function normalizeOrigin(origin: string): string {
   return origin.replace(/\/$/, '');
@@ -21,6 +40,10 @@ function getAllowedOrigins(): string[] {
   }
 
   return [normalizeOrigin(productionOrigin)];
+}
+
+function isApiPath(pathname: string): boolean {
+  return pathname.startsWith('/api/');
 }
 
 function isDashboardPath(pathname: string): boolean {
@@ -49,6 +72,16 @@ function copyCookies(from: NextResponse, to: NextResponse) {
   });
 }
 
+function jsonWithCookies(
+  sessionResponse: NextResponse,
+  body: Record<string, unknown>,
+  status: number
+) {
+  const jsonResponse = NextResponse.json(body, { status });
+  copyCookies(sessionResponse, jsonResponse);
+  return jsonResponse;
+}
+
 export async function middleware(request: NextRequest) {
   const allowedOrigins = getAllowedOrigins();
   const requestOrigin = normalizeOrigin(request.nextUrl.origin);
@@ -63,6 +96,24 @@ export async function middleware(request: NextRequest) {
 
   if (!allowedOrigins.includes(requestOrigin)) {
     return NextResponse.json({ message: 'Forbidden origin' }, { status: 403 });
+  }
+
+  if (isApiPath(pathname)) {
+    const { response, user, profile } = await updateSession(request);
+
+    if (profile?.status === 'inactive') {
+      return jsonWithCookies(response, INACTIVE_JSON, 403);
+    }
+
+    if (!user) {
+      return jsonWithCookies(response, UNAUTHORIZED_JSON, 401);
+    }
+
+    if (needsPasswordSetup(profile)) {
+      return jsonWithCookies(response, PASSWORD_REQUIRED_JSON, 403);
+    }
+
+    return response;
   }
 
   const needsSession = isDashboardPath(pathname) || isAuthPath(pathname);
@@ -148,15 +199,14 @@ export async function middleware(request: NextRequest) {
       return redirectResponse;
     }
 
-    if (pathname === '/dashboard/users' || pathname.startsWith('/dashboard/users/')) {
-      if (profile?.system_role !== 'admin') {
-        const overviewUrl = request.nextUrl.clone();
-        overviewUrl.pathname = '/dashboard/overview';
-        overviewUrl.search = '?accessDenied=users';
-        const redirectResponse = NextResponse.redirect(overviewUrl);
-        copyCookies(response, redirectResponse);
-        return redirectResponse;
-      }
+    if (isAdminDashboardPath(pathname) && profile?.system_role !== 'admin') {
+      const accessDenied = getAdminAccessDeniedParam(pathname) ?? 'users';
+      const overviewUrl = request.nextUrl.clone();
+      overviewUrl.pathname = '/dashboard/overview';
+      overviewUrl.search = `?accessDenied=${accessDenied}`;
+      const redirectResponse = NextResponse.redirect(overviewUrl);
+      copyCookies(response, redirectResponse);
+      return redirectResponse;
     }
   }
 
