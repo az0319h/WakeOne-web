@@ -23,3 +23,15 @@ export async function adminBanUser(userId: string): Promise<void> {
     throw new Error(error.message);
   }
 }
+
+export async function adminUnbanUser(userId: string): Promise<void> {
+  const { getServiceRoleClient } = await import('@/lib/supabase/service-role');
+  const admin = getServiceRoleClient();
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    ban_duration: 'none'
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}

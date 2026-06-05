@@ -10,7 +10,7 @@
 
 | 항목 | 비고 |
 |------|------|
-| 비활성 계정 **재활성화** | plan 03 Out — 전용 plan 필요 |
+| 비활성 계정 **재활성화** | [04_user-reactivate-plan.md](./docs/plans/04_user-reactivate-plan.md) **Completed** |
 | 첫 로그인 비밀번호 **강제** 변경 | 별도 plan |
 | Playwright AC 자동화 | plan 03 — `scripts/e2e-plan03-template.js` · `e2e-plan03-prep.cjs` |
 
@@ -21,3 +21,5 @@
 - Vercel Production `SUPABASE_SERVICE_ROLE_KEY` 필수 (초대·비활성화 admin API).
 - PR #8: `feat/user-invite-profiles` — plan 02 Completed.
 - plan 03: `profiles.status`, 소프트 딜리트, 프로필 Security Sheet, `lower(email)` UNIQUE.
+
+

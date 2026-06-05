@@ -44,6 +44,7 @@
 | 01 | [01_supabase-auth-login-plan.md](./01_supabase-auth-login-plan.md) | **Completed** · PR #7 merge |
 | 02 | [02_user-invite-profiles-plan.md](./02_user-invite-profiles-plan.md) | **Completed** |
 | 03 | [03_user-lifecycle-profile-plan.md](./03_user-lifecycle-profile-plan.md) | **Completed** · tasks §0~§4 |
+| 04 | [04_user-reactivate-plan.md](./04_user-reactivate-plan.md) | **Completed** · 재활성화 + Users mutation `onSettled` |
 
 ## 에이전트 참조
 

@@ -44,8 +44,30 @@ async function ensureProfileForSession(): Promise<AuthProfile | null> {
   return fetchProfile(user.id);
 }
 
+function mapAuthClientError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return AUTH_ERROR_MESSAGES.UNKNOWN;
+  }
+
+  if (
+    error.message.includes('Missing Supabase') ||
+    error.message.includes('NEXT_PUBLIC_SUPABASE')
+  ) {
+    return 'Supabase 설정이 누락되었습니다. .env의 API 키를 확인한 뒤 `npm run dev`를 다시 실행해 주세요.';
+  }
+
+  return AUTH_ERROR_MESSAGES.UNKNOWN;
+}
+
 export async function signInWithEmail(payload: SignInPayload) {
-  const supabase = createClient();
+  let supabase;
+
+  try {
+    supabase = createClient();
+  } catch (error) {
+    return { ok: false as const, message: mapAuthClientError(error) };
+  }
+
   const email = normalizeEmail(payload.email);
 
   const { data: profileStatus, error: statusError } = await supabase.rpc(
@@ -67,6 +89,14 @@ export async function signInWithEmail(payload: SignInPayload) {
   });
 
   if (error) {
+    if (error.message.includes('No API key found')) {
+      return {
+        ok: false as const,
+        message:
+          'Supabase API 키가 요청에 포함되지 않았습니다. .env의 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY를 확인하고 개발 서버를 재시작해 주세요.'
+      };
+    }
+
     const message =
       error.message === 'Invalid login credentials'
         ? AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS
