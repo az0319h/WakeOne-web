@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getSupabasePublishableKey, getSupabaseUrl } from './env';
 
 export type SessionProfileFlags = {
   password_set_at: string | null;
@@ -8,10 +9,13 @@ export type SessionProfileFlags = {
 };
 
 export async function updateSession(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  let url: string;
+  let key: string;
 
-  if (!url || !key) {
+  try {
+    url = getSupabaseUrl();
+    key = getSupabasePublishableKey();
+  } catch {
     return {
       response: NextResponse.next({ request }),
       user: null,

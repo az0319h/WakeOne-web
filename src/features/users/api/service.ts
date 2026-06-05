@@ -33,3 +33,10 @@ export async function deleteUser(id: string) {
     method: 'DELETE'
   });
 }
+
+export async function reactivateUser(id: string) {
+  return apiClientWithMessage<{ success: boolean; message: string }>(`/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'reactivate' })
+  });
+}

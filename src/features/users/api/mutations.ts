@@ -1,28 +1,39 @@
 import { mutationOptions } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
-import { deleteUser, inviteUser, updateUser } from './service';
+import { deleteUser, inviteUser, reactivateUser, updateUser } from './service';
 import { userKeys } from './queries';
 import type { InvitePayload, UserUpdatePayload } from './types';
 
+function invalidateUsers() {
+  getQueryClient().invalidateQueries({ queryKey: userKeys.all });
+}
+
 export const inviteUserMutation = mutationOptions({
   mutationFn: (data: InvitePayload) => inviteUser(data),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: userKeys.all });
+  onSettled: () => {
+    invalidateUsers();
   }
 });
 
 export const updateUserMutation = mutationOptions({
   mutationFn: ({ id, values }: { id: string; values: UserUpdatePayload }) =>
     updateUser(id, values),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: userKeys.all });
+  onSettled: () => {
+    invalidateUsers();
   }
 });
 
 export const deleteUserMutation = mutationOptions({
   mutationFn: (id: string) => deleteUser(id),
-  onSuccess: () => {
-    getQueryClient().invalidateQueries({ queryKey: userKeys.all });
+  onSettled: () => {
+    invalidateUsers();
+  }
+});
+
+export const reactivateUserMutation = mutationOptions({
+  mutationFn: (id: string) => reactivateUser(id),
+  onSettled: () => {
+    invalidateUsers();
   }
 });
 

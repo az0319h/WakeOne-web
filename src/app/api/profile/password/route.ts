@@ -48,10 +48,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    const { getSupabasePublishableKey, getSupabaseUrl } = await import('@/lib/supabase/env');
 
-    if (!supabaseUrl || !publishableKey) {
+    let supabaseUrl: string;
+    let publishableKey: string;
+
+    try {
+      supabaseUrl = getSupabaseUrl();
+      publishableKey = getSupabasePublishableKey();
+    } catch {
       return NextResponse.json({ success: false, message: GENERIC_ERROR }, { status: 500 });
     }
 

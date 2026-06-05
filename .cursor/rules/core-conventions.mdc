@@ -25,11 +25,14 @@ alwaysApply: true
 ### Service Layer (변경 불가 구조)
 ```
 src/features/{feature}/api/
-  types.ts    ← 타입 계약 (응답 형태, 필터, 페이로드)
-  service.ts  ← 데이터 접근 함수 (백엔드 교체 시 이 파일만 수정)
-  queries.ts  ← React Query options + key factory
+  types.ts      ← 타입 계약 (응답 형태, 필터, 페이로드)
+  service.ts    ← 데이터 접근 함수 (백엔드 교체 시 이 파일만 수정)
+  queries.ts    ← React Query options + key factory (Read)
+  mutations.ts  ← mutationOptions + 캐시 동기화 (Create/Update/Delete)
 ```
-컴포넌트는 `service.ts`만 호출한다. DB 직접 접근 금지.
+- **Read**: 컴포넌트는 `queries.ts`의 `useSuspenseQuery`만 사용.
+- **CUD**: 컴포넌트는 `mutations.ts`의 `mutationOptions` + `useMutation`만 사용. `service.ts`를 폼/버튼에서 **직접 호출 금지**.
+- DB 직접 접근 금지.
 
 ### React Query 패턴
 ```tsx
@@ -53,6 +56,43 @@ export const entityKeys = {
 ### URL 상태
 - 서버: `searchParamsCache` (nuqs)
 - 클라이언트: `useQueryStates` + `shallow: true`
+
+### Mutation & 캐시 동기화 (필수 · CUD 작업 시 누락 금지)
+
+**Read를 제외한** 모든 사용자 액션(저장, 확인 삭제/비활성화, 초대, 토글 등)은 **즉시** 뮤테이션을 실행하고, 성공 후 UI가 **새로고침 없이** 갱신되어야 한다.
+
+| 구분 | 규칙 |
+|------|------|
+| **실행 시점** | 클릭·제출·확인 시 `mutate` / `mutateAsync` 즉시 호출. CUD를 `useEffect`·수동 `fetch`·`router.refresh()`만으로 처리 **금지**. |
+| **정의 위치** | `src/features/{feature}/api/mutations.ts`에 `mutationOptions` + `mutationFn`(→ `service.ts`) |
+| **캐시 갱신** | `onSettled`에서 `getQueryClient().invalidateQueries({ queryKey: entityKeys.all })` (또는 `setQueryData`). **`onSuccess`에만 invalidate 두지 말 것** — 컴포넌트가 `onSuccess`를 덮어쓰면 무효화가 사라짐. |
+| **컴포넌트** | `useMutation({ ...xxxMutation, onSuccess: () => { /* 토스트·닫기 등 UI만 */ } })`. invalidate는 **항상** `mutations.ts`의 `onSettled`에 둔다. |
+| **폼** | `onSubmit` → `await xxxMutation.mutateAsync(payload)` |
+| **테이블/모달** | 확인 버튼 → `mutate(id)` (로딩은 `isPending`) |
+
+```ts
+// mutations.ts — 캐시는 onSettled (컴포넌트 onSuccess 덮어쓰기와 분리)
+export const updateEntityMutation = mutationOptions({
+  mutationFn: (payload) => updateEntity(payload),
+  onSettled: () => {
+    getQueryClient().invalidateQueries({ queryKey: entityKeys.all });
+  }
+});
+```
+
+```tsx
+// 컴포넌트 — UI만, service 직접 호출 금지
+const updateMutation = useMutation({
+  ...updateEntityMutation,
+  onSuccess: () => {
+    notifySuccess('저장되었습니다.');
+    onOpenChange(false);
+  }
+});
+```
+
+- **신규/수정 feature**에 CUD UI가 있으면 `mutations.ts` 생성·연동까지가 작업 완료 조건이다 (API Route만 추가하고 뮤테이션 생략 **금지**).
+- RSC 전용 화면(예: 세션 프로필)도 CUD가 있으면 `queries.ts` + `mutations.ts`로 통일하고, `router.refresh()` 단독 갱신 **비권장**.
 
 ## 컴포넌트 컨벤션 (필수)
 
