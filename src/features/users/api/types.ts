@@ -16,6 +16,8 @@ export type UsersResponse = {
   users: User[];
 };
 
+export type ProfileStatus = 'active' | 'inactive';
+
 export type User = {
   id: string;
   first_name: string;
@@ -24,6 +26,7 @@ export type User = {
   phone: string | null;
   system_role: 'admin' | 'user';
   invite_status: 'pending' | 'accepted';
+  status: ProfileStatus;
   created_at: string;
   updated_at: string;
 };

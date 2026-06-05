@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { AuthProfile } from './types';
 
 const ADMIN_PROFILE_COLUMNS =
-  'user_id, email, first_name, last_name, phone, system_role, password_set_at';
+  'user_id, email, first_name, last_name, phone, system_role, password_set_at, status';
 
 export type AdminSessionResult =
   | { ok: true; userId: string; profile: AuthProfile }
@@ -42,7 +42,17 @@ export async function requireAdminSession(): Promise<AdminSessionResult> {
     };
   }
 
-  if (!profile || profile.system_role !== 'admin') {
+  if (!profile || profile.status === 'inactive') {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: '비활성화된 계정입니다.' },
+        { status: 403 }
+      )
+    };
+  }
+
+  if (profile.system_role !== 'admin') {
     return {
       ok: false,
       response: NextResponse.json(

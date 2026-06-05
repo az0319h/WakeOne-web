@@ -12,7 +12,7 @@
     "start": "next start",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix && bun format",
-    "lint:strict": "oxlint --deny-warnings",
+    "lint:strict": "oxlint --deny-warnings --ignore-path scripts/.oxlintignore",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "prepare": "husky"

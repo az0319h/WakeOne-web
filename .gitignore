@@ -23,7 +23,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# plan 03 e2e (embeds creds from .env)
+scripts/e2e-plan03-inline.js
+
 # playwright (MCP storage state / future e2e)
+.playwright-mcp/
 playwright/.auth/
 playwright-report/
 test-results/

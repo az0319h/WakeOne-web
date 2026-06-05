@@ -35,6 +35,8 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
         phone,
         system_role,
         password_set_at,
+        status,
+        deactivated_at,
         created_at,
         updated_at
       `,
@@ -96,6 +98,7 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
       phone: row.phone,
       system_role: row.system_role,
       invite_status: row.password_set_at ? 'accepted' : 'pending',
+      status: row.status,
       created_at: row.created_at,
       updated_at: row.updated_at
     })) ?? [];

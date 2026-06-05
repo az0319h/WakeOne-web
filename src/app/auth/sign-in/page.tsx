@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { AccountDisabledToast } from '@/components/dashboard/account-disabled-toast';
 import SignInViewPage from '@/features/auth/components/sign-in-view';
 
 export const metadata: Metadata = {
@@ -7,5 +9,12 @@ export const metadata: Metadata = {
 };
 
 export default function SignInPage() {
-  return <SignInViewPage />;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AccountDisabledToast />
+      </Suspense>
+      <SignInViewPage />
+    </>
+  );
 }

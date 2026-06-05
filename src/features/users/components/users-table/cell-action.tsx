@@ -8,6 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { useNavAccess } from '@/contexts/nav-access';
 import { deleteUserMutation } from '../../api/mutations';
 import type { User } from '../../api/types';
 import { Icons } from '@/components/icons';
@@ -21,30 +22,49 @@ interface CellActionProps {
 }
 
 export function CellAction({ data }: CellActionProps) {
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const sessionProfile = useNavAccess();
+  const currentUserId = sessionProfile?.user_id;
+  const isSelf = currentUserId === data.id;
+  const isInactive = data.status === 'inactive';
+  const canEdit = !isInactive;
+  const canDeactivate = !isSelf && !isInactive;
+
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  const deleteMutation = useMutation({
+  const deactivateMutation = useMutation({
     ...deleteUserMutation,
-    onSuccess: () => {
-      notifySuccess('사용자가 삭제되었습니다.');
-      setDeleteOpen(false);
+    onSuccess: (result) => {
+      notifySuccess(result.message ?? '사용자가 비활성화되었습니다.');
+      setDeactivateOpen(false);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : '삭제에 실패했습니다.';
+      const message = error instanceof Error ? error.message : '비활성화에 실패했습니다.';
       notifyError(message);
     }
   });
 
+  if (!canEdit && !canDeactivate) {
+    return null;
+  }
+
   return (
     <>
-      <AlertModal
-        isOpen={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        onConfirm={() => deleteMutation.mutate(data.id)}
-        loading={deleteMutation.isPending}
-      />
-      <UserFormSheet user={data} open={editOpen} onOpenChange={setEditOpen} />
+      {canDeactivate ? (
+        <AlertModal
+          isOpen={deactivateOpen}
+          onClose={() => setDeactivateOpen(false)}
+          onConfirm={() => deactivateMutation.mutate(data.id)}
+          loading={deactivateMutation.isPending}
+          title='사용자를 비활성화할까요?'
+          description='계정이 비활성화되며 즉시 로그아웃됩니다. 동일 이메일로 재초대할 수 없습니다.'
+          confirmLabel='비활성화'
+          cancelLabel='취소'
+        />
+      ) : null}
+      {canEdit ? (
+        <UserFormSheet user={data} open={editOpen} onOpenChange={setEditOpen} />
+      ) : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant='ghost' className='h-8 w-8 p-0'>
@@ -54,12 +74,16 @@ export function CellAction({ data }: CellActionProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end'>
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Icons.edit className='mr-2 h-4 w-4' /> 수정
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setDeleteOpen(true)}>
-            <Icons.trash className='mr-2 h-4 w-4' /> 삭제
-          </DropdownMenuItem>
+          {canEdit ? (
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <Icons.edit className='mr-2 h-4 w-4' /> 수정
+            </DropdownMenuItem>
+          ) : null}
+          {canDeactivate ? (
+            <DropdownMenuItem onClick={() => setDeactivateOpen(true)}>
+              <Icons.trash className='mr-2 h-4 w-4' /> 비활성화
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

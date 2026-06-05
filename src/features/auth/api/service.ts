@@ -1,9 +1,10 @@
+import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthProfile, SignInPayload } from './types';
 import { AUTH_ERROR_MESSAGES } from './types';
 
 const PROFILE_COLUMNS =
-  'user_id, email, first_name, last_name, phone, system_role, password_set_at';
+  'user_id, email, first_name, last_name, phone, system_role, password_set_at, status';
 
 async function fetchProfile(userId: string): Promise<AuthProfile | null> {
   const supabase = createClient();
@@ -45,8 +46,23 @@ async function ensureProfileForSession(): Promise<AuthProfile | null> {
 
 export async function signInWithEmail(payload: SignInPayload) {
   const supabase = createClient();
+  const email = normalizeEmail(payload.email);
+
+  const { data: profileStatus, error: statusError } = await supabase.rpc(
+    'profile_status_for_email',
+    { p_email: email }
+  );
+
+  if (statusError) {
+    return { ok: false as const, message: AUTH_ERROR_MESSAGES.UNKNOWN };
+  }
+
+  if (profileStatus === 'inactive') {
+    return { ok: false as const, message: AUTH_ERROR_MESSAGES.ACCOUNT_DISABLED };
+  }
+
   const { error } = await supabase.auth.signInWithPassword({
-    email: payload.email,
+    email,
     password: payload.password
   });
 
@@ -58,7 +74,13 @@ export async function signInWithEmail(payload: SignInPayload) {
     return { ok: false as const, message };
   }
 
-  await ensureProfileForSession();
+  const profile = await ensureProfileForSession();
+
+  if (profile?.status === 'inactive') {
+    await supabase.auth.signOut();
+    return { ok: false as const, message: AUTH_ERROR_MESSAGES.ACCOUNT_DISABLED };
+  }
+
   return { ok: true as const };
 }
 

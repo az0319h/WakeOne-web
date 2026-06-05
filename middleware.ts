@@ -73,6 +73,16 @@ export async function middleware(request: NextRequest) {
 
   const { response, user, profile } = await updateSession(request);
 
+  if (profile?.status === 'inactive') {
+    const signInUrl = request.nextUrl.clone();
+    signInUrl.pathname = '/auth/sign-in';
+    signInUrl.searchParams.set('accountDisabled', '1');
+    signInUrl.search = signInUrl.searchParams.toString();
+    const redirectResponse = NextResponse.redirect(signInUrl);
+    copyCookies(response, redirectResponse);
+    return redirectResponse;
+  }
+
   if (isAuthPath(pathname)) {
     if (!user) {
       return response;

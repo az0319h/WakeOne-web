@@ -1,21 +1,9 @@
 import 'server-only';
 
-import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { generateTemporaryPassword } from '@/lib/auth/temp-password';
 import { sendInviteEmail } from '@/lib/mail/send-invite-email';
-
-function getServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Missing SUPABASE environment variables for server admin operations');
-  }
-
-  return createServiceClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-}
+import { getServiceRoleClient } from '@/lib/supabase/service-role';
 
 function getSignInUrl(): string {
   const appUrl =
@@ -34,20 +22,38 @@ function mapAuthErrorMessage(message: string): string {
   return message;
 }
 
+const DUPLICATE_EMAIL_MESSAGE = '이미 등록된 이메일입니다.';
+
 export async function inviteUserWithTemporaryPassword(email: string): Promise<{
   userId: string;
 }> {
+  const normalizedEmail = normalizeEmail(email);
   const adminClient = getServiceRoleClient();
+
+  const { data: existing } = await adminClient
+    .from('profiles')
+    .select('user_id')
+    .ilike('email', normalizedEmail)
+    .maybeSingle();
+
+  if (existing) {
+    throw new Error(DUPLICATE_EMAIL_MESSAGE);
+  }
+
   const temporaryPassword = generateTemporaryPassword(8);
 
   const { data, error } = await adminClient.auth.admin.createUser({
-    email,
+    email: normalizedEmail,
     password: temporaryPassword,
     email_confirm: true
   });
 
   if (error || !data.user) {
-    throw new Error(mapAuthErrorMessage(error?.message ?? '사용자 생성에 실패했습니다.'));
+    const mapped = mapAuthErrorMessage(error?.message ?? '사용자 생성에 실패했습니다.');
+    if (error?.message?.includes('duplicate') || error?.message?.includes('already')) {
+      throw new Error(DUPLICATE_EMAIL_MESSAGE);
+    }
+    throw new Error(mapped);
   }
 
   const userId = data.user.id;
@@ -67,7 +73,7 @@ export async function inviteUserWithTemporaryPassword(email: string): Promise<{
 
   try {
     await sendInviteEmail({
-      to: email,
+      to: normalizedEmail,
       temporaryPassword,
       signInUrl: getSignInUrl()
     });

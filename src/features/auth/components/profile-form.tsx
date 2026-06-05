@@ -56,9 +56,6 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   return (
     <form.AppForm>
       <form.Form className='max-w-lg space-y-4 p-0'>
-        <p className='text-muted-foreground text-sm'>
-          로그인 이메일: <span className='text-foreground font-medium'>{profile.email}</span>
-        </p>
         <div className='grid gap-4 sm:grid-cols-2'>
           <FormTextField name='first_name' label='이름' placeholder='이름' />
           <FormTextField name='last_name' label='성' placeholder='성' />
