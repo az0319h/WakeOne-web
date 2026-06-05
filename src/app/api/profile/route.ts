@@ -2,10 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 
+const PROFILE_SELECT_COLUMNS =
+  'user_id, email, first_name, last_name, phone, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
+
+const ADMIN_ONLY_PATCH_FIELDS = [
+  'avatar_url',
+  'affiliation',
+  'department',
+  'rank',
+  'job_title',
+  'system_role'
+] as const;
+
 const patchProfileSchema = z.object({
   first_name: z.string().max(100),
   last_name: z.string().max(100),
-  phone: z.string().max(50).nullable().optional()
+  phone: z.string().max(50).nullable().optional(),
+  food_restrictions: z.string().max(200).nullable().optional()
 });
 
 export async function PATCH(request: NextRequest) {
@@ -24,6 +37,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    const forbiddenFields = ADMIN_ONLY_PATCH_FIELDS.filter((field) => field in body);
+    if (forbiddenFields.length > 0) {
+      return NextResponse.json(
+        { success: false, message: '해당 필드는 수정할 수 없습니다.' },
+        { status: 403 }
+      );
+    }
+
     const parsed = patchProfileSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -33,17 +55,18 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { first_name, last_name, phone } = parsed.data;
+    const { first_name, last_name, phone, food_restrictions } = parsed.data;
 
     const { data, error } = await supabase
       .from('profiles')
       .update({
         first_name,
         last_name,
-        phone: phone ?? null
+        phone: phone ?? null,
+        food_restrictions: food_restrictions ?? null
       })
       .eq('user_id', user.id)
-      .select('user_id, email, first_name, last_name, phone, system_role, password_set_at, status')
+      .select(PROFILE_SELECT_COLUMNS)
       .single();
 
     if (error) {

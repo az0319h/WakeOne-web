@@ -6,11 +6,16 @@
 
 ---
 
+## 완료 (최근)
+
+| 항목 | 비고 |
+|------|------|
+| **프로필 페이지 완성** | [05_profile-completion-plan.md](./docs/plans/05_profile-completion-plan.md) **Completed** · Playwright AC #1~#11 · build ✅ |
+
 ## 다음 후보 (미기획)
 
 | 항목 | 비고 |
 |------|------|
-| 비활성 계정 **재활성화** | [04_user-reactivate-plan.md](./docs/plans/04_user-reactivate-plan.md) **Completed** |
 | 첫 로그인 비밀번호 **강제** 변경 | 별도 plan |
 | Playwright AC 자동화 | plan 03 — `scripts/e2e-plan03-template.js` · `e2e-plan03-prep.cjs` |
 

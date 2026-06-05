@@ -1,3 +1,5 @@
+import type { Affiliation } from '@/features/users/constants/organization';
+
 export type SystemRole = 'admin' | 'user';
 
 export type ProfileStatus = 'active' | 'inactive';
@@ -11,6 +13,12 @@ export type AuthProfile = {
   system_role: SystemRole;
   password_set_at: string | null;
   status: ProfileStatus;
+  avatar_url: string | null;
+  affiliation: Affiliation | null;
+  department: string | null;
+  rank: string | null;
+  job_title: string | null;
+  food_restrictions: string | null;
 };
 
 export type SignInPayload = {

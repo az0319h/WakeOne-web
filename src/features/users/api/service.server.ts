@@ -36,6 +36,12 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
         system_role,
         password_set_at,
         status,
+        avatar_url,
+        affiliation,
+        department,
+        rank,
+        job_title,
+        food_restrictions,
         deactivated_at,
         created_at,
         updated_at
@@ -99,6 +105,12 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
       system_role: row.system_role,
       invite_status: row.password_set_at ? 'accepted' : 'pending',
       status: row.status,
+      avatar_url: row.avatar_url,
+      affiliation: row.affiliation,
+      department: row.department,
+      rank: row.rank,
+      job_title: row.job_title,
+      food_restrictions: row.food_restrictions,
       created_at: row.created_at,
       updated_at: row.updated_at
     })) ?? [];

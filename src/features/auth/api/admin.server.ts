@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { AuthProfile } from './types';
 
 const ADMIN_PROFILE_COLUMNS =
-  'user_id, email, first_name, last_name, phone, system_role, password_set_at, status';
+  'user_id, email, first_name, last_name, phone, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
 
 export type AdminSessionResult =
   | { ok: true; userId: string; profile: AuthProfile }
