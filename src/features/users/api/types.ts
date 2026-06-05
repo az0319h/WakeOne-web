@@ -1,3 +1,5 @@
+import type { Affiliation } from '@/features/users/constants/organization';
+
 export type UserFilters = {
   page?: number;
   limit?: number;
@@ -27,6 +29,12 @@ export type User = {
   system_role: 'admin' | 'user';
   invite_status: 'pending' | 'accepted';
   status: ProfileStatus;
+  avatar_url: string | null;
+  affiliation: Affiliation | null;
+  department: string | null;
+  rank: string | null;
+  job_title: string | null;
+  food_restrictions: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -36,8 +44,10 @@ export type InvitePayload = {
 };
 
 export type UserUpdatePayload = {
-  first_name?: string;
-  last_name?: string;
-  phone?: string | null;
+  avatar_url?: string | null;
+  affiliation?: Affiliation | null;
+  department?: string | null;
+  rank?: string | null;
+  job_title?: string | null;
   system_role?: 'admin' | 'user';
 };

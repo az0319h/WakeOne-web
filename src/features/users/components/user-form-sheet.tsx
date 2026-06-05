@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { useEffect, useState } from 'react';
+import { useAppForm } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -14,6 +14,7 @@ import {
 import { Icons } from '@/components/icons';
 import { useMutation } from '@tanstack/react-query';
 import { inviteUserMutation, updateUserMutation } from '../api/mutations';
+import { SELECT_NONE_VALUE, type Affiliation } from '../constants/organization';
 import type { User } from '../api/types';
 import { Input } from '@/components/ui/input';
 import { notifyError, notifySuccess } from '@/lib/notify';
@@ -23,7 +24,7 @@ import {
   type InviteUserFormValues,
   type UserUpdateFormValues
 } from '../schemas/user';
-import { SYSTEM_ROLE_OPTIONS } from './users-table/options';
+import { UserEditFormFields } from './user-edit-form-fields';
 
 interface UserFormSheetProps {
   user?: User;
@@ -31,9 +32,89 @@ interface UserFormSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function toFormAffiliation(
+  value: Affiliation | null | undefined
+): Affiliation | typeof SELECT_NONE_VALUE {
+  return value ?? SELECT_NONE_VALUE;
+}
+
+function toFormOrgField(value: string | null | undefined): string {
+  return value ?? SELECT_NONE_VALUE;
+}
+
+function toPayloadValue(value: string | undefined) {
+  if (!value || value === SELECT_NONE_VALUE) return null;
+  return value.trim() ? value.trim() : null;
+}
+
+interface UserEditFormProps {
+  user: User;
+  onSuccess: () => void;
+  onError: (message: string) => void;
+  onPendingChange: (pending: boolean) => void;
+}
+
+function UserEditForm({ user, onSuccess, onError, onPendingChange }: UserEditFormProps) {
+  const updateMutation = useMutation({
+    ...updateUserMutation,
+    onSuccess: () => {
+      notifySuccess('사용자 정보가 저장되었습니다.');
+      onSuccess();
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : '저장에 실패했습니다.';
+      onError(message);
+      notifyError(message);
+    }
+  });
+
+  useEffect(() => {
+    onPendingChange(updateMutation.isPending);
+  }, [onPendingChange, updateMutation.isPending]);
+
+  const editForm = useAppForm({
+    defaultValues: {
+      avatar_url: user.avatar_url ?? '',
+      affiliation: toFormAffiliation(user.affiliation),
+      department: toFormOrgField(user.department),
+      rank: toFormOrgField(user.rank),
+      job_title: toFormOrgField(user.job_title),
+      system_role: user.system_role
+    } as UserUpdateFormValues,
+    validators: {
+      onSubmit: userUpdateSchema
+    },
+    onSubmit: async ({ value }) => {
+      await updateMutation.mutateAsync({
+        id: user.id,
+        values: {
+          avatar_url: toPayloadValue(value.avatar_url),
+          affiliation:
+            value.affiliation && value.affiliation !== SELECT_NONE_VALUE
+              ? (value.affiliation as Affiliation)
+              : null,
+          department: toPayloadValue(value.department),
+          rank: toPayloadValue(value.rank),
+          job_title: toPayloadValue(value.job_title),
+          system_role: value.system_role
+        }
+      });
+    }
+  });
+
+  return (
+    <editForm.AppForm>
+      <editForm.Form id='user-form-sheet' className='space-y-4'>
+        <UserEditFormFields />
+      </editForm.Form>
+    </editForm.AppForm>
+  );
+}
+
 export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) {
   const isEdit = !!user;
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isEditPending, setIsEditPending] = useState(false);
 
   const inviteMutation = useMutation({
     ...inviteUserMutation,
@@ -45,20 +126,6 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : '초대에 실패했습니다.';
-      setApiError(message);
-      notifyError(message);
-    }
-  });
-
-  const updateMutation = useMutation({
-    ...updateUserMutation,
-    onSuccess: () => {
-      notifySuccess('사용자 정보가 저장되었습니다.');
-      onOpenChange(false);
-      setApiError(null);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : '저장에 실패했습니다.';
       setApiError(message);
       notifyError(message);
     }
@@ -77,35 +144,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
     }
   });
 
-  const editForm = useAppForm({
-    defaultValues: {
-      first_name: user?.first_name ?? '',
-      last_name: user?.last_name ?? '',
-      phone: user?.phone ?? '',
-      system_role: user?.system_role ?? 'user'
-    } as UserUpdateFormValues,
-    validators: {
-      onSubmit: userUpdateSchema
-    },
-    onSubmit: async ({ value }) => {
-      if (!user) {
-        return;
-      }
-      setApiError(null);
-      await updateMutation.mutateAsync({
-        id: user.id,
-        values: {
-          first_name: value.first_name,
-          last_name: value.last_name,
-          phone: value.phone || null,
-          system_role: value.system_role
-        }
-      });
-    }
-  });
-
-  const { FormTextField, FormSelectField } = useFormFields<UserUpdateFormValues>();
-  const isPending = inviteMutation.isPending || updateMutation.isPending;
+  const isPending = inviteMutation.isPending || isEditPending;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -114,7 +153,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
           <SheetTitle>{isEdit ? '사용자 수정' : '사용자 초대'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? '이름·연락처·시스템 역할을 수정합니다.'
+              ? '아바타 URL·소속·부서·직급·직책·시스템 역할을 수정합니다.'
               : '이메일만 입력하면 임시 비밀번호가 포함된 초대 메일이 발송됩니다. 수신자는 로그인 페이지에서 바로 로그인할 수 있습니다.'}
           </SheetDescription>
         </SheetHeader>
@@ -126,22 +165,17 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
         ) : null}
 
         <div className='flex-1 overflow-auto'>
-          {isEdit ? (
-            <editForm.AppForm>
-              <editForm.Form id='user-form-sheet' className='space-y-4'>
-                <div className='grid grid-cols-2 gap-4'>
-                  <FormTextField name='first_name' label='이름' placeholder='이름' />
-                  <FormTextField name='last_name' label='성' placeholder='성' />
-                </div>
-                <FormTextField name='phone' label='연락처' type='tel' placeholder='010-0000-0000' />
-                <FormSelectField
-                  name='system_role'
-                  label='시스템 역할'
-                  options={SYSTEM_ROLE_OPTIONS}
-                  placeholder='역할 선택'
-                />
-              </editForm.Form>
-            </editForm.AppForm>
+          {isEdit && user ? (
+            <UserEditForm
+              key={user.id}
+              user={user}
+              onSuccess={() => {
+                onOpenChange(false);
+                setApiError(null);
+              }}
+              onError={(message) => setApiError(message)}
+              onPendingChange={setIsEditPending}
+            />
           ) : (
             <inviteForm.AppForm>
               <inviteForm.Form id='user-form-sheet' className='space-y-4'>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Icons } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -24,6 +25,32 @@ interface NavUserProps {
   profile: AuthProfile;
 }
 
+function NavUserAvatar({
+  profile,
+  displayName,
+  initials
+}: {
+  profile: AuthProfile;
+  displayName: string;
+  initials: string;
+}) {
+  const [imageError, setImageError] = useState(false);
+  const showImage = Boolean(profile.avatar_url) && !imageError;
+
+  return (
+    <Avatar className='h-8 w-8 rounded-lg'>
+      {showImage ? (
+        <AvatarImage
+          src={profile.avatar_url!}
+          alt={displayName}
+          onError={() => setImageError(true)}
+        />
+      ) : null}
+      <AvatarFallback className='rounded-lg'>{initials}</AvatarFallback>
+    </Avatar>
+  );
+}
+
 export function NavUser({ profile }: NavUserProps) {
   const { isMobile } = useSidebar();
   const displayName = getProfileDisplayName(profile);
@@ -43,10 +70,7 @@ export function NavUser({ profile }: NavUserProps) {
               size='lg'
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
-              <Avatar className='h-8 w-8 rounded-lg'>
-                <AvatarImage src='' alt={displayName} />
-                <AvatarFallback className='rounded-lg'>{initials}</AvatarFallback>
-              </Avatar>
+              <NavUserAvatar profile={profile} displayName={displayName} initials={initials} />
               <div className='grid flex-1 text-left text-sm leading-tight'>
                 <span className='truncate font-semibold'>{displayName}</span>
                 <span className='truncate text-xs'>{profile.email}</span>
@@ -62,9 +86,7 @@ export function NavUser({ profile }: NavUserProps) {
           >
             <DropdownMenuLabel className='p-0 font-normal'>
               <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
-                <Avatar className='h-8 w-8 rounded-lg'>
-                  <AvatarFallback className='rounded-lg'>{initials}</AvatarFallback>
-                </Avatar>
+                <NavUserAvatar profile={profile} displayName={displayName} initials={initials} />
                 <div className='grid flex-1 text-left text-sm leading-tight'>
                   <span className='truncate font-semibold'>{displayName}</span>
                   <span className='truncate text-xs'>{profile.email}</span>

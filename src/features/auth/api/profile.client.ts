@@ -1,9 +1,10 @@
 import type { AuthProfile } from './types';
 
-type PatchProfilePayload = {
+export type PatchProfilePayload = {
   first_name: string;
   last_name: string;
   phone: string | null;
+  food_restrictions: string | null;
 };
 
 type PatchProfileResponse = {

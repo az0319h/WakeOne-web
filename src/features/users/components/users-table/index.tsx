@@ -6,12 +6,29 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
+import { useEffect, useMemo, useState } from 'react';
 import { usersQueryOptions } from '../../api/queries';
-import { columns } from './columns';
-
-const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
+import type { User } from '../../api/types';
+import { UserProfileModal } from '../user-profile-modal';
+import { createColumns } from './columns';
 
 export function UsersTable() {
+  const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const columns = useMemo(
+    () =>
+      createColumns({
+        onAvatarClick: (user) => {
+          setProfileUser(user);
+          setProfileOpen(true);
+        }
+      }),
+    []
+  );
+
+  const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
+
   const [params] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     perPage: parseAsInteger.withDefault(10),
@@ -30,6 +47,16 @@ export function UsersTable() {
 
   const { data } = useSuspenseQuery(usersQueryOptions(filters));
 
+  const profileUserId = profileUser?.id;
+
+  useEffect(() => {
+    if (!profileUserId) return;
+    const updated = data.users.find((user) => user.id === profileUserId);
+    if (updated) {
+      setProfileUser(updated);
+    }
+  }, [data.users, profileUserId]);
+
   const pageCount = Math.ceil(data.total_users / params.perPage);
 
   const { table } = useDataTable({
@@ -44,9 +71,16 @@ export function UsersTable() {
   });
 
   return (
-    <DataTable table={table}>
-      <DataTableToolbar table={table} />
-    </DataTable>
+    <>
+      <DataTable table={table}>
+        <DataTableToolbar table={table} />
+      </DataTable>
+      <UserProfileModal
+        user={profileUser}
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+      />
+    </>
   );
 }
 
