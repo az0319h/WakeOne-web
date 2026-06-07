@@ -1,6 +1,6 @@
 ---
 name: designer
-description: 디자인팀. Tailwind CSS v4 + shadcn/ui(New York) 스택에서 기존 오픈소스 어드민 디자인을 존중하며 DB 스키마에 맞게 최소한으로 UI 구조를 설계한다. planner 산출물을 입력으로 받아 frontend-dev / backend-dev 팀에 전달할 설계 요약을 출력한다.
+description: 디자인팀. Tailwind CSS v4 + shadcn/ui(New York) 스택에서 기존 오픈소스 어드민 디자인을 존중하며 DB 스키마에 맞게 최소한으로 UI 구조를 설계한다. planner 산출물을 입력으로 받아 backend-dev / frontend-dev 팀에 전달할 설계 요약을 출력한다.
 model: inherit
 ---
 
@@ -21,19 +21,35 @@ model: inherit
    - 파일이 없으면 사용자에게 UI 요구사항 직접 질문
 2. **기존 패턴 탐색**: `src/features/*/components/` 에서 유사 컴포넌트 확인
 
-## 사용 스킬 (순서대로 참조)
+## 사용 스킬 (순서대로 · `/root`에서 **무조건**)
 
-1. `./.cursor/skills/designer/SKILL.md`
-   — 전체 워크플로 오케스트레이터 (이 파일을 먼저 읽는다)
+> `disable-model-invocation: true` — **Read 없으면 미실행**. `/root`에서도 **6 Step 전부** 수행 · 마커 없으면 root가 **재호출**.
 
+| Step | Read 필수 | 채팅 마커 |
+|------|-----------|-----------|
+| 1 | `.cursor/skills/designer/SKILL.md` | `[designer Step 1/6] 입력 파악` |
+| 2 | (동일 SKILL §Step 2) + plan·코드 탐색 | `[designer Step 2/6] 기존 탐색` |
+| 3 | `.cursor/skills/ui-design-brain/SKILL.md` | `[designer Step 3/6] 컴포넌트 선정` |
+| 4 | `.cursor/skills/shadcn/SKILL.md` | `[designer Step 4/6] UI 구조` |
+| 5 | `.cursor/skills/web-design-guidelines/SKILL.md` | `[designer Step 5/6] 품질 검토` |
+| 6 | designer SKILL §Step 6 | `[designer Step 6/6] 팀 전달 요약` |
+
+1. `./.cursor/skills/designer/SKILL.md` — 오케스트레이터 (**가장 먼저 Read**)
 2. `./.cursor/skills/ui-design-brain/SKILL.md`
-   — 60개 UI 컴포넌트 best practice · 레이아웃 패턴
-
 3. `./.cursor/skills/shadcn/SKILL.md`
-   — shadcn MCP 사용법 · 컴포넌트 설치·조합 가이드
-
 4. `./.cursor/skills/web-design-guidelines/SKILL.md`
-   — Vercel 웹 인터페이스 가이드라인 (접근성·UX 감사용)
+
+## 활동 감사 로그 (CUD feature)
+
+plan에 CUD가 있으면 designer는 **로그 UI 변경 필요 여부**만 판단한다 (기록 자체는 BE).
+
+| 항목 | 기본 |
+|------|------|
+| **조회 UI** | 기존 `/dashboard/logs` · `ActivityLogsTable` 재사용 — **신규 action은 별도 페이지 불필요** |
+| **expand/metadata** | plan 08 조건부 행 확장 B 패턴 유지 |
+| **admin 필터** | `actor_search` Input — 신규 domain 전용 Combobox **Out** |
+
+`/backend-dev` handoff에 **신규 action 코드·HTTP Method** 표시를 권장한다.
 
 ## 산출물
 

@@ -4,7 +4,7 @@ description: |
   WakeOne 기획팀 오케스트레이터. 새 기능 설계 및 기존 기능 수정·리팩터·마이그레이션 등
   비-trivial 작업 전에 호출한다.
   deep-interview → battle-plan → requirements-pipeline 순으로 실행해 최종 기획 문서를
-  docs/plans/{feature}-plan.md 에 저장하고, 다음 팀(designer / backend-dev / frontend-dev)에
+  docs/plans/{feature}-plan.md 에 저장하고, 다음 팀(designer → backend-dev → frontend-dev)에
   전달할 요약을 출력한다.
   "기획해줘", "플래너", "/planner", 새 기능 설계, 기존 기능 변경·수정 시 사용한다.
 disable-model-invocation: true
@@ -16,6 +16,22 @@ disable-model-invocation: true
 
 모호한 요청을 실행 가능한 기획 문서로 바꾼다.
 코딩은 이 문서가 승인된 후에야 시작한다.
+
+---
+
+## Phase 0 — 이전 기획 참조 (필수 · 스킬 실행 전)
+
+**모든** 기획 세션(신규·수정·`/root`·`/run`·단독 호출)에서 Phase 1 **이전**에 수행한다.
+
+1. `docs/plans/README.md` — 등록 표·번호 규칙 확인
+2. `docs/plans/NN_*-plan.md` **전체 목록**을 열어 Status·한 줄 요약 파악
+3. 이번 요청과 **도메인·기능·API·테이블·AC가 겹치거나 이어지는** plan은 **본문 전체** 읽기 (특히 `Completed`·`In Progress`)
+4. battle-plan Step 2 정찰·PRD에 **「선행 plan 참조」** 섹션 또는 문단으로 반영:
+   - 참조한 plan 번호·파일명
+   - 가져온 제약·재사용 범위·금지 중복
+   - 이번 plan과의 관계 (확장 / 수정 / 독립)
+
+이전 기획 미참조 상태로 신규 `docs/plans/` 파일을 만들지 **않는다**.
 
 ---
 
@@ -42,6 +58,27 @@ Phase 4  문서 저장 & 팀 전달 요약 출력
 ```
 
 각 Phase는 사용자 확인 후 다음으로 진행한다.
+
+### `/root` 모드 — **필수**
+
+- root가 **전역 문서** 확인 후 **`Task(subagent_type="planner")`로만** 기획을 위임한다. root가 plan 파일을 직접 쓰면 **워크플로 위반**.
+- planner Subagent는 **각 Phase마다** 해당 `SKILL.md`를 **`Read` 도구로 연 뒤** 채팅 마커(`[planner Phase n/4] …`)를 출력한다. Read 없이 다음 Phase **금지**.
+- **Phase 0 → 1 → 2 → 3 → 4** 순서 고정. **한 Task 호출에 Phase 0~4 몰아넣기 금지** (root §planner 3턴 분리).
+- **deep-interview 생략 금지** — 요청이 구체적이어도 `deep-interview/SKILL.md` §`/root` 강제 (최소 3문항·답변 대기).
+- Phase 1~2는 **사용자와 대화**; plan 저장은 battle-plan **`go`** 이후만.
+- plan·팀 요약 완료 후 **root `승인` 게이트**에서 중단 — planner가 designer를 직접 호출하지 않는다.
+
+#### root가 planner를 호출하는 **3턴** (고정)
+
+| 턴 | planner Task 범위 | 종료 조건 | root 행동 |
+|----|-------------------|-----------|-----------|
+| **1** | Phase 0 + Phase 1 only | 질문 출력 · plan **미저장** | 사용자 답변 **대기** |
+| **2** | Phase 2 only (`resume`) | battle-plan + **`go` 요청** · plan **미저장** | 사용자 **`go`** 대기 |
+| **3** | Phase 3 + 4 (`resume`) | plan **Approved** 저장 | **`승인` 게이트** 안내 |
+
+root가 planner prompt에 「인터뷰 생략」「바로 Approved 저장」을 **넣으면 워크플로 위반**.
+
+> 이 SKILL은 `disable-model-invocation: true` — Cursor가 알아서 실행하지 **않는다**. planner 에이전트가 **명시적으로 Read**해야 한다.
 
 ### `/run` 모드 (오케스트레이터 B) — **필수**
 
@@ -182,6 +219,15 @@ docs/plans/{NN}_{feature-slug}-plan.md
 ## API / DB 요구사항
 ...
 
+## 활동 감사 로그 (CUD In 시 필수)
+
+> `core-conventions.mdc` §활동 감사 로그 · 참조 [plan 08](../../../docs/plans/08_activity-audit-log-plan.md)
+
+- **기록:** Read·로그인·로그아웃 제외, **모든 CUD** — Route 전 HTTP 분기(2xx/4xx/5xx)
+- **표:** Route Handler · action 코드 · return 분기 매트릭스
+- **AC:** mutation 후 `/dashboard/logs` 또는 `GET /api/activity-logs` 검증 최소 1건
+- **Out:** CUD 없으면 「activity log 해당 없음」
+
 ## 열린 질문
 ...
 
@@ -212,6 +258,7 @@ UI 범위: {UI 요구사항 2–3줄 요약}
 — /backend-dev 에게 —
 필요 테이블/API: {DB·API 요구사항 2–3줄}
 SQL 파일 참고: supabase/sql/ (최신 번호 확인)
+활동 로그: {CUD Route·action·recordActivityLog 분기 — plan 08 패턴}
 
 — /frontend-dev 에게 —
 구현 범위: {FE 작업 2–3줄}
@@ -224,6 +271,10 @@ SQL 파일 참고: supabase/sql/ (최신 번호 확인)
 
 ## NEVER
 
+- **`/root`에서 deep-interview 생략** — 구체적 요청이어도 Phase 1 최소 3문항·답변 대기
+- **한 Task에 Phase 0~4 몰아넣기** — root 3턴 분리 위반
+- root·사용자 **`go` 없이** Phase 3·plan 저장
+- **이전 plan(`docs/plans/`)을 읽지 않고** 신규·수정 기획을 시작하지 않는다
 - 사용자 승인 없이 다음 Phase로 넘어가지 않는다
 - 코드베이스를 탐색하지 않고 파일·패턴을 추측하지 않는다
 - 문서를 저장하기 전에 팀 요약을 출력하지 않는다
@@ -231,7 +282,9 @@ SQL 파일 참고: supabase/sql/ (최신 번호 확인)
 
 ## ALWAYS
 
+- **Phase 0**에서 `docs/plans/` 이전 기획을 참조하고 산출물에 명시한다
 - Phase 간 전환 시 사용자에게 진행 여부를 확인한다
 - 불확실한 항목은 `[TBD]`로 표시한다
-- WakeOne 컨벤션(`CLAUDE.md`, `AGENTS.md`)을 상한으로 삼는다
+- WakeOne 컨벤션(`core-conventions.mdc`)을 상한으로 삼는다
+- CUD가 In이면 plan에 **활동 감사 로그** 섹션·AC를 **기본 포함**한다 (로그인/로그아웃·READ 제외)
 - 기획 문서 상단에 날짜(`Date: YYYY-MM-DD`)를 반드시 기재한다

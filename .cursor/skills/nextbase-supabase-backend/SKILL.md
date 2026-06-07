@@ -25,6 +25,7 @@ disable-model-invocation: true
 2. 컴포넌트는 `service.ts`만 호출하고 DB 직접 접근을 하지 않는다.
 3. Route Handler(`src/app/api`)는 API 경계로 유지하고 권한/검증/에러 변환을 담당한다.
 4. Supabase 서비스키는 서버 전용으로만 사용한다.
+5. **활동 감사 로그:** Read·로그인·로그아웃 제외, **모든 CUD Route**는 `recordActivityLog`로 **전 return 분기** 기록 (`core-conventions.mdc` §활동 감사 로그 · plan 08).
 
 ## SQL migration policy
 
@@ -40,4 +41,5 @@ disable-model-invocation: true
 1. 추가된 SQL 파일 목록
 2. 변경된 Route Handler 목록
 3. 변경된 `service.ts` 함수 목록
-4. 필요한 환경변수/Edge Function 요구사항
+4. **activity log:** 신규·수정 mutation Route의 `recordActivityLog` return 매트릭스
+5. 필요한 환경변수/Edge Function 요구사항

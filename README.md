@@ -74,7 +74,7 @@ docs/
 
 ## 에이전트 워크플로우
 
-- 전체 실행(`/run`): `planner -> designer -> frontend-dev -> backend-dev -> verifier`
+- 전체 실행(`/run`·`/root`): `planner -> designer -> backend-dev -> frontend-dev -> verifier`
 - 직접 호출(별도 `/run` 불필요): `@.cursor/agents/{agent}.md`
 - 커밋/PR 전용: `@.cursor/agents/commit-pr.md`
   - 미리보기 후, 사용자 응답이 정확히 `승인`일 때만 원격 반영

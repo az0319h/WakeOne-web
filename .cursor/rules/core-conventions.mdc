@@ -94,6 +94,51 @@ const updateMutation = useMutation({
 - **신규/수정 feature**에 CUD UI가 있으면 `mutations.ts` 생성·연동까지가 작업 완료 조건이다 (API Route만 추가하고 뮤테이션 생략 **금지**).
 - RSC 전용 화면(예: 세션 프로필)도 CUD가 있으면 `queries.ts` + `mutations.ts`로 통일하고, `router.refresh()` 단독 갱신 **비권장**.
 
+## 활동 감사 로그 (Activity Audit Log · 전역 필수)
+
+프로젝트에서 **Read를 제외한 모든 CUD(생성·수정·삭제)** 는 `activity_logs`에 기록되어야 한다.  
+**참조 구현:** [plan 08](../../docs/plans/08_activity-audit-log-plan.md) · `src/features/activity-logs/api/log.server.ts`
+
+### 기록 범위
+
+| 구분 | 기록 | 비고 |
+|------|------|------|
+| **CREATE** | ✅ | POST 등 신규 생성 |
+| **UPDATE** | ✅ | PUT/PATCH 등 수정 |
+| **DELETE** | ✅ | DELETE·비활성화 등 |
+| **READ** | ❌ | GET·RSC·prefetch·페이지 조회·React Query fetch **전부 Out** |
+| **로그인** | ❌ | `signInWithPassword`·Supabase Auth 세션 생성 **Out** |
+| **로그아웃** | ❌ | `signOut`·세션 종료 **Out** |
+
+### HTTP 결과
+
+- mutation Route Handler의 **모든 응답 분기(2xx/4xx/5xx)** 에 1건 append (성공·실패·권한 거부 포함).
+- Handler 진입 시 `requestId = crypto.randomUUID()` 1회 → 각 `return` 직전 `recordActivityLog` → 응답 `x-request-id` 헤더.
+
+### 구현 위치 (서버 전용)
+
+| 항목 | 규칙 |
+|------|------|
+| **INSERT** | `recordActivityLog()` + `getServiceRoleClient()` — **Route Handler·Server Action 내부만** |
+| **클라이언트** | `activity_logs` 직접 INSERT·`recordActivityLog` import **금지** |
+| **FE CUD 경로** | `mutations.ts` → `service.ts` → **`/api/*` Route** — Supabase 클라이언트 직접 mutation **금지** (로그 누락 방지) |
+| **action 코드** | `{domain}.{verb}` — 신규 mutation마다 `ActivityAction` 타입에 추가 |
+| **metadata** | 비민감 allowlist만 — password·token·임시비밀번호 **절대 금지** |
+| **실패 시** | log insert 실패해도 **mutation 응답은 변경하지 않음** (catch + server log) |
+
+### 조회 (참고)
+
+- user: `actor_user_id = me` **OR** `target_user_id = me`
+- admin: 전체 · UI `/dashboard/logs`
+- 로그 수정·삭제 UI/API **금지** (append-only)
+
+### 신규·수정 feature 완료 조건 (CUD 포함 시)
+
+- [ ] plan에 **기록 대상 Route·action·AC** 명시 (planner)
+- [ ] Route Handler **전 return 분기** `recordActivityLog` 연동 (backend-dev)
+- [ ] FE는 API Route 경유 CUD만 사용 (frontend-dev)
+- [ ] `/dashboard/logs`에서 해당 action 행 확인 AC 또는 API 검증 (verifier)
+
 ## 컴포넌트 컨벤션 (필수)
 
 | 항목 | 규칙 |
@@ -132,3 +177,4 @@ const updateMutation = useMutation({
 | `docs/themes.md` | OKLCH 테마, 신규 테마 추가 |
 | `docs/nav-rbac.md` | 네비게이션 RBAC |
 | `docs/plans/{NN}_{feature}-plan.md` | 기획 문서 (번호·[README](../docs/plans/README.md)) |
+| `docs/plans/08_activity-audit-log-plan.md` | 활동 감사 로그 전역 정책·구현 참조 |

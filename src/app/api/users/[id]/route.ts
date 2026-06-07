@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminSession } from '@/features/auth/api/admin.server';
+import {
+  actorFromProfile,
+  buildErrorMetadata,
+  createRequestId,
+  fetchUserTargetLabel,
+  finishWithActivityLog,
+  jsonWithActivityLog,
+  resolveLoggingActor
+} from '@/features/activity-logs/api/log.server';
+import type { ActivityAction } from '@/features/activity-logs/api/types';
 import { adminBanUser, adminSignOutGlobal, adminUnbanUser } from '@/lib/auth/admin-auth';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
@@ -30,30 +40,100 @@ const patchUserSchema = z.object({
   action: z.literal('reactivate')
 });
 
+async function logAdminAuthFailure(
+  requestId: string,
+  action: ActivityAction,
+  httpMethod: string,
+  httpPath: string,
+  targetUserId: string | null,
+  targetLabel: string,
+  response: NextResponse
+) {
+  const status = response.status;
+  const actor = await resolveLoggingActor(status);
+  return finishWithActivityLog(
+    requestId,
+    {
+      ...actor,
+      action,
+      targetType: 'user',
+      targetUserId,
+      targetLabel,
+      httpMethod,
+      httpPath,
+      metadata: buildErrorMetadata(
+        status === 401 ? 'unauthenticated' : status === 403 ? 'forbidden' : 'internal_error'
+      )
+    },
+    response
+  );
+}
+
 export async function PUT(request: NextRequest, { params }: Params) {
+  const requestId = createRequestId();
+  const { id } = await params;
+  const httpPath = `/api/users/${id}`;
+
   const adminCheck = await requireAdminSession();
   if (!adminCheck.ok) {
-    return adminCheck.response;
+    const targetLabel = await fetchUserTargetLabel(id);
+    return logAdminAuthFailure(
+      requestId,
+      'user.update',
+      'PUT',
+      httpPath,
+      id,
+      targetLabel,
+      adminCheck.response
+    );
   }
 
+  const actor = actorFromProfile(adminCheck.profile);
+  const targetLabel = await fetchUserTargetLabel(id);
+
   try {
-    const { id } = await params;
     const body = await request.json();
 
     const disallowedFields = DISALLOWED_PUT_FIELDS.filter((field) => field in body);
     if (disallowedFields.length > 0) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata(
+            'forbidden_field',
+            '해당 필드는 관리자가 수정할 수 없습니다.',
+            { attempted_target: id }
+          )
+        },
         { success: false, message: '해당 필드는 관리자가 수정할 수 없습니다.' },
-        { status: 400 }
+        400
       );
     }
 
     const parsed = updateUserSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
+        },
         { success: false, message: '입력값이 올바르지 않습니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -62,9 +142,20 @@ export async function PUT(request: NextRequest, { params }: Params) {
     );
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '수정할 항목이 없습니다.')
+        },
         { success: false, message: '수정할 항목이 없습니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -77,20 +168,58 @@ export async function PUT(request: NextRequest, { params }: Params) {
       .maybeSingle();
 
     if (fetchError) {
-      return NextResponse.json({ success: false, message: fetchError.message }, { status: 400 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata('validation', fetchError.message)
+        },
+        { success: false, message: fetchError.message },
+        400
+      );
     }
 
     if (!target) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel: id,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata('not_found', '사용자를 찾을 수 없습니다.', {
+            attempted_target: id
+          })
+        },
         { success: false, message: '사용자를 찾을 수 없습니다.' },
-        { status: 404 }
+        404
       );
     }
 
     if (target.status === 'inactive') {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata('inactive_user', '비활성화된 사용자는 수정할 수 없습니다.')
+        },
         { success: false, message: '비활성화된 사용자는 수정할 수 없습니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -109,40 +238,119 @@ export async function PUT(request: NextRequest, { params }: Params) {
     });
 
     if (!mergedValidation.success) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '소속에 맞지 않는 조직 정보입니다.')
+        },
         { success: false, message: '소속에 맞지 않는 조직 정보입니다.' },
-        { status: 400 }
+        400
       );
     }
 
     const { error: profileError } = await supabase.from('profiles').update(updates).eq('user_id', id);
 
     if (profileError) {
-      return NextResponse.json({ success: false, message: profileError.message }, { status: 400 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.update',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PUT',
+          httpPath,
+          metadata: buildErrorMetadata('validation', profileError.message)
+        },
+        { success: false, message: profileError.message },
+        400
+      );
     }
 
-    return NextResponse.json({ success: true, message: 'User updated successfully' });
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.update',
+        targetType: 'user',
+        targetUserId: id,
+        targetLabel,
+        httpMethod: 'PUT',
+        httpPath,
+        metadata: { changed_fields: Object.keys(updates) }
+      },
+      { success: true, message: 'User updated successfully' },
+      200
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.update',
+        targetType: 'user',
+        targetUserId: id,
+        targetLabel,
+        httpMethod: 'PUT',
+        httpPath,
+        metadata: buildErrorMetadata('internal_error', message)
+      },
+      { success: false, message },
+      500
+    );
   }
 }
 
 export async function PATCH(request: NextRequest, { params }: Params) {
+  const requestId = createRequestId();
+  const { id } = await params;
+  const httpPath = `/api/users/${id}`;
+
   const adminCheck = await requireAdminSession();
   if (!adminCheck.ok) {
-    return adminCheck.response;
+    const targetLabel = await fetchUserTargetLabel(id);
+    return logAdminAuthFailure(
+      requestId,
+      'user.reactivate',
+      'PATCH',
+      httpPath,
+      id,
+      targetLabel,
+      adminCheck.response
+    );
   }
 
+  const actor = actorFromProfile(adminCheck.profile);
+  const targetLabel = await fetchUserTargetLabel(id);
+
   try {
-    const { id } = await params;
     const body = await request.json();
     const parsed = patchUserSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.reactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
+        },
         { success: false, message: '입력값이 올바르지 않습니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -155,20 +363,58 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .maybeSingle();
 
     if (fetchError) {
-      return NextResponse.json({ success: false, message: fetchError.message }, { status: 400 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.reactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('validation', fetchError.message)
+        },
+        { success: false, message: fetchError.message },
+        400
+      );
     }
 
     if (!target) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.reactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel: id,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('not_found', '사용자를 찾을 수 없습니다.', {
+            attempted_target: id
+          })
+        },
         { success: false, message: '사용자를 찾을 수 없습니다.' },
-        { status: 404 }
+        404
       );
     }
 
     if (target.status === 'active') {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.reactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '이미 활성화된 사용자입니다.')
+        },
         { success: false, message: '이미 활성화된 사용자입니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -181,7 +427,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .eq('user_id', id);
 
     if (profileError) {
-      return NextResponse.json({ success: false, message: profileError.message }, { status: 400 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.reactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('validation', profileError.message)
+        },
+        { success: false, message: profileError.message },
+        400
+      );
     }
 
     try {
@@ -197,29 +457,96 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
       const message =
         unbanError instanceof Error ? unbanError.message : '계정 활성화에 실패했습니다.';
-      return NextResponse.json({ success: false, message }, { status: 500 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.reactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('internal_error', message)
+        },
+        { success: false, message },
+        500
+      );
     }
 
-    return NextResponse.json({ success: true, message: '사용자가 활성화되었습니다.' });
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.reactivate',
+        targetType: 'user',
+        targetUserId: id,
+        targetLabel,
+        httpMethod: 'PATCH',
+        httpPath,
+        metadata: {}
+      },
+      { success: true, message: '사용자가 활성화되었습니다.' },
+      200
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.reactivate',
+        targetType: 'user',
+        targetUserId: id,
+        targetLabel,
+        httpMethod: 'PATCH',
+        httpPath,
+        metadata: buildErrorMetadata('internal_error', message)
+      },
+      { success: false, message },
+      500
+    );
   }
 }
 
 export async function DELETE(request: NextRequest, { params }: Params) {
+  const requestId = createRequestId();
+  const { id } = await params;
+  const httpPath = `/api/users/${id}`;
+
   const adminCheck = await requireAdminSession();
   if (!adminCheck.ok) {
-    return adminCheck.response;
+    const targetLabel = await fetchUserTargetLabel(id);
+    return logAdminAuthFailure(
+      requestId,
+      'user.deactivate',
+      'DELETE',
+      httpPath,
+      id,
+      targetLabel,
+      adminCheck.response
+    );
   }
 
-  try {
-    const { id } = await params;
+  const actor = actorFromProfile(adminCheck.profile);
+  const targetLabel = await fetchUserTargetLabel(id);
 
+  try {
     if (id === adminCheck.userId) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.deactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'DELETE',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '본인 계정은 비활성화할 수 없습니다.')
+        },
         { success: false, message: '본인 계정은 비활성화할 수 없습니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -232,20 +559,58 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       .maybeSingle();
 
     if (fetchError) {
-      return NextResponse.json({ success: false, message: fetchError.message }, { status: 400 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.deactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'DELETE',
+          httpPath,
+          metadata: buildErrorMetadata('validation', fetchError.message)
+        },
+        { success: false, message: fetchError.message },
+        400
+      );
     }
 
     if (!target) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.deactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel: id,
+          httpMethod: 'DELETE',
+          httpPath,
+          metadata: buildErrorMetadata('not_found', '사용자를 찾을 수 없습니다.', {
+            attempted_target: id
+          })
+        },
         { success: false, message: '사용자를 찾을 수 없습니다.' },
-        { status: 404 }
+        404
       );
     }
 
     if (target.status === 'inactive') {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.deactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'DELETE',
+          httpPath,
+          metadata: buildErrorMetadata('inactive_user', '이미 비활성화된 사용자입니다.')
+        },
         { success: false, message: '이미 비활성화된 사용자입니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -258,15 +623,57 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       .eq('user_id', id);
 
     if (profileError) {
-      return NextResponse.json({ success: false, message: profileError.message }, { status: 400 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.deactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'DELETE',
+          httpPath,
+          metadata: buildErrorMetadata('validation', profileError.message)
+        },
+        { success: false, message: profileError.message },
+        400
+      );
     }
 
     await adminSignOutGlobal(id);
     await adminBanUser(id);
 
-    return NextResponse.json({ success: true, message: '사용자가 비활성화되었습니다.' });
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.deactivate',
+        targetType: 'user',
+        targetUserId: id,
+        targetLabel,
+        httpMethod: 'DELETE',
+        httpPath,
+        metadata: {}
+      },
+      { success: true, message: '사용자가 비활성화되었습니다.' },
+      200
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.deactivate',
+        targetType: 'user',
+        targetUserId: id,
+        targetLabel,
+        httpMethod: 'DELETE',
+        httpPath,
+        metadata: buildErrorMetadata('internal_error', message)
+      },
+      { success: false, message },
+      500
+    );
   }
 }

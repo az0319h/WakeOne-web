@@ -5,7 +5,6 @@ import type { AuthProfile } from '@/features/auth/api/types';
 import { getAffiliationLabel } from '@/features/users/constants/organization';
 import { ProfileAvatar, ReadOnlyField } from './profile-display';
 import { ProfileForm } from './profile-form';
-import { ProfileSecuritySection } from './profile-security-section';
 
 interface ProfilePageContentProps {
   profile: AuthProfile;
@@ -63,15 +62,6 @@ export function ProfilePageContent({ profile }: ProfilePageContentProps) {
         description='이름·연락처·못 먹는 음식을 수정할 수 있습니다. 이메일은 변경할 수 없습니다.'
       >
         <ProfileForm profile={profile} />
-      </ProfileSection>
-
-      <Separator />
-
-      <ProfileSection
-        title='보안'
-        description='비밀번호 변경 및 로그아웃을 관리합니다.'
-      >
-        <ProfileSecuritySection />
       </ProfileSection>
     </div>
   );

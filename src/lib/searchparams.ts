@@ -16,7 +16,10 @@ export const searchParams = {
   organization: parseAsString,
   department: parseAsString,
   org_role: parseAsString,
-  sort: parseAsString
+  sort: parseAsString,
+  actor_search: parseAsString,
+  action: parseAsString,
+  search: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')

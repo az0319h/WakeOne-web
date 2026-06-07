@@ -48,6 +48,7 @@
 | 05 | [05_profile-completion-plan.md](./05_profile-completion-plan.md) | **Completed** · 프로필 조직 cascade·권한 분리 |
 | 06 | [06_users-profile-modal-plan.md](./06_users-profile-modal-plan.md) | **Completed** · Users 아바타 컬럼·프로필 조회 Dialog |
 | 07 | [07_auth-route-guard-plan.md](./07_auth-route-guard-plan.md) | **Completed** · dashboard/API 인증·인가 defense in depth |
+| 08 | [08_activity-audit-log-plan.md](./08_activity-audit-log-plan.md) | **Approved** · CUD activity log · `/dashboard/logs` |
 
 ## 에이전트 참조
 

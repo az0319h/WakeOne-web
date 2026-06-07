@@ -1,5 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { z } from 'zod';
+import {
+  actorFromProfile,
+  buildErrorMetadata,
+  createRequestId,
+  finishWithActivityLog,
+  formatActorDisplayName,
+  jsonWithActivityLog,
+  resolveLoggingActor
+} from '@/features/activity-logs/api/log.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import { createClient } from '@/lib/supabase/server';
 
@@ -22,29 +31,85 @@ const patchProfileSchema = z.object({
   food_restrictions: z.string().max(200).nullable().optional()
 });
 
+function profileTargetLabel(profile: {
+  email: string;
+  first_name: string;
+  last_name: string;
+}): string {
+  const name = formatActorDisplayName(profile);
+  return name ? `${name} (${profile.email})` : profile.email;
+}
+
 export async function PATCH(request: NextRequest) {
+  const requestId = createRequestId();
+  const httpPath = '/api/profile';
+
   try {
     const session = await requireSession();
     if (!session.ok) {
-      return session.response;
+      const status = session.response.status;
+      const actor = await resolveLoggingActor(status);
+      return finishWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'profile.update',
+          targetType: 'profile',
+          targetUserId: actor.actorUserId,
+          targetLabel: actor.actorEmail,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata(
+            status === 401 ? 'unauthenticated' : status === 403 ? 'forbidden' : 'internal_error'
+          )
+        },
+        session.response
+      );
     }
+
+    const actor = actorFromProfile(session.profile);
+    const targetLabel = profileTargetLabel(session.profile);
 
     const body = await request.json();
 
     const forbiddenFields = ADMIN_ONLY_PATCH_FIELDS.filter((field) => field in body);
     if (forbiddenFields.length > 0) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'profile.update',
+          targetType: 'profile',
+          targetUserId: session.userId,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('forbidden_field', '해당 필드는 수정할 수 없습니다.', {
+            changed_fields: forbiddenFields
+          })
+        },
         { success: false, message: '해당 필드는 수정할 수 없습니다.' },
-        { status: 403 }
+        403
       );
     }
 
     const parsed = patchProfileSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'profile.update',
+          targetType: 'profile',
+          targetUserId: session.userId,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
+        },
         { success: false, message: '입력값이 올바르지 않습니다.' },
-        { status: 400 }
+        400
       );
     }
 
@@ -64,16 +129,63 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'profile.update',
+          targetType: 'profile',
+          targetUserId: session.userId,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('validation', error.message)
+        },
+        { success: false, message: error.message },
+        400
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: '프로필이 저장되었습니다.',
-      profile: data
-    });
+    const changedFields = ['first_name', 'last_name', 'phone', 'food_restrictions'].filter(
+      (field) => field in body
+    );
+
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'profile.update',
+        targetType: 'profile',
+        targetUserId: session.userId,
+        targetLabel,
+        httpMethod: 'PATCH',
+        httpPath,
+        metadata: changedFields.length > 0 ? { changed_fields: changedFields } : {}
+      },
+      {
+        success: true,
+        message: '프로필이 저장되었습니다.',
+        profile: data
+      },
+      200
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    const actor = await resolveLoggingActor(500);
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'profile.update',
+        targetType: 'profile',
+        targetUserId: actor.actorUserId,
+        targetLabel: actor.actorEmail,
+        httpMethod: 'PATCH',
+        httpPath,
+        metadata: buildErrorMetadata('internal_error', message)
+      },
+      { success: false, message },
+      500
+    );
   }
 }

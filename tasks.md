@@ -1,30 +1,11 @@
-# Next Session Tasks
+== 구현해야 하는 사항 ==
 
-작성일: 2026-06-04 · 갱신: 2026-06-05
+1. 로그 기록 전체 남기기
+2. 카드 남은 잔액 확인 기능
+3. 이번달 생일자 한달동안 축하 폭죽 구현 대시보드
+4. 간식 신청하기(인당 한달에 1개의 간식 신청 가능 투표를 통해서 20만원을 맞춤 쿠팡 주소를 가지고 오면 자동으로 이미지로드 및 나중에 투표가 끝나고 관지가가 확정을 하면 연결된 api로 자동으로 장바구니 담기)
+5. 택시 관리 대장 이동
 
-**plan 03** ([03_user-lifecycle-profile-plan.md](./docs/plans/03_user-lifecycle-profile-plan.md)) **Completed** — tsc · lint:strict · build · Playwright AC #1~#9(Realtime AC #4 포함) 통과. E2E 전 `node scripts/e2e-plan03-prep.cjs` 실행.
+사용자 비활성화도 완전히 삭제되는 게 아니니 이거는 patch아니야?
 
----
-
-## 완료 (최근)
-
-| 항목 | 비고 |
-|------|------|
-| **프로필 페이지 완성** | [05_profile-completion-plan.md](./docs/plans/05_profile-completion-plan.md) **Completed** · Playwright AC #1~#11 · build ✅ |
-
-## 다음 후보 (미기획)
-
-| 항목 | 비고 |
-|------|------|
-| 첫 로그인 비밀번호 **강제** 변경 | 별도 plan |
-| Playwright AC 자동화 | plan 03 — `scripts/e2e-plan03-template.js` · `e2e-plan03-prep.cjs` |
-
----
-
-## 메모
-
-- Vercel Production `SUPABASE_SERVICE_ROLE_KEY` 필수 (초대·비활성화 admin API).
-- PR #8: `feat/user-invite-profiles` — plan 02 Completed.
-- plan 03: `profiles.status`, 소프트 딜리트, 프로필 Security Sheet, `lower(email)` UNIQUE.
-
-
+그리고 우리 프로젝트에서 이루어지는 모든 행동 CRUD중 리드를 제외한 모든 기록이 남아야해 로그아웃 로그인부터 말이야 전역 규칙 즉 기획 에이전트부터 전역룰 그리고 서버 개발 프론트개발 에이전트 하물며 전체를 확인하는 에이전트도 전부 앞으로의 구현 사항에서 구현하는 모든 부분에 로그를 남길 수 있게 설계되어야 한다. 또 사용자 프로필 페이지에 생일도 들어갈 수 있게끔 하기 관리자도 각 사용자의 생일 수정이 가능하고 관리자도 각 사용자에 대한 수정이 가능해야 함.
