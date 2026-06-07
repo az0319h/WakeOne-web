@@ -46,6 +46,9 @@ What's the definition of done?
 What's explicitly OUT of scope?
 -> [Things we're NOT doing, even if related]
 
+Activity audit log (WakeOne CUD default):
+-> If CUD In: all mutation Routes get recordActivityLog on every return (2xx/4xx/5xx). READ, login, logout Out. See core-conventions.mdc §활동 감사 로그.
+
 Any ambiguity I should clarify before planning?
 ```
 

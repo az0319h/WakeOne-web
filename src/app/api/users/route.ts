@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminSession } from '@/features/auth/api/admin.server';
+import {
+  actorFromProfile,
+  buildErrorMetadata,
+  createRequestId,
+  finishWithActivityLog,
+  jsonWithActivityLog,
+  resolveLoggingActor
+} from '@/features/activity-logs/api/log.server';
 import { createClient } from '@/lib/supabase/server';
 import { inviteUserWithTemporaryPassword } from '@/features/users/api/invite.server';
 import type { User } from '@/features/users/api/types';
@@ -133,39 +141,98 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = createRequestId();
+  const httpPath = '/api/users';
+
   const adminCheck = await requireAdminSession();
   if (!adminCheck.ok) {
-    return adminCheck.response;
+    const status = adminCheck.response.status;
+    const actor = await resolveLoggingActor(status);
+    return finishWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.invite',
+        targetType: 'user',
+        targetUserId: null,
+        targetLabel: 'unknown',
+        httpMethod: 'POST',
+        httpPath,
+        metadata: buildErrorMetadata(
+          status === 401 ? 'unauthenticated' : status === 403 ? 'forbidden' : 'internal_error'
+        )
+      },
+      adminCheck.response
+    );
   }
+
+  const actor = actorFromProfile(adminCheck.profile);
+  let attemptedEmail = 'unknown';
 
   try {
     const body = await request.json();
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    attemptedEmail = email || 'unknown';
 
     if (!email) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.invite',
+          targetType: 'user',
+          targetUserId: null,
+          targetLabel: 'unknown',
+          httpMethod: 'POST',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '이메일을 입력해 주세요.')
+        },
         { success: false, message: '이메일을 입력해 주세요.' },
-        { status: 400 }
+        400
       );
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.invite',
+          targetType: 'user',
+          targetUserId: null,
+          targetLabel: email,
+          httpMethod: 'POST',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '올바른 이메일 주소를 입력해 주세요.', {
+            attempted_target: email
+          })
+        },
         { success: false, message: '올바른 이메일 주소를 입력해 주세요.' },
-        { status: 400 }
+        400
       );
     }
 
     const { userId } = await inviteUserWithTemporaryPassword(email);
 
-    return NextResponse.json(
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.invite',
+        targetType: 'user',
+        targetUserId: userId,
+        targetLabel: email,
+        httpMethod: 'POST',
+        httpPath,
+        metadata: {}
+      },
       {
         success: true,
         message: '초대 메일을 발송했습니다. 임시 비밀번호가 포함되어 있습니다.',
         user_id: userId
       },
-      { status: 201 }
+      201
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
@@ -173,9 +240,25 @@ export async function POST(request: NextRequest) {
       message === '이미 등록된 이메일입니다.' ||
       message.includes('이미 등록') ||
       message.includes('duplicate');
-    return NextResponse.json(
+
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.invite',
+        targetType: 'user',
+        targetUserId: null,
+        targetLabel: attemptedEmail,
+        httpMethod: 'POST',
+        httpPath,
+        metadata: buildErrorMetadata(
+          isClientError ? 'duplicate_email' : 'internal_error',
+          message,
+          { attempted_target: attemptedEmail }
+        )
+      },
       { success: false, message },
-      { status: isClientError ? 400 : 500 }
+      isClientError ? 400 : 500
     );
   }
 }

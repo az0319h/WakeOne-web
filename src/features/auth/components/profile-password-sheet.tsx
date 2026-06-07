@@ -22,9 +22,20 @@ import {
   type ChangePasswordFormValues
 } from '@/features/auth/schemas/password';
 
-export function ProfilePasswordSheet() {
+interface ProfilePasswordSheetProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function ProfilePasswordSheet({
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange
+}: ProfilePasswordSheetProps = {}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+  const isControlled = controlledOpen !== undefined;
   const [isPending, setIsPending] = useState(false);
 
   const form = useAppForm({
@@ -60,12 +71,14 @@ export function ProfilePasswordSheet() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant='outline' type='button'>
-          <Icons.lock className='mr-2 h-4 w-4' />
-          비밀번호 변경
-        </Button>
-      </SheetTrigger>
+      {!isControlled ? (
+        <SheetTrigger asChild>
+          <Button variant='outline' type='button'>
+            <Icons.lock className='mr-2 h-4 w-4' />
+            비밀번호 변경
+          </Button>
+        </SheetTrigger>
+      ) : null}
       <SheetContent className='flex flex-col'>
         <SheetHeader>
           <SheetTitle>비밀번호 변경</SheetTitle>

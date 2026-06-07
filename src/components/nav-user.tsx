@@ -17,7 +17,9 @@ import {
   SidebarMenuItem,
   useSidebar
 } from '@/components/ui/sidebar';
+import Link from 'next/link';
 import { signOut } from '@/features/auth/api/service';
+import { ProfilePasswordSheet } from '@/features/auth/components/profile-password-sheet';
 import type { AuthProfile } from '@/features/auth/api/types';
 import { getProfileDisplayName } from '@/features/auth/lib/display-name';
 
@@ -53,6 +55,7 @@ function NavUserAvatar({
 
 export function NavUser({ profile }: NavUserProps) {
   const { isMobile } = useSidebar();
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const displayName = getProfileDisplayName(profile);
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -94,12 +97,35 @@ export function NavUser({ profile }: NavUserProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href='/dashboard/profile'>
+                <Icons.user className='mr-2 h-4 w-4' />
+                프로필
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href='/dashboard/notifications'>
+                <Icons.notification className='mr-2 h-4 w-4' />
+                알림
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setPasswordOpen(true);
+              }}
+            >
+              <Icons.lock className='mr-2 h-4 w-4' />
+              비밀번호 변경
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => void handleSignOut()}>
               <Icons.logout className='mr-2 h-4 w-4' />
               로그아웃
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <ProfilePasswordSheet open={passwordOpen} onOpenChange={setPasswordOpen} />
       </SidebarMenuItem>
     </SidebarMenu>
   );

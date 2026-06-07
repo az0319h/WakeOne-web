@@ -146,6 +146,12 @@ export const navGroups: NavGroup[] = [
             shortcut: ['p', 'r']
           },
           {
+            title: '활동 로그',
+            url: '/dashboard/logs',
+            icon: 'forms',
+            shortcut: ['l', 'g']
+          },
+          {
             title: 'Notifications',
             url: '/dashboard/notifications',
             icon: 'notification',

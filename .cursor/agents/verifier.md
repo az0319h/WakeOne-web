@@ -32,18 +32,29 @@ model: inherit
 
 | 실패 원인 | 다음 조치 | 이후 |
 |----------|----------|------|
-| AC 모호·누락·기대와 화면 불일치(기획) | **`/planner`** — plan 수정 | planner 완료 후 **1단계부터** 재검증 |
+| AC 모호·누락·기대와 화면 불일치(기획) | **`/planner`** — plan 수정 | **`/root`:** planner 후 **`승인` 게이트** → downstream 재실행 후 **1단계부터** 재검증. **`/run`:** 사용자 지시 후 재개 |
 | 구현·미들웨어·Auth·RLS·UI 버그 | `/frontend-dev` 또는 `/backend-dev` | 수정 후 **1단계부터** 재검증 |
 
 `/run` 완료 보고 시 **2단계 skip 금지** (`E2E_SKIP_BROWSER` 사용 불가).
 
-## 사용 스킬
+## 사용 스킬 (6단계 = 스킬 순서 · `/root`에서 **무조건**)
 
-1. `./.cursor/skills/verifier/SKILL.md` — 오케스트레이터 (먼저 읽기)
-2. `./.cursor/skills/playwright-mcp-verifier/SKILL.md` — 2단계 브라우저 AC
+> `disable-model-invocation: true` — **Step 1~6·마커 전부** 필수. Playwright MCP skip·build만 실행 시 **완료 무효** → root 재호출.
+
+| Step | Read / 실행 | 채팅 마커 |
+|------|-------------|-----------|
+| 1 | `verifier/SKILL.md` §1 · `npm run dev` | `[verifier Step 1/6] dev` |
+| 2 | `playwright-mcp-verifier/SKILL.md` · **Playwright MCP** | `[verifier Step 2/6] Playwright AC` |
+| 3 | `verifier/SKILL.md` · `npx tsc --noEmit` | `[verifier Step 3/6] tsc` |
+| 4 | `npm run lint:strict` | `[verifier Step 4/6] lint` |
+| 5 | `react-doctor/SKILL.md` | `[verifier Step 5/6] react-doctor` |
+| 6 | `grinding-until-pass/SKILL.md` · `npm run build` | `[verifier Step 6/6] build` |
+
+1. `./.cursor/skills/verifier/SKILL.md` — **가장 먼저 Read**
+2. `./.cursor/skills/playwright-mcp-verifier/SKILL.md` — 2단계 **skip 금지**
 3. `./.cursor/skills/react-doctor/SKILL.md`
 4. `./.cursor/skills/grinding-until-pass/SKILL.md`
-5. `./.cursor/skills/next-best-practices/SKILL.md`
+5. `./.cursor/skills/next-best-practices/SKILL.md` (빌드 실패 시 참고)
 
 ## MCP
 
@@ -56,6 +67,21 @@ model: inherit
 - **6단계**: `npm run build` exit 0
 
 위를 만족한 후에만 완료 보고.
+
+## 활동 감사 로그 검증 (CUD plan · 전역 필수)
+
+`core-conventions.mdc` §활동 감사 로그 · [plan 08](../../docs/plans/08_activity-audit-log-plan.md)
+
+plan에 **CUD In**이 있으면 아래를 **추가** 검증한다.
+
+| 검증 | 방법 |
+|------|------|
+| **기획 AC** | plan §기록 연동·logs 관련 AC — Playwright 또는 API |
+| **Route 연동** | 신규·수정 `src/app/api/**` mutation Route에 `recordActivityLog` grep — **없으면 backend-dev 재작업** |
+| **READ 미기록** | GET Route에 `recordActivityLog` **없어야** 함 |
+| **로그인/로그아웃** | auth `service.ts`에 `recordActivityLog` **없어야** 함 |
+
+완료 보고 AC 표에 **activity log 항목** pass/fail/skip(해당 없음)을 포함한다.
 
 ## 하지 않는 것
 

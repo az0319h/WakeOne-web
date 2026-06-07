@@ -10,6 +10,11 @@ disable-model-invocation: true
 
 # WakeOne Verifier
 
+## `/root` 모드
+
+- root는 **`Task(subagent_type="verifier")`로만** 호출. root가 tsc/build만 실행하면 **2단계 Playwright 우회**.
+- `verifier.md` §6단계 표 순서 · `playwright-mcp-verifier/SKILL.md` **Read 후** MCP 실행.
+
 ## 역할
 
 구현 완료 주장을 **브라우저(기획 AC) → 정적·빌드** 순으로 검증한다.
@@ -106,6 +111,16 @@ disable-model-invocation: true
 - `E2E_SKIP_BROWSER=1`은 **로컬 임시 디버그용**이며 `/run`·완료 보고에 사용하지 않는다
 
 ---
+
+## 활동 감사 로그 검증 (CUD plan)
+
+> `core-conventions.mdc` §활동 감사 로그 · plan 08
+
+plan에 CUD In이 있으면 2단계 전·후에:
+
+1. plan §기록 연동·logs AC 실행 (Playwright/API)
+2. 신규·수정 mutation `src/app/api/**`에 `recordActivityLog` grep — **누락 시 backend-dev**
+3. `src/features/auth/api/service.ts` 등 auth 경로에 `recordActivityLog` **없음** 확인
 
 ## Next.js + Supabase + TypeScript 체크 (3~6단계 통과 후)
 

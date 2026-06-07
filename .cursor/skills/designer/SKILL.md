@@ -34,6 +34,11 @@ disable-model-invocation: true
 
 ---
 
+## `/root` 모드
+
+- root는 **`Task(subagent_type="designer")`로만** 호출. root가 UI 설계를 직접 출력하면 **워크플로 위반**.
+- 각 Step 전 `designer.md` §스킬 표의 파일을 **`Read`** · `[designer Step n/6]` 마커 출력.
+
 ## 실행 흐름
 
 ```
