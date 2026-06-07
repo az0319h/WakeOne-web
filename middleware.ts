@@ -18,11 +18,6 @@ const INACTIVE_JSON = {
   message: '비활성화된 계정입니다.'
 } as const;
 
-const PASSWORD_REQUIRED_JSON = {
-  success: false,
-  message: '비밀번호 설정이 필요합니다.'
-} as const;
-
 function normalizeOrigin(origin: string): string {
   return origin.replace(/\/$/, '');
 }
@@ -54,16 +49,8 @@ function isAuthPath(pathname: string): boolean {
   return pathname === '/auth' || pathname.startsWith('/auth/');
 }
 
-function isSetPasswordPath(pathname: string): boolean {
-  return pathname === '/auth/set-password';
-}
-
 function isSignInPath(pathname: string): boolean {
   return pathname === '/auth/sign-in' || pathname.startsWith('/auth/sign-in/');
-}
-
-function needsPasswordSetup(profile: { password_set_at: string | null } | null): boolean {
-  return !!profile && profile.password_set_at === null;
 }
 
 function copyCookies(from: NextResponse, to: NextResponse) {
@@ -109,10 +96,6 @@ export async function middleware(request: NextRequest) {
       return jsonWithCookies(response, UNAUTHORIZED_JSON, 401);
     }
 
-    if (needsPasswordSetup(profile)) {
-      return jsonWithCookies(response, PASSWORD_REQUIRED_JSON, 403);
-    }
-
     return response;
   }
 
@@ -139,30 +122,6 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    const pendingPassword = needsPasswordSetup(profile);
-
-    if (isSetPasswordPath(pathname)) {
-      if (!pendingPassword) {
-        const dashboardUrl = request.nextUrl.clone();
-        dashboardUrl.pathname = '/dashboard/overview';
-        dashboardUrl.search = '';
-        const redirectResponse = NextResponse.redirect(dashboardUrl);
-        copyCookies(response, redirectResponse);
-        return redirectResponse;
-      }
-
-      return response;
-    }
-
-    if (pendingPassword) {
-      const setPasswordUrl = request.nextUrl.clone();
-      setPasswordUrl.pathname = '/auth/set-password';
-      setPasswordUrl.search = '';
-      const redirectResponse = NextResponse.redirect(setPasswordUrl);
-      copyCookies(response, redirectResponse);
-      return redirectResponse;
-    }
-
     if (isSignInPath(pathname)) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/dashboard/overview';
@@ -186,15 +145,6 @@ export async function middleware(request: NextRequest) {
       signInUrl.pathname = '/auth/sign-in';
       signInUrl.searchParams.set('redirectTo', pathname);
       const redirectResponse = NextResponse.redirect(signInUrl);
-      copyCookies(response, redirectResponse);
-      return redirectResponse;
-    }
-
-    if (needsPasswordSetup(profile)) {
-      const setPasswordUrl = request.nextUrl.clone();
-      setPasswordUrl.pathname = '/auth/set-password';
-      setPasswordUrl.search = '';
-      const redirectResponse = NextResponse.redirect(setPasswordUrl);
       copyCookies(response, redirectResponse);
       return redirectResponse;
     }
