@@ -1,5 +1,6 @@
 'use client';
 
+import { motion, useReducedMotion } from 'motion/react';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { ProfileAvatar } from '@/features/auth/components/profile-display';
@@ -23,6 +24,7 @@ export function BirthdayCelebrationSlide({
   month,
   className
 }: BirthdayCelebrationSlideProps) {
+  const prefersReducedMotion = useReducedMotion();
   const fullName = `${firstName} ${lastName}`.trim();
   const displayName = fullName || '이름 미설정';
   const birthdayLabel = formatBirthdayMonthDay(birthday);
@@ -43,17 +45,38 @@ export function BirthdayCelebrationSlide({
         {month}월 생일
       </Badge>
 
-      <div className='border-border/60 bg-muted/30 mx-auto mb-5 flex size-20 items-center justify-center rounded-full border-2 sm:size-24'>
-        <ProfileAvatar
-          profile={{
-            first_name: firstName,
-            last_name: lastName,
-            email: '',
-            avatar_url: avatarUrl
-          }}
-          className='size-14 sm:size-16'
-          fallbackClassName='bg-muted text-foreground text-lg font-semibold'
-        />
+      <div className='relative mx-auto mb-5 size-20 sm:size-24'>
+        {!prefersReducedMotion ? (
+          <motion.div
+            aria-hidden
+            className='absolute inset-0 rounded-full opacity-80'
+            style={{
+              background:
+                'conic-gradient(from 0deg, transparent 0deg, color-mix(in oklch, var(--primary) 55%, transparent) 100deg, transparent 200deg, color-mix(in oklch, var(--muted-foreground) 40%, transparent) 300deg, transparent 360deg)'
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+          />
+        ) : null}
+        <div
+          className={cn(
+            'flex items-center justify-center rounded-full bg-muted/30',
+            prefersReducedMotion
+              ? 'border-border/60 size-full border-2'
+              : 'bg-card absolute inset-[2px]'
+          )}
+        >
+          <ProfileAvatar
+            profile={{
+              first_name: firstName,
+              last_name: lastName,
+              email: '',
+              avatar_url: avatarUrl
+            }}
+            className='size-14 sm:size-16'
+            fallbackClassName='bg-muted text-foreground text-lg font-semibold'
+          />
+        </div>
       </div>
 
       <h3 className='text-foreground text-xl font-bold tracking-tight sm:text-2xl'>
