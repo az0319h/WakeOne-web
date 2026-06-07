@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   Carousel,
@@ -27,19 +27,28 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
   const { celebrants, month, year } = data;
   const showCarousel = celebrants.length > 1;
   const prefersReducedMotion = useReducedMotion();
+  const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(1);
   const [slideCount, setSlideCount] = useState(celebrants.length);
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
+    const canvas = confettiCanvasRef.current;
     const storageKey = getBirthdayConfettiStorageKey(year, month);
-    if (typeof window === 'undefined' || sessionStorage.getItem(storageKey)) {
+
+    if (!canvas || sessionStorage.getItem(storageKey)) {
       return;
     }
 
     sessionStorage.setItem(storageKey, '1');
-    fireBirthdayConfetti();
-  }, [month, year]);
+    const cleanup = fireBirthdayConfetti(canvas);
+
+    return cleanup;
+  }, [month, prefersReducedMotion, year]);
 
   useEffect(() => {
     if (!carouselApi) {
@@ -76,12 +85,13 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      <Card
-        data-slot='card'
-        className='from-primary/5 to-card dark:bg-card @container/card bg-gradient-to-t shadow-xs'
-        aria-label='이번 달 생일 축하'
-      >
-        <CardContent className='relative mx-auto max-w-2xl p-0'>
+      <Card className='relative overflow-hidden' aria-label='이번 달 생일 축하'>
+        <canvas
+          ref={confettiCanvasRef}
+          aria-hidden
+          className='pointer-events-none absolute inset-0 z-[1] size-full'
+        />
+        <CardContent className='relative z-[2] mx-auto max-w-2xl p-0'>
           {showCarousel ? (
             <div className='px-10 sm:px-14'>
               <Carousel
@@ -96,8 +106,8 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className='bg-card hover:bg-accent size-9' />
-                <CarouselNext className='bg-card hover:bg-accent size-9' />
+                <CarouselPrevious className='size-9' />
+                <CarouselNext className='size-9' />
               </Carousel>
 
               <div className='flex flex-col items-center gap-3 pb-6'>

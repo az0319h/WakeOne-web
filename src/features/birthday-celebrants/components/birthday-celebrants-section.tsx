@@ -8,5 +8,9 @@ export async function BirthdayCelebrantsSection() {
     return null;
   }
 
-  return <BirthdayCelebrantsBanner data={data} />;
+  return (
+    <div className='col-span-4 md:col-span-3'>
+      <BirthdayCelebrantsBanner data={data} />
+    </div>
+  );
 }

@@ -10,40 +10,44 @@ export function getBirthdayConfettiStorageKey(year: number, month: number) {
 }
 
 /**
- * Payment-success style side cannons + canvas-confetti fireworks burst.
+ * Card-scoped fireworks — renders only inside the provided canvas.
  * @see https://catdad.github.io/canvas-confetti/
  */
-export function fireBirthdayConfetti() {
-  const zIndex = 9999;
+export function fireBirthdayConfetti(canvas: HTMLCanvasElement): () => void {
+  const shoot = confetti.create(canvas, {
+    resize: true,
+    useWorker: false,
+    disableForReducedMotion: true
+  });
 
-  confetti({
+  let cancelled = false;
+
+  shoot({
     particleCount: 100,
     spread: 72,
     origin: { y: 0.58, x: 0.5 },
-    colors: CANNON_COLORS,
-    disableForReducedMotion: true,
-    zIndex
+    colors: CANNON_COLORS
   });
 
   const cannonEnd = Date.now() + 2200;
   const cannonFrame = () => {
-    confetti({
+    if (cancelled) {
+      return;
+    }
+
+    shoot({
       particleCount: 4,
       angle: 60,
       spread: 62,
       origin: { x: 0, y: 0.62 },
-      colors: CANNON_COLORS,
-      disableForReducedMotion: true,
-      zIndex
+      colors: CANNON_COLORS
     });
-    confetti({
+    shoot({
       particleCount: 4,
       angle: 120,
       spread: 62,
       origin: { x: 1, y: 0.62 },
-      colors: CANNON_COLORS,
-      disableForReducedMotion: true,
-      zIndex
+      colors: CANNON_COLORS
     });
 
     if (Date.now() < cannonEnd) {
@@ -59,12 +63,14 @@ export function fireBirthdayConfetti() {
     startVelocity: 28,
     spread: 360,
     ticks: 72,
-    zIndex,
-    disableForReducedMotion: true,
     colors: FIREWORK_COLORS
   };
 
   const interval = window.setInterval(() => {
+    if (cancelled) {
+      return;
+    }
+
     const timeLeft = animationEnd - Date.now();
 
     if (timeLeft <= 0) {
@@ -74,7 +80,7 @@ export function fireBirthdayConfetti() {
 
     const particleCount = Math.max(12, 45 * (timeLeft / duration));
 
-    confetti({
+    shoot({
       ...defaults,
       particleCount,
       origin: {
@@ -83,6 +89,12 @@ export function fireBirthdayConfetti() {
       }
     });
   }, 280);
+
+  return () => {
+    cancelled = true;
+    clearInterval(interval);
+    shoot.reset();
+  };
 }
 
 function randomInRange(min: number, max: number) {
