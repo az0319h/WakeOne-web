@@ -27,10 +27,6 @@ export default function OverViewLayout({
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
-        <Suspense fallback={null}>
-          <BirthdayCelebrantsSection />
-        </Suspense>
-
         <div className='flex items-center justify-between'>
           <h2 className='text-2xl font-bold tracking-tight'>Hi, Welcome back 👋</h2>
         </div>
@@ -118,6 +114,9 @@ export default function OverViewLayout({
           </Card>
         </div>
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7'>
+          <Suspense fallback={null}>
+            <BirthdayCelebrantsSection />
+          </Suspense>
           <div className='col-span-4'>{bar_stats}</div>
           <div className='col-span-4 md:col-span-3'>
             {/* sales arallel routes */}
