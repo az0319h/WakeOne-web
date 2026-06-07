@@ -39,3 +39,25 @@ export function formatBirthdayDisplay(
   return `${year}년 ${month}월 ${day}일`;
 }
 
+export function formatBirthdayMonthDay(
+  birthday: string | null | undefined
+): string | null {
+  if (!birthday?.trim()) {
+    return null;
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthday);
+  if (!match) {
+    return null;
+  }
+
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (!month || !day) {
+    return null;
+  }
+
+  return `${month}월 ${day}일`;
+}
+

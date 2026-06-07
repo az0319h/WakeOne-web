@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import PageContainer from '@/components/layout/page-container';
+import { BirthdayCelebrantsSection } from '@/features/birthday-celebrants/components/birthday-celebrants-section';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -25,6 +27,10 @@ export default function OverViewLayout({
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
+        <Suspense fallback={null}>
+          <BirthdayCelebrantsSection />
+        </Suspense>
+
         <div className='flex items-center justify-between'>
           <h2 className='text-2xl font-bold tracking-tight'>Hi, Welcome back 👋</h2>
         </div>
