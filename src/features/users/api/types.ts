@@ -26,6 +26,7 @@ export type User = {
   last_name: string;
   email: string;
   phone: string | null;
+  birthday: string | null;
   system_role: 'admin' | 'user';
   invite_status: 'pending' | 'accepted';
   status: ProfileStatus;
@@ -50,4 +51,5 @@ export type UserUpdatePayload = {
   rank?: string | null;
   job_title?: string | null;
   system_role?: 'admin' | 'user';
+  birthday?: string | null;
 };

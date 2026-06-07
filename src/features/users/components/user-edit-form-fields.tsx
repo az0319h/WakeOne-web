@@ -28,7 +28,8 @@ const AFFILIATION_SELECT_OPTIONS = [
 
 export function UserEditFormFields() {
   const form = useFormContext();
-  const { FormTextField, FormSelectField } = useFormFields<UserUpdateFormValues>();
+  const { FormTextField, FormSelectField, FormBirthdayField } =
+    useFormFields<UserUpdateFormValues>();
   const affiliation = useStore(form.store, (state) => state.values.affiliation);
   const activeAffiliation =
     affiliation === 'wake' || affiliation === 'sans' || affiliation === 'sans_foundry'
@@ -88,6 +89,7 @@ export function UserEditFormFields() {
         options={SYSTEM_ROLE_OPTIONS}
         placeholder='역할 선택'
       />
+      <FormBirthdayField name='birthday' label='생일' />
     </div>
   );
 }

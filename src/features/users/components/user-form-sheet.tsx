@@ -79,7 +79,8 @@ function UserEditForm({ user, onSuccess, onError, onPendingChange }: UserEditFor
       department: toFormOrgField(user.department),
       rank: toFormOrgField(user.rank),
       job_title: toFormOrgField(user.job_title),
-      system_role: user.system_role
+      system_role: user.system_role,
+      birthday: user.birthday ?? null
     } as UserUpdateFormValues,
     validators: {
       onSubmit: userUpdateSchema
@@ -96,7 +97,8 @@ function UserEditForm({ user, onSuccess, onError, onPendingChange }: UserEditFor
           department: toPayloadValue(value.department),
           rank: toPayloadValue(value.rank),
           job_title: toPayloadValue(value.job_title),
-          system_role: value.system_role
+          system_role: value.system_role,
+          birthday: value.birthday ?? null
         }
       });
     }
@@ -153,7 +155,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
           <SheetTitle>{isEdit ? '사용자 수정' : '사용자 초대'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? '아바타 URL·소속·부서·직급·직책·시스템 역할을 수정합니다.'
+              ? '아바타 URL·소속·부서·직급·직책·시스템 역할·생일을 수정합니다.'
               : '이메일만 입력하면 임시 비밀번호가 포함된 초대 메일이 발송됩니다. 수신자는 로그인 페이지에서 바로 로그인할 수 있습니다.'}
           </SheetDescription>
         </SheetHeader>
