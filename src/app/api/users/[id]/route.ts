@@ -17,6 +17,7 @@ import {
   validateOrganizationFields,
   type Affiliation
 } from '@/features/users/constants/organization';
+import { birthdaySchema, refineBirthday } from '@/lib/birthday';
 import { z } from 'zod';
 
 type Params = { params: Promise<{ id: string }> };
@@ -30,10 +31,12 @@ const updateUserSchema = z
     department: z.string().max(100).nullable().optional(),
     rank: z.string().max(50).nullable().optional(),
     job_title: z.string().max(50).nullable().optional(),
-    system_role: z.enum(['admin', 'user']).optional()
+    system_role: z.enum(['admin', 'user']).optional(),
+    birthday: birthdaySchema
   })
   .superRefine((data, ctx) => {
     validateOrganizationFields(data, ctx);
+    refineBirthday(data.birthday, ctx);
   });
 
 const patchUserSchema = z.object({

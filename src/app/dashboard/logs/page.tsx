@@ -35,7 +35,9 @@ export default async function ActivityLogsPage(props: PageProps) {
     <PageContainer
       pageTitle='활동 로그'
       pageDescription={
-        isAdmin ? '전체 사용자 활동' : '본인과 관련된 계정 변경 이력을 확인합니다.'
+        isAdmin
+          ? '웹사이트 전체 사용자의 활동 이력을 확인합니다.'
+          : '웹사이트에서 본인과 관련된 활동 이력을 확인합니다.'
       }
     >
       <Suspense fallback={<ActivityLogsTableSkeleton />}>

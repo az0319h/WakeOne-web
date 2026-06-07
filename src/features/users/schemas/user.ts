@@ -4,6 +4,7 @@ import {
   SELECT_NONE_VALUE,
   validateOrganizationFields
 } from '@/features/users/constants/organization';
+import { refineBirthday } from '@/lib/birthday';
 
 export const inviteUserSchema = z.object({
   email: z.string().email('올바른 이메일 주소를 입력해 주세요.')
@@ -23,9 +24,12 @@ export const userUpdateSchema = z
     job_title: z.union([z.string().max(50), z.literal(SELECT_NONE_VALUE)]).optional(),
     system_role: z.enum(['admin', 'user'], {
       message: '시스템 역할을 선택해 주세요.'
-    })
+    }),
+    birthday: z.string().nullable().optional()
   })
   .superRefine((data, ctx) => {
+    refineBirthday(data.birthday, ctx);
+
     if (data.avatar_url?.trim()) {
       const urlResult = z.string().url().max(2048).safeParse(data.avatar_url.trim());
       if (!urlResult.success) {

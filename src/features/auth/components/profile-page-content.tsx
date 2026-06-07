@@ -59,7 +59,7 @@ export function ProfilePageContent({ profile }: ProfilePageContentProps) {
 
       <ProfileSection
         title='계정 정보'
-        description='이름·연락처·못 먹는 음식을 수정할 수 있습니다. 이메일은 변경할 수 없습니다.'
+        description='이름·연락처·생일·못 먹는 음식을 수정할 수 있습니다. 이메일은 변경할 수 없습니다.'
       >
         <ProfileForm profile={profile} />
       </ProfileSection>

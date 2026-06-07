@@ -10,6 +10,7 @@ export type AuthProfile = {
   first_name: string;
   last_name: string;
   phone: string | null;
+  birthday: string | null;
   system_role: SystemRole;
   password_set_at: string | null;
   status: ProfileStatus;

@@ -12,6 +12,8 @@ import {
 import { ProfileAvatar, ReadOnlyField } from '@/features/auth/components/profile-display';
 import { useNavAccess } from '@/contexts/nav-access';
 import { cn } from '@/lib/utils';
+import { formatBirthdayDisplay } from '@/lib/format';
+import { formatPhoneDisplay } from '@/lib/phone';
 import { getAffiliationLabel } from '../constants/organization';
 import type { User } from '../api/types';
 import { UserFormSheet } from './user-form-sheet';
@@ -81,7 +83,11 @@ export function UserProfileModal({ user, open, onOpenChange }: UserProfileModalP
             <div className='grid gap-6 md:grid-cols-[1fr_220px]'>
               <div className='space-y-4'>
                 <ReadOnlyField label='이메일' value={user.email} />
-                <ReadOnlyField label='연락처' value={user.phone} />
+                <ReadOnlyField label='연락처' value={formatPhoneDisplay(user.phone)} />
+                <ReadOnlyField
+                  label='생일'
+                  value={formatBirthdayDisplay(user.birthday)}
+                />
                 <ReadOnlyField
                   label='소속'
                   value={getAffiliationLabel(user.affiliation)}

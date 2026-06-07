@@ -13,7 +13,7 @@ const INACTIVE_MESSAGE = '비활성화된 계정입니다.';
 const PASSWORD_REQUIRED_MESSAGE = '비밀번호 설정이 필요합니다.';
 
 const PROFILE_COLUMNS =
-  'user_id, email, first_name, last_name, phone, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
+  'user_id, email, first_name, last_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
 
 export async function getSessionUser() {
   const supabase = await createClient();

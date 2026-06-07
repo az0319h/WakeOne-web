@@ -10,10 +10,19 @@ import {
   resolveLoggingActor
 } from '@/features/activity-logs/api/log.server';
 import { requireSession } from '@/features/auth/api/session.server';
+import { birthdaySchema, refineBirthday } from '@/lib/birthday';
 import { createClient } from '@/lib/supabase/server';
 
 const PROFILE_SELECT_COLUMNS =
-  'user_id, email, first_name, last_name, phone, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
+  'user_id, email, first_name, last_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
+
+const PROFILE_PATCH_FIELDS = [
+  'first_name',
+  'last_name',
+  'phone',
+  'food_restrictions',
+  'birthday'
+] as const;
 
 const ADMIN_ONLY_PATCH_FIELDS = [
   'avatar_url',
@@ -24,12 +33,21 @@ const ADMIN_ONLY_PATCH_FIELDS = [
   'system_role'
 ] as const;
 
-const patchProfileSchema = z.object({
-  first_name: z.string().max(100),
-  last_name: z.string().max(100),
-  phone: z.string().max(50).nullable().optional(),
-  food_restrictions: z.string().max(200).nullable().optional()
-});
+const patchProfileSchema = z
+  .object({
+    first_name: z.string().max(100),
+    last_name: z.string().max(100),
+    phone: z
+      .string()
+      .regex(/^\d{11}$/, '연락처는 11자리 숫자만 입력할 수 있습니다.')
+      .nullable()
+      .optional(),
+    food_restrictions: z.string().max(200).nullable().optional(),
+    birthday: birthdaySchema
+  })
+  .superRefine((data, ctx) => {
+    refineBirthday(data.birthday, ctx);
+  });
 
 function profileTargetLabel(profile: {
   email: string;
@@ -113,7 +131,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { first_name, last_name, phone, food_restrictions } = parsed.data;
+    const { first_name, last_name, phone, food_restrictions, birthday } = parsed.data;
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -122,7 +140,8 @@ export async function PATCH(request: NextRequest) {
         first_name,
         last_name,
         phone: phone ?? null,
-        food_restrictions: food_restrictions ?? null
+        food_restrictions: food_restrictions ?? null,
+        ...(birthday !== undefined ? { birthday: birthday ?? null } : {})
       })
       .eq('user_id', session.userId)
       .select(PROFILE_SELECT_COLUMNS)
@@ -146,9 +165,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const changedFields = ['first_name', 'last_name', 'phone', 'food_restrictions'].filter(
-      (field) => field in body
-    );
+    const changedFields = PROFILE_PATCH_FIELDS.filter((field) => field in body);
 
     return jsonWithActivityLog(
       requestId,
