@@ -10,8 +10,6 @@ export type SessionResult =
 
 const UNAUTHORIZED_MESSAGE = '인증이 필요합니다.';
 const INACTIVE_MESSAGE = '비활성화된 계정입니다.';
-const PASSWORD_REQUIRED_MESSAGE = '비밀번호 설정이 필요합니다.';
-
 const PROFILE_COLUMNS =
   'user_id, email, first_name, last_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
 
@@ -108,16 +106,6 @@ export async function requireSession(): Promise<SessionResult> {
     };
   }
 
-  if (profile.password_set_at === null) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { success: false, message: PASSWORD_REQUIRED_MESSAGE },
-        { status: 403 }
-      )
-    };
-  }
-
   return { ok: true, userId: user.id, profile: profile as AuthProfile };
 }
 
@@ -154,10 +142,6 @@ export async function requireDashboardSession(): Promise<AuthProfile> {
 
   if (!profile || profile.status === 'inactive') {
     redirect('/auth/sign-in?accountDisabled=1');
-  }
-
-  if (profile.password_set_at === null) {
-    redirect('/auth/set-password');
   }
 
   return profile;
