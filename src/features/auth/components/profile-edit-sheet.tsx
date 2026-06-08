@@ -84,7 +84,7 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex flex-col sm:max-w-md'>
+      <SheetContent className='flex min-h-0 flex-col sm:max-w-md'>
         <SheetHeader>
           <SheetTitle>계정 정보 수정</SheetTitle>
           <SheetDescription>
@@ -92,30 +92,32 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
           </SheetDescription>
         </SheetHeader>
         <form.AppForm>
-          <form.Form className='flex flex-1 flex-col gap-4 py-4'>
-            <div className='grid gap-4 sm:grid-cols-2'>
-              <FormTextField name='first_name' label='이름' placeholder='이름' />
-              <FormTextField name='last_name' label='성' placeholder='성' />
+          <form.Form id='profile-edit-form' className='flex h-full min-h-0 flex-col'>
+            <div className='min-h-0 flex-1 space-y-4 overflow-auto py-4 pr-1'>
+              <div className='grid gap-4 sm:grid-cols-2'>
+                <FormTextField name='first_name' label='이름' placeholder='이름' />
+                <FormTextField name='last_name' label='성' placeholder='성' />
+              </div>
+              <FormPhoneField name='phone' label='연락처' />
+              <FormBirthdayField name='birthday' label='생일' />
+              <FormTextareaField
+                name='food_restrictions'
+                label='못 먹는 음식'
+                placeholder='알레르기·식이 제한 사항을 입력해 주세요.'
+                maxLength={200}
+                rows={3}
+              />
             </div>
-            <FormPhoneField name='phone' label='연락처' />
-            <FormBirthdayField name='birthday' label='생일' />
-            <FormTextareaField
-              name='food_restrictions'
-              label='못 먹는 음식'
-              placeholder='알레르기·식이 제한 사항을 입력해 주세요.'
-              maxLength={200}
-              rows={3}
-            />
-            <SheetFooter className='mt-auto px-0'>
-              <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
-                취소
-              </Button>
-              <Button type='submit' isLoading={isPending}>
-                저장
-              </Button>
-            </SheetFooter>
           </form.Form>
         </form.AppForm>
+        <SheetFooter>
+          <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+            취소
+          </Button>
+          <Button type='submit' form='profile-edit-form' isLoading={isPending}>
+            저장
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

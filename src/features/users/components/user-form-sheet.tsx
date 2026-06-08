@@ -150,7 +150,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex flex-col'>
+      <SheetContent className='flex min-h-0 flex-col'>
         <SheetHeader>
           <SheetTitle>{isEdit ? '사용자 수정' : '사용자 초대'}</SheetTitle>
           <SheetDescription>
@@ -166,7 +166,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
           </div>
         ) : null}
 
-        <div className='flex-1 overflow-auto'>
+        <div className='min-h-0 flex-1 overflow-auto'>
           {isEdit && user ? (
             <UserEditForm
               key={user.id}

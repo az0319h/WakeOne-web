@@ -79,7 +79,7 @@ export function ProfilePasswordSheet({
           </Button>
         </SheetTrigger>
       ) : null}
-      <SheetContent className='flex flex-col'>
+      <SheetContent className='flex min-h-0 flex-col'>
         <SheetHeader>
           <SheetTitle>비밀번호 변경</SheetTitle>
           <SheetDescription>
@@ -87,35 +87,40 @@ export function ProfilePasswordSheet({
           </SheetDescription>
         </SheetHeader>
         <form.AppForm>
-          <form.Form className='flex flex-1 flex-col gap-4 py-4'>
-            <FormTextField
-              name='current_password'
-              label='현재 비밀번호'
-              id='profile-password-current'
-              type='password'
-              autoComplete='current-password'
-            />
-            <FormTextField
-              name='new_password'
-              label='새 비밀번호'
-              id='profile-password-new'
-              type='password'
-              autoComplete='new-password'
-            />
-            <FormTextField
-              name='confirm_password'
-              label='비밀번호 확인'
-              id='profile-password-confirm'
-              type='password'
-              autoComplete='new-password'
-            />
-            <SheetFooter className='mt-auto px-0'>
-              <Button type='submit' isLoading={isPending}>
-                변경 저장
-              </Button>
-            </SheetFooter>
+          <form.Form
+            id='profile-password-form'
+            className='flex h-full min-h-0 flex-col'
+          >
+            <div className='min-h-0 flex-1 space-y-4 overflow-auto py-4 pr-1'>
+              <FormTextField
+                name='current_password'
+                label='현재 비밀번호'
+                id='profile-password-current'
+                type='password'
+                autoComplete='current-password'
+              />
+              <FormTextField
+                name='new_password'
+                label='새 비밀번호'
+                id='profile-password-new'
+                type='password'
+                autoComplete='new-password'
+              />
+              <FormTextField
+                name='confirm_password'
+                label='비밀번호 확인'
+                id='profile-password-confirm'
+                type='password'
+                autoComplete='new-password'
+              />
+            </div>
           </form.Form>
         </form.AppForm>
+        <SheetFooter>
+          <Button type='submit' form='profile-password-form' isLoading={isPending}>
+            변경 저장
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );
