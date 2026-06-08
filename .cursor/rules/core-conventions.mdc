@@ -155,6 +155,24 @@ const updateMutation = useMutation({
 `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form` 사용.
 `AppField` render props 내부에서 `useState` 사용 금지 — 별도 컴포넌트로 분리.
 
+## 스켈레톤 UI (필수)
+
+- 신규/수정 화면에서 **비동기 Read 경로(RSC fetch, `useSuspenseQuery`, Suspense)** 가 있으면 로딩 상태를 반드시 구현한다.
+- 우선순위는 **기존 스켈레톤 재사용**이다. (`DataTableSkeleton`, `FormCardSkeleton`, feature별 `*Skeleton`)
+- 재사용 가능한 스켈레톤이 없으면 feature 내부에 `{Feature}Skeleton` 컴포넌트를 추가한다.
+- App Router 화면은 `loading.tsx` 또는 `Suspense fallback` 중 최소 1개를 필수로 둔다.
+- 완료 보고 전 "초기 진입/필터 변경/느린 네트워크"에서 레이아웃 점프가 과도하지 않은지 확인한다.
+
+## Sheet 폼 모바일 대응 (필수)
+
+- Sheet 기반 폼은 모바일에서도 CTA(저장/확인) 버튼이 항상 도달 가능해야 한다.
+- 표준 구조:
+  1) `SheetContent`: `flex flex-col`
+  2) 본문 래퍼: `flex-1 overflow-auto`
+  3) `SheetFooter`: 본문 스크롤 영역 바깥(하단 고정)
+- `SheetFooter`를 `form` 내부 끝에 두는 패턴은 금지한다. (모바일에서 버튼 유실 위험)
+- 참조 구현: `src/features/users/components/user-form-sheet.tsx`
+
 ## Supabase 보안 (필수)
 
 - `SUPABASE_SERVICE_ROLE_KEY` → 서버 전용, `NEXT_PUBLIC_` 접두사 **절대 금지**

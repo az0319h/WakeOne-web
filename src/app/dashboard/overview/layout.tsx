@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import PageContainer from '@/components/layout/page-container';
 import { BirthdayCelebrantsSection } from '@/features/birthday-celebrants/components/birthday-celebrants-section';
+import { BirthdayCelebrantsBannerSkeleton } from '@/features/birthday-celebrants/components/birthday-celebrants-banner-skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -114,7 +115,7 @@ export default function OverViewLayout({
           </Card>
         </div>
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7'>
-          <Suspense fallback={null}>
+          <Suspense fallback={<BirthdayCelebrantsBannerSkeleton />}>
             <BirthdayCelebrantsSection />
           </Suspense>
           <div className='col-span-4'>{bar_stats}</div>

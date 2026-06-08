@@ -5,6 +5,19 @@ import { AUTH_ERROR_MESSAGES } from './types';
 
 const PROFILE_COLUMNS =
   'user_id, email, first_name, last_name, phone, system_role, password_set_at, status';
+const SESSION_REFRESH_ERROR_KEYWORDS = [
+  'Invalid Refresh Token',
+  'Session Expired',
+  'Refresh Token'
+] as const;
+
+function isSessionRefreshError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return SESSION_REFRESH_ERROR_KEYWORDS.some((keyword) => error.message.includes(keyword));
+}
 
 async function fetchProfile(userId: string): Promise<AuthProfile | null> {
   const supabase = createClient();
@@ -70,10 +83,19 @@ export async function signInWithEmail(payload: SignInPayload) {
 
   const email = normalizeEmail(payload.email);
 
-  const { data: profileStatus, error: statusError } = await supabase.rpc(
-    'profile_status_for_email',
-    { p_email: email }
-  );
+  const readProfileStatus = () =>
+    supabase.rpc('profile_status_for_email', {
+      p_email: email
+    });
+
+  let { data: profileStatus, error: statusError } = await readProfileStatus();
+
+  if (statusError && isSessionRefreshError(statusError)) {
+    await supabase.auth.signOut();
+    const retried = await readProfileStatus();
+    profileStatus = retried.data;
+    statusError = retried.error;
+  }
 
   if (statusError) {
     return { ok: false as const, message: AUTH_ERROR_MESSAGES.UNKNOWN };
@@ -83,10 +105,21 @@ export async function signInWithEmail(payload: SignInPayload) {
     return { ok: false as const, message: AUTH_ERROR_MESSAGES.ACCOUNT_DISABLED };
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password: payload.password
-  });
+  const requestSignIn = () =>
+    supabase.auth.signInWithPassword({
+      email,
+      password: payload.password
+    });
+
+  let { error } = await requestSignIn();
+
+  // Stale local refresh tokens can survive dashboard inactivity resets.
+  // Clear local auth state and retry once so users can sign in immediately.
+  if (error && isSessionRefreshError(error)) {
+    await supabase.auth.signOut();
+    const retried = await requestSignIn();
+    error = retried.error;
+  }
 
   if (error) {
     if (error.message.includes('No API key found')) {
