@@ -41,6 +41,7 @@ model: inherit
 | **plan 필수 섹션** | CUD가 In이면 **「기록 연동」** 표: Route · action 코드 · return 분기 매트릭스 |
 | **AC** | `/dashboard/logs` 또는 API로 **최소 1건** mutation 후 로그 행 검증 AC 포함 |
 | **Out 명시** | READ만·로그인/로그아웃만인 plan은 「activity log 해당 없음」1줄로 명시 |
+| **삭제 확인** | DELETE·제거 UI가 In이면 AC에 `AlertModal` 확인·`window.confirm` 미사용 명시 (`core-conventions.mdc` §삭제 확인 Dialog) |
 
 deep-interview·battle-plan에서 CUD 범위 확정 시 **로깅 포함 여부를 별도 확인 질문**하지 않는다 — **포함이 기본**이다.
 

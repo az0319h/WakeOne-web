@@ -5,6 +5,8 @@ export type SystemRole = 'admin' | 'user';
 export interface PermissionCheck {
   /** Supabase `profiles.system_role` — navigation visibility (UX only). */
   systemRole?: SystemRole;
+  /** 웨이크 소속 또는 admin만 노출 (사무실 간식). */
+  officeSnacks?: boolean;
   /** @deprecated Clerk-era fields — ignored by `checkNavAccess`. */
   permission?: string;
   plan?: string;

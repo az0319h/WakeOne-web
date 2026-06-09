@@ -2,10 +2,13 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabasePublishableKey, getSupabaseUrl } from './env';
 
+import type { Affiliation } from '@/features/users/constants/organization';
+
 export type SessionProfileFlags = {
   password_set_at: string | null;
   system_role: 'admin' | 'user';
   status: 'active' | 'inactive';
+  affiliation: Affiliation | null;
 };
 
 export async function updateSession(request: NextRequest) {
@@ -52,7 +55,7 @@ export async function updateSession(request: NextRequest) {
   if (authUser) {
     const { data } = await supabase
       .from('profiles')
-      .select('password_set_at, system_role, status')
+      .select('password_set_at, system_role, status, affiliation')
       .eq('user_id', authUser.id)
       .maybeSingle();
 
@@ -60,7 +63,8 @@ export async function updateSession(request: NextRequest) {
       profile = {
         password_set_at: data.password_set_at,
         system_role: data.system_role,
-        status: data.status
+        status: data.status,
+        affiliation: data.affiliation
       };
 
       if (data.status === 'inactive') {

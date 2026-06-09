@@ -110,6 +110,21 @@ function ActorCell({ log }: { log: ActivityLog }) {
   );
 }
 
+function isMachineTargetLabel(label: string): boolean {
+  return (
+    label === 'office_snack' ||
+    /^session:\d+$/.test(label) ||
+    /^session:\d+:candidate:\d+$/.test(label)
+  );
+}
+
+function TargetCell({ log }: { log: ActivityLog }) {
+  const actorLabel = log.actor_display_name ?? log.actor_email;
+  const displayLabel = isMachineTargetLabel(log.target_label) ? actorLabel : log.target_label;
+
+  return <span className='text-sm'>{displayLabel}</span>;
+}
+
 export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<ActivityLog>[] {
   const columns: ColumnDef<ActivityLog>[] = [
     {
@@ -221,7 +236,7 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
             icon: Icons.search
           }
         : undefined,
-      cell: ({ row }) => <span className='text-sm'>{row.original.target_label}</span>
+      cell: ({ row }) => <TargetCell log={row.original} />
     }
   ];
 

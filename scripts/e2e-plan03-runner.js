@@ -11,7 +11,9 @@ async (page) => {
     adminEmail: env.E2E_ADMIN_EMAIL,
     adminPassword: env.E2E_ADMIN_PASSWORD,
     userEmail: env.E2E_USER_EMAIL,
-    userPassword: env.E2E_USER_PASSWORD
+    userPassword: env.E2E_USER_PASSWORD,
+    user2Email: env.E2E_USER2_EMAIL,
+    user2Password: env.E2E_USER2_PASSWORD
   };
   const base = env.E2E_BASE_URL || 'http://localhost:3000';
   const results = [];

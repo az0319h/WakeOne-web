@@ -15,6 +15,7 @@ model: inherit
 기존 shadcn/ui 어드민 디자인 패턴을 유지하면서 DB 스키마·기능 변경에 필요한 최소 UI 구조를 설계한다.
 코드를 직접 작성하지 않는다 — 구조 설계와 컴포넌트 선정만 담당한다.
 - 모든 설계안에는 로딩 상태(스켈레톤)와 모바일 대응(특히 Sheet 폼)을 포함한다.
+- 삭제·제거·비활성화 액션은 `AlertModal` 확인 Dialog를 설계에 포함한다 (`core-conventions.mdc` §삭제 확인 Dialog). `window.confirm` 금지.
 
 ## 작업 전 확인 (필수)
 

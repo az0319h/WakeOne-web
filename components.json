@@ -17,5 +17,8 @@
     "ui": "@/components/ui",
     "lib": "@/lib",
     "hooks": "@/hooks"
+  },
+  "registries": {
+    "@shadcnblocks": "https://shadcnblocks.com/r/{name}.json"
   }
 }

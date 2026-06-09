@@ -3,10 +3,17 @@ export type ActivityAction =
   | 'user.update'
   | 'user.reactivate'
   | 'user.deactivate'
+  | 'office_snack.session_create'
+  | 'office_snack.session_update'
+  | 'office_snack.session_delete'
+  | 'office_snack.candidate_create'
+  | 'office_snack.candidate_update'
+  | 'office_snack.candidate_delete'
+  | 'office_snack.vote_submit'
   | 'profile.update'
   | 'profile.password_change';
 
-export type ActivityTargetType = 'user' | 'profile';
+export type ActivityTargetType = 'user' | 'profile' | 'office_snack';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -25,6 +32,7 @@ export type ActivityLogMetadata = {
   validation_errors?: Record<string, string>;
   changed_fields?: string[];
   attempted_target?: string;
+  session_state?: string;
 };
 
 export type ActivityLog = {

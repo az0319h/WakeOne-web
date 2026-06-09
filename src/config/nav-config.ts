@@ -51,6 +51,15 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: 'Office Snacks',
+        url: '/dashboard/office-snacks',
+        icon: 'pizza',
+        shortcut: ['o', 's'],
+        isActive: false,
+        access: { officeSnacks: true },
+        items: []
+      },
+      {
         title: 'Kanban',
         url: '/dashboard/kanban',
         icon: 'kanban',
