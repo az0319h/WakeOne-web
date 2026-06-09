@@ -117,7 +117,7 @@ async (page) => {
     const actionButtons = await userRow.getByRole('button').count();
     results.push({ ac: '6c', pass: actionButtons === 0, note: 'actionButtons=' + actionButtons });
 
-    const otherRow = page.getByRole('row').filter({ hasText: 'aaz19087@gmail.com' });
+    const otherRow = page.getByRole('row').filter({ hasText: creds.user2Email });
     await otherRow.getByRole('button', { name: 'Open menu' }).click();
     const otherDeactivate = (await page.getByRole('menuitem', { name: '비활성화' }).count()) > 0;
     await page.keyboard.press('Escape');

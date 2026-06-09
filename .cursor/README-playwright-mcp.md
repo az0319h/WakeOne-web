@@ -16,7 +16,7 @@
 - `@playwright/mcp`, `.cursor/mcp.json`, `.cursor/playwright-mcp.config.json`
 - Cursor Settings → MCP → **playwright** 연결
 - `npx playwright install chromium`
-- `.env`: `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` (로그인 AC 시)
+- `.env`: `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*` (로그인/권한 AC 시)
 
 ## 문서
 

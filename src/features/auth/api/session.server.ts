@@ -1,6 +1,12 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
+import { OFFICE_SNACKS_ACCESS_DENIED_KEY } from '@/config/office-snacks-routes';
+import {
+  canAccessOfficeSnacks,
+  OFFICE_SNACKS_ACCESS_DENIED_MESSAGE
+} from '@/features/office-snacks/api/access';
+import { redirectWithAccessDeniedFlash } from '@/lib/auth/access-denied-flash.server';
 import { createClient } from '@/lib/supabase/server';
 import type { AuthProfile } from './types';
 
@@ -151,8 +157,38 @@ export async function requireAdminPage(): Promise<AuthProfile> {
   const profile = await requireDashboardSession();
 
   if (profile.system_role !== 'admin') {
-    redirect('/dashboard/overview?accessDenied=users');
+    await redirectWithAccessDeniedFlash('users');
   }
 
   return profile;
+}
+
+export async function requireOfficeSnacksPage(): Promise<AuthProfile> {
+  const profile = await requireDashboardSession();
+
+  if (!canAccessOfficeSnacks(profile)) {
+    await redirectWithAccessDeniedFlash(OFFICE_SNACKS_ACCESS_DENIED_KEY);
+  }
+
+  return profile;
+}
+
+export async function requireOfficeSnacksSession(): Promise<SessionResult> {
+  const session = await requireSession();
+
+  if (!session.ok) {
+    return session;
+  }
+
+  if (!canAccessOfficeSnacks(session.profile)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: OFFICE_SNACKS_ACCESS_DENIED_MESSAGE },
+        { status: 403 }
+      )
+    };
+  }
+
+  return session;
 }

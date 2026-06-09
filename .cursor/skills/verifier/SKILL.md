@@ -108,6 +108,7 @@ disable-model-invocation: true
 
 - `/verifier`는 구현 팀(FE/BE) **이후** 실행
 - **2단계 실패로 `/run` 완료 보고 금지** — planner 또는 구현 팀 수정 후 verifier 재호출
+- Playwright 계정은 `.env`의 `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*`를 사용한다
 - `E2E_SKIP_BROWSER=1`은 **로컬 임시 디버그용**이며 `/run`·완료 보고에 사용하지 않는다
 
 ---

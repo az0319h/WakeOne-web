@@ -163,6 +163,20 @@ const updateMutation = useMutation({
 - App Router 화면은 `loading.tsx` 또는 `Suspense fallback` 중 최소 1개를 필수로 둔다.
 - 완료 보고 전 "초기 진입/필터 변경/느린 네트워크"에서 레이아웃 점프가 과도하지 않은지 확인한다.
 
+## 삭제 확인 Dialog (필수)
+
+데이터·리소스를 **삭제(DELETE)** 하거나 **되돌릴 수 없는 제거**를 수행하기 전, 사용자에게 반드시 확인 Dialog를 띄운다.
+
+| 항목 | 규칙 |
+|------|------|
+| **표준 컴포넌트** | `@/components/modal/alert-modal`의 `AlertModal` (참조: `product-tables/cell-action.tsx`, `users-table/cell-action.tsx`) |
+| **금지** | `window.confirm`, `window.alert`, `confirm()`로 삭제·제거 여부 확인 **절대 금지** |
+| **흐름** | 삭제 트리거 → `open` state → `AlertModal` → 확인 시 `mutate`/`mutateAsync` (`isPending` → `loading`) |
+| **문구** | `title`·`description`·`confirmLabel`을 한국어로 명시 (대상 이름 포함 권장) |
+| **범위** | `src/features/**`, `src/app/**`의 프로덕션 UI. 데모·예제(`demo-form` 등)는 별도 |
+
+비활성화·재활성화 등 **삭제가 아닌** 위험 액션도 동일하게 `AlertModal`로 확인한다 (`users-table/cell-action.tsx`).
+
 ## Sheet 폼 모바일 대응 (필수)
 
 - Sheet 기반 폼은 모바일에서도 CTA(저장/확인) 버튼이 항상 도달 가능해야 한다.

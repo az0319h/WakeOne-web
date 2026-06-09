@@ -4,6 +4,12 @@ import {
   getAdminAccessDeniedParam,
   isAdminDashboardPath
 } from '@/config/admin-routes';
+import {
+  isOfficeSnacksDashboardPath,
+  OFFICE_SNACKS_ACCESS_DENIED_KEY
+} from '@/config/office-snacks-routes';
+import { canAccessOfficeSnacks } from '@/features/office-snacks/api/access';
+import { ACCESS_DENIED_FLASH_COOKIE } from '@/lib/auth/access-denied-flash';
 import { updateSession } from '@/lib/supabase/middleware';
 
 const LOCAL_ALLOWED_ORIGIN = 'http://localhost:3000';
@@ -67,6 +73,25 @@ function jsonWithCookies(
   const jsonResponse = NextResponse.json(body, { status });
   copyCookies(sessionResponse, jsonResponse);
   return jsonResponse;
+}
+
+function redirectWithAccessDeniedFlash(
+  request: NextRequest,
+  sessionResponse: NextResponse,
+  key: string
+) {
+  const overviewUrl = request.nextUrl.clone();
+  overviewUrl.pathname = '/dashboard/overview';
+  overviewUrl.search = '';
+  const redirectResponse = NextResponse.redirect(overviewUrl);
+  copyCookies(sessionResponse, redirectResponse);
+  redirectResponse.cookies.set(ACCESS_DENIED_FLASH_COOKIE, key, {
+    maxAge: 30,
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: false
+  });
+  return redirectResponse;
 }
 
 export async function middleware(request: NextRequest) {
@@ -151,12 +176,15 @@ export async function middleware(request: NextRequest) {
 
     if (isAdminDashboardPath(pathname) && profile?.system_role !== 'admin') {
       const accessDenied = getAdminAccessDeniedParam(pathname) ?? 'users';
-      const overviewUrl = request.nextUrl.clone();
-      overviewUrl.pathname = '/dashboard/overview';
-      overviewUrl.search = `?accessDenied=${accessDenied}`;
-      const redirectResponse = NextResponse.redirect(overviewUrl);
-      copyCookies(response, redirectResponse);
-      return redirectResponse;
+      return redirectWithAccessDeniedFlash(request, response, accessDenied);
+    }
+
+    if (
+      isOfficeSnacksDashboardPath(pathname) &&
+      profile &&
+      !canAccessOfficeSnacks(profile)
+    ) {
+      return redirectWithAccessDeniedFlash(request, response, OFFICE_SNACKS_ACCESS_DENIED_KEY);
     }
   }
 

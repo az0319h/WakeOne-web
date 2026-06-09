@@ -52,6 +52,7 @@
 | 09 | [09_profile-phone-birthday-plan.md](./09_profile-phone-birthday-plan.md) | **Approved** · 연락처 11자리·생일 Calendar · SQL `11` |
 | 10 | [10_dashboard-birthday-profile-sheet-plan.md](./10_dashboard-birthday-profile-sheet-plan.md) | **Approved** · overview 생일 배너·컨페티·프로필 Sheet |
 | 11 | [11_password-policy-set-password-removal-plan.md](./11_password-policy-set-password-removal-plan.md) | **Approved** · 비밀번호 정책·set-password 제거 |
+| 14 | [14_delete-confirm-dialog-plan.md](./14_delete-confirm-dialog-plan.md) | **Completed** · 삭제 확인 `AlertModal` 전역 규칙 |
 
 ## 에이전트 참조
 

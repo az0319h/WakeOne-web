@@ -21,7 +21,9 @@ const creds = {
   adminEmail: env.E2E_ADMIN_EMAIL,
   adminPassword: env.E2E_ADMIN_PASSWORD,
   userEmail: env.E2E_USER_EMAIL,
-  userPassword: env.E2E_USER_PASSWORD
+  userPassword: env.E2E_USER_PASSWORD,
+  user2Email: env.E2E_USER2_EMAIL,
+  user2Password: env.E2E_USER2_PASSWORD
 };
 
 export default async function run(page) {
@@ -143,11 +145,7 @@ export default async function run(page) {
     results.push({ ac: '6c', pass: editCount === 0, note: `edit items: ${editCount}` });
 
     // AC #6b: other row has deactivate
-    const otherRow = page
-      .getByRole('row')
-      .filter({ hasNotText: creds.adminEmail })
-      .filter({ hasNotText: creds.userEmail })
-      .first();
+    const otherRow = page.getByRole('row').filter({ hasText: creds.user2Email }).first();
     if ((await otherRow.count()) > 0) {
       await otherRow.getByRole('button').last().click();
       const deactivateCount = await page.getByRole('menuitem', { name: '비활성화' }).count();

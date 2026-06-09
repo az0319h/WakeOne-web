@@ -27,7 +27,8 @@ async function main() {
   const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
   const targets = [
     { email: env.E2E_ADMIN_EMAIL, password: env.E2E_ADMIN_PASSWORD },
-    { email: env.E2E_USER_EMAIL, password: env.E2E_USER_PASSWORD, userId: E2E_USER_ID }
+  { email: env.E2E_USER_EMAIL, password: env.E2E_USER_PASSWORD, userId: E2E_USER_ID },
+  { email: env.E2E_USER2_EMAIL, password: env.E2E_USER2_PASSWORD }
   ];
 
   for (const t of targets) {

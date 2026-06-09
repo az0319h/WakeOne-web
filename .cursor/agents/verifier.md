@@ -36,6 +36,7 @@ model: inherit
 | 구현·미들웨어·Auth·RLS·UI 버그 | `/frontend-dev` 또는 `/backend-dev` | 수정 후 **1단계부터** 재검증 |
 
 `/run` 완료 보고 시 **2단계 skip 금지** (`E2E_SKIP_BROWSER` 사용 불가).
+Playwright 검증 계정은 기본적으로 `.env`의 `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*` 3세트를 사용한다.
 
 ## 사용 스킬 (6단계 = 스킬 순서 · `/root`에서 **무조건**)
 
@@ -82,6 +83,17 @@ plan에 **CUD In**이 있으면 아래를 **추가** 검증한다.
 | **로그인/로그아웃** | auth `service.ts`에 `recordActivityLog` **없어야** 함 |
 
 완료 보고 AC 표에 **activity log 항목** pass/fail/skip(해당 없음)을 포함한다.
+
+## 삭제 확인 Dialog 검증 (전역)
+
+`core-conventions.mdc` §삭제 확인 Dialog
+
+| 검증 | 방법 |
+|------|------|
+| **confirm 금지** | `rg "window\.confirm|confirm\(" src/features src/app` — **매칭 0건** (데모 `components/forms` 제외) |
+| **표준 패턴** | 신규·수정 DELETE UI는 `AlertModal` 사용 |
+
+위 grep 실패 시 **frontend-dev 재작업** 후 1단계부터 재검증.
 
 ## 하지 않는 것
 

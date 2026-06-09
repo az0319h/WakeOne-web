@@ -22,7 +22,7 @@ disable-model-invocation: true
 1. `.cursor/mcp.json`에 `playwright` 등록
 2. `npm run dev` 기동 중 (`E2E_BASE_URL` 또는 `http://localhost:3000`)
 3. `docs/plans/{feature}-plan.md`의 **완료 기준 (AC)** 목록
-4. 로그인 AC: `.env`에 `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` (테스트 전용)
+4. 로그인 AC: `.env`에 `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*` (테스트 전용)
 
 ## Workflow (verifier 2단계)
 
