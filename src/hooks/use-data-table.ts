@@ -171,12 +171,13 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
     return filterableColumns.reduce<Record<string, Parser<string> | Parser<string[]>>>(
       (acc, column) => {
-        if (column.meta?.options) {
-          acc[column.id ?? ''] = parseAsArrayOf(parseAsString, ARRAY_SEPARATOR).withOptions(
+        const key = column.meta?.queryKey ?? column.id ?? '';
+        if (column.meta?.variant === 'multiSelect') {
+          acc[key] = parseAsArrayOf(parseAsString, ARRAY_SEPARATOR).withOptions(
             queryStateOptions
           );
         } else {
-          acc[column.id ?? ''] = parseAsString.withOptions(queryStateOptions);
+          acc[key] = parseAsString.withOptions(queryStateOptions);
         }
         return acc;
       },
@@ -194,22 +195,22 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const initialColumnFilters: ColumnFiltersState = React.useMemo(() => {
     if (enableAdvancedFilter) return [];
 
+    const columnIdByFilterKey = new Map(
+      filterableColumns.map((column) => [column.meta?.queryKey ?? column.id ?? '', column.id ?? ''])
+    );
+
     return Object.entries(filterValues).reduce<ColumnFiltersState>((filters, [key, value]) => {
       if (value !== null) {
-        const processedValue = Array.isArray(value)
-          ? value
-          : typeof value === 'string' && /[^a-zA-Z0-9]/.test(value)
-            ? value.split(/[^a-zA-Z0-9]+/).filter(Boolean)
-            : [value];
+        const processedValue = Array.isArray(value) ? value : value;
 
         filters.push({
-          id: key,
+          id: columnIdByFilterKey.get(key) ?? key,
           value: processedValue
         });
       }
       return filters;
     }, []);
-  }, [filterValues, enableAdvancedFilter]);
+  }, [filterValues, filterableColumns, enableAdvancedFilter]);
 
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFiltersState>(initialColumnFilters);
@@ -223,8 +224,14 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
         const filterUpdates = next.reduce<Record<string, string | string[] | null>>(
           (acc, filter) => {
-            if (filterableColumns.find((column) => column.id === filter.id)) {
-              acc[filter.id] = filter.value as string | string[];
+            const column = filterableColumns.find((column) => column.id === filter.id);
+            if (column) {
+              const filterKey = column.meta?.queryKey ?? filter.id;
+              const filterValue = filter.value as string | string[];
+              acc[filterKey] =
+                column.meta?.variant === 'multiSelect' || !Array.isArray(filterValue)
+                  ? filterValue
+                  : (filterValue[0] ?? null);
             }
             return acc;
           },
@@ -233,7 +240,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
         for (const prevFilter of prev) {
           if (!next.some((filter) => filter.id === prevFilter.id)) {
-            filterUpdates[prevFilter.id] = null;
+            const column = filterableColumns.find((column) => column.id === prevFilter.id);
+            filterUpdates[column?.meta?.queryKey ?? prevFilter.id] = null;
           }
         }
 

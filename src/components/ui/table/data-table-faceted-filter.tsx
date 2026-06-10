@@ -38,7 +38,14 @@ export function DataTableFacetedFilter<TData, TValue>({
 
   const columnFilterValue = column?.getFilterValue();
   const selectedValues = React.useMemo(
-    () => new Set(Array.isArray(columnFilterValue) ? columnFilterValue : []),
+    () =>
+      new Set(
+        Array.isArray(columnFilterValue)
+          ? columnFilterValue
+          : typeof columnFilterValue === 'string' && columnFilterValue.length > 0
+            ? [columnFilterValue]
+            : []
+      ),
     [columnFilterValue]
   );
 
@@ -56,7 +63,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         const filterValues = Array.from(newSelectedValues);
         column.setFilterValue(filterValues.length ? filterValues : undefined);
       } else {
-        column.setFilterValue(isSelected ? undefined : [option.value]);
+        column.setFilterValue(isSelected ? undefined : option.value);
         setOpen(false);
       }
     },
@@ -64,8 +71,7 @@ export function DataTableFacetedFilter<TData, TValue>({
   );
 
   const onReset = React.useCallback(
-    (event?: React.MouseEvent) => {
-      event?.stopPropagation();
+    () => {
       column?.setFilterValue(undefined);
     },
     [column]
@@ -76,14 +82,9 @@ export function DataTableFacetedFilter<TData, TValue>({
       <PopoverTrigger asChild>
         <Button variant='outline' size='sm' className='border-dashed'>
           {selectedValues?.size > 0 ? (
-            <button
-              type='button'
-              aria-label={`Clear ${title} filter`}
-              onClick={onReset}
-              className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
-            >
+            <span aria-hidden='true' className='opacity-70'>
               <Icons.xCircle />
-            </button>
+            </span>
           ) : (
             <Icons.plusCircle />
           )}
@@ -153,7 +154,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem onSelect={() => onReset()} className='justify-center text-center'>
-                    Clear filters
+                    필터 초기화
                   </CommandItem>
                 </CommandGroup>
               </>

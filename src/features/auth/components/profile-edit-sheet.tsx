@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
+import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { parsePhoneDigits } from '@/lib/phone';
 import { patchProfileMutation } from '@/features/auth/api/mutations';
@@ -76,6 +77,7 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
           ? value.food_restrictions.trim()
           : null
       });
+      form.reset();
     }
   });
 
@@ -115,6 +117,7 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
             취소
           </Button>
           <Button type='submit' form='profile-edit-form' isLoading={isPending}>
+            <Icons.check className='mr-2 h-4 w-4' />
             저장
           </Button>
         </SheetFooter>

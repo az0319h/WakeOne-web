@@ -526,19 +526,30 @@ const { FormTextField } = useFormFields<FormValues>();
 
 ### Form in a Sheet or Dialog
 
-Use the HTML `form` attribute to connect an external submit button:
+Use the HTML `form` attribute to connect an external submit button.
+
+**WakeOne 필수:** 서버 전송(뮤테이션/API) **성공 후** `form.reset()` — 취소·실패 시 reset 하지 않음. (`core-conventions.mdc` §폼 초기화)
 
 ```tsx
 const [open, setOpen] = useState(false);
+const emptyValues = { name: '', email: '' } as FormValues;
 
 const form = useAppForm({
-  defaultValues: { ... },
-  onSubmit: ({ value }) => {
+  defaultValues: emptyValues,
+  onSubmit: async ({ value }) => {
+    await createMutation.mutateAsync(value);
+    form.reset(emptyValues);
+  }
+});
+
+const createMutation = useMutation({
+  ...createEntityMutation,
+  onSuccess: () => {
     toast.success('Created!');
     setOpen(false);
-    form.reset();
-  },
+  }
 });
+```
 
 <Sheet open={open} onOpenChange={setOpen}>
   <SheetContent>

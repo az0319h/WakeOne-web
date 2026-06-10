@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ export default function NewTaskDialog() {
     <Dialog>
       <DialogTrigger asChild>
         <Button variant='secondary' size='sm'>
+          <Icons.add className='mr-2 h-4 w-4' />
           + Add New Task
         </Button>
       </DialogTrigger>
@@ -56,6 +58,7 @@ export default function NewTaskDialog() {
         <DialogFooter>
           <DialogTrigger asChild>
             <Button type='submit' size='sm' form='task-form'>
+              <Icons.add className='mr-2 h-4 w-4' />
               Add Task
             </Button>
           </DialogTrigger>

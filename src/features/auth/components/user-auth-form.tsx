@@ -46,6 +46,7 @@ function UserAuthFormFields() {
         }
 
         notifySuccess('로그인되었습니다.');
+        form.reset();
         router.push(redirectTo);
         router.refresh();
       });

@@ -155,6 +155,35 @@ const updateMutation = useMutation({
 `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form` 사용.
 `AppField` render props 내부에서 `useState` 사용 금지 — 별도 컴포넌트로 분리.
 
+### 폼 초기화 (서버 전송 성공 시 · 필수)
+
+Sheet·Dialog·페이지 폼 **공통**: 사용자가 **취소**한 경우가 아니라 **서버 전송(뮤테이션/API)이 성공**한 경우, 폼 입력값을 **반드시 초기화**한다.
+
+| 구분 | 규칙 |
+|------|------|
+| **대상** | `useAppForm`·제어 컴포넌트 state 등 **사용자가 입력한 모든 필드** |
+| **시점** | `mutateAsync` / `onSubmit` **성공 직후** 또는 `useMutation` `onSuccess` (서버 2xx 확인 후) |
+| **방법** | TanStack Form: `form.reset()` 또는 `form.reset(emptyDefaultValues)` · 비폼 state: `useState` 초기값으로 재설정 |
+| **신규(CREATE)** | 빈 `defaultValues`로 reset |
+| **수정(UPDATE)** | `form.reset()` (마운트 시 defaultValues) 또는 제출값/최신 엔티티로 reset |
+| **취소** | Sheet/Dialog 닫기만 — **reset 금지** (사용자 입력 보존) |
+| **실패** | validation·4xx·5xx 시 **reset 금지** — 오류 수정 후 재제출 가능해야 함 |
+
+```tsx
+// 컴포넌트 — 성공 시 UI + 폼 초기화
+const createMutation = useMutation({
+  ...createEntityMutation,
+  onSuccess: () => {
+    notifySuccess('저장되었습니다.');
+    form.reset(emptyDefaultValues);
+    onOpenChange(false);
+  }
+});
+```
+
+- 신규/수정 feature의 CUD 폼 완료 조건에 **성공 후 reset** 포함.
+- 참조: `docs/forms.md` §Form in a Sheet or Dialog
+
 ## 스켈레톤 UI (필수)
 
 - 신규/수정 화면에서 **비동기 Read 경로(RSC fetch, `useSuspenseQuery`, Suspense)** 가 있으면 로딩 상태를 반드시 구현한다.

@@ -16,7 +16,9 @@ const METADATA_ALLOWLIST = new Set([
   'message',
   'validation_errors',
   'changed_fields',
-  'attempted_target'
+  'attempted_target',
+  'asset_number',
+  'asset_name'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =

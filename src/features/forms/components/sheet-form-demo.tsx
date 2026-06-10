@@ -159,6 +159,7 @@ function SheetFormSection() {
                 Cancel
               </Button>
               <Button type='submit' form='sheet-form-id'>
+                <Icons.add className='mr-2 h-4 w-4' />
                 Create Product
               </Button>
             </SheetFooter>
@@ -246,6 +247,7 @@ function DialogFormSection() {
                 Cancel
               </Button>
               <Button type='submit' form='dialog-form-id'>
+                <Icons.send className='mr-2 h-4 w-4' />
                 Submit Feedback
               </Button>
             </DialogFooter>

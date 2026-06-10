@@ -26,11 +26,12 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Product',
+        title: '비품 대장',
         url: '/dashboard/product',
         icon: 'product',
         shortcut: ['p', 'p'],
         isActive: false,
+        access: { assetLedger: true },
         items: []
       },
       {

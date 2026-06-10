@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertModal } from '@/components/modal/alert-modal';
+import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { deleteOfficeSnackSessionMutation } from '../api/mutations';
 import type { OfficeSnackSession } from '../api/types';
@@ -57,6 +58,7 @@ function SessionListPanel({
               회차를 생성해 간식 등록과 투표를 시작하세요.
             </p>
             <Button type='button' size='sm' onClick={onCreateSession}>
+              <Icons.add className='mr-2 h-4 w-4' />
               회차 생성
             </Button>
           </>

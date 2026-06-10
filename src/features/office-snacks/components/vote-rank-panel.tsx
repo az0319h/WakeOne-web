@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { notifyError, notifySuccess } from '@/lib/notify';
+import { Icons } from '@/components/icons';
 import { submitOfficeSnackVoteMutation } from '../api/mutations';
 import type { OfficeSnackCandidate, OfficeSnackVote } from '../api/types';
 
@@ -50,6 +51,7 @@ export function VoteRankPanel({
     ...submitOfficeSnackVoteMutation,
     onSuccess: () => {
       notifySuccess('투표를 제출했습니다. 재투표는 불가능합니다.');
+      setSelection({ rank1: null, rank2: null, rank3: null });
     },
     onError: (error) => {
       notifyError(error instanceof Error ? error.message : '투표 제출에 실패했습니다.');
@@ -146,6 +148,7 @@ export function VoteRankPanel({
           });
         }}
       >
+        <Icons.send className='mr-2 h-4 w-4' />
         투표 제출
       </Button>
     </>

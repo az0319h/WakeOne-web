@@ -12,6 +12,9 @@ export const ACTION_OPTIONS: { value: ActivityAction; label: string }[] = [
   { value: 'office_snack.candidate_update', label: 'office_snack.candidate_update' },
   { value: 'office_snack.candidate_delete', label: 'office_snack.candidate_delete' },
   { value: 'office_snack.vote_submit', label: 'office_snack.vote_submit' },
+  { value: 'asset.create', label: 'asset.create' },
+  { value: 'asset.update', label: 'asset.update' },
+  { value: 'asset.delete', label: 'asset.delete' },
   { value: 'profile.update', label: 'profile.update' },
   { value: 'profile.password_change', label: 'profile.password_change' }
 ];

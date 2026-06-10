@@ -190,6 +190,7 @@ export default function SheetProductForm() {
             Cancel
           </Button>
           <Button type='submit' form='sheet-product-form'>
+            <Icons.add className='mr-2 h-4 w-4' />
             Create Product
           </Button>
         </SheetFooter>

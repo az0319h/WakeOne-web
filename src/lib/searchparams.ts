@@ -19,7 +19,8 @@ export const searchParams = {
   sort: parseAsString,
   actor_search: parseAsString,
   action: parseAsString,
-  search: parseAsString
+  search: parseAsString,
+  status: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')

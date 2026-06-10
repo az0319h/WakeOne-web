@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import {
   createOfficeSnackCandidateMutation,
@@ -25,6 +24,7 @@ import {
   officeSnackCandidateSchema,
   type OfficeSnackCandidateFormValues
 } from '../schemas/office-snack';
+import { Icons } from '@/components/icons';
 import { formatWon, OFFICE_SNACK_PLACEHOLDER_IMAGE_URL } from './office-snack-utils';
 import { CandidateProductImage } from './candidate-product-image';
 
@@ -34,6 +34,13 @@ interface CandidateFormSheetProps {
   sessionId: number;
   candidate?: OfficeSnackCandidate | null;
 }
+
+const EMPTY_CANDIDATE_FORM_VALUES: OfficeSnackCandidateFormValues = {
+  product_url: '',
+  name: '',
+  price: 0,
+  image_url: ''
+};
 
 function buildDisplayUrl(productUrl: string): string {
   try {
@@ -110,15 +117,18 @@ export function CandidateFormSheet({
 
       if (isEdit && candidate) {
         await updateMutation.mutateAsync({ candidateId: candidate.id, payload });
+        form.reset();
         return;
       }
 
       await createMutation.mutateAsync({ sessionId, payload });
+      form.reset(EMPTY_CANDIDATE_FORM_VALUES);
     }
   });
 
   const { FormTextField } = useFormFields<OfficeSnackCandidateFormValues>();
   const isPending = createMutation.isPending || updateMutation.isPending;
+  const SubmitIcon = isEdit ? Icons.edit : Icons.add;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -206,7 +216,7 @@ export function CandidateFormSheet({
             취소
           </Button>
           <Button type='submit' form='office-snack-candidate-form' isLoading={isPending}>
-            <Icons.check className='mr-2 h-4 w-4' />
+            <SubmitIcon className='mr-2 h-4 w-4' />
             {isEdit ? '저장' : '등록'}
           </Button>
         </SheetFooter>

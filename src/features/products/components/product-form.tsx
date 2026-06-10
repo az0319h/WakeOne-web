@@ -55,7 +55,7 @@ export default function ProductForm({
     validators: {
       onSubmit: productSchema
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const payload = {
         name: value.name,
         category: value.category,
@@ -64,10 +64,12 @@ export default function ProductForm({
       };
 
       if (isEdit) {
-        updateMutation.mutate({ id: initialData.id, values: payload });
+        await updateMutation.mutateAsync({ id: initialData.id, values: payload });
       } else {
-        createMutation.mutate(payload);
+        await createMutation.mutateAsync(payload);
       }
+
+      form.reset();
     }
   });
 

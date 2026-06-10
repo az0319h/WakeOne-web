@@ -10,10 +10,13 @@ export type ActivityAction =
   | 'office_snack.candidate_update'
   | 'office_snack.candidate_delete'
   | 'office_snack.vote_submit'
+  | 'asset.create'
+  | 'asset.update'
+  | 'asset.delete'
   | 'profile.update'
   | 'profile.password_change';
 
-export type ActivityTargetType = 'user' | 'profile' | 'office_snack';
+export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'asset';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -32,6 +35,11 @@ export type ActivityLogMetadata = {
   validation_errors?: Record<string, string>;
   changed_fields?: string[];
   attempted_target?: string;
+  asset_number?: string;
+  asset_name?: string;
+  status?: string;
+  category?: string;
+  usage_location?: string;
   session_state?: string;
 };
 
