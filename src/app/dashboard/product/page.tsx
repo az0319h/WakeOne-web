@@ -1,15 +1,11 @@
 import PageContainer from '@/components/layout/page-container';
-import { buttonVariants } from '@/components/ui/button';
-import ProductListingPage from '@/features/products/components/product-listing';
+import { requireAssetLedgerPage } from '@/features/auth/api/session.server';
+import { AssetLedgerListing } from '@/features/asset-ledger/components/asset-ledger-listing';
 import { searchParamsCache } from '@/lib/searchparams';
-import { cn } from '@/lib/utils';
-import { Icons } from '@/components/icons';
-import Link from 'next/link';
 import { SearchParams } from 'nuqs/server';
-import { productInfoContent } from '@/config/infoconfig';
 
 export const metadata = {
-  title: 'Dashboard: Products'
+  title: 'Dashboard: 비품 대장'
 };
 
 type pageProps = {
@@ -17,21 +13,28 @@ type pageProps = {
 };
 
 export default async function Page(props: pageProps) {
+  const profile = await requireAssetLedgerPage();
   const searchParams = await props.searchParams;
-  searchParamsCache.parse(searchParams);
+  const parsed = searchParamsCache.parse(searchParams);
+  const filters = {
+    page: parsed.page,
+    limit: parsed.perPage,
+    ...(parsed.search && { search: parsed.search }),
+    ...(parsed.status && { status: parsed.status as '사용중' | '미사용' | '분실' | 'all' }),
+    ...(parsed.category && { category: parsed.category }),
+    ...(parsed.sort && { sort: parsed.sort })
+  };
 
   return (
     <PageContainer
-      pageTitle='Products'
-      pageDescription='Manage products (React Query + nuqs table pattern.)'
-      infoContent={productInfoContent}
-      pageHeaderAction={
-        <Link href='/dashboard/product/new' className={cn(buttonVariants(), 'text-xs md:text-sm')}>
-          <Icons.add className='mr-2 h-4 w-4' /> Add New
-        </Link>
-      }
+      pageTitle='비품 대장'
+      pageDescription='웨이크 비품 자산 정보를 등록, 조회, 수정, 삭제합니다.'
     >
-      <ProductListingPage />
+      <AssetLedgerListing
+        currentUserId={profile.user_id}
+        isAdmin={profile.system_role === 'admin'}
+        filters={filters}
+      />
     </PageContainer>
   );
 }

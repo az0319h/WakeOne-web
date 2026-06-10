@@ -11,12 +11,12 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
-import { Icons } from '@/components/icons';
 import { useMutation } from '@tanstack/react-query';
 import { inviteUserMutation, updateUserMutation } from '../api/mutations';
 import { SELECT_NONE_VALUE, type Affiliation } from '../constants/organization';
 import type { User } from '../api/types';
 import { Input } from '@/components/ui/input';
+import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import {
   inviteUserSchema,
@@ -59,6 +59,7 @@ function UserEditForm({ user, onSuccess, onError, onPendingChange }: UserEditFor
     ...updateUserMutation,
     onSuccess: () => {
       notifySuccess('사용자 정보가 저장되었습니다.');
+      editForm.reset();
       onSuccess();
     },
     onError: (error) => {
@@ -147,6 +148,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
   });
 
   const isPending = inviteMutation.isPending || isEditPending;
+  const SubmitIcon = isEdit ? Icons.edit : Icons.send;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -215,7 +217,7 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
             취소
           </Button>
           <Button type='submit' form='user-form-sheet' isLoading={isPending}>
-            <Icons.check className='mr-2 h-4 w-4' />
+            <SubmitIcon className='mr-2 h-4 w-4' />
             {isEdit ? '저장' : '초대 보내기'}
           </Button>
         </SheetFooter>
@@ -230,7 +232,8 @@ export function UserFormSheetTrigger() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Icons.add className='mr-2 h-4 w-4' /> 사용자 초대
+        <Icons.send className='mr-2 h-4 w-4' />
+        사용자 초대
       </Button>
       <UserFormSheet open={open} onOpenChange={setOpen} />
     </>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,15 @@ function toLocalDateTimeInput(value: string): string {
 function toIsoFromInput(value: string): string {
   return new Date(value).toISOString();
 }
+
+const EMPTY_SESSION_FORM_VALUES: OfficeSnackSessionFormValues = {
+  title: '',
+  description: '',
+  registration_start_at: '',
+  registration_end_at: '',
+  voting_start_at: '',
+  voting_end_at: ''
+};
 
 export function SessionFormSheet({ open, onOpenChange, session }: SessionFormSheetProps) {
   const isEdit = !!session;
@@ -106,24 +115,28 @@ export function SessionFormSheet({ open, onOpenChange, session }: SessionFormShe
 
       if (isEdit && session) {
         await updateMutation.mutateAsync({ sessionId: session.id, payload });
+        form.reset();
         return;
       }
 
       await createMutation.mutateAsync(payload);
+      form.reset(EMPTY_SESSION_FORM_VALUES);
     }
   });
 
-  useEffect(() => {
-    if (!open) {
-      setApiError(null);
-    }
-  }, [open]);
-
   const { FormTextField, FormTextareaField } = useFormFields<OfficeSnackSessionFormValues>();
   const isPending = createMutation.isPending || updateMutation.isPending;
+  const SubmitIcon = isEdit ? Icons.edit : Icons.add;
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      setApiError(null);
+    }
+    onOpenChange(nextOpen);
+  }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className='flex min-h-0 flex-col sm:max-w-2xl'>
         <SheetHeader>
           <SheetTitle>{isEdit ? '회차 수정' : '회차 생성'}</SheetTitle>
@@ -244,7 +257,7 @@ export function SessionFormSheet({ open, onOpenChange, session }: SessionFormShe
             취소
           </Button>
           <Button type='submit' form='office-snack-session-form' isLoading={isPending}>
-            <Icons.check className='mr-2 h-4 w-4' />
+            <SubmitIcon className='mr-2 h-4 w-4' />
             {isEdit ? '저장' : '생성'}
           </Button>
         </SheetFooter>

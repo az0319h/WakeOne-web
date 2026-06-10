@@ -191,4 +191,4 @@ plan: docs/plans/{NN}_*-plan.md
 - planner는 **스킬 순서** + **이전 기획 참조(Phase 0)** 완료 후 plan 산출
 - 기획→다음 단계 **승인 게이트** 준수
 - verifier 실패 시 분류(기획 vs 구현) 후 올바른 팀·루프
-- `core-conventions.mdc` Mutation 규칙을 FE 단계에 전달
+- `core-conventions.mdc` Mutation 규칙·**폼 초기화(서버 전송 성공 시 reset)** 를 FE 단계에 전달

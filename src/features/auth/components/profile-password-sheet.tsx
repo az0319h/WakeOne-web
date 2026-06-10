@@ -118,6 +118,7 @@ export function ProfilePasswordSheet({
         </form.AppForm>
         <SheetFooter>
           <Button type='submit' form='profile-password-form' isLoading={isPending}>
+            <Icons.check className='mr-2 h-4 w-4' />
             변경 저장
           </Button>
         </SheetFooter>
