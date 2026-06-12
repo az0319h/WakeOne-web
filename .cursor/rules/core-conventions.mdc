@@ -139,6 +139,21 @@ const updateMutation = useMutation({
 - [ ] FE는 API Route 경유 CUD만 사용 (frontend-dev)
 - [ ] `/dashboard/logs`에서 해당 action 행 확인 AC 또는 API 검증 (verifier)
 
+## E2E 검증 (Playwright · 전역 필수)
+
+**Read를 제외한** 모든 기능 구현은 기획(plan)의 AC를 `.spec.ts`로 박제하고, 검증은 Playwright CLI(`bunx playwright test`)로 **합격/불합격**을 판정한다.
+
+| 항목 | 규칙 |
+|------|------|
+| **판정** | `bunx playwright test` — spec green/red로만 판정 |
+| **MCP** | spec 작성 시 셀렉터 탐색·페이지 추론 **보조만** — **판정에 절대 사용 금지** |
+| **spec 구조** | plan 1개 → `e2e/{feature}/` 아래 흐름·화면 단위 spec 여러 개 (1:N). 파일 안은 `test.describe('{흐름}')` → 개별 `test()` |
+| **셀렉터** | `getByRole` · `getByPlaceholder` · `getByTestId` **만** 허용 — CSS 클래스·DOM 구조 의존 **금지** |
+| **검증 범위** | ①핵심 플로우(정상 경로) ②빈값/검증 실패(에러 노출+제출 차단) ③권한 거부(RBAC 리다이렉트) ④서버 에러(4xx/5xx 시 에러 표시, 앱 안 죽음) — **모든 픽셀 검증 금지** |
+| **activity_logs** | UI E2E **아님** — mutation Route API 테스트로 분리 (요청 → `x-request-id` 헤더 + action 행 생성 확인) |
+| **러너** | `bunx playwright test` 통일 · 설치: `bun add -d @playwright/test` |
+| **인증** | `storageState`로 세션 저장·재사용 — **매 테스트 재로그인 금지** |
+
 ## 컴포넌트 컨벤션 (필수)
 
 | 항목 | 규칙 |
