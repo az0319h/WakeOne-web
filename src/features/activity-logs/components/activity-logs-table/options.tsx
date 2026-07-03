@@ -15,6 +15,17 @@ export const ACTION_OPTIONS: { value: ActivityAction; label: string }[] = [
   { value: 'asset.create', label: 'asset.create' },
   { value: 'asset.update', label: 'asset.update' },
   { value: 'asset.delete', label: 'asset.delete' },
+  { value: 'contract.import_create', label: 'contract.import_create' },
+  { value: 'contract.import_duplicate', label: 'contract.import_duplicate' },
+  { value: 'contract.import_failed', label: 'contract.import_failed' },
+  { value: 'contract.update', label: 'contract.update' },
+  { value: 'contract.soft_delete', label: 'contract.soft_delete' },
+  { value: 'contract.attachment_upload', label: 'contract.attachment_upload' },
+  { value: 'contract.attachment_soft_delete', label: 'contract.attachment_soft_delete' },
+  { value: 'contract.no_attachment_set', label: 'contract.no_attachment_set' },
+  { value: 'contract.no_attachment_unset', label: 'contract.no_attachment_unset' },
+  { value: 'contract.reminder_send', label: 'contract.reminder_send' },
+  { value: 'contract.reminder_failed', label: 'contract.reminder_failed' },
   { value: 'profile.update', label: 'profile.update' },
   { value: 'profile.password_change', label: 'profile.password_change' }
 ];

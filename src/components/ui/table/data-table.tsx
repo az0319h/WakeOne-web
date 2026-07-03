@@ -16,9 +16,27 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
+  onRowClick?: (row: TData, event: React.MouseEvent<HTMLTableRowElement>) => void;
+  isRowClickable?: (row: TData) => boolean;
 }
 
-export function DataTable<TData>({ table, actionBar, children }: DataTableProps<TData>) {
+function isInteractiveRowClickTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest('button, a, input, textarea, select, [role="menuitem"], [role="checkbox"]')
+  );
+}
+
+export function DataTable<TData>({
+  table,
+  actionBar,
+  children,
+  onRowClick,
+  isRowClickable
+}: DataTableProps<TData>) {
   return (
     <div className='flex flex-1 flex-col space-y-4'>
       {children}
@@ -47,8 +65,26 @@ export function DataTable<TData>({ table, actionBar, children }: DataTableProps<
               </TableHeader>
               <TableBody>
                 {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                  table.getRowModel().rows.map((row) => {
+                    const clickable = isRowClickable?.(row.original) ?? Boolean(onRowClick);
+
+                    return (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                      className={clickable ? 'cursor-pointer' : undefined}
+                      onClick={
+                        onRowClick
+                          ? (event) => {
+                              if (isInteractiveRowClickTarget(event.target)) {
+                                return;
+                              }
+
+                              onRowClick(row.original, event);
+                            }
+                          : undefined
+                      }
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
@@ -60,7 +96,8 @@ export function DataTable<TData>({ table, actionBar, children }: DataTableProps<
                         </TableCell>
                       ))}
                     </TableRow>
-                  ))
+                    );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={table.getAllColumns().length} className='h-24 text-center'>

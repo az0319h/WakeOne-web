@@ -43,8 +43,8 @@ export function RecentSales() {
   return (
     <Card className='h-full'>
       <CardHeader>
-        <CardTitle>Recent Sales</CardTitle>
-        <CardDescription>You made 265 sales this month.</CardDescription>
+        <CardTitle>최근 판매</CardTitle>
+        <CardDescription>이번 달 265건의 판매가 발생했습니다.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className='space-y-8'>

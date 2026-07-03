@@ -162,10 +162,30 @@ export async function requireAdminPage(): Promise<AuthProfile> {
   const profile = await requireDashboardSession();
 
   if (profile.system_role !== 'admin') {
-    await redirectWithAccessDeniedFlash('users');
+    redirect('/dashboard/overview');
   }
 
   return profile;
+}
+
+export async function requireAdminSession(): Promise<SessionResult> {
+  const session = await requireSession();
+
+  if (!session.ok) {
+    return session;
+  }
+
+  if (session.profile.system_role !== 'admin') {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: '관리자 권한이 필요합니다.' },
+        { status: 403 }
+      )
+    };
+  }
+
+  return session;
 }
 
 export async function requireOfficeSnacksPage(): Promise<AuthProfile> {

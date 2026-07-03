@@ -1,4 +1,4 @@
-export const ADMIN_DASHBOARD_PATHS = ['/dashboard/users'] as const;
+export const ADMIN_DASHBOARD_PATHS = ['/dashboard/users', '/dashboard/contracts'] as const;
 
 export function isAdminDashboardPath(pathname: string): boolean {
   return ADMIN_DASHBOARD_PATHS.some(

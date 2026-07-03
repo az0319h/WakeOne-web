@@ -44,13 +44,13 @@ export function AreaGraph() {
     <Card>
       <CardHeader>
         <CardTitle>
-          Dotted Area Chart
+          영역 그래프
           <Badge variant='outline'>
             <Icons.trendingUp />
             -5.2%
           </Badge>
         </CardTitle>
-        <CardDescription>Showing total visitors for the last 6 months</CardDescription>
+        <CardDescription>최근 6개월 전체 방문자 현황</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

@@ -18,7 +18,14 @@ const METADATA_ALLOWLIST = new Set([
   'changed_fields',
   'attempted_target',
   'asset_number',
-  'asset_name'
+  'asset_name',
+  'document_number',
+  'source_message_id',
+  'source_type',
+  'file_name',
+  'recipient_email',
+  'missing_document_numbers',
+  'status'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -143,6 +150,11 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       sanitized.changed_fields = value.filter(
         (field) => typeof field === 'string' && !SENSITIVE_FIELD_PATTERN.test(field)
       );
+      continue;
+    }
+
+    if (key === 'missing_document_numbers' && Array.isArray(value)) {
+      sanitized.missing_document_numbers = value.filter((item) => typeof item === 'string');
       continue;
     }
 

@@ -20,7 +20,10 @@ export const searchParams = {
   actor_search: parseAsString,
   action: parseAsString,
   search: parseAsString,
-  status: parseAsString
+  status: parseAsString,
+  from: parseAsString,
+  to: parseAsString,
+  attachment_status: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')
