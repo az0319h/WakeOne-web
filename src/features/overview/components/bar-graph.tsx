@@ -37,13 +37,13 @@ export function BarGraph() {
     <Card>
       <CardHeader>
         <CardTitle>
-          Bar Chart - Multiple
+          막대 그래프
           <Badge variant='outline'>
             <Icons.trendingDown />
             -5.2%
           </Badge>
         </CardTitle>
-        <CardDescription>January - June 2025</CardDescription>
+        <CardDescription>2025년 1월 - 6월</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

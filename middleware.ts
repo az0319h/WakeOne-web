@@ -4,6 +4,7 @@ import {
   getAdminAccessDeniedParam,
   isAdminDashboardPath
 } from '@/config/admin-routes';
+import { isDisabledDashboardPath } from '@/config/disabled-routes';
 import {
   isOfficeSnacksDashboardPath,
   OFFICE_SNACKS_ACCESS_DENIED_KEY
@@ -170,6 +171,15 @@ export async function middleware(request: NextRequest) {
       signInUrl.pathname = '/auth/sign-in';
       signInUrl.searchParams.set('redirectTo', pathname);
       const redirectResponse = NextResponse.redirect(signInUrl);
+      copyCookies(response, redirectResponse);
+      return redirectResponse;
+    }
+
+    if (isDisabledDashboardPath(pathname)) {
+      const overviewUrl = request.nextUrl.clone();
+      overviewUrl.pathname = '/dashboard/overview';
+      overviewUrl.search = '';
+      const redirectResponse = NextResponse.redirect(overviewUrl);
       copyCookies(response, redirectResponse);
       return redirectResponse;
     }

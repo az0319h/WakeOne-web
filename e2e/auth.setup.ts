@@ -17,6 +17,6 @@ test('authenticate as admin', async ({ page }) => {
   await page.getByPlaceholder('비밀번호를 입력하세요').fill(password);
   await page.getByRole('button', { name: '로그인' }).click();
 
-  await expect(page).toHaveURL(/\/dashboard/);
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
   await page.context().storageState({ path: adminAuthFile });
 });

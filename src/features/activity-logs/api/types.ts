@@ -13,10 +13,21 @@ export type ActivityAction =
   | 'asset.create'
   | 'asset.update'
   | 'asset.delete'
+  | 'contract.import_create'
+  | 'contract.import_duplicate'
+  | 'contract.import_failed'
+  | 'contract.update'
+  | 'contract.soft_delete'
+  | 'contract.attachment_upload'
+  | 'contract.attachment_soft_delete'
+  | 'contract.no_attachment_set'
+  | 'contract.no_attachment_unset'
+  | 'contract.reminder_send'
+  | 'contract.reminder_failed'
   | 'profile.update'
   | 'profile.password_change';
 
-export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'asset';
+export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'asset' | 'contract';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -37,6 +48,12 @@ export type ActivityLogMetadata = {
   attempted_target?: string;
   asset_number?: string;
   asset_name?: string;
+  document_number?: string;
+  source_message_id?: string;
+  source_type?: string;
+  file_name?: string;
+  recipient_email?: string;
+  missing_document_numbers?: string[];
   status?: string;
   category?: string;
   usage_location?: string;

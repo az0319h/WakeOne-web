@@ -15,10 +15,10 @@ import { NavGroup } from '@/types';
  */
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
+    label: '개요',
     items: [
       {
-        title: 'Dashboard',
+        title: '대시보드',
         url: '/dashboard/overview',
         icon: 'dashboard',
         isActive: false,
@@ -35,7 +35,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Users',
+        title: '사용자',
         url: '/dashboard/users',
         icon: 'teams',
         shortcut: ['u', 'u'],
@@ -44,98 +44,12 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Workspaces',
-        url: '/dashboard/workspaces',
-        icon: 'workspace',
-        shortcut: ['w', 'w'],
-        isActive: false,
-        items: []
-      },
-      {
-        title: 'Office Snacks',
-        url: '/dashboard/office-snacks',
-        icon: 'pizza',
-        shortcut: ['o', 's'],
-        isActive: false,
-        access: { officeSnacks: true },
-        items: []
-      },
-      {
-        title: 'Kanban',
-        url: '/dashboard/kanban',
-        icon: 'kanban',
-        shortcut: ['k', 'k'],
-        isActive: false,
-        items: []
-      },
-      {
-        title: 'Chat',
-        url: '/dashboard/chat',
-        icon: 'chat',
-        shortcut: ['c', 'c'],
-        isActive: false,
-        items: []
-      }
-    ]
-  },
-  {
-    label: 'Elements',
-    items: [
-      {
-        title: 'Forms',
-        url: '#',
+        title: '계약서 관리',
+        url: '/dashboard/contracts',
         icon: 'forms',
-        isActive: true,
-        items: [
-          {
-            title: 'Basic Form',
-            url: '/dashboard/forms/basic',
-            icon: 'forms',
-            shortcut: ['f', 'f']
-          },
-          {
-            title: 'Multi-Step Form',
-            url: '/dashboard/forms/multi-step',
-            icon: 'forms'
-          },
-          {
-            title: 'Sheet & Dialog',
-            url: '/dashboard/forms/sheet-form',
-            icon: 'forms'
-          },
-          {
-            title: 'Advanced Patterns',
-            url: '/dashboard/forms/advanced',
-            icon: 'forms'
-          }
-        ]
-      },
-      {
-        title: 'Billing',
-        url: '/dashboard/billing',
-        icon: 'billing',
+        shortcut: ['c', 't'],
         isActive: false,
-        items: []
-      },
-      {
-        title: 'Exclusive',
-        url: '/dashboard/exclusive',
-        icon: 'exclusive',
-        isActive: false,
-        items: []
-      },
-      {
-        title: 'React Query',
-        url: '/dashboard/react-query',
-        icon: 'code',
-        isActive: false,
-        items: []
-      },
-      {
-        title: 'Icons',
-        url: '/dashboard/elements/icons',
-        icon: 'palette',
-        isActive: false,
+        access: { systemRole: 'admin' },
         items: []
       }
     ]
@@ -144,13 +58,13 @@ export const navGroups: NavGroup[] = [
     label: '',
     items: [
       {
-        title: 'Account',
+        title: '계정',
         url: '#',
         icon: 'account',
         isActive: true,
         items: [
           {
-            title: 'Profile',
+            title: '프로필',
             url: '/dashboard/profile',
             icon: 'profile',
             shortcut: ['p', 'r']
@@ -160,12 +74,6 @@ export const navGroups: NavGroup[] = [
             url: '/dashboard/logs',
             icon: 'forms',
             shortcut: ['l', 'g']
-          },
-          {
-            title: 'Notifications',
-            url: '/dashboard/notifications',
-            icon: 'notification',
-            shortcut: ['n', 'n']
           }
         ]
       }
