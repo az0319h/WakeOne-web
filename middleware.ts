@@ -48,6 +48,10 @@ function isApiPath(pathname: string): boolean {
   return pathname.startsWith('/api/');
 }
 
+function isServiceTokenApiPath(pathname: string): boolean {
+  return pathname === '/api/contracts/import' || pathname === '/api/contracts/reminders';
+}
+
 function isDashboardPath(pathname: string): boolean {
   return pathname === '/dashboard' || pathname.startsWith('/dashboard/');
 }
@@ -111,7 +115,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ message: 'Forbidden origin' }, { status: 403 });
   }
 
-  if (isApiPath(pathname)) {
+  if (isApiPath(pathname) && !isServiceTokenApiPath(pathname)) {
     const { response, user, profile } = await updateSession(request);
 
     if (profile?.status === 'inactive') {
