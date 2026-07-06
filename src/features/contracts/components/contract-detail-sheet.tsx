@@ -17,7 +17,11 @@ import { Icons } from '@/components/icons';
 import { notifyError } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { contractByIdQueryOptions } from '../api/queries';
-import { downloadContractAttachment } from '../api/service';
+import {
+  canOpenContractAttachment,
+  downloadContractAttachment,
+  openContractAttachment
+} from '../api/service';
 import type { ContractAttachmentSummary, ContractDocument } from '../api/types';
 import { CONTRACT_ATTACHMENT_STATUS_LABELS } from './contracts-table/options';
 
@@ -110,6 +114,7 @@ function AttachmentRow({
   attachment: ContractAttachmentSummary;
 }) {
   const isActive = attachment.status === 'active';
+  const canOpen = canOpenContractAttachment(attachment);
 
   async function handleDownload() {
     try {
@@ -126,6 +131,12 @@ function AttachmentRow({
           ? error.message
           : '첨부파일 다운로드에 실패했습니다.';
       notifyError(message);
+    }
+  }
+
+  function handleOpen() {
+    if (!openContractAttachment(contractId, attachment.id)) {
+      notifyError('첨부파일을 새 탭으로 열 수 없습니다.');
     }
   }
 
@@ -154,14 +165,31 @@ function AttachmentRow({
         </p>
       </div>
       <div className='flex gap-2'>
+        {canOpen ? (
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            disabled={!isActive}
+            aria-label={`${attachment.file_name} 열기`}
+            title='열기'
+            onClick={handleOpen}
+          >
+            <Icons.externalLink className='h-4 w-4' />
+            <span className='sr-only'>열기</span>
+          </Button>
+        ) : null}
         <Button
           type='button'
           variant='outline'
-          size='sm'
+          size='icon'
           disabled={!isActive}
+          aria-label={`${attachment.file_name} 다운로드`}
+          title='다운로드'
           onClick={handleDownload}
         >
-          다운로드
+          <Icons.download className='h-4 w-4' />
+          <span className='sr-only'>다운로드</span>
         </Button>
       </div>
     </div>
