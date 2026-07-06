@@ -90,6 +90,8 @@ type ContractReminderTargetRow = {
 
 const SAFE_EXTENSION_PATTERN = /^[a-z0-9]+$/;
 const MAX_SAFE_EXTENSION_LENGTH = 16;
+const ACTIVE_ATTACHMENT_NO_ATTACHMENT_MESSAGE =
+  '활성 첨부파일이 있는 계약서는 첨부파일 없음으로 지정할 수 없습니다.';
 
 const CONTRACT_SELECT = `
   id,
@@ -676,6 +678,15 @@ export async function setContractNoAttachment(input: {
   actorUserId: string;
 }): Promise<ContractDocument | null> {
   const supabase = getServiceRoleClient();
+  if (input.required) {
+    const attachmentsByContractId = await listAttachmentsByContractIds([input.contractId]);
+    const activeAttachments =
+      attachmentsByContractId.get(input.contractId)?.filter((attachment) => attachment.status === 'active') ?? [];
+    if (activeAttachments.length > 0) {
+      throw new Error(ACTIVE_ATTACHMENT_NO_ATTACHMENT_MESSAGE);
+    }
+  }
+
   const { data, error } = await supabase
     .from('contract_documents')
     .update({

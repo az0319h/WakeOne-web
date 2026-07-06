@@ -24,7 +24,11 @@ import {
   updateContractMutation,
   uploadContractAttachmentMutation
 } from '../api/mutations';
-import { downloadContractAttachment } from '../api/service';
+import {
+  canOpenContractAttachment,
+  downloadContractAttachment,
+  openContractAttachment
+} from '../api/service';
 import {
   CONTRACT_ATTACHMENT_MAX_BYTES,
   type ContractAttachmentSummary,
@@ -128,6 +132,7 @@ function ContractAttachmentRow({
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const isActive = attachment.status === 'active';
+  const canOpen = canOpenContractAttachment(attachment);
 
   const deleteMutation = useMutation({
     ...softDeleteContractAttachmentMutation,
@@ -160,6 +165,12 @@ function ContractAttachmentRow({
           ? error.message
           : '첨부파일 다운로드에 실패했습니다.';
       notifyError(message);
+    }
+  }
+
+  function handleOpen() {
+    if (!openContractAttachment(contractId, attachment.id)) {
+      notifyError('첨부파일을 새 탭으로 열 수 없습니다.');
     }
   }
 
@@ -200,23 +211,43 @@ function ContractAttachmentRow({
         </p>
       </div>
       <div className='flex gap-2'>
+        {canOpen ? (
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            disabled={!isActive}
+            aria-label={`${attachment.file_name} 열기`}
+            title='열기'
+            onClick={handleOpen}
+          >
+            <Icons.externalLink className='h-4 w-4' />
+            <span className='sr-only'>열기</span>
+          </Button>
+        ) : null}
         <Button
           type='button'
           variant='outline'
-          size='sm'
+          size='icon'
           disabled={!isActive}
+          aria-label={`${attachment.file_name} 다운로드`}
+          title='다운로드'
           onClick={handleDownload}
         >
-          다운로드
+          <Icons.download className='h-4 w-4' />
+          <span className='sr-only'>다운로드</span>
         </Button>
         <Button
           type='button'
           variant='outline'
-          size='sm'
+          size='icon'
           disabled={!isActive}
+          aria-label={`${attachment.file_name} 삭제 처리`}
+          title='삭제 처리'
           onClick={() => setDeleteOpen(true)}
         >
-          삭제 처리
+          <Icons.trash className='h-4 w-4' />
+          <span className='sr-only'>삭제 처리</span>
         </Button>
       </div>
     </div>
@@ -242,6 +273,11 @@ function ContractAttachmentManager({
   const [noAttachmentOpen, setNoAttachmentOpen] = useState(false);
   const [noAttachmentReason, setNoAttachmentReason] = useState('');
   const nextNoAttachmentValue = !contract.no_attachment_required;
+  const hasActiveAttachments = contract.attachments.some(
+    (attachment) => attachment.status === 'active'
+  );
+  const isNoAttachmentSetBlocked =
+    nextNoAttachmentValue && hasActiveAttachments;
 
   const noAttachmentMutation = useMutation({
     ...setContractNoAttachmentMutation,
@@ -275,24 +311,27 @@ function ContractAttachmentManager({
       selectedFiles.map((selectedFile) => selectedFile.name)
     );
     const incomingFileNames = new Set<string>();
-    const duplicatedFile = files.find(
-      (file) => {
-        const isDuplicated =
-          existingFileNames.has(file.name) ||
-          selectedFileNames.has(file.name) ||
-          incomingFileNames.has(file.name);
-        incomingFileNames.add(file.name);
-        return isDuplicated;
-      }
-    );
+    const duplicatedFile = files.find((file) => {
+      const isDuplicated =
+        existingFileNames.has(file.name) ||
+        selectedFileNames.has(file.name) ||
+        incomingFileNames.has(file.name);
+      incomingFileNames.add(file.name);
+      return isDuplicated;
+    });
     if (duplicatedFile) {
-      notifyError(`이미 등록되었거나 선택된 파일명입니다: ${duplicatedFile.name}`);
+      notifyError(
+        `이미 등록되었거나 선택된 파일명입니다: ${duplicatedFile.name}`
+      );
       event.target.value = '';
       return;
     }
 
     const nextFiles = [...selectedFiles, ...files];
-    const selectedTotalSize = nextFiles.reduce((total, file) => total + file.size, 0);
+    const selectedTotalSize = nextFiles.reduce(
+      (total, file) => total + file.size,
+      0
+    );
     const nextActiveTotalSize =
       contract.active_attachment_total_size + selectedTotalSize;
     if (nextActiveTotalSize > CONTRACT_ATTACHMENT_MAX_BYTES) {
@@ -306,6 +345,12 @@ function ContractAttachmentManager({
   }
 
   function handleNoAttachmentConfirm() {
+    if (isNoAttachmentSetBlocked) {
+      notifyError('활성 첨부파일이 있어 첨부파일 없음으로 지정할 수 없습니다.');
+      setNoAttachmentOpen(false);
+      return;
+    }
+
     noAttachmentMutation.mutate({
       id: contract.id,
       payload: {
@@ -385,7 +430,9 @@ function ContractAttachmentManager({
                 <div className='min-w-0'>
                   <div className='flex items-center gap-2'>
                     <Icons.paperclip className='h-4 w-4 shrink-0' />
-                    <span className='truncate text-sm font-medium'>{file.name}</span>
+                    <span className='truncate text-sm font-medium'>
+                      {file.name}
+                    </span>
                     <Badge variant='outline' className='shrink-0'>
                       저장 대기
                     </Badge>
@@ -434,14 +481,20 @@ function ContractAttachmentManager({
               {contract.no_attachment_required
                 ? contract.no_attachment_reason ||
                   '첨부파일 없음으로 지정되어 독촉 대상에서 제외됩니다.'
-                : '첨부파일이 필요 없는 문서라면 예외로 지정할 수 있습니다.'}
+                : isNoAttachmentSetBlocked
+                  ? '활성 첨부파일이 있어 첨부파일 없음으로 지정할 수 없습니다.'
+                  : '첨부파일이 필요 없는 문서라면 예외로 지정할 수 있습니다.'}
             </p>
           </div>
           <Button
             type='button'
             variant='outline'
             size='sm'
-            disabled={contract.status === 'soft_deleted' || isSaving}
+            disabled={
+              contract.status === 'soft_deleted' ||
+              isSaving ||
+              isNoAttachmentSetBlocked
+            }
             onClick={() => setNoAttachmentOpen(true)}
           >
             {contract.no_attachment_required
@@ -454,6 +507,7 @@ function ContractAttachmentManager({
             value={noAttachmentReason}
             onChange={(event) => setNoAttachmentReason(event.target.value)}
             placeholder='지정 사유를 입력해 주세요. (선택)'
+            disabled={isNoAttachmentSetBlocked}
             className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring mt-3 min-h-20 w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
           />
         ) : null}
@@ -549,7 +603,9 @@ export function ContractEditSheet({
         onOpenChange(false);
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : '계약서 수정에 실패했습니다.';
+          error instanceof Error
+            ? error.message
+            : '계약서 수정에 실패했습니다.';
         setApiError(message);
         notifyError(message);
       }
@@ -569,7 +625,9 @@ export function ContractEditSheet({
   }, [open, contract, form]);
 
   function handleRemoveSelectedFile(index: number) {
-    setSelectedFiles((files) => files.filter((_, fileIndex) => fileIndex !== index));
+    setSelectedFiles((files) =>
+      files.filter((_, fileIndex) => fileIndex !== index)
+    );
   }
 
   return (
@@ -724,7 +782,9 @@ export function ContractEditSheet({
                   selectedFiles={selectedFiles}
                   onSelectedFilesChange={setSelectedFiles}
                   onRemoveSelectedFile={handleRemoveSelectedFile}
-                  isSaving={updateMutation.isPending || uploadMutation.isPending}
+                  isSaving={
+                    updateMutation.isPending || uploadMutation.isPending
+                  }
                 />
               ) : null}
             </div>

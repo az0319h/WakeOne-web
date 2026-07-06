@@ -101,8 +101,49 @@ export function reminderCronActor() {
   };
 }
 
-export function attachmentContentDisposition(fileName: string): string {
+export type AttachmentContentDispositionType = 'attachment' | 'inline';
+
+const INLINE_OPENABLE_CONTENT_TYPES = new Map([
+  ['apng', 'image/apng'],
+  ['avif', 'image/avif'],
+  ['bmp', 'image/bmp'],
+  ['gif', 'image/gif'],
+  ['ico', 'image/x-icon'],
+  ['jpg', 'image/jpeg'],
+  ['jpeg', 'image/jpeg'],
+  ['pdf', 'application/pdf'],
+  ['png', 'image/png'],
+  ['webp', 'image/webp']
+]);
+
+function getFileExtension(fileName: string): string {
+  const baseName = fileName.split(/[\\/]/).pop()?.trim() ?? '';
+  const dotIndex = baseName.lastIndexOf('.');
+  return dotIndex > -1 ? baseName.slice(dotIndex + 1).toLowerCase() : '';
+}
+
+export function isInlineOpenableAttachment(contentType: string | null, fileName: string): boolean {
+  const normalizedContentType = contentType?.split(';')[0]?.trim().toLowerCase();
+  if (normalizedContentType === 'application/pdf') {
+    return true;
+  }
+
+  if (normalizedContentType?.startsWith('image/') && normalizedContentType !== 'image/svg+xml') {
+    return true;
+  }
+
+  return INLINE_OPENABLE_CONTENT_TYPES.has(getFileExtension(fileName));
+}
+
+export function attachmentResponseContentType(contentType: string | null, fileName: string): string {
+  return contentType ?? INLINE_OPENABLE_CONTENT_TYPES.get(getFileExtension(fileName)) ?? 'application/octet-stream';
+}
+
+export function attachmentContentDisposition(
+  fileName: string,
+  disposition: AttachmentContentDispositionType = 'attachment'
+): string {
   const fallback = fileName.replaceAll(/[^\w.-]/g, '_') || 'contract-attachment';
   const encoded = encodeURIComponent(fileName);
-  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+  return `${disposition}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
 }

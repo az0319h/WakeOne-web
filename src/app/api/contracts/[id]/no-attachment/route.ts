@@ -11,6 +11,8 @@ import {
 } from '../../_utils';
 
 type Params = { params: Promise<{ id: string }> };
+const ACTIVE_ATTACHMENT_NO_ATTACHMENT_MESSAGE =
+  '활성 첨부파일이 있는 계약서는 첨부파일 없음으로 지정할 수 없습니다.';
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   const requestId = newContractRequestId();
@@ -129,6 +131,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : '첨부파일 없음 상태 변경 중 오류가 발생했습니다.';
+    const status = message === ACTIVE_ATTACHMENT_NO_ATTACHMENT_MESSAGE ? 400 : 500;
     return jsonWithActivityLog(
       requestId,
       {
@@ -139,10 +142,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         targetLabel: contractTargetLabel({ id: parsedId }),
         httpMethod: 'PATCH',
         httpPath,
-        metadata: buildErrorMetadata('internal_error', message)
+        metadata: buildErrorMetadata(status === 400 ? 'validation' : 'internal_error', message)
       },
       { success: false, message },
-      500
+      status
     );
   }
 }
