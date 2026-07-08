@@ -20,6 +20,7 @@ export type ContractDocument = {
   id: number;
   document_number: string;
   document_created_at: string;
+  approved_at: string | null;
   author_user_id: string | null;
   author_email: string | null;
   author_name: string;
@@ -87,6 +88,7 @@ export type ContractAttachmentMutationResponse = {
 export type ContractImportPayload = {
   document_number: string;
   document_created_at: string;
+  approved_at: string;
   author_name: string;
   author_email?: string | null;
   contract_target: string;
@@ -118,7 +120,9 @@ export type ContractUpdatePayload = Partial<
     | 'source_document_url'
     | 'external_document_id'
   >
->;
+> & {
+  approved_at?: string | null;
+};
 
 export type ContractNoAttachmentPayload = {
   no_attachment_required: boolean;

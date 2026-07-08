@@ -21,6 +21,7 @@ type ContractDocumentRow = {
   id: number;
   document_number: string;
   document_created_at: string;
+  approved_at: string | null;
   author_user_id: string | null;
   author_email: string | null;
   author_name: string;
@@ -97,6 +98,7 @@ const CONTRACT_SELECT = `
   id,
   document_number,
   document_created_at,
+  approved_at,
   author_user_id,
   author_email,
   author_name,
@@ -148,7 +150,7 @@ function toDateOnly(value: string | null | undefined): string | null {
 }
 
 function parseSort(sortRaw: string | undefined): { column: keyof ContractDocumentRow; ascending: boolean } {
-  const fallback = { column: 'document_created_at' as keyof ContractDocumentRow, ascending: false };
+  const fallback = { column: 'approved_at' as keyof ContractDocumentRow, ascending: false };
   if (!sortRaw) {
     return fallback;
   }
@@ -156,7 +158,15 @@ function parseSort(sortRaw: string | undefined): { column: keyof ContractDocumen
   try {
     const sortItems = JSON.parse(sortRaw) as Array<{ id: string; desc: boolean }>;
     const first = sortItems[0];
-    const allowed = new Set(['document_created_at', 'document_number', 'author_name', 'contract_target', 'amount', 'updated_at']);
+    const allowed = new Set([
+      'approved_at',
+      'document_created_at',
+      'document_number',
+      'author_name',
+      'contract_target',
+      'amount',
+      'updated_at'
+    ]);
     if (!first || !allowed.has(first.id)) {
       return fallback;
     }
@@ -324,11 +334,11 @@ export async function listContracts(
   let query = supabase.from('contract_documents').select(CONTRACT_SELECT, { count: 'exact' });
 
   if (filters.from) {
-    query = query.gte('document_created_at', filters.from);
+    query = query.gte('approved_at', filters.from);
   }
 
   if (filters.to) {
-    query = query.lte('document_created_at', filters.to);
+    query = query.lte('approved_at', filters.to);
   }
 
   if (search) {
@@ -415,7 +425,7 @@ export async function recordContractImportEvent(input: {
 export async function importContractDocument(
   payload: ContractImportPayload,
   requestId: string
-): Promise<{ status: 'created' | 'duplicate'; contract: ContractDocument }> {
+): Promise<{ status: 'created' | 'duplicate' | 'backfill'; contract: ContractDocument }> {
   const supabase = getServiceRoleClient();
   const sanitizedPayload = sanitizeExternalPayload(payload.external_payload);
   const documentNumber = payload.document_number.trim();
@@ -431,6 +441,41 @@ export async function importContractDocument(
   }
 
   if (existing) {
+    const existingRow = existing as ContractDocumentRow;
+
+    if (!existingRow.approved_at && payload.approved_at) {
+      const { data: backfilled, error: backfillError } = await supabase
+        .from('contract_documents')
+        .update({
+          approved_at: payload.approved_at,
+          synced_at: new Date().toISOString()
+        })
+        .eq('id', existingRow.id)
+        .select(CONTRACT_SELECT)
+        .single();
+
+      if (backfillError) {
+        throw new Error(backfillError.message);
+      }
+
+      await recordContractImportEvent({
+        requestId,
+        status: 'duplicate',
+        documentNumber,
+        sourceMessageId: payload.source_message_id ?? null,
+        receivedPayload: payload.external_payload
+      });
+
+      const attachmentsByContractId = await listAttachmentsByContractIds([existingRow.id]);
+      return {
+        status: 'backfill',
+        contract: mapContract(
+          backfilled as unknown as ContractDocumentRow,
+          attachmentsByContractId.get(existingRow.id) ?? []
+        )
+      };
+    }
+
     await recordContractImportEvent({
       requestId,
       status: 'duplicate',
@@ -438,10 +483,10 @@ export async function importContractDocument(
       sourceMessageId: payload.source_message_id ?? null,
       receivedPayload: payload.external_payload
     });
-    const attachmentsByContractId = await listAttachmentsByContractIds([(existing as ContractDocumentRow).id]);
+    const attachmentsByContractId = await listAttachmentsByContractIds([existingRow.id]);
     return {
       status: 'duplicate',
-      contract: mapContract(existing as ContractDocumentRow, attachmentsByContractId.get((existing as ContractDocumentRow).id) ?? [])
+      contract: mapContract(existingRow, attachmentsByContractId.get(existingRow.id) ?? [])
     };
   }
 
@@ -451,6 +496,7 @@ export async function importContractDocument(
       ...payload,
       document_number: documentNumber,
       document_created_at: toDateOnly(payload.document_created_at),
+      approved_at: payload.approved_at,
       contract_start_date: toDateOnly(payload.contract_start_date),
       contract_end_date: toDateOnly(payload.contract_end_date),
       source_type: 'openclaw_gmail',
@@ -487,6 +533,7 @@ export async function updateContractDocument(
     .update({
       ...payload,
       document_created_at: payload.document_created_at ? toDateOnly(payload.document_created_at) : undefined,
+      approved_at: 'approved_at' in payload ? payload.approved_at : undefined,
       contract_start_date:
         'contract_start_date' in payload ? toDateOnly(payload.contract_start_date) : undefined,
       contract_end_date: 'contract_end_date' in payload ? toDateOnly(payload.contract_end_date) : undefined,

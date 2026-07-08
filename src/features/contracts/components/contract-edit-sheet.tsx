@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
@@ -44,8 +44,14 @@ interface ContractEditSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface ContractEditSheetContentProps {
+  contract: ContractDocument;
+  onOpenChange: (open: boolean) => void;
+}
+
 type ContractEditFormValues = {
   document_created_at: string;
+  approved_at: string;
   author_name: string;
   author_email: string;
   contract_target: string;
@@ -57,11 +63,28 @@ type ContractEditFormValues = {
   source_document_url: string;
 };
 
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 10);
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function toFormValues(
   contract?: ContractDocument | null
 ): ContractEditFormValues {
   return {
-    document_created_at: contract?.document_created_at ?? '',
+    document_created_at: toDateInputValue(contract?.document_created_at),
+    approved_at: toDateInputValue(contract?.approved_at),
     author_name: contract?.author_name ?? '',
     author_email: contract?.author_email ?? '',
     contract_target: contract?.contract_target ?? '',
@@ -108,6 +131,13 @@ function buildSubmitSchema() {
       .refine(
         (value) => !Number.isNaN(Date.parse(value)),
         '문서 생성일 형식이 올바르지 않습니다.'
+      ),
+    approved_at: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === '' || !Number.isNaN(Date.parse(value)),
+        '문서승인일 형식이 올바르지 않습니다.'
       ),
     author_name: z.string().trim().min(1, '작성자를 입력해 주세요.'),
     author_email: z.string(),
@@ -516,11 +546,10 @@ function ContractAttachmentManager({
   );
 }
 
-export function ContractEditSheet({
+function ContractEditSheetContent({
   contract,
-  open,
   onOpenChange
-}: ContractEditSheetProps) {
+}: ContractEditSheetContentProps) {
   const [apiError, setApiError] = useState<string | null>(null);
   const [displayContract, setDisplayContract] =
     useState<ContractDocument | null>(contract);
@@ -536,13 +565,10 @@ export function ContractEditSheet({
       onSubmit: buildSubmitSchema()
     },
     onSubmit: async ({ value }) => {
-      if (!contract) {
-        return;
-      }
-
       setApiError(null);
       const payload: ContractUpdatePayload = {
         document_created_at: value.document_created_at.trim(),
+        approved_at: cleanOptionalText(value.approved_at),
         author_name: value.author_name.trim(),
         author_email: cleanOptionalText(value.author_email),
         contract_target: value.contract_target.trim(),
@@ -615,15 +641,6 @@ export function ContractEditSheet({
   const { FormTextField, FormTextareaField } =
     useFormFields<ContractEditFormValues>();
 
-  useEffect(() => {
-    if (open && contract) {
-      form.reset(toFormValues(contract));
-      setDisplayContract(contract);
-      setApiError(null);
-      setSelectedFiles([]);
-    }
-  }, [open, contract, form]);
-
   function handleRemoveSelectedFile(index: number) {
     setSelectedFiles((files) =>
       files.filter((_, fileIndex) => fileIndex !== index)
@@ -631,15 +648,7 @@ export function ContractEditSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex min-h-0 flex-col sm:max-w-2xl'>
-        <SheetHeader>
-          <SheetTitle>계약서 수정</SheetTitle>
-          <SheetDescription>
-            OpenClaw가 수집한 계약 문서 정보를 보정합니다.
-          </SheetDescription>
-        </SheetHeader>
-
+    <>
         {apiError ? (
           <div className='rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive'>
             {apiError}
@@ -655,7 +664,8 @@ export function ContractEditSheet({
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                 <form.AppField
                   name='document_created_at'
-                  children={(field) => (
+                >
+                  {(field) => (
                     <field.FieldSet>
                       <field.Field>
                         <field.FieldLabel htmlFor={field.name}>
@@ -665,6 +675,7 @@ export function ContractEditSheet({
                         <input
                           id={field.name}
                           name={field.name}
+                          aria-label='문서 생성일'
                           type='date'
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -677,7 +688,33 @@ export function ContractEditSheet({
                       <field.FieldError />
                     </field.FieldSet>
                   )}
-                />
+                </form.AppField>
+                <form.AppField
+                  name='approved_at'
+                >
+                  {(field) => (
+                    <field.FieldSet>
+                      <field.Field>
+                        <field.FieldLabel htmlFor={field.name}>
+                          문서승인일
+                        </field.FieldLabel>
+                        <input
+                          id={field.name}
+                          name={field.name}
+                          aria-label='문서승인일'
+                          type='date'
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(event) =>
+                            field.handleChange(event.target.value)
+                          }
+                          className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+                        />
+                      </field.Field>
+                      <field.FieldError />
+                    </field.FieldSet>
+                  )}
+                </form.AppField>
                 <FormTextField
                   name='author_name'
                   label='작성자'
@@ -716,7 +753,8 @@ export function ContractEditSheet({
                 />
                 <form.AppField
                   name='contract_start_date'
-                  children={(field) => (
+                >
+                  {(field) => (
                     <field.FieldSet>
                       <field.Field>
                         <field.FieldLabel htmlFor={field.name}>
@@ -725,6 +763,7 @@ export function ContractEditSheet({
                         <input
                           id={field.name}
                           name={field.name}
+                          aria-label='계약 시작일'
                           type='date'
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -737,10 +776,11 @@ export function ContractEditSheet({
                       <field.FieldError />
                     </field.FieldSet>
                   )}
-                />
+                </form.AppField>
                 <form.AppField
                   name='contract_end_date'
-                  children={(field) => (
+                >
+                  {(field) => (
                     <field.FieldSet>
                       <field.Field>
                         <field.FieldLabel htmlFor={field.name}>
@@ -749,6 +789,7 @@ export function ContractEditSheet({
                         <input
                           id={field.name}
                           name={field.name}
+                          aria-label='계약 종료일'
                           type='date'
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -761,7 +802,7 @@ export function ContractEditSheet({
                       <field.FieldError />
                     </field.FieldSet>
                   )}
-                />
+                </form.AppField>
               </div>
 
               <FormTextareaField
@@ -808,6 +849,32 @@ export function ContractEditSheet({
             저장
           </Button>
         </SheetFooter>
+    </>
+  );
+}
+
+export function ContractEditSheet({
+  contract,
+  open,
+  onOpenChange
+}: ContractEditSheetProps) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className='flex min-h-0 flex-col sm:max-w-2xl'>
+        <SheetHeader>
+          <SheetTitle>계약서 수정</SheetTitle>
+          <SheetDescription>
+            OpenClaw가 수집한 계약 문서 정보를 보정합니다.
+          </SheetDescription>
+        </SheetHeader>
+
+        {contract ? (
+          <ContractEditSheetContent
+            key={contract.id}
+            contract={contract}
+            onOpenChange={onOpenChange}
+          />
+        ) : null}
       </SheetContent>
     </Sheet>
   );
