@@ -50,8 +50,6 @@ export function UserProfileModal({ user, open, onOpenChange }: UserProfileModalP
   const canEdit = user.status === 'active' && !isSelf;
   const fullName = `${user.first_name} ${user.last_name}`.trim();
   const subtitle = buildSubtitle(user);
-  const inviteVariant = user.invite_status === 'accepted' ? 'default' : 'secondary';
-  const inviteLabel = user.invite_status === 'accepted' ? '수락' : '대기';
   const isActive = user.status === 'active';
 
   return (
@@ -110,10 +108,6 @@ export function UserProfileModal({ user, open, onOpenChange }: UserProfileModalP
                   <Badge variant={isActive ? 'outline' : 'destructive'}>
                     {isActive ? '활성' : '비활성'}
                   </Badge>
-                </div>
-                <div className='space-y-2'>
-                  <p className='text-muted-foreground text-sm'>초대 상태</p>
-                  <Badge variant={inviteVariant}>{inviteLabel}</Badge>
                 </div>
               </aside>
             </div>

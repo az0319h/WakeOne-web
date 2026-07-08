@@ -1,4 +1,5 @@
 export type ActivityAction =
+  | 'user.create'
   | 'user.invite'
   | 'user.update'
   | 'user.reactivate'

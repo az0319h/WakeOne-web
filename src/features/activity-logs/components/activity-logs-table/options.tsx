@@ -1,6 +1,7 @@
 import type { ActivityAction } from '../../api/types';
 
 export const ACTION_OPTIONS: { value: ActivityAction; label: string }[] = [
+  { value: 'user.create', label: 'user.create' },
   { value: 'user.invite', label: 'user.invite' },
   { value: 'user.update', label: 'user.update' },
   { value: 'user.reactivate', label: 'user.reactivate' },

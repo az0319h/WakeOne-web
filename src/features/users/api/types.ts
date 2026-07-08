@@ -40,6 +40,17 @@ export type User = {
   updated_at: string;
 };
 
+export type CreateUserPayload = {
+  email: string;
+  affiliation: Affiliation;
+  department: string;
+  rank: string;
+  job_title: string;
+  system_role: 'admin' | 'user';
+  birthday: string;
+};
+
+/** @deprecated Use CreateUserPayload. */
 export type InvitePayload = {
   email: string;
 };

@@ -1,5 +1,11 @@
 import { apiClient, apiClientWithMessage } from '@/lib/api-client';
-import type { InvitePayload, UserFilters, UserUpdatePayload, UsersResponse } from './types';
+import type {
+  CreateUserPayload,
+  InvitePayload,
+  UserFilters,
+  UserUpdatePayload,
+  UsersResponse
+} from './types';
 
 export async function getUsers(filters: UserFilters): Promise<UsersResponse> {
   const searchParams = new URLSearchParams();
@@ -14,6 +20,14 @@ export async function getUsers(filters: UserFilters): Promise<UsersResponse> {
   return apiClient<UsersResponse>(`/users${queryString ? `?${queryString}` : ''}`);
 }
 
+export async function createUser(data: CreateUserPayload) {
+  return apiClientWithMessage<{ success: boolean; message: string; user_id: string }>('/users', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+/** @deprecated Use createUser. */
 export async function inviteUser(data: InvitePayload) {
   return apiClientWithMessage<{ success: boolean; message: string }>('/users', {
     method: 'POST',

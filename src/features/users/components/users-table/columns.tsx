@@ -8,6 +8,7 @@ import { formatPhoneDisplay } from '@/lib/phone';
 import { UserAvatarCell } from '../user-profile-modal';
 import { CellAction } from './cell-action';
 import { SYSTEM_ROLE_OPTIONS } from './options';
+import { getAffiliationLabel } from '../../constants/organization';
 
 interface CreateColumnsOptions {
   onAvatarClick: (user: User) => void;
@@ -74,14 +75,13 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       }
     },
     {
-      id: 'invite_status',
-      accessorKey: 'invite_status',
-      header: '초대 상태',
+      id: 'affiliation',
+      accessorKey: 'affiliation',
+      header: ({ column }: { column: Column<User, unknown> }) => (
+        <DataTableColumnHeader column={column} title='소속' />
+      ),
       cell: ({ cell }) => {
-        const inviteStatus = cell.getValue<User['invite_status']>();
-        const variant = inviteStatus === 'accepted' ? 'default' : 'secondary';
-        const label = inviteStatus === 'accepted' ? '수락' : '대기';
-        return <Badge variant={variant}>{label}</Badge>;
+        return getAffiliationLabel(cell.getValue<User['affiliation']>()) ?? '—';
       }
     },
     {
