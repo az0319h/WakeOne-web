@@ -92,12 +92,12 @@ export function createContractColumns({
       enableColumnFilter: true
     },
     {
-      id: 'document_created_at',
-      accessorKey: 'document_created_at',
+      id: 'approved_at',
+      accessorKey: 'approved_at',
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
-        <DataTableColumnHeader column={column} title='문서 생성일' />
+        <DataTableColumnHeader column={column} title='문서승인일' />
       ),
-      cell: ({ row }) => formatDate(row.original.document_created_at)
+      cell: ({ row }) => formatDate(row.original.approved_at)
     },
     {
       id: 'author_name',

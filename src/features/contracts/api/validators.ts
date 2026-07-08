@@ -36,6 +36,7 @@ const externalPayloadSchema = z.record(z.string(), z.unknown()).nullable().optio
 export const contractImportSchema = z.object({
   document_number: z.string().trim().min(1, '문서번호를 입력해 주세요.').max(100, '문서번호는 100자 이내여야 합니다.'),
   document_created_at: dateString('문서 생성일 형식이 올바르지 않습니다.'),
+  approved_at: dateString('문서승인일 형식이 올바르지 않습니다.'),
   author_name: z.string().trim().min(1, '작성자를 입력해 주세요.').max(200, '작성자는 200자 이내여야 합니다.'),
   author_email: nullableText(320),
   contract_target: z
@@ -63,6 +64,7 @@ export const contractImportSchema = z.object({
 export const contractUpdateSchema = contractImportSchema
   .pick({
     document_created_at: true,
+    approved_at: true,
     author_name: true,
     author_email: true,
     contract_target: true,
@@ -74,7 +76,10 @@ export const contractUpdateSchema = contractImportSchema
     source_document_url: true,
     external_document_id: true
   })
-  .partial();
+  .partial()
+  .extend({
+    approved_at: nullableDateString('문서승인일 형식이 올바르지 않습니다.')
+  });
 
 export const noAttachmentSchema = z.object({
   no_attachment_required: z.boolean(),

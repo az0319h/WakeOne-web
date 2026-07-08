@@ -18,6 +18,7 @@ export const ACTION_OPTIONS: { value: ActivityAction; label: string }[] = [
   { value: 'asset.delete', label: 'asset.delete' },
   { value: 'contract.import_create', label: 'contract.import_create' },
   { value: 'contract.import_duplicate', label: 'contract.import_duplicate' },
+  { value: 'contract.import_backfill', label: 'contract.import_backfill' },
   { value: 'contract.import_failed', label: 'contract.import_failed' },
   { value: 'contract.update', label: 'contract.update' },
   { value: 'contract.soft_delete', label: 'contract.soft_delete' },

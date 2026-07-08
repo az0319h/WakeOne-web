@@ -19,7 +19,7 @@ import type { ContractDocument, ContractFilters } from '../../api/types';
 import { createContractColumns, getContractExternalDocumentUrl } from './columns';
 
 const SORTABLE_COLUMN_IDS = [
-  'document_created_at',
+  'approved_at',
   'document_number',
   'author_name',
   'contract_target',
@@ -67,14 +67,14 @@ function ContractDateRangeFilter() {
     ? `${selected.from ? formatDate(selected.from) : '시작일'} - ${
         selected.to ? formatDate(selected.to) : '종료일'
       }`
-    : '문서 생성일';
+    : '전체';
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant='outline' size='sm' className='border-dashed'>
           {hasValue ? <Icons.xCircle className='h-4 w-4' /> : <Icons.calendar className='h-4 w-4' />}
-          <span>날짜 범위</span>
+          <span>문서승인일</span>
           <Separator orientation='vertical' className='mx-0.5 data-[orientation=vertical]:h-4' />
           <span>{label}</span>
         </Button>
@@ -147,7 +147,7 @@ export function ContractsTable({ onView, onEdit }: ContractsTableProps) {
     debounceMs: 500,
     initialState: {
       columnPinning: { right: ['actions'] },
-      sorting: [{ id: 'document_created_at', desc: true }]
+      sorting: [{ id: 'approved_at', desc: true }]
     }
   });
 
@@ -177,14 +177,6 @@ export function ContractsTable({ onView, onEdit }: ContractsTableProps) {
       >
         <DataTableToolbar table={table} />
       </DataTable>
-      {data.items.length === 0 ? (
-        <div className='border-border bg-card/50 -mt-2 rounded-lg border border-dashed p-6 text-center'>
-          <p className='text-sm font-medium'>조회된 계약 문서가 없습니다.</p>
-          <p className='text-muted-foreground mt-1 text-sm'>
-            OpenClaw/Gmail 수집 또는 필터 조건을 확인해 주세요.
-          </p>
-        </div>
-      ) : null}
     </>
   );
 }

@@ -19,6 +19,11 @@ function asPayloadRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
+function getImportValidationErrorCode(body: unknown, field: string): 'missing_approved_at' | 'validation' {
+  const payloadRecord = asPayloadRecord(body);
+  return field === 'approved_at' && !payloadRecord?.approved_at ? 'missing_approved_at' : 'validation';
+}
+
 async function tryRecordImportFailure(input: {
   requestId: string;
   body: unknown;
@@ -91,14 +96,16 @@ export async function POST(request: NextRequest) {
 
   const parsed = contractImportSchema.safeParse(body);
   if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message ?? '입력값이 올바르지 않습니다.';
+    const firstIssue = parsed.error.issues[0];
+    const message = firstIssue?.message ?? '입력값이 올바르지 않습니다.';
+    const errorCode = getImportValidationErrorCode(body, String(firstIssue?.path[0] ?? ''));
     const payloadRecord = asPayloadRecord(body);
     await tryRecordImportFailure({
       requestId,
       body,
       documentNumber: typeof payloadRecord?.document_number === 'string' ? payloadRecord.document_number : null,
       sourceMessageId: typeof payloadRecord?.source_message_id === 'string' ? payloadRecord.source_message_id : null,
-      errorCode: 'validation',
+      errorCode,
       message
     });
     return jsonWithActivityLog(
@@ -113,7 +120,7 @@ export async function POST(request: NextRequest) {
         }),
         httpMethod: 'POST',
         httpPath: HTTP_PATH,
-        metadata: buildErrorMetadata('validation', message)
+        metadata: buildErrorMetadata(errorCode, message)
       },
       { success: false, message },
       400
@@ -127,10 +134,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await importContractDocument(payload, requestId);
-    const action = result.status === 'created' ? 'contract.import_create' : 'contract.import_duplicate';
+    const action =
+      result.status === 'created'
+        ? 'contract.import_create'
+        : result.status === 'backfill'
+          ? 'contract.import_backfill'
+          : 'contract.import_duplicate';
     const status = result.status === 'created' ? 201 : 200;
     const message =
-      result.status === 'created' ? '계약서가 import되었습니다.' : '이미 import된 계약서입니다.';
+      result.status === 'created'
+        ? '계약서가 import되었습니다.'
+        : result.status === 'backfill'
+          ? '기존 계약서의 문서승인일이 보완되었습니다.'
+          : '이미 import된 계약서입니다.';
 
     return jsonWithActivityLog(
       requestId,

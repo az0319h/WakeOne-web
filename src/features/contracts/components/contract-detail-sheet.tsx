@@ -90,7 +90,7 @@ function ContractDetailSheetSkeleton() {
           <Skeleton className='h-6 w-20' />
         </div>
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-          {Array.from({ length: 6 }).map((_, index) => (
+          {Array.from({ length: 8 }).map((_, index) => (
             <div key={index} className='space-y-2'>
               <Skeleton className='h-3 w-16' />
               <Skeleton className='h-4 w-full' />
@@ -225,6 +225,10 @@ function ContractDetailContent({
             </Badge>
           </div>
           <dl className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+            <DetailItem
+              label='문서승인일'
+              value={formatDate(contract.approved_at)}
+            />
             <DetailItem
               label='문서 생성일'
               value={formatDate(contract.document_created_at)}
