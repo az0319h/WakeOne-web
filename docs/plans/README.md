@@ -56,6 +56,7 @@
 | 14 | [14_delete-confirm-dialog-plan.md](./14_delete-confirm-dialog-plan.md) | **Completed** · 삭제 확인 `AlertModal` 전역 규칙 |
 | 15 | [15_asset-ledger-plan.md](./15_asset-ledger-plan.md) | **Approved** · 비품 대장 · `/dashboard/product` 교체 |
 | 16 | [16_contract-management-plan.md](./16_contract-management-plan.md) | **Approved** · 계약서 관리 · admin-only 첨부/독촉 |
+| 17 | [17_user-management-add-flow-plan.md](./17_user-management-add-flow-plan.md) | **Approved** · 사용자 관리 개편 · 사용자 추가 흐름 변경 |
 
 ## 에이전트 참조
 

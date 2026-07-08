@@ -12,19 +12,21 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { useMutation } from '@tanstack/react-query';
-import { inviteUserMutation, updateUserMutation } from '../api/mutations';
+import { createUserMutation, updateUserMutation } from '../api/mutations';
 import { SELECT_NONE_VALUE, type Affiliation } from '../constants/organization';
 import type { User } from '../api/types';
-import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import {
-  inviteUserSchema,
+  createUserSchema,
   userUpdateSchema,
-  type InviteUserFormValues,
+  type CreateUserFormValues,
   type UserUpdateFormValues
 } from '../schemas/user';
-import { UserEditFormFields } from './user-edit-form-fields';
+import {
+  UserCreateFormFields,
+  UserEditFormFields
+} from './user-edit-form-fields';
 
 interface UserFormSheetProps {
   user?: User;
@@ -54,7 +56,12 @@ interface UserEditFormProps {
   onPendingChange: (pending: boolean) => void;
 }
 
-function UserEditForm({ user, onSuccess, onError, onPendingChange }: UserEditFormProps) {
+function UserEditForm({
+  user,
+  onSuccess,
+  onError,
+  onPendingChange
+}: UserEditFormProps) {
   const updateMutation = useMutation({
     ...updateUserMutation,
     onSuccess: () => {
@@ -63,7 +70,8 @@ function UserEditForm({ user, onSuccess, onError, onPendingChange }: UserEditFor
       onSuccess();
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : '저장에 실패했습니다.';
+      const message =
+        error instanceof Error ? error.message : '저장에 실패했습니다.';
       onError(message);
       notifyError(message);
     }
@@ -114,51 +122,70 @@ function UserEditForm({ user, onSuccess, onError, onPendingChange }: UserEditFor
   );
 }
 
-export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) {
+export function UserFormSheet({
+  user,
+  open,
+  onOpenChange
+}: UserFormSheetProps) {
   const isEdit = !!user;
   const [apiError, setApiError] = useState<string | null>(null);
   const [isEditPending, setIsEditPending] = useState(false);
 
-  const inviteMutation = useMutation({
-    ...inviteUserMutation,
-    onSuccess: (data) => {
-      notifySuccess(data.message ?? '초대 메일을 발송했습니다. 임시 비밀번호가 포함되어 있습니다.');
+  const createMutation = useMutation({
+    ...createUserMutation,
+    onSuccess: () => {
+      notifySuccess('사용자가 추가되었습니다.');
+      createForm.reset();
       onOpenChange(false);
-      inviteForm.reset();
       setApiError(null);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : '초대에 실패했습니다.';
+      const message =
+        error instanceof Error ? error.message : '사용자 추가에 실패했습니다.';
       setApiError(message);
       notifyError(message);
     }
   });
 
-  const inviteForm = useAppForm({
+  const createForm = useAppForm({
     defaultValues: {
-      email: ''
-    } as InviteUserFormValues,
+      email: '',
+      affiliation: '',
+      department: '',
+      rank: '',
+      job_title: '',
+      system_role: '',
+      birthday: null
+    } as CreateUserFormValues,
     validators: {
-      onSubmit: inviteUserSchema
+      onSubmit: createUserSchema
     },
     onSubmit: async ({ value }) => {
       setApiError(null);
-      await inviteMutation.mutateAsync({ email: value.email.trim().toLowerCase() });
+      await createMutation.mutateAsync({
+        email: value.email.trim().toLowerCase(),
+        affiliation: value.affiliation as Affiliation,
+        department: value.department.trim(),
+        rank: value.rank.trim(),
+        job_title: value.job_title.trim(),
+        system_role: value.system_role as 'admin' | 'user',
+        birthday: value.birthday ?? ''
+      });
     }
   });
 
-  const isPending = inviteMutation.isPending || isEditPending;
-  const SubmitIcon = isEdit ? Icons.edit : Icons.send;
+  const isPending = createMutation.isPending || isEditPending;
+  const SubmitIcon = isEdit ? Icons.edit : Icons.add;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className='flex min-h-0 flex-col'>
         <SheetHeader>
-          <SheetTitle>{isEdit ? '사용자 수정' : '사용자 초대'}</SheetTitle>
+          <SheetTitle>{isEdit ? '사용자 수정' : '사용자 추가'}</SheetTitle>
           <SheetDescription>
             {isEdit
               ? '아바타 URL·소속·부서·직급·직책·시스템 역할·생일을 수정합니다.'
-              : '이메일만 입력하면 임시 비밀번호가 포함된 초대 메일이 발송됩니다. 수신자는 로그인 페이지에서 바로 로그인할 수 있습니다.'}
+              : '이메일과 조직 정보를 입력해 계정을 직접 생성합니다.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -181,44 +208,25 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
               onPendingChange={setIsEditPending}
             />
           ) : (
-            <inviteForm.AppForm>
-              <inviteForm.Form id='user-form-sheet' className='space-y-4'>
-                <inviteForm.AppField
-                  name='email'
-                  children={(field) => (
-                    <field.FieldSet>
-                      <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>
-                          이메일 <span className='text-destructive'>*</span>
-                        </field.FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          type='email'
-                          autoComplete='email'
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='user@example.com'
-                          aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                        />
-                      </field.Field>
-                      <field.FieldError />
-                    </field.FieldSet>
-                  )}
-                />
-              </inviteForm.Form>
-            </inviteForm.AppForm>
+            <createForm.AppForm>
+              <createForm.Form id='user-form-sheet' className='space-y-4'>
+                <UserCreateFormFields />
+              </createForm.Form>
+            </createForm.AppForm>
           )}
         </div>
 
         <SheetFooter>
-          <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => onOpenChange(false)}
+          >
             취소
           </Button>
           <Button type='submit' form='user-form-sheet' isLoading={isPending}>
             <SubmitIcon className='mr-2 h-4 w-4' />
-            {isEdit ? '저장' : '초대 보내기'}
+            {isEdit ? '저장' : '사용자 추가'}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -232,8 +240,8 @@ export function UserFormSheetTrigger() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Icons.send className='mr-2 h-4 w-4' />
-        사용자 초대
+        <Icons.add className='mr-2 h-4 w-4' />
+        사용자 추가
       </Button>
       <UserFormSheet open={open} onOpenChange={setOpen} />
     </>

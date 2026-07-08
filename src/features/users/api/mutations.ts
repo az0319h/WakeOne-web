@@ -1,13 +1,21 @@
 import { mutationOptions } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
-import { deleteUser, inviteUser, reactivateUser, updateUser } from './service';
+import { createUser, deleteUser, inviteUser, reactivateUser, updateUser } from './service';
 import { userKeys } from './queries';
-import type { InvitePayload, UserUpdatePayload } from './types';
+import type { CreateUserPayload, InvitePayload, UserUpdatePayload } from './types';
 
 function invalidateUsers() {
   getQueryClient().invalidateQueries({ queryKey: userKeys.all });
 }
 
+export const createUserMutation = mutationOptions({
+  mutationFn: (data: CreateUserPayload) => createUser(data),
+  onSettled: () => {
+    invalidateUsers();
+  }
+});
+
+/** @deprecated Use createUserMutation. */
 export const inviteUserMutation = mutationOptions({
   mutationFn: (data: InvitePayload) => inviteUser(data),
   onSettled: () => {
@@ -37,5 +45,3 @@ export const reactivateUserMutation = mutationOptions({
   }
 });
 
-/** @deprecated Use inviteUserMutation */
-export const createUserMutation = inviteUserMutation;

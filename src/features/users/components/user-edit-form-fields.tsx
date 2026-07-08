@@ -11,7 +11,10 @@ import {
   SELECT_NONE_OPTION,
   SELECT_NONE_VALUE
 } from '@/features/users/constants/organization';
-import type { UserUpdateFormValues } from '../schemas/user';
+import type {
+  CreateUserFormValues,
+  UserUpdateFormValues
+} from '../schemas/user';
 import { SYSTEM_ROLE_OPTIONS } from './users-table/options';
 
 function toSelectOptions(values: readonly string[]) {
@@ -26,20 +29,109 @@ const AFFILIATION_SELECT_OPTIONS = [
   }))
 ];
 
-export function UserEditFormFields() {
+const REQUIRED_AFFILIATION_SELECT_OPTIONS = AFFILIATION_OPTIONS.map(
+  (option) => ({
+    value: option.value,
+    label: option.label
+  })
+);
+
+export function UserCreateFormFields() {
   const form = useFormContext();
   const { FormTextField, FormSelectField, FormBirthdayField } =
-    useFormFields<UserUpdateFormValues>();
+    useFormFields<CreateUserFormValues>();
   const affiliation = useStore(form.store, (state) => state.values.affiliation);
   const activeAffiliation =
-    affiliation === 'wake' || affiliation === 'sans' || affiliation === 'sans_foundry'
+    affiliation === 'wake' ||
+    affiliation === 'sans' ||
+    affiliation === 'sans_foundry'
       ? affiliation
       : null;
 
   const departmentOptions = activeAffiliation
     ? toSelectOptions(DEPARTMENT_BY_AFFILIATION[activeAffiliation])
     : [];
-  const rankOptions = activeAffiliation ? toSelectOptions(RANK_BY_AFFILIATION[activeAffiliation]) : [];
+  const rankOptions = activeAffiliation
+    ? toSelectOptions(RANK_BY_AFFILIATION[activeAffiliation])
+    : [];
+  const jobTitleOptions = activeAffiliation
+    ? toSelectOptions(JOB_TITLE_BY_AFFILIATION[activeAffiliation])
+    : [];
+
+  return (
+    <div className='space-y-4'>
+      <FormTextField
+        name='email'
+        label='이메일'
+        type='email'
+        placeholder='user@example.com'
+      />
+      <FormSelectField
+        name='affiliation'
+        label='소속'
+        options={REQUIRED_AFFILIATION_SELECT_OPTIONS}
+        placeholder='소속 선택'
+        listeners={{
+          onChange: ({ fieldApi }) => {
+            fieldApi.form.setFieldValue('department', '');
+            fieldApi.form.setFieldValue('rank', '');
+            fieldApi.form.setFieldValue('job_title', '');
+          }
+        }}
+      />
+      <FormSelectField
+        name='department'
+        label='부서'
+        options={departmentOptions}
+        placeholder={
+          activeAffiliation ? '부서 선택' : '소속을 먼저 선택해 주세요'
+        }
+      />
+      <FormSelectField
+        name='rank'
+        label='직급'
+        options={rankOptions}
+        placeholder={
+          activeAffiliation ? '직급 선택' : '소속을 먼저 선택해 주세요'
+        }
+      />
+      <FormSelectField
+        name='job_title'
+        label='직책'
+        options={jobTitleOptions}
+        placeholder={
+          activeAffiliation ? '직책 선택' : '소속을 먼저 선택해 주세요'
+        }
+      />
+      <FormSelectField
+        name='system_role'
+        label='시스템 역할'
+        options={SYSTEM_ROLE_OPTIONS}
+        placeholder='역할 선택'
+      />
+      <FormBirthdayField name='birthday' label='생일' />
+    </div>
+  );
+}
+
+export function UserEditFormFields() {
+  const form = useFormContext();
+  const { FormTextField, FormSelectField, FormBirthdayField } =
+    useFormFields<UserUpdateFormValues>();
+  const affiliation = useStore(form.store, (state) => state.values.affiliation);
+  const activeAffiliation =
+    affiliation === 'wake' ||
+    affiliation === 'sans' ||
+    affiliation === 'sans_foundry'
+      ? affiliation
+      : null;
+
+  const departmentOptions = activeAffiliation
+    ? toSelectOptions(DEPARTMENT_BY_AFFILIATION[activeAffiliation])
+    : [];
+  const rankOptions = activeAffiliation
+    ? toSelectOptions(RANK_BY_AFFILIATION[activeAffiliation])
+    : [];
   const jobTitleOptions = activeAffiliation
     ? toSelectOptions(JOB_TITLE_BY_AFFILIATION[activeAffiliation])
     : [];
@@ -69,19 +161,25 @@ export function UserEditFormFields() {
         name='department'
         label='부서'
         options={[SELECT_NONE_OPTION, ...departmentOptions]}
-        placeholder={activeAffiliation ? '부서 선택' : '소속을 먼저 선택해 주세요'}
+        placeholder={
+          activeAffiliation ? '부서 선택' : '소속을 먼저 선택해 주세요'
+        }
       />
       <FormSelectField
         name='rank'
         label='직급'
         options={[SELECT_NONE_OPTION, ...rankOptions]}
-        placeholder={activeAffiliation ? '직급 선택' : '소속을 먼저 선택해 주세요'}
+        placeholder={
+          activeAffiliation ? '직급 선택' : '소속을 먼저 선택해 주세요'
+        }
       />
       <FormSelectField
         name='job_title'
         label='직책'
         options={[SELECT_NONE_OPTION, ...jobTitleOptions]}
-        placeholder={activeAffiliation ? '직책 선택' : '소속을 먼저 선택해 주세요'}
+        placeholder={
+          activeAffiliation ? '직책 선택' : '소속을 먼저 선택해 주세요'
+        }
       />
       <FormSelectField
         name='system_role'
