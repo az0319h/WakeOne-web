@@ -89,6 +89,21 @@ test.describe('계약서 목록', () => {
     ).toBeVisible();
   });
 
+  test('AC-03B: 종료일 당일 approved_at도 날짜 범위에 포함된다', async ({ request }) => {
+    const documentNumber = uniqueDocumentNumber('AC03B');
+    await importContract(request, documentNumber, '2026-07-09T16:34:00+09:00');
+
+    const response = await request.get(
+      `/api/contracts?search=${encodeURIComponent(documentNumber)}&from=2026-07-07&to=2026-07-09&limit=10`
+    );
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    const documentNumbers = body.items.map(
+      (item: ContractDocument) => item.document_number
+    );
+    expect(documentNumbers).toContain(documentNumber);
+  });
+
   test('AC-04: 기본 목록은 approved_at desc 정렬과 null 표시를 유지한다', async ({
     page,
     request

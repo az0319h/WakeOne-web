@@ -149,6 +149,20 @@ function toDateOnly(value: string | null | undefined): string | null {
   return value.slice(0, 10);
 }
 
+function toKstDayStart(dateOnly: string): string {
+  return new Date(`${dateOnly}T00:00:00+09:00`).toISOString();
+}
+
+function addDaysToDateString(dateOnly: string, days: number): string {
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  const next = new Date(Date.UTC(year, month - 1, day + days));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+}
+
+function toKstNextDayStart(dateOnly: string): string {
+  return toKstDayStart(addDaysToDateString(dateOnly, 1));
+}
+
 function parseSort(sortRaw: string | undefined): { column: keyof ContractDocumentRow; ascending: boolean } {
   const fallback = { column: 'approved_at' as keyof ContractDocumentRow, ascending: false };
   if (!sortRaw) {
@@ -334,11 +348,11 @@ export async function listContracts(
   let query = supabase.from('contract_documents').select(CONTRACT_SELECT, { count: 'exact' });
 
   if (filters.from) {
-    query = query.gte('approved_at', filters.from);
+    query = query.gte('approved_at', toKstDayStart(filters.from));
   }
 
   if (filters.to) {
-    query = query.lte('approved_at', filters.to);
+    query = query.lt('approved_at', toKstNextDayStart(filters.to));
   }
 
   if (search) {
