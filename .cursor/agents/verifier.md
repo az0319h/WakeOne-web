@@ -25,6 +25,7 @@ model: inherit
 4. lint:strict
 5. react-doctor
 6. build            → exit 0
+7. 원격 목 데이터 정리 → e2e-remote-cleanup (Supabase MCP execute_sql)
 ```
 
 2단계 상세:
@@ -42,25 +43,27 @@ model: inherit
 `/run` 완료 보고 시 **2단계 skip 금지** (`E2E_SKIP_BROWSER` 사용 불가).
 Playwright 검증 계정은 `.env`의 `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*`를 사용한다.
 
-## 사용 스킬 (6단계 = 스킬 순서 · `/root`에서 **무조건**)
+## 사용 스킬 (7단계 = 스킬 순서 · `/root`에서 **무조건**)
 
-> `disable-model-invocation: true` — **Step 1~6·마커 전부** 필수. Playwright skip·build만 실행 시 **완료 무효** → root 재호출.
+> `disable-model-invocation: true` — **Step 1~7·마커 전부** 필수. Playwright skip·build만 실행 시 **완료 무효** → root 재호출.
 
 | Step | Read / 실행 | 채팅 마커 |
 |------|-------------|-----------|
-| 1 | `verifier/SKILL.md` §1 · `npm run dev` | `[verifier Step 1/6] dev` |
-| 2a | `playwright-e2e-spec/SKILL.md` · plan AC → spec | `[verifier Step 2a/6] spec` |
-| 2b | `npx playwright test` | `[verifier Step 2b/6] Playwright CLI` |
-| 3 | `verifier/SKILL.md` · `npx tsc --noEmit` | `[verifier Step 3/6] tsc` |
-| 4 | `npm run lint:strict` | `[verifier Step 4/6] lint` |
-| 5 | `react-doctor/SKILL.md` | `[verifier Step 5/6] react-doctor` |
-| 6 | `grinding-until-pass/SKILL.md` · `npm run build` | `[verifier Step 6/6] build` |
+| 1 | `verifier/SKILL.md` §1 · `npm run dev` | `[verifier Step 1/7] dev` |
+| 2a | `playwright-e2e-spec/SKILL.md` · plan AC → spec | `[verifier Step 2a/7] spec` |
+| 2b | `npx playwright test` | `[verifier Step 2b/7] Playwright CLI` |
+| 3 | `verifier/SKILL.md` · `npx tsc --noEmit` | `[verifier Step 3/7] tsc` |
+| 4 | `npm run lint:strict` | `[verifier Step 4/7] lint` |
+| 5 | `react-doctor/SKILL.md` | `[verifier Step 5/7] react-doctor` |
+| 6 | `grinding-until-pass/SKILL.md` · `npm run build` | `[verifier Step 6/7] build` |
+| 7 | `e2e-remote-cleanup/SKILL.md` · Supabase MCP `execute_sql` | `[verifier Step 7/7] remote cleanup` |
 
 1. `./.cursor/skills/verifier/SKILL.md` — **가장 먼저 Read**
 2. `./.cursor/skills/playwright-e2e-spec/SKILL.md` — 2a spec 생성
 3. `./.cursor/skills/react-doctor/SKILL.md`
 4. `./.cursor/skills/grinding-until-pass/SKILL.md`
-5. `./.cursor/skills/next-best-practices/SKILL.md` (�빌드 실패 시 참고)
+5. `./.cursor/skills/e2e-remote-cleanup/SKILL.md` — **Step 7** (2b~6 pass 후)
+6. `./.cursor/skills/next-best-practices/SKILL.md` (빌드 실패 시 참고)
 
 ## MCP
 
@@ -71,8 +74,9 @@ Playwright 검증 계정은 `.env`의 `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*`
 
 - **2b**: `npx playwright test` **전 spec green**
 - **6**: `npm run build` exit 0
+- **7**: 원격 Supabase(EC2) E2E 목 데이터 **0건 확인** (`e2e-remote-cleanup`)
 
-위를 만족한 후에만 완료 보고.
+위를 만족한 후에만 완료 보고. Step 7 실패 시 **완료 보고 금지**.
 
 ## 활동 감사 로그 검증 (CUD plan · 전역 필수)
 
@@ -106,4 +110,5 @@ plan에 **CUD In**이 있으면 아래를 **추가** 검증한다.
 - 2단계 skip 후 `/run` 완료 보고
 - 브라우저 AC 기획 실패를 FE/BE만 수정으로 우회 (반드시 planner 검토)
 - 빌드만 통과하고 Playwright spec 미검증 완료
+- **Step 7 cleanup 없이** 완료 보고
 - CodeRabbit (PR 단계 전용)

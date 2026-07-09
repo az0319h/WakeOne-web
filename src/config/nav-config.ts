@@ -35,7 +35,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: '사용자',
+        title: '사용자 관리',
         url: '/dashboard/users',
         icon: 'teams',
         shortcut: ['u', 'u'],

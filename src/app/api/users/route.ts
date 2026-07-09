@@ -17,7 +17,8 @@ import { refineBirthday } from '@/lib/birthday';
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
-import type { User } from '@/features/users/api/types';
+import { listUsersForAdmin } from '@/features/users/api/service.server';
+import type { UserFilters } from '@/features/users/api/types';
 
 const INITIAL_USER_PASSWORD = '12341234a';
 const DUPLICATE_EMAIL_MESSAGE = '이미 등록된 이메일입니다.';
@@ -64,14 +65,6 @@ function mapCreateUserErrorMessage(message: string): string {
   return message;
 }
 
-function parseCsvParam(value: string | null): string[] {
-  if (!value) return [];
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 export async function GET(request: NextRequest) {
   const adminCheck = await requireAdminSession();
   if (!adminCheck.ok) {
@@ -82,110 +75,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const supabase = await createClient();
 
-    const page = Number(searchParams.get('page') ?? 1);
-    const limit = Number(searchParams.get('limit') ?? 10);
-    const search = searchParams.get('search');
-    const sortRaw = searchParams.get('sort');
-    const systemRoles = parseCsvParam(searchParams.get('systemRoles'));
+    const filters: UserFilters = {
+      page: Number(searchParams.get('page') ?? 1),
+      limit: Number(searchParams.get('limit') ?? 10),
+      ...(searchParams.get('search') && { search: searchParams.get('search')! }),
+      ...(searchParams.get('sort') && { sort: searchParams.get('sort')! }),
+      ...(searchParams.get('systemRoles') && {
+        systemRoles: searchParams.get('systemRoles')!
+      })
+    };
 
-    let query = supabase.from('profiles').select(
-      `
-        user_id,
-        email,
-        full_name,
-        phone,
-        birthday,
-        system_role,
-        password_set_at,
-        status,
-        avatar_url,
-        affiliation,
-        department,
-        rank,
-        job_title,
-        food_restrictions,
-        deactivated_at,
-        created_at,
-        updated_at
-      `,
-      { count: 'exact' }
-    );
-
-    if (systemRoles.length > 0) {
-      query = query.in('system_role', systemRoles);
-    }
-
-    if (search) {
-      const escaped = search.replaceAll(',', ' ');
-      query = query.or(
-        `full_name.ilike.%${escaped}%,email.ilike.%${escaped}%`
-      );
-    }
-
-    let sortColumn = 'created_at';
-    let sortDesc = true;
-    if (sortRaw) {
-      try {
-        const sortItems = JSON.parse(sortRaw) as Array<{ id: string; desc: boolean }>;
-        if (sortItems.length > 0) {
-          const candidate = sortItems[0];
-          const allowedColumns = [
-            'full_name',
-            'email',
-            'system_role',
-            'created_at',
-            'password_set_at'
-          ];
-          if (allowedColumns.includes(candidate.id)) {
-            sortColumn = candidate.id;
-            sortDesc = candidate.desc;
-          }
-        }
-      } catch {
-        // ignore invalid sort payload
-      }
-    }
-
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const { data, error, count } = await query
-      .order(sortColumn, { ascending: !sortDesc })
-      .range(from, to);
-
-    if (error) {
-      return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-    }
-
-    const users: User[] =
-      data?.map((row) => ({
-        id: row.user_id,
-        full_name: row.full_name,
-        email: row.email,
-        phone: row.phone,
-        birthday: row.birthday,
-        system_role: row.system_role,
-        invite_status: row.password_set_at ? 'accepted' : 'pending',
-        status: row.status,
-        avatar_url: row.avatar_url,
-        affiliation: row.affiliation,
-        department: row.department,
-        rank: row.rank,
-        job_title: row.job_title,
-        food_restrictions: row.food_restrictions,
-        created_at: row.created_at,
-        updated_at: row.updated_at
-      })) ?? [];
-
-    return NextResponse.json({
-      success: true,
-      time: new Date().toISOString(),
-      message: 'Users loaded successfully',
-      total_users: count ?? 0,
-      offset: from,
-      limit,
-      users
-    });
+    const result = await listUsersForAdmin(supabase, filters);
+    return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
     return NextResponse.json({ success: false, message }, { status: 500 });

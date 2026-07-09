@@ -29,7 +29,7 @@ export function UsersTable() {
 
   const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
-  const [params] = useQueryStates({
+  const [params, setParams] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
@@ -57,7 +57,13 @@ export function UsersTable() {
     }
   }, [data.users, profileUserId]);
 
-  const pageCount = Math.ceil(data.total_users / params.perPage);
+  const pageCount = Math.max(1, Math.ceil(data.total_users / params.perPage) || 1);
+
+  useEffect(() => {
+    if (params.page > pageCount) {
+      void setParams({ page: 1 });
+    }
+  }, [params.page, pageCount, setParams]);
 
   const { table } = useDataTable({
     data: data.users,

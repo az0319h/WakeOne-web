@@ -31,11 +31,13 @@ disable-model-invocation: true
 | 4. Lint | `npm run lint:strict` | 경고 0 |
 | 5. React | `npx react-doctor@latest --verbose --diff` | 점수 회귀 없음 |
 | 6. Build | `npm run build` | exit 0 |
+| 7. **원격 cleanup** | `e2e-remote-cleanup/SKILL.md` + Supabase MCP | E2E 목 데이터 0건 |
 
 > 2a: `.cursor/skills/playwright-e2e-spec/SKILL.md`
 > 2b: **Playwright MCP 판정 금지** — CLI만 사용
+> 7: `scripts/cleanup-e2e-mock-data.sql` — **2b~6 pass 후에만**
 
-**2b를 3~6단계보다 먼저 실행한다.** 2b 실패 시 3~6단계로 넘어가지 않는다.
+**2b를 3~6단계보다 먼저 실행한다.** 2b 실패 시 3~6단계로 넘어가지 않는다. **Step 7은 2b~6 전부 통과 후에만** 실행한다.
 
 ---
 
@@ -63,6 +65,9 @@ disable-model-invocation: true
 [3. tsc → 4. lint → 5. react-doctor → 6. build]
     ↓ 실패 → 해당 팀 수정 → 1부터 재검증 (2b Playwright 반드시 재실행)
     ↓ 전부 통과
+[7. 원격 Supabase E2E 목 데이터 cleanup]
+    ↓ 실패 → MCP/SQL 재시도 — 완료 보고 금지
+    ↓ pass
 [완료 보고]
 ```
 
@@ -70,7 +75,7 @@ disable-model-invocation: true
 
 ## 성공 기준 & 완료 보고
 
-**2b + 6 pass** 후에만 출력.
+**2b + 6 + 7 pass** 후에만 출력.
 
 ```
 ✅ 검증 완료: {기능명}
@@ -83,6 +88,7 @@ spec: e2e/{feature}/*.spec.ts
 - lint:strict               : ✅
 - react-doctor              : ✅
 - build                     : ✅
+- 원격 목 데이터 cleanup    : ✅ (contracts: 0, users: 0)
 
 반복 횟수: {N}회
 수정된 팀: {planner|FE|BE|없음}
@@ -106,9 +112,12 @@ spec: e2e/{feature}/*.spec.ts
 - Playwright MCP로 AC pass/fail 판정
 - 2b skip 후 완료 보고 (`/run` 포함)
 - spec 없이 build만 맞추고 완료 처리
+- **2b~6 pass 전** 원격 목 데이터 삭제
+- cleanup skip 후 `/root` 완료 보고
 
 ## ALWAYS
 
 - `docs/plans/{feature}-plan.md` 경로를 prompt에 명시
 - AC 번호별 통과/실패를 spec test title과 1:1 보고
 - CUD activity log는 API spec으로 검증
+- **2b~6 pass 후** `e2e-remote-cleanup/SKILL.md` Read → `scripts/cleanup-e2e-mock-data.sql` MCP 실행
