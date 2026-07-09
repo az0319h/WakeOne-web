@@ -7,8 +7,7 @@ export type ProfileStatus = 'active' | 'inactive';
 export type AuthProfile = {
   user_id: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   phone: string | null;
   birthday: string | null;
   system_role: SystemRole;

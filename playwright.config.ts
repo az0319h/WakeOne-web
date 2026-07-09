@@ -22,18 +22,23 @@ function loadEnvFile(filePath: string) {
 
 loadEnvFile(path.join(__dirname, '.env'));
 
+const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
+  '127.0.0.1',
+  'localhost'
+);
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   reporter: 'html',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },
   webServer: {
     command: 'npm run dev',
-    url: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    url: baseURL,
     reuseExistingServer: true,
     timeout: 120_000
   },
@@ -53,7 +58,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/admin.json'
       },
       dependencies: ['setup'],
-      testIgnore: [/auth\.setup\.ts/, /auth\.user\.setup\.ts/, /\.api\.spec\.ts$/, /rbac\.spec\.ts$/]
+      testIgnore: [/auth\.setup\.ts/, /auth\.user\.setup\.ts/, /\.api\.spec\.ts$/, /rbac\.spec\.ts$/, /profile\.spec\.ts$/]
     },
     {
       name: 'chromium-user',
@@ -62,7 +67,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/user.json'
       },
       dependencies: ['setup-user'],
-      testMatch: [/rbac\.spec\.ts$/]
+      testMatch: [/rbac\.spec\.ts$/, /profile\.spec\.ts$/]
     },
     {
       name: 'api',

@@ -83,6 +83,7 @@ function UserEditForm({
 
   const editForm = useAppForm({
     defaultValues: {
+      full_name: user.full_name,
       avatar_url: user.avatar_url ?? '',
       affiliation: toFormAffiliation(user.affiliation),
       department: toFormOrgField(user.department),
@@ -98,6 +99,9 @@ function UserEditForm({
       await updateMutation.mutateAsync({
         id: user.id,
         values: {
+          ...(value.full_name?.trim()
+            ? { full_name: value.full_name.trim() }
+            : {}),
           avatar_url: toPayloadValue(value.avatar_url),
           affiliation:
             value.affiliation && value.affiliation !== SELECT_NONE_VALUE
@@ -150,6 +154,7 @@ export function UserFormSheet({
   const createForm = useAppForm({
     defaultValues: {
       email: '',
+      full_name: '',
       affiliation: '',
       department: '',
       rank: '',
@@ -164,6 +169,7 @@ export function UserFormSheet({
       setApiError(null);
       await createMutation.mutateAsync({
         email: value.email.trim().toLowerCase(),
+        full_name: value.full_name.trim(),
         affiliation: value.affiliation as Affiliation,
         department: value.department.trim(),
         rank: value.rank.trim(),
@@ -184,8 +190,8 @@ export function UserFormSheet({
           <SheetTitle>{isEdit ? '사용자 수정' : '사용자 추가'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? '아바타 URL·소속·부서·직급·직책·시스템 역할·생일을 수정합니다.'
-              : '이메일과 조직 정보를 입력해 계정을 직접 생성합니다.'}
+              ? '이름·아바타 URL·소속·부서·직급·직책·시스템 역할·생일을 수정합니다.'
+              : '이름·이메일·조직 정보를 입력해 계정을 직접 생성합니다.'}
           </SheetDescription>
         </SheetHeader>
 

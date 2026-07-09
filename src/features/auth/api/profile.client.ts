@@ -1,8 +1,6 @@
 import type { AuthProfile } from './types';
 
 export type PatchProfilePayload = {
-  first_name: string;
-  last_name: string;
   phone: string | null;
   birthday: string | null;
   food_restrictions: string | null;

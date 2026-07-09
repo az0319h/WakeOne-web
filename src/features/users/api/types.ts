@@ -22,8 +22,7 @@ export type ProfileStatus = 'active' | 'inactive';
 
 export type User = {
   id: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   email: string;
   phone: string | null;
   birthday: string | null;
@@ -42,6 +41,7 @@ export type User = {
 
 export type CreateUserPayload = {
   email: string;
+  full_name: string;
   affiliation: Affiliation;
   department: string;
   rank: string;
@@ -56,6 +56,7 @@ export type InvitePayload = {
 };
 
 export type UserUpdatePayload = {
+  full_name?: string;
   avatar_url?: string | null;
   affiliation?: Affiliation | null;
   department?: string | null;

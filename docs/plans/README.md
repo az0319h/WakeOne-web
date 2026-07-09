@@ -58,6 +58,7 @@
 | 16 | [16_contract-management-plan.md](./16_contract-management-plan.md) | **Approved** · 계약서 관리 · admin-only 첨부/독촉 |
 | 17 | [17_user-management-add-flow-plan.md](./17_user-management-add-flow-plan.md) | **Approved** · 사용자 관리 개편 · 사용자 추가 흐름 변경 |
 | 18 | [18_contract-approved-at-plan.md](./18_contract-approved-at-plan.md) | **Approved** · 계약서 문서승인일 정식 필드화 |
+| 19 | [19_user-single-name-plan.md](./19_user-single-name-plan.md) | **Approved** · 이름 단일 필드(`full_name`) 전환 · 관리자 전용 이름 수정 |
 
 ## 에이전트 참조
 

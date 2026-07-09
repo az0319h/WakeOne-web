@@ -58,8 +58,6 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
 
   const form = useAppForm({
     defaultValues: {
-      first_name: profile.first_name,
-      last_name: profile.last_name,
       phone: toFormPhone(profile.phone),
       birthday: profile.birthday ?? null,
       food_restrictions: profile.food_restrictions ?? ''
@@ -69,8 +67,6 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
     },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync({
-        first_name: value.first_name.trim(),
-        last_name: value.last_name.trim(),
         phone: value.phone.trim() ? value.phone.trim() : null,
         birthday: value.birthday,
         food_restrictions: value.food_restrictions?.trim()
@@ -81,8 +77,7 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
     }
   });
 
-  const { FormTextField, FormTextareaField, FormBirthdayField } =
-    useFormFields<ProfileFormValues>();
+  const { FormTextareaField, FormBirthdayField } = useFormFields<ProfileFormValues>();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -90,16 +85,12 @@ export function ProfileEditSheet({ profile, open, onOpenChange }: ProfileEditShe
         <SheetHeader>
           <SheetTitle>계정 정보 수정</SheetTitle>
           <SheetDescription>
-            이름·연락처·생일·못 먹는 음식을 수정할 수 있습니다. 이메일은 변경할 수 없습니다.
+            연락처·생일·못 먹는 음식을 수정할 수 있습니다. 이름과 이메일은 변경할 수 없습니다.
           </SheetDescription>
         </SheetHeader>
         <form.AppForm>
           <form.Form id='profile-edit-form' className='flex h-full min-h-0 flex-col'>
             <div className='min-h-0 flex-1 space-y-4 overflow-auto py-4 pr-1'>
-              <div className='grid gap-4 sm:grid-cols-2'>
-                <FormTextField name='first_name' label='이름' placeholder='이름' />
-                <FormTextField name='last_name' label='성' placeholder='성' />
-              </div>
               <FormPhoneField name='phone' label='연락처' />
               <FormBirthdayField name='birthday' label='생일' />
               <FormTextareaField

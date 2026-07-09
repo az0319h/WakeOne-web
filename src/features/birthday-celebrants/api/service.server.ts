@@ -5,12 +5,11 @@ import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import type { BirthdayCelebrant, BirthdayCelebrantsResponse } from './types';
 
 const CELEBRANT_COLUMNS =
-  'user_id, first_name, last_name, avatar_url, birthday, status';
+  'user_id, full_name, avatar_url, birthday, status';
 
 type ProfileRow = {
   user_id: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   avatar_url: string | null;
   birthday: string | null;
   status: string;
@@ -34,8 +33,7 @@ function getBirthdayDay(birthday: string): number {
 function toCelebrant(row: ProfileRow): BirthdayCelebrant {
   return {
     user_id: row.user_id,
-    first_name: row.first_name,
-    last_name: row.last_name,
+    full_name: row.full_name,
     avatar_url: row.avatar_url,
     birthday: row.birthday!
   };
@@ -64,12 +62,7 @@ export async function getBirthdayCelebrantsServer(): Promise<BirthdayCelebrantsR
         return dayDiff;
       }
 
-      const lastNameDiff = a.last_name.localeCompare(b.last_name, 'ko');
-      if (lastNameDiff !== 0) {
-        return lastNameDiff;
-      }
-
-      return a.first_name.localeCompare(b.first_name, 'ko');
+      return a.full_name.localeCompare(b.full_name, 'ko');
     });
 
   return {

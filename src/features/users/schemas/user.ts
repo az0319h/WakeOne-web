@@ -15,6 +15,7 @@ export type InviteUserFormValues = z.infer<typeof inviteUserSchema>;
 export const createUserSchema = z
   .object({
     email: z.string().email('올바른 이메일 주소를 입력해 주세요.'),
+    full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100),
     affiliation: z.union([z.enum(AFFILIATIONS), z.literal('')]),
     department: z.string().min(1, '부서를 선택해 주세요.').max(100),
     rank: z.string().min(1, '직급을 선택해 주세요.').max(50),
@@ -69,6 +70,7 @@ const emptyToNull = (value: string | null | undefined) =>
 
 export const userUpdateSchema = z
   .object({
+    full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100).optional(),
     avatar_url: z.string().max(2048).optional(),
     affiliation: z
       .union([z.enum(AFFILIATIONS), z.literal(SELECT_NONE_VALUE)])

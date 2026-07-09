@@ -5,8 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 export type ProfileNameFields = {
-  first_name: string;
-  last_name: string;
+  full_name: string;
   email: string;
 };
 
@@ -15,9 +14,12 @@ export type ProfileAvatarFields = ProfileNameFields & {
 };
 
 export function getInitials(profile: ProfileNameFields) {
-  const first = profile.first_name?.trim().charAt(0) ?? '';
-  const last = profile.last_name?.trim().charAt(0) ?? '';
-  const fromName = `${first}${last}`.toUpperCase();
+  const parts = profile.full_name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const fromName = parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase();
   if (fromName) {
     return fromName;
   }
@@ -52,7 +54,7 @@ interface ProfileAvatarProps {
 export function ProfileAvatar({ profile, className, fallbackClassName }: ProfileAvatarProps) {
   const [imageError, setImageError] = useState(false);
   const showImage = Boolean(profile.avatar_url) && !imageError;
-  const fullName = `${profile.first_name} ${profile.last_name}`.trim();
+  const fullName = profile.full_name?.trim() ?? '';
 
   return (
     <Avatar className={className}>

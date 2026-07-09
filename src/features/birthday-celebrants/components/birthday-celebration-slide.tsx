@@ -8,8 +8,7 @@ import { formatBirthdayMonthDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface BirthdayCelebrationSlideProps {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   avatarUrl: string | null;
   birthday: string;
   month: number;
@@ -17,16 +16,14 @@ interface BirthdayCelebrationSlideProps {
 }
 
 export function BirthdayCelebrationSlide({
-  firstName,
-  lastName,
+  fullName,
   avatarUrl,
   birthday,
   month,
   className
 }: BirthdayCelebrationSlideProps) {
   const prefersReducedMotion = useReducedMotion();
-  const fullName = `${firstName} ${lastName}`.trim();
-  const displayName = fullName || '이름 미설정';
+  const displayName = fullName.trim() || '이름 미설정';
   const birthdayLabel = formatBirthdayMonthDay(birthday);
 
   return (
@@ -68,8 +65,7 @@ export function BirthdayCelebrationSlide({
         >
           <ProfileAvatar
             profile={{
-              first_name: firstName,
-              last_name: lastName,
+              full_name: fullName,
               email: '',
               avatar_url: avatarUrl
             }}
