@@ -4,7 +4,7 @@ import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 export default function UsersLoading() {
   return (
     <PageContainer
-      pageTitle='사용자'
+      pageTitle='사용자 관리'
       pageDescription='이메일 초대 및 사용자 목록을 관리합니다.'
     >
       <DataTableSkeleton columnCount={8} rowCount={10} filterCount={2} />

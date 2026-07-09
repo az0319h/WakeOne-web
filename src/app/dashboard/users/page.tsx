@@ -7,7 +7,7 @@ import { UserFormSheetTrigger } from '@/features/users/components/user-form-shee
 import { requireAdminPage } from '@/features/auth/api/session.server';
 
 export const metadata = {
-  title: 'Dashboard: Users'
+  title: 'Dashboard: 사용자 관리'
 };
 
 type PageProps = {
@@ -22,7 +22,7 @@ export default async function UsersPage(props: PageProps) {
 
   return (
     <PageContainer
-      pageTitle='사용자'
+      pageTitle='사용자 관리'
       pageDescription='이메일 초대 및 사용자 목록을 관리합니다.'
       infoContent={usersInfoContent}
       pageHeaderAction={<UserFormSheetTrigger />}

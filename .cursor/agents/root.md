@@ -49,7 +49,7 @@ model: inherit
 [2] /designer    — UI 구조·컴포넌트 설계
 [3] /backend-dev  — BE/SQL/API · **CUD Route마다 recordActivityLog 전 분기** (변경 없으면 생략 + 이유 1줄)
 [4] /frontend-dev — FE 구현 (Mutation/CUD·**API Route 경유** 필수 · BE API·타입 반영)
-[5] /verifier     — dev → Playwright AC → **activity log grep/AC** → tsc → lint → react-doctor → build
+[5] /verifier     — dev → Playwright AC → **activity log grep/AC** → tsc → lint → react-doctor → build → **원격 E2E 목 데이터 cleanup**
 ```
 
 ### 승인 게이트 (유일한 사용자 승인 지점)
@@ -132,7 +132,7 @@ root 본인은 전역 문서 확인·승인 게이트·downstream(designer~verif
 | [2] designer | `Task(subagent_type="designer")` | UI 설계·컴포넌트 트리 **직접 작성** | `designer.md` §스킬 Read 순서 · plan UI 섹션 · `[designer Step n/6]` 마커 |
 | [3] backend-dev | `Task(subagent_type="backend-dev")` (변경 시) | SQL/API **직접 구현** | `backend-dev.md` §스킬 Read · **Supabase MCP 선행** · `[backend-dev]` 마커 |
 | [4] frontend-dev | `Task(subagent_type="frontend-dev")` | FE 코드 **직접 구현** | `frontend-dev.md` §스킬 Read · designer + **BE 산출물(API·타입)** · Mutation 규칙 · `[frontend-dev]` 마커 |
-| [5] verifier | `Task(subagent_type="verifier")` | tsc/lint/build **직접 실행 후 완료 보고** | `verifier.md` §6단계 순서 · Playwright MCP **skip 금지** · `[verifier Step n/6]` 마커 |
+| [5] verifier | `Task(subagent_type="verifier")` | tsc/lint/build **직접 실행 후 완료 보고** | `verifier.md` §7단계 순서 · Playwright MCP **skip 금지** · Step 7 **e2e-remote-cleanup** · `[verifier Step n/7]` 마커 |
 
 - 각 Task prompt에 **이전 단계 산출물 전문 또는 요약** + **plan 경로** 포함.
 - plan 경로: `docs/plans/{NN}_{slug}-plan.md` — [README](../../docs/plans/README.md) 번호 규칙.
@@ -142,7 +142,7 @@ root 본인은 전역 문서 확인·승인 게이트·downstream(designer~verif
 
 ### 완료 조건 (완료 보고 가능)
 
-- `/verifier`: Playwright AC **전항목** + `build` exit 0
+- `/verifier`: Playwright AC **전항목** + `build` exit 0 + **Step 7 원격 목 데이터 cleanup pass**
 - 위 미충족 시 **완료 보고 금지**
 
 ---
@@ -158,10 +158,11 @@ plan: docs/plans/{NN}_*-plan.md
 - designer: …
 - backend-dev: … (또는 생략)
 - frontend-dev: …
-- verifier: Playwright n/n · build ✅
+- verifier: Playwright n/n · build ✅ · **remote cleanup ✅**
 
 루프: {N}회 (planner 재진입 {M}회)
 변경 파일: …
+원격 cleanup: contracts 0 · users 0 (또는 skip 사유)
 
 다음: 커밋/PR이 필요하면 @commit-pr
 ```
@@ -179,6 +180,7 @@ plan: docs/plans/{NN}_*-plan.md
 - planner **승인(`승인`) 없이** designer/FE/BE/verifier 호출
 - `commit-pr`를 파이프라인에 포함
 - Playwright AC skip 후 완료 보고
+- **Step 7 cleanup skip/pass 없이** 완료 보고
 - 기획 AC 실패를 planner 없이 FE만으로 땜질 후 완료 처리
 - 사용자 범위 없이「다음 스프린트」plan 자동 생성
 
@@ -191,4 +193,5 @@ plan: docs/plans/{NN}_*-plan.md
 - planner는 **스킬 순서** + **이전 기획 참조(Phase 0)** 완료 후 plan 산출
 - 기획→다음 단계 **승인 게이트** 준수
 - verifier 실패 시 분류(기획 vs 구현) 후 올바른 팀·루프
+- verifier **성공 시 Step 7** — Supabase MCP로 E2E 목 데이터 삭제 (`e2e-remote-cleanup/SKILL.md`)
 - `core-conventions.mdc` Mutation 규칙·**폼 초기화(서버 전송 성공 시 reset)** 를 FE 단계에 전달

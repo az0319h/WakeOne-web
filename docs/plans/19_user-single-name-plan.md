@@ -89,6 +89,8 @@
 | 계약서 관리(`contract-management`) 내 서명자명 등 별도 자유입력 텍스트 필드 | `profiles.full_name`과 무관한 자유 텍스트는 본 plan 대상 아님 |
 | 이름 중복·특수문자 정책(닉네임 금칙어 등) | 최대 100자 제한만 적용, 별도 정책 없음 |
 | 마이그레이션 후 기존 빈 이름(`first_name=''`) 계정에 대한 관리자 알림/강제 입력 유도 | 관리자가 Users 수정에서 임의 시점에 채우는 것으로 충분 |
+| `src/constants/mock-api-users.ts` 등 in-memory 데모 mock | 데모·mock API 경로 Out — 본 plan 범위 아님 |
+| E2E·검증 중 생성된 원격 목 데이터 정리 | 전역 verifier Step 7 (`e2e-remote-cleanup`)에서 처리 — 본 plan AC·영향 파일에 포함하지 않음 |
 
 ---
 
@@ -260,7 +262,6 @@ const patchProfileSchema = z.object({
 | `src/features/birthday-celebrants/components/birthday-celebrants-banner.tsx`, `birthday-celebration-slide.tsx` | prop `firstName`/`lastName` → `fullName` (컴포넌트 내부 표시 로직 조정) |
 | `src/features/office-snacks/api/service.server.ts` | select·`fullName` 조합 로직 단순화 |
 | `src/features/asset-ledger/api/service.server.ts` | `toDisplayName` 호출부·select 컬럼 |
-| `src/constants/mock-api-users.ts` | mock 데이터 `full_name` 필드로 전환(데모 Out이나 타입 불일치 방지 위해 최소 반영) |
 | `src/features/users/components/users-table/columns.tsx`(검색 meta) | 검색 placeholder·컬럼 라벨 텍스트는 유지, 데이터 접근자만 변경 |
 
 **구현 시 필수:** `rg "first_name|last_name" src supabase/sql`로 재grep해 위 목록 외 잔존 참조(특히 `src/features/contract-management/**`, 신규 추가 파일)를 전부 확인하고 처리한다. 본 목록에 없는 파일에서 발견되면 동일 원칙(`full_name` 단일 값, read-only/관리자 전용 방어 구분)으로 처리한다.
@@ -276,7 +277,6 @@ const patchProfileSchema = z.object({
 | 3 | MED — 관리자 본인이 PATCH로 이름 변경 시도 시 예외 처리 누락(본인도 admin 전용 필드 차단 대상) | AC #5로 admin 본인 케이스 명시 검증 |
 | 4 | MED — 검색(`GET /api/users` search ilike)이 기존 `first_name.ilike,last_name.ilike` 조합 전제 | `full_name.ilike` 단일 조건으로 교체, AC #2(신규 생성 사용자 목록 노출) 회귀로 간접 확인 |
 | 5 | LOW — 이니셜(Avatar Fallback) 로직이 성/이름 첫 글자 조합 전제 | `full_name` 공백 분리 또는 첫 글자만 사용하는 방식으로 FE 재구현(AC #7) |
-| 6 | LOW — mock 데이터(`mock-api-users.ts`)가 타입 불일치로 빌드 실패 | 최소 반영 대상으로 §영향 파일에 명시 |
 
 ---
 
@@ -324,6 +324,7 @@ const patchProfileSchema = z.object({
 - AC #4·#5(PATCH 거부)는 UI E2E가 아니라 API 요청으로 403·`error_code`를 직접 검증한다.
 - AC #9(생일 배너·간식·비품 대장 회귀)는 각 화면에 실제 진입해 이름이 깨지지 않는지 스크린샷/스냅샷으로 확인한다.
 - tsc(AC #14)가 `first_name`/`last_name` 잔존 참조를 잡아내는 핵심 게이트이므로 가장 먼저 실행한다.
+- Playwright·API 검증으로 생성된 `@example.com` 등 원격 목 데이터는 **본 plan AC가 아님** — verifier Step 7(`e2e-remote-cleanup`)에서 검증 통과 후 자동 삭제한다.
 
 ---
 
@@ -332,3 +333,4 @@ const patchProfileSchema = z.object({
 | 날짜 | 변경 내용 | 작성자 |
 |------|----------|--------|
 | 2026-07-09 | 최초 작성(Approved) — `full_name` 단일 필드 전환, 관리자 필수 입력·수정 허용, 본인 read-only·PATCH 방어, activity log 기존 action 재사용 | planner |
+| 2026-07-09 | mock·E2E 목 데이터 정리 — `mock-api-users.ts` 영향/리스크 제거, Out에 mock·원격 cleanup 위임 명시 | root |
