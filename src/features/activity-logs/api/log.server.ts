@@ -51,9 +51,9 @@ export function createRequestId(): string {
 }
 
 export function formatActorDisplayName(
-  profile: Pick<AuthProfile, 'first_name' | 'last_name'>
+  profile: Pick<AuthProfile, 'full_name'>
 ): string | null {
-  const name = `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim();
+  const name = profile.full_name?.trim() ?? '';
   return name || null;
 }
 
@@ -261,7 +261,7 @@ export async function fetchUserTargetLabel(userId: string): Promise<string> {
     const supabase = getServiceRoleClient();
     const { data } = await supabase
       .from('profiles')
-      .select('email, first_name, last_name')
+      .select('email, full_name')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -269,7 +269,7 @@ export async function fetchUserTargetLabel(userId: string): Promise<string> {
       return userId;
     }
 
-    const name = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim();
+    const name = data.full_name?.trim() ?? '';
     return name ? `${name} (${data.email})` : data.email;
   } catch {
     return userId;

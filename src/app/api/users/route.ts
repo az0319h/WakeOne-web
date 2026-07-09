@@ -25,6 +25,7 @@ const DUPLICATE_EMAIL_MESSAGE = '이미 등록된 이메일입니다.';
 const createUserSchema = z
   .object({
     email: z.string().email('올바른 이메일 주소를 입력해 주세요.'),
+    full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100),
     affiliation: z.enum(AFFILIATIONS, {
       message: '소속을 선택해 주세요.'
     }),
@@ -91,8 +92,7 @@ export async function GET(request: NextRequest) {
       `
         user_id,
         email,
-        first_name,
-        last_name,
+        full_name,
         phone,
         birthday,
         system_role,
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       const escaped = search.replaceAll(',', ' ');
       query = query.or(
-        `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%`
+        `full_name.ilike.%${escaped}%,email.ilike.%${escaped}%`
       );
     }
 
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
         if (sortItems.length > 0) {
           const candidate = sortItems[0];
           const allowedColumns = [
-            'first_name',
+            'full_name',
             'email',
             'system_role',
             'created_at',
@@ -160,8 +160,7 @@ export async function GET(request: NextRequest) {
     const users: User[] =
       data?.map((row) => ({
         id: row.user_id,
-        first_name: row.first_name,
-        last_name: row.last_name,
+        full_name: row.full_name,
         email: row.email,
         phone: row.phone,
         birthday: row.birthday,
@@ -360,6 +359,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .update({
         email: payload.email,
+        full_name: payload.full_name,
         affiliation: payload.affiliation,
         department: payload.department,
         rank: payload.rank,

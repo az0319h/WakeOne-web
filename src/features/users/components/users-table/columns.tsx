@@ -28,15 +28,13 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
     },
     {
       id: 'name',
-      accessorFn: (row) => `${row.first_name} ${row.last_name}`,
+      accessorFn: (row) => row.full_name,
       header: ({ column }: { column: Column<User, unknown> }) => (
         <DataTableColumnHeader column={column} title='이름' />
       ),
       cell: ({ row }) => (
         <div className='flex flex-col'>
-          <span className='font-medium'>
-            {row.original.first_name} {row.original.last_name}
-          </span>
+          <span className='font-medium'>{row.original.full_name}</span>
           <span className='text-muted-foreground text-xs'>{row.original.email}</span>
         </div>
       ),

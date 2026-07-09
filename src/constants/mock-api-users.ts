@@ -9,8 +9,7 @@ export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve
 
 export type User = {
   id: number;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   email: string;
   phone: string;
   system_role: 'admin' | 'user';
@@ -53,8 +52,7 @@ export const fakeUsers = {
 
       return {
         id,
-        first_name: faker.person.firstName(),
-        last_name: faker.person.lastName(),
+        full_name: `${faker.person.firstName()} ${faker.person.lastName()}`,
         email: faker.internet.email(),
         phone: faker.phone.number({ style: 'national' }),
         system_role: faker.helpers.arrayElement(systemRoles),
@@ -107,7 +105,7 @@ export const fakeUsers = {
 
     if (search) {
       users = matchSorter(users, search, {
-        keys: ['first_name', 'last_name', 'email', 'organization', 'department']
+        keys: ['full_name', 'email', 'organization', 'department']
       });
     }
 
@@ -233,9 +231,9 @@ export const fakeUsers = {
           allUsers.sort((a, b) => {
             // Handle computed 'name' column
             const aVal =
-              id === 'name' ? `${a.first_name} ${a.last_name}` : (a as Record<string, unknown>)[id];
+              id === 'name' ? a.full_name : (a as Record<string, unknown>)[id];
             const bVal =
-              id === 'name' ? `${b.first_name} ${b.last_name}` : (b as Record<string, unknown>)[id];
+              id === 'name' ? b.full_name : (b as Record<string, unknown>)[id];
             if (typeof aVal === 'number' && typeof bVal === 'number') {
               return desc ? bVal - aVal : aVal - bVal;
             }

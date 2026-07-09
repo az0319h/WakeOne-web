@@ -61,6 +61,11 @@ export function UserCreateFormFields() {
   return (
     <div className='space-y-4'>
       <FormTextField
+        name='full_name'
+        label='이름'
+        placeholder='이름'
+      />
+      <FormTextField
         name='email'
         label='이메일'
         type='email'
@@ -138,6 +143,11 @@ export function UserEditFormFields() {
 
   return (
     <div className='space-y-4'>
+      <FormTextField
+        name='full_name'
+        label='이름'
+        placeholder='이름'
+      />
       <FormTextField
         name='avatar_url'
         label='아바타 URL'

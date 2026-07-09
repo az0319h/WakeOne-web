@@ -14,17 +14,12 @@ import { birthdaySchema, refineBirthday } from '@/lib/birthday';
 import { createClient } from '@/lib/supabase/server';
 
 const PROFILE_SELECT_COLUMNS =
-  'user_id, email, first_name, last_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
+  'user_id, email, full_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, department, rank, job_title, food_restrictions';
 
-const PROFILE_PATCH_FIELDS = [
-  'first_name',
-  'last_name',
-  'phone',
-  'food_restrictions',
-  'birthday'
-] as const;
+const PROFILE_PATCH_FIELDS = ['phone', 'food_restrictions', 'birthday'] as const;
 
 const ADMIN_ONLY_PATCH_FIELDS = [
+  'full_name',
   'avatar_url',
   'affiliation',
   'department',
@@ -35,8 +30,6 @@ const ADMIN_ONLY_PATCH_FIELDS = [
 
 const patchProfileSchema = z
   .object({
-    first_name: z.string().max(100),
-    last_name: z.string().max(100),
     phone: z
       .string()
       .regex(/^\d{11}$/, '연락처는 11자리 숫자만 입력할 수 있습니다.')
@@ -51,8 +44,7 @@ const patchProfileSchema = z
 
 function profileTargetLabel(profile: {
   email: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
 }): string {
   const name = formatActorDisplayName(profile);
   return name ? `${name} (${profile.email})` : profile.email;
@@ -131,14 +123,12 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { first_name, last_name, phone, food_restrictions, birthday } = parsed.data;
+    const { phone, food_restrictions, birthday } = parsed.data;
     const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('profiles')
       .update({
-        first_name,
-        last_name,
         phone: phone ?? null,
         food_restrictions: food_restrictions ?? null,
         ...(birthday !== undefined ? { birthday: birthday ?? null } : {})

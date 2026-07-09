@@ -4,9 +4,10 @@ function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 }
 
-function createUserPayload(email: string) {
+function createUserPayload(email: string, fullName = 'E2E 테스트') {
   return {
     email,
+    full_name: fullName,
     affiliation: 'wake',
     department: '콘텐츠팀',
     rank: '사원',
@@ -16,9 +17,13 @@ function createUserPayload(email: string) {
   };
 }
 
-async function createUserViaApi(request: APIRequestContext, email: string) {
+async function createUserViaApi(
+  request: APIRequestContext,
+  email: string,
+  fullName = 'E2E 테스트'
+) {
   const response = await request.post('/api/users', {
-    data: createUserPayload(email)
+    data: createUserPayload(email, fullName)
   });
 
   expect(response.status()).toBe(201);
@@ -38,7 +43,13 @@ async function selectOption(page: Page, combobox: Locator, optionName: string) {
   await page.getByRole('option', { name: optionName, exact: true }).click();
 }
 
-async function fillRequiredCreateFields(page: Page, dialog: Locator, email: string) {
+async function fillRequiredCreateFields(
+  page: Page,
+  dialog: Locator,
+  email: string,
+  fullName = '홍길동'
+) {
+  await dialog.getByRole('textbox', { name: '이름' }).fill(fullName);
   await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
   await selectOption(page, dialog.getByRole('combobox', { name: '소속' }), '웨이크');
   await selectOption(page, dialog.getByRole('combobox', { name: '부서' }), '콘텐츠팀');
@@ -98,6 +109,33 @@ test.describe('사용자 목록', () => {
     await expect(dialog.getByRole('alert').filter({ hasText: '생일을 선택해 주세요.' })).toBeVisible();
   });
 
+  test('AC-19-01: 이름을 비우면 오류가 표시되고 생성되지 않는다', async ({ page }) => {
+    const dialog = await openUserAddDialog(page);
+    const email = uniqueEmail('ac19-01');
+
+    await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
+    await fillRequiredCreateFields(page, dialog, email, '');
+    await dialog.getByRole('button', { name: '사용자 추가' }).click();
+
+    await expect(
+      dialog.getByRole('alert').filter({ hasText: '이름을 입력해 주세요.' })
+    ).toBeVisible();
+  });
+
+  test('AC-19-02: 이름 포함 전체 필수값 입력 후 목록에 표시된다', async ({ page }) => {
+    const email = uniqueEmail('ac19-02');
+    const fullName = `테스트유저${Date.now()}`;
+    const dialog = await openUserAddDialog(page);
+
+    await fillRequiredCreateFields(page, dialog, email, fullName);
+    await dialog.getByRole('button', { name: '사용자 추가' }).click();
+
+    await expect(page.getByText('사용자가 추가되었습니다.')).toBeVisible();
+    await expect(
+      page.getByRole('cell', { name: new RegExp(`${fullName}\\s+${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) })
+    ).toBeVisible();
+  });
+
   test('AC-04: 사용자 추가 성공 후 목록에 새로고침 없이 표시된다', async ({ page }) => {
     const email = uniqueEmail('ac04-user');
     const dialog = await openUserAddDialog(page);
@@ -130,6 +168,44 @@ test.describe('사용자 목록', () => {
 
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
     await context.close();
+  });
+
+  test('AC-19-06: admin이 다른 사용자 이름을 수정할 수 있다', async ({ page, request }) => {
+    const email = uniqueEmail('ac19-06');
+    const originalName = `김철수E2E${Date.now()}`;
+    const updatedName = `${originalName}수정`;
+
+    await createUserViaApi(request, email, originalName);
+
+    await page.goto('/dashboard/users');
+    const targetRow = page.getByRole('row', { name: new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
+    await expect(targetRow).toBeVisible();
+
+    await targetRow.getByRole('button', { name: '프로필 보기' }).click();
+    await page.getByRole('button', { name: '조직 정보 수정' }).click();
+
+    const dialog = page.getByRole('dialog', { name: '사용자 수정' });
+    await expect(dialog).toBeVisible();
+    const nameField = dialog.getByRole('textbox', { name: '이름' });
+    await nameField.click();
+    await nameField.clear();
+    await nameField.pressSequentially(updatedName, { delay: 10 });
+    await expect(nameField).toHaveValue(updatedName);
+    await dialog.getByRole('button', { name: '저장' }).click();
+
+    await expect(page.getByText('사용자 정보가 저장되었습니다.')).toBeVisible();
+    await expect(
+      page.getByRole('dialog').getByRole('heading', { name: updatedName, level: 2 })
+    ).toBeVisible();
+
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(
+      page.getByRole('cell', {
+        name: new RegExp(
+          `${updatedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+        )
+      })
+    ).toBeVisible();
   });
 
   test('AC-09: 초대 상태 대신 소속 컬럼이 표시된다', async ({ page }) => {

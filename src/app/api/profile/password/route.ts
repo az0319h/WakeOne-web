@@ -18,8 +18,7 @@ const GENERIC_ERROR = '비밀번호 변경에 실패했습니다.';
 
 function profileTargetLabel(profile: {
   email: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
 }): string {
   const name = formatActorDisplayName(profile);
   return name ? `${name} (${profile.email})` : profile.email;

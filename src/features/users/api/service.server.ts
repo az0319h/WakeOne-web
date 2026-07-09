@@ -30,8 +30,7 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
     `
         user_id,
         email,
-        first_name,
-        last_name,
+        full_name,
         phone,
         birthday,
         system_role,
@@ -57,7 +56,7 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
   if (search) {
     const escaped = search.replaceAll(',', ' ');
     query = query.or(
-      `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%`
+      `full_name.ilike.%${escaped}%,email.ilike.%${escaped}%`
     );
   }
 
@@ -69,7 +68,7 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
       if (sortItems.length > 0) {
         const candidate = sortItems[0];
         const allowedColumns = [
-          'first_name',
+          'full_name',
           'email',
           'system_role',
           'created_at',
@@ -99,8 +98,7 @@ export async function getUsersServer(filters: UserFilters): Promise<UsersRespons
   const users: User[] =
     data?.map((row) => ({
       id: row.user_id,
-      first_name: row.first_name,
-      last_name: row.last_name,
+      full_name: row.full_name,
       email: row.email,
       phone: row.phone,
       birthday: row.birthday,

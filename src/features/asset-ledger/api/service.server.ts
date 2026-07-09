@@ -14,8 +14,7 @@ import { ASSET_CATEGORY_NONE_SENTINEL } from './types';
 
 type ProfileLite = {
   email: string | null;
-  first_name: string | null;
-  last_name: string | null;
+  full_name: string | null;
 };
 
 type AssetItemRow = {
@@ -55,9 +54,9 @@ function toNormalizedAssetPrefix(assetName: string): string | null {
   return matched;
 }
 
-function toDisplayName(firstName: string | null, lastName: string | null): string | null {
-  const fullName = `${firstName ?? ''} ${lastName ?? ''}`.trim();
-  return fullName || null;
+function toDisplayName(fullName: string | null): string | null {
+  const trimmed = fullName?.trim() ?? '';
+  return trimmed || null;
 }
 
 function mapAssetItem(row: AssetItemRow, profilesByUserId: Map<string, ProfileLite>): AssetItem {
@@ -72,7 +71,7 @@ function mapAssetItem(row: AssetItemRow, profilesByUserId: Map<string, ProfileLi
     status: row.status,
     model_number: row.model_number,
     actual_user_id: row.actual_user_id,
-    actual_user_name: toDisplayName(actualUser?.first_name ?? null, actualUser?.last_name ?? null),
+    actual_user_name: toDisplayName(actualUser?.full_name ?? null),
     actual_user_email: actualUser?.email ?? null,
     usage_location: row.usage_location,
     category: row.category,
@@ -83,10 +82,10 @@ function mapAssetItem(row: AssetItemRow, profilesByUserId: Map<string, ProfileLi
     purchase_vendor: row.purchase_vendor,
     notes: row.notes,
     created_by_id: row.created_by_id,
-    created_by_name: toDisplayName(createdBy?.first_name ?? null, createdBy?.last_name ?? null),
+    created_by_name: toDisplayName(createdBy?.full_name ?? null),
     created_by_email: createdBy?.email ?? null,
     updated_by_id: row.updated_by_id,
-    updated_by_name: toDisplayName(updatedBy?.first_name ?? null, updatedBy?.last_name ?? null),
+    updated_by_name: toDisplayName(updatedBy?.full_name ?? null),
     updated_by_email: updatedBy?.email ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at
@@ -211,7 +210,7 @@ async function listProfilesByUserIds(userIds: string[]): Promise<Map<string, Pro
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id, email, first_name, last_name')
+    .select('user_id, email, full_name')
     .in('user_id', uniqueUserIds);
 
   if (error) {
@@ -223,8 +222,7 @@ async function listProfilesByUserIds(userIds: string[]): Promise<Map<string, Pro
       profile.user_id as string,
       {
         email: (profile.email as string | null) ?? null,
-        first_name: (profile.first_name as string | null) ?? null,
-        last_name: (profile.last_name as string | null) ?? null
+        full_name: (profile.full_name as string | null) ?? null
       }
     ])
   );
@@ -486,10 +484,10 @@ export async function listAssetLedgerUsers(): Promise<
   const supabase = getServiceRoleClient();
   let query = supabase
     .from('profiles')
-    .select('user_id, first_name, last_name, email, department')
+    .select('user_id, full_name, email, department')
     .eq('status', 'active')
     .or('affiliation.eq.wake,system_role.eq.admin')
-    .order('first_name', { ascending: true })
+    .order('full_name', { ascending: true })
     .limit(100);
 
   const { data, error } = await query;
@@ -500,7 +498,7 @@ export async function listAssetLedgerUsers(): Promise<
   return (
     data?.map((profile) => ({
       id: profile.user_id as string,
-      name: `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim() || (profile.email as string),
+      name: (profile.full_name as string)?.trim() || (profile.email as string),
       email: profile.email as string,
       department: (profile.department as string | null)?.trim() || null
     })) ?? []

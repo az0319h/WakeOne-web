@@ -72,8 +72,7 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
   }, [carouselApi]);
 
   const slideProps = (celebrant: (typeof celebrants)[number]) => ({
-    firstName: celebrant.first_name,
-    lastName: celebrant.last_name,
+    fullName: celebrant.full_name,
     avatarUrl: celebrant.avatar_url,
     birthday: celebrant.birthday,
     month

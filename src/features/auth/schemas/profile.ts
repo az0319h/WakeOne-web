@@ -4,8 +4,6 @@ import { PHONE_REGEX } from '@/lib/phone';
 
 export const profileSchema = z
   .object({
-    first_name: z.string().max(100),
-    last_name: z.string().max(100),
     phone: z.string(),
     birthday: z.string().nullable(),
     food_restrictions: z.string().max(200).optional()

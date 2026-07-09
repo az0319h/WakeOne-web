@@ -12,11 +12,23 @@ test('authenticate as user', async ({ page }) => {
     );
   }
 
-  await page.goto('/auth/sign-in');
-  await page.getByPlaceholder('이메일을 입력하세요').fill(email);
-  await page.getByPlaceholder('비밀번호를 입력하세요').fill(password);
-  await page.getByRole('button', { name: '로그인' }).click();
+  await page.goto('/auth/sign-in', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByText('로딩 중…')).toHaveCount(0, { timeout: 15_000 });
 
+  const emailField = page.getByRole('textbox', { name: '이메일' });
+  const passwordField = page.getByRole('textbox', { name: '비밀번호' });
+
+  await emailField.click();
+  await emailField.clear();
+  await emailField.pressSequentially(email, { delay: 15 });
+  await passwordField.click();
+  await passwordField.clear();
+  await passwordField.pressSequentially(password, { delay: 15 });
+
+  await expect(emailField).toHaveValue(email);
+  await expect(passwordField).toHaveValue(password);
+
+  await page.getByRole('button', { name: '로그인' }).click();
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
   await page.context().storageState({ path: userAuthFile });
 });

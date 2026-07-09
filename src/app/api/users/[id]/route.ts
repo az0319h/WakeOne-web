@@ -22,10 +22,11 @@ import { z } from 'zod';
 
 type Params = { params: Promise<{ id: string }> };
 
-const DISALLOWED_PUT_FIELDS = ['first_name', 'last_name', 'phone', 'food_restrictions'] as const;
+const DISALLOWED_PUT_FIELDS = ['phone', 'food_restrictions'] as const;
 
 const updateUserSchema = z
   .object({
+    full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100).optional(),
     avatar_url: z.string().url().max(2048).nullable().optional(),
     affiliation: z.enum(AFFILIATIONS).nullable().optional(),
     department: z.string().max(100).nullable().optional(),

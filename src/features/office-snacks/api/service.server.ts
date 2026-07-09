@@ -91,12 +91,12 @@ async function buildCandidateOwnerMap(ownerIds: string[]): Promise<CandidateOwne
   const supabase = getServiceRoleClient();
   const { data } = await supabase
     .from('profiles')
-    .select('user_id, email, first_name, last_name')
+    .select('user_id, email, full_name')
     .in('user_id', ownerIds);
 
   const map: CandidateOwnerMap = new Map();
   for (const row of data ?? []) {
-    const fullName = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim();
+    const fullName = row.full_name?.trim() ?? '';
     map.set(row.user_id, {
       email: row.email ?? null,
       name: fullName || null

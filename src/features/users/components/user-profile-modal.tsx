@@ -48,7 +48,7 @@ export function UserProfileModal({ user, open, onOpenChange }: UserProfileModalP
 
   const isSelf = currentUserId === user.id;
   const canEdit = user.status === 'active' && !isSelf;
-  const fullName = `${user.first_name} ${user.last_name}`.trim();
+  const fullName = user.full_name.trim();
   const subtitle = buildSubtitle(user);
   const isActive = user.status === 'active';
 
@@ -143,7 +143,7 @@ export function UserAvatarCell({ user, onClick }: UserAvatarCellProps) {
         'cursor-pointer rounded-full',
         'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none'
       )}
-      aria-label={`${user.first_name} ${user.last_name} 프로필 보기`}
+      aria-label={`${user.full_name} 프로필 보기`}
       onClick={(event) => {
         event.stopPropagation();
         onClick(user);
