@@ -31,6 +31,9 @@ import {
 } from '../api/service';
 import {
   CONTRACT_ATTACHMENT_MAX_BYTES,
+  CONTRACT_ATTACHMENT_MAX_MB,
+  CONTRACT_ATTACHMENT_LIMIT_HINT,
+  CONTRACT_ATTACHMENT_SELECTION_SIZE_ERROR,
   type ContractAttachmentSummary,
   type ContractDocument,
   type ContractUpdatePayload
@@ -365,7 +368,18 @@ function ContractAttachmentManager({
     const nextActiveTotalSize =
       contract.active_attachment_total_size + selectedTotalSize;
     if (nextActiveTotalSize > CONTRACT_ATTACHMENT_MAX_BYTES) {
-      notifyError('활성 첨부파일과 선택 파일의 총량은 1MB 이하여야 합니다.');
+      if (
+        contract.active_attachment_total_size === 0 &&
+        selectedTotalSize > CONTRACT_ATTACHMENT_MAX_BYTES
+      ) {
+        notifyError(
+          `선택한 파일 크기가 ${formatBytes(selectedTotalSize)}입니다. 계약 문서당 첨부 총량은 ${CONTRACT_ATTACHMENT_MAX_MB}MB 이하여야 합니다.`
+        );
+      } else {
+        notifyError(
+          `${CONTRACT_ATTACHMENT_SELECTION_SIZE_ERROR} (현재 ${formatBytes(nextActiveTotalSize)})`
+        );
+      }
       event.target.value = '';
       return;
     }
@@ -421,7 +435,7 @@ function ContractAttachmentManager({
             </Badge>
           </div>
           <p className='text-muted-foreground mt-1 text-sm'>
-            계약 문서당 활성 첨부파일 총량은 1MB 이하입니다.
+            {CONTRACT_ATTACHMENT_LIMIT_HINT}
           </p>
         </div>
         <div className='flex gap-2'>

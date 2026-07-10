@@ -126,7 +126,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : '계약서 첨부파일 업로드 중 오류가 발생했습니다.';
-    const status = message.includes('동일한 파일명') || message.includes('1MB') || message.includes('파일명') ? 400 : 500;
+    const status = message.includes('동일한 파일명') || message.includes('총량') || message.includes('파일명') ? 400 : 500;
     return jsonWithActivityLog(
       requestId,
       {

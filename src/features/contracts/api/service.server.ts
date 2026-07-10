@@ -4,6 +4,7 @@ import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   CONTRACT_ATTACHMENT_BUCKET,
   CONTRACT_ATTACHMENT_MAX_BYTES,
+  CONTRACT_ATTACHMENT_TOTAL_SIZE_ERROR,
   type ContractAttachmentStatus,
   type ContractAttachmentSummary,
   type ContractDocument,
@@ -665,7 +666,7 @@ export async function uploadContractAttachment(input: {
   }
 
   if (contract.active_attachment_total_size + input.file.size > CONTRACT_ATTACHMENT_MAX_BYTES) {
-    throw new Error('계약 문서당 활성 첨부파일 총량은 1MB 이하여야 합니다.');
+    throw new Error(CONTRACT_ATTACHMENT_TOTAL_SIZE_ERROR);
   }
 
   const storagePath = buildContractAttachmentStoragePath(input.contractId, fileName);
