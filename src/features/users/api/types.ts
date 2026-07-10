@@ -31,10 +31,7 @@ export type User = {
   status: ProfileStatus;
   avatar_url: string | null;
   affiliation: Affiliation | null;
-  department: string | null;
   rank: string | null;
-  job_title: string | null;
-  food_restrictions: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -43,9 +40,7 @@ export type CreateUserPayload = {
   email: string;
   full_name: string;
   affiliation: Affiliation;
-  department: string;
   rank: string;
-  job_title: string;
   system_role: 'admin' | 'user';
   birthday: string;
 };
@@ -59,9 +54,7 @@ export type UserUpdatePayload = {
   full_name?: string;
   avatar_url?: string | null;
   affiliation?: Affiliation | null;
-  department?: string | null;
   rank?: string | null;
-  job_title?: string | null;
   system_role?: 'admin' | 'user';
   birthday?: string | null;
 };

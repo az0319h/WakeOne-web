@@ -12,8 +12,10 @@ import {
   type ContractImportPayload,
   type ContractReminderRecipientGroup,
   type ContractReminderRecipientResult,
+  type ContractReminderRecipientScanResult,
   type ContractReminderRun,
   type ContractReminderTarget,
+  type ContractReminderUnmatchedTarget,
   type ContractUpdatePayload
 } from './types';
 
@@ -75,6 +77,7 @@ type ContractReminderRunRow = {
   target_count: number;
   sent_count: number;
   failed_count: number;
+  unmatched_targets: ContractReminderUnmatchedTarget[] | null;
   triggered_by_user_id: string | null;
   created_at: string;
   finished_at: string | null;
@@ -84,9 +87,16 @@ type ContractReminderTargetRow = {
   id: number;
   document_number: string;
   document_created_at: string;
+  approved_at: string | null;
   author_name: string;
-  author_email: string | null;
   contract_target: string;
+  source_document_url: string | null;
+};
+
+type ReminderProfileRow = {
+  user_id: string;
+  email: string;
+  full_name: string;
 };
 
 const SAFE_EXTENSION_PATTERN = /^[a-z0-9]+$/;
@@ -305,6 +315,45 @@ function buildContractAttachmentStoragePath(contractId: number, fileName: string
   return `contracts/${contractId}/${crypto.randomUUID()}${getSafeFileExtension(fileName)}`;
 }
 
+function normalizePersonName(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function parseUnmatchedTargets(value: unknown): ContractReminderUnmatchedTarget[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
+
+    const record = item as Record<string, unknown>;
+    const authorName = typeof record.author_name === 'string' ? record.author_name : '';
+    const reason = record.reason === 'no_profile_match' ? 'no_profile_match' : null;
+    const contractIds = Array.isArray(record.contract_ids)
+      ? record.contract_ids.filter((id): id is number => typeof id === 'number')
+      : [];
+    const documentNumbers = Array.isArray(record.document_numbers)
+      ? record.document_numbers.filter((value): value is string => typeof value === 'string')
+      : [];
+
+    if (!authorName || !reason) {
+      return [];
+    }
+
+    return [
+      {
+        author_name: authorName,
+        contract_ids: contractIds,
+        document_numbers: documentNumbers,
+        reason
+      }
+    ];
+  });
+}
+
 function mapReminderRun(row: ContractReminderRunRow): ContractReminderRun {
   return {
     id: row.id,
@@ -315,26 +364,26 @@ function mapReminderRun(row: ContractReminderRunRow): ContractReminderRun {
     target_count: row.target_count,
     sent_count: row.sent_count,
     failed_count: row.failed_count,
+    unmatched_targets: parseUnmatchedTargets(row.unmatched_targets),
     created_at: row.created_at,
     finished_at: row.finished_at
   };
 }
 
-function mapReminderTarget(row: ContractReminderTargetRow): ContractReminderTarget | null {
-  const email = row.author_email?.trim().toLowerCase();
-  if (!email) {
-    return null;
-  }
-
+function mapReminderTarget(row: ContractReminderTargetRow): ContractReminderTarget {
   return {
     id: row.id,
     document_number: row.document_number,
     document_created_at: toDateOnly(row.document_created_at) ?? row.document_created_at,
+    approved_at: toDateOnly(row.approved_at),
     author_name: row.author_name,
-    author_email: email,
-    contract_target: row.contract_target
+    contract_target: row.contract_target,
+    source_document_url: row.source_document_url
   };
 }
+
+const REMINDER_RUN_SELECT =
+  'id, run_key, request_id, trigger_source, status, target_count, sent_count, failed_count, unmatched_targets, triggered_by_user_id, created_at, finished_at';
 
 export async function listContracts(
   filters: ContractFilters
@@ -772,56 +821,108 @@ export async function setContractNoAttachment(input: {
   return mapContract(row, attachmentsByContractId.get(row.id) ?? []);
 }
 
-export async function listContractReminderRecipientGroups(): Promise<ContractReminderRecipientGroup[]> {
+export async function listContractReminderRecipientGroups(): Promise<ContractReminderRecipientScanResult> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from('contract_documents')
-    .select('id, document_number, document_created_at, author_name, author_email, contract_target')
+    .select(
+      'id, document_number, document_created_at, approved_at, author_name, contract_target, source_document_url'
+    )
     .eq('status', 'active')
     .eq('no_attachment_required', false)
-    .not('author_email', 'is', null)
     .limit(5000);
 
   if (error) {
     throw new Error(error.message);
   }
 
+  const { data: profileRows, error: profileError } = await supabase
+    .from('profiles')
+    .select('user_id, email, full_name')
+    .eq('status', 'active')
+    .not('full_name', 'is', null);
+
+  if (profileError) {
+    throw new Error(profileError.message);
+  }
+
+  const profilesByNormalizedName = new Map<string, ReminderProfileRow[]>();
+  for (const row of (profileRows ?? []) as unknown as ReminderProfileRow[]) {
+    const fullName = row.full_name?.trim();
+    const email = row.email?.trim().toLowerCase();
+    if (!fullName || !email) {
+      continue;
+    }
+
+    const key = normalizePersonName(fullName);
+    const profiles = profilesByNormalizedName.get(key) ?? [];
+    profiles.push({ ...row, email, full_name: fullName });
+    profilesByNormalizedName.set(key, profiles);
+  }
+
   const rows = (data ?? []) as unknown as ContractReminderTargetRow[];
   const attachmentsByContractId = await listAttachmentsByContractIds(rows.map((row) => row.id));
   const groups = new Map<string, ContractReminderRecipientGroup>();
+  const unmatchedByAuthor = new Map<string, ContractReminderUnmatchedTarget>();
 
   for (const row of rows) {
-    const activeAttachments = attachmentsByContractId.get(row.id)?.filter((attachment) => attachment.status === 'active') ?? [];
+    const activeAttachments =
+      attachmentsByContractId.get(row.id)?.filter((attachment) => attachment.status === 'active') ?? [];
     if (activeAttachments.length > 0) {
       continue;
     }
 
     const target = mapReminderTarget(row);
-    if (!target) {
+    const normalizedAuthorName = normalizePersonName(target.author_name);
+    const matchedProfiles = profilesByNormalizedName.get(normalizedAuthorName) ?? [];
+
+    if (matchedProfiles.length === 0) {
+      const unmatched =
+        unmatchedByAuthor.get(normalizedAuthorName) ??
+        ({
+          author_name: target.author_name,
+          contract_ids: [],
+          document_numbers: [],
+          reason: 'no_profile_match'
+        } satisfies ContractReminderUnmatchedTarget);
+      unmatched.contract_ids.push(target.id);
+      unmatched.document_numbers.push(target.document_number);
+      unmatchedByAuthor.set(normalizedAuthorName, unmatched);
       continue;
     }
 
-    const group = groups.get(target.author_email) ?? {
-      recipient_email: target.author_email,
-      author_name: target.author_name,
-      contracts: [],
-      document_numbers: []
-    };
-    group.contracts.push(target);
-    group.document_numbers.push(target.document_number);
-    groups.set(target.author_email, group);
+    for (const profile of matchedProfiles) {
+      const group =
+        groups.get(profile.email) ??
+        ({
+          recipient_email: profile.email,
+          author_name: target.author_name,
+          contracts: [],
+          document_numbers: []
+        } satisfies ContractReminderRecipientGroup);
+
+      if (!group.contracts.some((contract) => contract.id === target.id)) {
+        group.contracts.push(target);
+        group.document_numbers.push(target.document_number);
+      }
+
+      groups.set(profile.email, group);
+    }
   }
 
-  return [...groups.values()].sort((a, b) => a.recipient_email.localeCompare(b.recipient_email));
+  return {
+    groups: [...groups.values()].sort((a, b) => a.recipient_email.localeCompare(b.recipient_email)),
+    unmatched_targets: [...unmatchedByAuthor.values()].sort((a, b) =>
+      a.author_name.localeCompare(b.author_name, 'ko')
+    )
+  };
 }
 
 export async function getContractReminderRunByKey(runKey: string): Promise<ContractReminderRun | null> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from('contract_reminder_runs')
-    .select(
-      'id, run_key, request_id, trigger_source, status, target_count, sent_count, failed_count, triggered_by_user_id, created_at, finished_at'
-    )
+    .select(REMINDER_RUN_SELECT)
     .eq('run_key', runKey)
     .maybeSingle();
 
@@ -850,9 +951,7 @@ export async function createContractReminderRun(input: {
       target_count: input.targetCount,
       status: 'failed'
     })
-    .select(
-      'id, run_key, request_id, trigger_source, status, target_count, sent_count, failed_count, triggered_by_user_id, created_at, finished_at'
-    )
+    .select(REMINDER_RUN_SELECT)
     .single();
 
   if (error) {
@@ -867,6 +966,7 @@ export async function finishContractReminderRun(input: {
   status: ContractReminderRun['status'];
   sentCount: number;
   failedCount: number;
+  unmatchedTargets: ContractReminderUnmatchedTarget[];
 }): Promise<ContractReminderRun> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
@@ -875,12 +975,11 @@ export async function finishContractReminderRun(input: {
       status: input.status,
       sent_count: input.sentCount,
       failed_count: input.failedCount,
+      unmatched_targets: input.unmatchedTargets,
       finished_at: new Date().toISOString()
     })
     .eq('id', input.runId)
-    .select(
-      'id, run_key, request_id, trigger_source, status, target_count, sent_count, failed_count, triggered_by_user_id, created_at, finished_at'
-    )
+    .select(REMINDER_RUN_SELECT)
     .single();
 
   if (error) {

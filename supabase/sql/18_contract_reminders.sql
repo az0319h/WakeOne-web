@@ -2,8 +2,8 @@
 -- File: 18_contract_reminders.sql
 -- Plan: 16_contract-management-plan.md
 -- Date: 2026-07-03
--- Status: In Progress
--- Remote migration: failed (MCP connection timeout before history table initialization)
+-- Status: Completed
+-- Remote migration: applied (18_contract_reminders)
 -- Summary: weekly contract reminder run idempotency and per-recipient delivery result tables
 
 create table if not exists public.contract_reminder_runs (

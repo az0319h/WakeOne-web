@@ -1,6 +1,9 @@
--- Plan: 19_user-single-name-plan.md (follow-up)
+-- File: 21_profiles_full_name_triggers.sql
+-- Plan: 19_user-single-name-plan.md
 -- Date: 2026-07-09
--- Status: Applied
+-- Status: Completed
+-- Remote migration: applied (version 20260709064942)
+-- Summary: Update handle_new_user and ensure_profile_for_user to use full_name
 
 create or replace function public.handle_new_user()
 returns trigger

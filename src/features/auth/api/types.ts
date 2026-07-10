@@ -15,10 +15,7 @@ export type AuthProfile = {
   status: ProfileStatus;
   avatar_url: string | null;
   affiliation: Affiliation | null;
-  department: string | null;
   rank: string | null;
-  job_title: string | null;
-  food_restrictions: string | null;
 };
 
 export type SignInPayload = {

@@ -24,9 +24,7 @@ function createUserPayload(email: string, fullName = 'E2E 테스트') {
     email,
     full_name: fullName,
     affiliation: 'wake',
-    department: '콘텐츠팀',
     rank: '사원',
-    job_title: '팀장',
     system_role: 'user',
     birthday: '1990-01-01'
   };
@@ -150,15 +148,29 @@ test.describe('사용자 추가 API와 activity log', () => {
     expect(metadata).not.toContain('password');
   });
 
+  test('AC-11: department·job_title 포함 생성은 400 validation이다', async ({ request }) => {
+    const email = uniqueEmail('ac11-user');
+    const response = await request.post('/api/users', {
+      data: {
+        ...createUserPayload(email),
+        department: '콘텐츠팀',
+        job_title: '팀장'
+      }
+    });
+
+    expect(response.status()).toBe(400);
+    const requestId = response.headers()['x-request-id'];
+    expect(requestId).toBeTruthy();
+    await expectUserCreateLog(request, requestId, 400);
+  });
+
   test('AC-10: 관리자 사용자 수정은 user.update 로그를 남긴다', async ({ request }) => {
     const { userId } = await createUserViaApi(request, 'ac10-user');
     const response = await request.put(`/api/users/${userId}`, {
       data: {
         full_name: 'E2E 수정이름',
         affiliation: 'wake',
-        department: '마케팅팀',
         rank: '대리',
-        job_title: '팀장',
         system_role: 'user',
         birthday: '1991-02-02'
       }
@@ -196,19 +208,20 @@ test.describe('사용자 추가 API와 activity log', () => {
 test.describe('프로필 API와 activity log', () => {
   test.use({ storageState: 'e2e/.auth/user.json' });
 
-  test('AC-11: 일반 사용자 프로필 수정은 profile.update 로그를 남긴다', async ({ request }) => {
+  test('AC-06 plan21: 일반 사용자 PATCH /api/profile은 403이다', async ({ request }) => {
     const response = await request.patch('/api/profile', {
       data: {
         phone: '01012345678',
-        food_restrictions: null,
         birthday: '1992-03-03'
       }
     });
 
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(403);
     const requestId = response.headers()['x-request-id'];
     expect(requestId).toBeTruthy();
-    await expectActivityLog(request, 'profile.update', requestId, 200);
+
+    const log = await expectActivityLog(request, 'profile.update', requestId, 403);
+    expect(JSON.stringify(log?.metadata ?? {})).toContain('profile_edit_disabled');
   });
 
   test('AC-12: 일반 사용자는 관리자 전용 프로필 필드를 수정할 수 없다', async ({
@@ -217,9 +230,7 @@ test.describe('프로필 API와 activity log', () => {
     const response = await request.patch('/api/profile', {
       data: {
         full_name: '변경 시도',
-        birthday: '1992-03-03',
-        affiliation: 'wake',
-        department: '콘텐츠팀'
+        affiliation: 'wake'
       }
     });
 
@@ -233,20 +244,6 @@ test.describe('프로필 API와 activity log', () => {
       requestId,
       response.status()
     );
-    expect(JSON.stringify(log?.metadata ?? {})).toContain('forbidden_field');
-    expect(JSON.stringify(log?.metadata ?? {})).toContain('full_name');
-  });
-
-  test('AC-19-05: admin도 PATCH /api/profile로 full_name 변경 불가', async ({ request }) => {
-    const response = await request.patch('/api/profile', {
-      data: { full_name: '관리자 변경 시도' }
-    });
-
-    expect(response.status()).toBe(403);
-    const requestId = response.headers()['x-request-id'];
-    expect(requestId).toBeTruthy();
-
-    const log = await expectActivityLog(request, 'profile.update', requestId, 403);
-    expect(JSON.stringify(log?.metadata ?? {})).toContain('forbidden_field');
+    expect(JSON.stringify(log?.metadata ?? {})).toContain('profile_edit_disabled');
   });
 });

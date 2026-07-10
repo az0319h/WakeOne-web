@@ -4,14 +4,13 @@ export type AssetLedgerUser = {
   id: string;
   name: string;
   email: string;
-  department: string | null;
 };
 
 type AssetLedgerUsersResponse = {
   success: boolean;
   message: string;
   users: AssetLedgerUser[];
-  departments: string[];
+  usageLocations: string[];
 };
 
 export async function listAssetLedgerUsers(search?: string): Promise<AssetLedgerUsersResponse> {

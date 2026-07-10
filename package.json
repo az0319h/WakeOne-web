@@ -18,6 +18,8 @@
     "format:check": "oxfmt --check .",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "e2e:prep": "node scripts/e2e-plan03-prep.cjs",
+    "e2e:cleanup": "node scripts/cleanup-e2e-mock-data.mjs",
     "prepare": "husky"
   },
   "dependencies": {

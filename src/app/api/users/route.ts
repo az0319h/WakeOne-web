@@ -23,6 +23,8 @@ import type { UserFilters } from '@/features/users/api/types';
 const INITIAL_USER_PASSWORD = '12341234a';
 const DUPLICATE_EMAIL_MESSAGE = '이미 등록된 이메일입니다.';
 
+const REMOVED_USER_FIELDS = ['department', 'job_title', 'food_restrictions'] as const;
+
 const createUserSchema = z
   .object({
     email: z.string().email('올바른 이메일 주소를 입력해 주세요.'),
@@ -30,9 +32,7 @@ const createUserSchema = z
     affiliation: z.enum(AFFILIATIONS, {
       message: '소속을 선택해 주세요.'
     }),
-    department: z.string().trim().min(1, '부서를 선택해 주세요.').max(100),
     rank: z.string().trim().min(1, '직급을 선택해 주세요.').max(50),
-    job_title: z.string().trim().min(1, '직책을 선택해 주세요.').max(50),
     system_role: z.enum(['admin', 'user'], {
       message: '시스템 역할을 선택해 주세요.'
     }),
@@ -152,6 +152,30 @@ export async function POST(request: NextRequest) {
         ? normalizeEmail(body.email)
         : 'unknown';
 
+    if (typeof body === 'object' && body !== null) {
+      const removedFields = REMOVED_USER_FIELDS.filter((field) => field in body);
+      if (removedFields.length > 0) {
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.create',
+            targetType: 'user',
+            targetUserId: null,
+            targetLabel: attemptedEmail,
+            httpMethod: 'POST',
+            httpPath,
+            metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.', {
+              validation_errors: { removed_fields: removedFields.join(', ') },
+              attempted_target: attemptedEmail
+            })
+          },
+          { success: false, message: '입력값이 올바르지 않습니다.' },
+          400
+        );
+      }
+    }
+
     const parsed = createUserSchema.safeParse(body);
     if (!parsed.success) {
       return jsonWithActivityLog(
@@ -262,9 +286,7 @@ export async function POST(request: NextRequest) {
         email: payload.email,
         full_name: payload.full_name,
         affiliation: payload.affiliation,
-        department: payload.department,
         rank: payload.rank,
-        job_title: payload.job_title,
         system_role: payload.system_role,
         birthday: payload.birthday,
         status: 'active',

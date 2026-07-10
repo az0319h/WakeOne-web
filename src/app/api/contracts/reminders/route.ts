@@ -15,7 +15,8 @@ import {
 } from '@/features/contracts/api/service.server';
 import type {
   ContractReminderRecipientGroup,
-  ContractReminderRecipientResult
+  ContractReminderRecipientResult,
+  ContractReminderUnmatchedTarget
 } from '@/features/contracts/api/types';
 import { sendContractReminderEmail } from '@/lib/mail/send-contract-reminder-email';
 import {
@@ -60,12 +61,28 @@ function truncateErrorMessage(message: string): string {
   return message.length > 500 ? `${message.slice(0, 497)}...` : message;
 }
 
+function countUnmatchedContracts(targets: ContractReminderUnmatchedTarget[]): number {
+  return targets.reduce((total, target) => total + target.contract_ids.length, 0);
+}
+
+function buildUnmatchedMetadata(unmatchedTargets: ContractReminderUnmatchedTarget[]) {
+  if (unmatchedTargets.length === 0) {
+    return {};
+  }
+
+  return {
+    unmatched_count: countUnmatchedContracts(unmatchedTargets),
+    unmatched_author_names: unmatchedTargets.map((target) => target.author_name)
+  };
+}
+
 async function logReminderFailure(input: {
   requestId: string;
   actor: ReminderActor;
   status: number;
   message: string;
   errorCode: 'unauthenticated' | 'forbidden' | 'validation' | 'internal_error';
+  unmatchedTargets?: ContractReminderUnmatchedTarget[];
 }) {
   await recordActivityLog({
     requestId: input.requestId,
@@ -79,7 +96,7 @@ async function logReminderFailure(input: {
     httpMethod: 'POST',
     httpPath: HTTP_PATH,
     httpStatus: input.status,
-    metadata: buildErrorMetadata(input.errorCode, input.message)
+    metadata: buildErrorMetadata(input.errorCode, input.message, buildUnmatchedMetadata(input.unmatchedTargets ?? []))
   });
 }
 
@@ -112,6 +129,31 @@ async function logReminderRecipient(input: {
             recipient_email: input.group.recipient_email,
             missing_document_numbers: input.group.document_numbers
           })
+  });
+}
+
+async function logReminderRunSummary(input: {
+  requestId: string;
+  actor: ReminderActor;
+  unmatchedTargets: ContractReminderUnmatchedTarget[];
+  status: 'completed' | 'partial_failed' | 'failed';
+}) {
+  await recordActivityLog({
+    requestId: input.requestId,
+    actorUserId: input.actor.actorUserId,
+    actorEmail: input.actor.actorEmail,
+    actorDisplayName: input.actor.actorDisplayName,
+    action: 'contract.reminder_send',
+    targetType: 'contract',
+    targetUserId: null,
+    targetLabel: contractTargetLabel({ id: 'reminders' }),
+    httpMethod: 'POST',
+    httpPath: HTTP_PATH,
+    httpStatus: 200,
+    metadata: {
+      status: input.status,
+      ...buildUnmatchedMetadata(input.unmatchedTargets)
+    }
   });
 }
 
@@ -197,7 +239,8 @@ export async function POST(request: NextRequest) {
         httpStatus: 200,
         metadata: {
           status: 'duplicate_run',
-          message: '이미 실행된 독촉 run입니다.'
+          message: '이미 실행된 독촉 run입니다.',
+          ...buildUnmatchedMetadata(existingRun.unmatched_targets)
         }
       });
 
@@ -206,14 +249,17 @@ export async function POST(request: NextRequest) {
           success: true,
           message: '이미 실행된 계약서 독촉 run입니다.',
           run: existingRun,
-          recipients: []
+          recipients: [],
+          unmatched_targets: existingRun.unmatched_targets
         }),
         requestId
       );
     }
 
-    const groups = await listContractReminderRecipientGroups();
-    if (groups.length === 0) {
+    const scan = await listContractReminderRecipientGroups();
+    const { groups, unmatched_targets: unmatchedTargets } = scan;
+
+    if (groups.length === 0 && unmatchedTargets.length === 0) {
       const message = '독촉 대상 계약서가 없습니다.';
       await logReminderFailure({
         requestId,
@@ -223,7 +269,10 @@ export async function POST(request: NextRequest) {
         errorCode: 'validation'
       });
       return withRequestId(
-        NextResponse.json({ success: false, message, run: null, recipients: [] }, { status: 400 }),
+        NextResponse.json(
+          { success: false, message, run: null, recipients: [], unmatched_targets: [] },
+          { status: 400 }
+        ),
         requestId
       );
     }
@@ -285,22 +334,44 @@ export async function POST(request: NextRequest) {
 
     const sentCount = recipients.filter((recipient) => recipient.status === 'sent').length;
     const failedCount = recipients.length - sentCount;
+    const runStatus =
+      groups.length === 0
+        ? 'completed'
+        : failedCount === 0
+          ? 'completed'
+          : sentCount > 0
+            ? 'partial_failed'
+            : 'failed';
+
     const finishedRun = await finishContractReminderRun({
       runId: run.id,
-      status: failedCount === 0 ? 'completed' : sentCount > 0 ? 'partial_failed' : 'failed',
+      status: runStatus,
       sentCount,
-      failedCount
+      failedCount,
+      unmatchedTargets
     });
+
+    if (groups.length === 0 || unmatchedTargets.length > 0) {
+      await logReminderRunSummary({
+        requestId,
+        actor,
+        unmatchedTargets,
+        status: runStatus
+      });
+    }
 
     return withRequestId(
       NextResponse.json({
         success: failedCount === 0,
         message:
-          failedCount === 0
-            ? '계약서 첨부 누락 독촉 메일을 발송했습니다.'
-            : '계약서 첨부 누락 독촉 메일 일부 발송에 실패했습니다.',
+          groups.length === 0
+            ? '미매칭 계약서만 확인되어 독촉 run을 기록했습니다.'
+            : failedCount === 0
+              ? '계약서 첨부 누락 독촉 메일을 발송했습니다.'
+              : '계약서 첨부 누락 독촉 메일 일부 발송에 실패했습니다.',
         run: finishedRun,
-        recipients
+        recipients,
+        unmatched_targets: unmatchedTargets
       }),
       requestId
     );
@@ -314,7 +385,10 @@ export async function POST(request: NextRequest) {
       errorCode: 'internal_error'
     });
     return withRequestId(
-      NextResponse.json({ success: false, message, run: null, recipients: [] }, { status: 500 }),
+      NextResponse.json(
+        { success: false, message, run: null, recipients: [], unmatched_targets: [] },
+        { status: 500 }
+      ),
       requestId
     );
   }

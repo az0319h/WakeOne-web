@@ -22,16 +22,14 @@ import { z } from 'zod';
 
 type Params = { params: Promise<{ id: string }> };
 
-const DISALLOWED_PUT_FIELDS = ['phone', 'food_restrictions'] as const;
+const DISALLOWED_PUT_FIELDS = ['phone', 'food_restrictions', 'department', 'job_title'] as const;
 
 const updateUserSchema = z
   .object({
     full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100).optional(),
     avatar_url: z.string().url().max(2048).nullable().optional(),
     affiliation: z.enum(AFFILIATIONS).nullable().optional(),
-    department: z.string().max(100).nullable().optional(),
     rank: z.string().max(50).nullable().optional(),
-    job_title: z.string().max(50).nullable().optional(),
     system_role: z.enum(['admin', 'user']).optional(),
     birthday: birthdaySchema
   })
@@ -167,7 +165,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const { data: target, error: fetchError } = await supabase
       .from('profiles')
-      .select('status, affiliation, department, rank, job_title')
+      .select('status, affiliation, rank')
       .eq('user_id', id)
       .maybeSingle();
 
@@ -228,17 +226,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     const effectiveAffiliation = (updates.affiliation ?? target.affiliation) as Affiliation | null;
-    const effectiveDepartment =
-      'department' in updates ? (updates.department as string | null) : target.department;
     const effectiveRank = 'rank' in updates ? (updates.rank as string | null) : target.rank;
-    const effectiveJobTitle =
-      'job_title' in updates ? (updates.job_title as string | null) : target.job_title;
 
     const mergedValidation = updateUserSchema.safeParse({
       affiliation: effectiveAffiliation,
-      department: effectiveDepartment,
-      rank: effectiveRank,
-      job_title: effectiveJobTitle
+      rank: effectiveRank
     });
 
     if (!mergedValidation.success) {

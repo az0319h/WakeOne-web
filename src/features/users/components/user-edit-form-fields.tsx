@@ -5,8 +5,6 @@ import { useFormFields } from '@/components/ui/tanstack-form';
 import { useFormContext } from '@/components/ui/form-context';
 import {
   AFFILIATION_OPTIONS,
-  DEPARTMENT_BY_AFFILIATION,
-  JOB_TITLE_BY_AFFILIATION,
   RANK_BY_AFFILIATION,
   SELECT_NONE_OPTION,
   SELECT_NONE_VALUE
@@ -48,14 +46,8 @@ export function UserCreateFormFields() {
       ? affiliation
       : null;
 
-  const departmentOptions = activeAffiliation
-    ? toSelectOptions(DEPARTMENT_BY_AFFILIATION[activeAffiliation])
-    : [];
   const rankOptions = activeAffiliation
     ? toSelectOptions(RANK_BY_AFFILIATION[activeAffiliation])
-    : [];
-  const jobTitleOptions = activeAffiliation
-    ? toSelectOptions(JOB_TITLE_BY_AFFILIATION[activeAffiliation])
     : [];
 
   return (
@@ -78,19 +70,9 @@ export function UserCreateFormFields() {
         placeholder='소속 선택'
         listeners={{
           onChange: ({ fieldApi }) => {
-            fieldApi.form.setFieldValue('department', '');
             fieldApi.form.setFieldValue('rank', '');
-            fieldApi.form.setFieldValue('job_title', '');
           }
         }}
-      />
-      <FormSelectField
-        name='department'
-        label='부서'
-        options={departmentOptions}
-        placeholder={
-          activeAffiliation ? '부서 선택' : '소속을 먼저 선택해 주세요'
-        }
       />
       <FormSelectField
         name='rank'
@@ -98,14 +80,6 @@ export function UserCreateFormFields() {
         options={rankOptions}
         placeholder={
           activeAffiliation ? '직급 선택' : '소속을 먼저 선택해 주세요'
-        }
-      />
-      <FormSelectField
-        name='job_title'
-        label='직책'
-        options={jobTitleOptions}
-        placeholder={
-          activeAffiliation ? '직책 선택' : '소속을 먼저 선택해 주세요'
         }
       />
       <FormSelectField
@@ -131,14 +105,8 @@ export function UserEditFormFields() {
       ? affiliation
       : null;
 
-  const departmentOptions = activeAffiliation
-    ? toSelectOptions(DEPARTMENT_BY_AFFILIATION[activeAffiliation])
-    : [];
   const rankOptions = activeAffiliation
     ? toSelectOptions(RANK_BY_AFFILIATION[activeAffiliation])
-    : [];
-  const jobTitleOptions = activeAffiliation
-    ? toSelectOptions(JOB_TITLE_BY_AFFILIATION[activeAffiliation])
     : [];
 
   return (
@@ -161,19 +129,9 @@ export function UserEditFormFields() {
         placeholder='소속 선택'
         listeners={{
           onChange: ({ fieldApi }) => {
-            fieldApi.form.setFieldValue('department', SELECT_NONE_VALUE);
             fieldApi.form.setFieldValue('rank', SELECT_NONE_VALUE);
-            fieldApi.form.setFieldValue('job_title', SELECT_NONE_VALUE);
           }
         }}
-      />
-      <FormSelectField
-        name='department'
-        label='부서'
-        options={[SELECT_NONE_OPTION, ...departmentOptions]}
-        placeholder={
-          activeAffiliation ? '부서 선택' : '소속을 먼저 선택해 주세요'
-        }
       />
       <FormSelectField
         name='rank'
@@ -181,14 +139,6 @@ export function UserEditFormFields() {
         options={[SELECT_NONE_OPTION, ...rankOptions]}
         placeholder={
           activeAffiliation ? '직급 선택' : '소속을 먼저 선택해 주세요'
-        }
-      />
-      <FormSelectField
-        name='job_title'
-        label='직책'
-        options={[SELECT_NONE_OPTION, ...jobTitleOptions]}
-        placeholder={
-          activeAffiliation ? '직책 선택' : '소속을 먼저 선택해 주세요'
         }
       />
       <FormSelectField
