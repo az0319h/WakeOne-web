@@ -8,24 +8,27 @@ begin;
 with test_contracts as (
   select id
   from public.contract_documents
-  where document_number ~ '^(AC|E2E|PV)-'
+  where document_number ~ '^(AC|E2E|PV)'
 )
 delete from public.contract_attachments
 where contract_id in (select id from test_contracts);
 
 delete from public.contract_import_events
-where document_number ~ '^(AC|E2E|PV)-';
+where document_number ~ '^(AC|E2E|PV)';
 
 with test_contracts as (
   select id
   from public.contract_documents
-  where document_number ~ '^(AC|E2E|PV)-'
+  where document_number ~ '^(AC|E2E|PV)'
 )
 delete from public.contract_reminder_recipients
 where contract_ids && array(select id from test_contracts);
 
+delete from public.contract_reminder_runs
+where run_key ~ '^(AC|E2E|PV)';
+
 delete from public.contract_documents
-where document_number ~ '^(AC|E2E|PV)-';
+where document_number ~ '^(AC|E2E|PV)';
 
 -- 2) activity_logs — append-only 트리거 임시 해제 후 테스트 관련 행 삭제
 alter table public.activity_logs disable trigger trg_activity_logs_no_update;
@@ -37,7 +40,8 @@ with test_users as (
      or email in ('e2e@test.local', 'prod-verify@test.local')
 )
 delete from public.activity_logs
-where metadata->>'document_number' ~ '^(AC|E2E|PV)-'
+where metadata->>'document_number' ~ '^(AC|E2E|PV)'
+   or metadata->>'run_key' ~ '^(AC|E2E|PV)'
    or (
      metadata->>'email' is not null
      and metadata->>'email' ilike '%@example.com'

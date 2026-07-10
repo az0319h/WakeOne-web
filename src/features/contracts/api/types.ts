@@ -129,13 +129,23 @@ export type ContractNoAttachmentPayload = {
   no_attachment_reason?: string | null;
 };
 
+export type ContractReminderUnmatchedReason = 'no_profile_match';
+
+export type ContractReminderUnmatchedTarget = {
+  author_name: string;
+  contract_ids: number[];
+  document_numbers: string[];
+  reason: ContractReminderUnmatchedReason;
+};
+
 export type ContractReminderTarget = {
   id: number;
   document_number: string;
   document_created_at: string;
+  approved_at: string | null;
   author_name: string;
-  author_email: string;
   contract_target: string;
+  source_document_url: string | null;
 };
 
 export type ContractReminderRecipientGroup = {
@@ -143,6 +153,11 @@ export type ContractReminderRecipientGroup = {
   author_name: string;
   contracts: ContractReminderTarget[];
   document_numbers: string[];
+};
+
+export type ContractReminderRecipientScanResult = {
+  groups: ContractReminderRecipientGroup[];
+  unmatched_targets: ContractReminderUnmatchedTarget[];
 };
 
 export type ContractReminderRecipientResult = {
@@ -162,6 +177,7 @@ export type ContractReminderRun = {
   target_count: number;
   sent_count: number;
   failed_count: number;
+  unmatched_targets: ContractReminderUnmatchedTarget[];
   created_at: string;
   finished_at: string | null;
 };
@@ -171,4 +187,5 @@ export type ContractReminderRunResponse = {
   message: string;
   run: ContractReminderRun | null;
   recipients: ContractReminderRecipientResult[];
+  unmatched_targets: ContractReminderUnmatchedTarget[];
 };

@@ -13,9 +13,6 @@ export function ProfileAccountReadOnly({ profile }: ProfileAccountReadOnlyProps)
       <ReadOnlyField label='이름' value={profile.full_name} />
       <ReadOnlyField label='연락처' value={formatPhoneDisplay(profile.phone)} />
       <ReadOnlyField label='생일' value={formatBirthdayDisplay(profile.birthday)} />
-      <div className='sm:col-span-2'>
-        <ReadOnlyField label='못 먹는 음식' value={profile.food_restrictions} />
-      </div>
     </div>
   );
 }

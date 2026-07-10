@@ -10,6 +10,7 @@ import type {
   AssetItemStatus,
   AssetItemUpdatePayload
 } from './types';
+import { USAGE_LOCATION_OPTIONS } from '@/features/asset-ledger/constants/usage-locations';
 import { ASSET_CATEGORY_NONE_SENTINEL } from './types';
 
 type ProfileLite = {
@@ -163,15 +164,24 @@ function collectDistinctTrimmed(values: Array<string | null | undefined>): strin
   return sortKorean(Array.from(unique));
 }
 
-export async function listAssetLedgerDepartments(): Promise<string[]> {
+export async function listAssetLedgerUsageLocations(): Promise<string[]> {
   const supabase = getServiceRoleClient();
-  const { data, error } = await supabase.from('profiles').select('department');
+  const { data, error } = await supabase.from('asset_items').select('usage_location');
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return collectDistinctTrimmed((data ?? []).map((row) => row.department as string | null));
+  const fromAssets = collectDistinctTrimmed(
+    (data ?? []).map((row) => row.usage_location as string | null)
+  );
+  const merged = new Set<string>([...USAGE_LOCATION_OPTIONS, ...fromAssets]);
+  return sortKorean(Array.from(merged));
+}
+
+/** @deprecated Use listAssetLedgerUsageLocations */
+export async function listAssetLedgerDepartments(): Promise<string[]> {
+  return listAssetLedgerUsageLocations();
 }
 
 export async function listAssetCategoryOptions(): Promise<string[]> {
@@ -187,15 +197,15 @@ export async function listAssetCategoryOptions(): Promise<string[]> {
 
 export function validateUsageLocation(
   usageLocation: string | null | undefined,
-  departments: string[]
+  locations: string[]
 ): string | null {
   if (usageLocation == null || usageLocation === '') {
     return null;
   }
 
   const trimmed = usageLocation.trim();
-  if (!departments.includes(trimmed)) {
-    throw new Error('허용되지 않는 부서입니다. 프로필 부서 목록에서 선택해 주세요.');
+  if (!locations.includes(trimmed)) {
+    throw new Error('허용되지 않는 사용처입니다. 사용처 목록에서 선택해 주세요.');
   }
 
   return trimmed;
@@ -478,13 +488,12 @@ export async function listAssetLedgerUsers(): Promise<
     id: string;
     name: string;
     email: string;
-    department: string | null;
   }>
 > {
   const supabase = getServiceRoleClient();
   let query = supabase
     .from('profiles')
-    .select('user_id, full_name, email, department')
+    .select('user_id, full_name, email')
     .eq('status', 'active')
     .or('affiliation.eq.wake,system_role.eq.admin')
     .order('full_name', { ascending: true })
@@ -499,8 +508,7 @@ export async function listAssetLedgerUsers(): Promise<
     data?.map((profile) => ({
       id: profile.user_id as string,
       name: (profile.full_name as string)?.trim() || (profile.email as string),
-      email: profile.email as string,
-      department: (profile.department as string | null)?.trim() || null
+      email: profile.email as string
     })) ?? []
   );
 }

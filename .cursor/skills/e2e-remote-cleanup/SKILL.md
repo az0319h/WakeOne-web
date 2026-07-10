@@ -14,7 +14,21 @@ disable-model-invocation: true
 
 > 사용자 표현 **「EC2 목 데이터」** = 이 프로젝트의 **원격 Supabase Postgres** (로컬 in-memory mock 아님).
 
-## 언제 실행
+## 자동 cleanup (Playwright)
+
+`playwright.config.ts`의 **`globalTeardown`** (`e2e/global-teardown.ts`)이 **모든 E2E 프로젝트 종료 후** `node scripts/cleanup-e2e-mock-data.mjs`를 실행한다.
+
+| 항목 | 내용 |
+|------|------|
+| 스크립트 | `scripts/cleanup-e2e-mock-data.mjs` |
+| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/27_e2e_cleanup_rpc.sql` |
+| 수동 실행 | `npm run e2e:cleanup` |
+| 디버그 skip | `E2E_SKIP_CLEANUP=1` (완료 보고·CI에는 사용 금지) |
+| 사전 준비 | `globalSetup` → `scripts/e2e-plan03-prep.cjs` (E2E 계정 비밀번호·active 복구) |
+
+**테스트 중 생성된 목 데이터는 teardown 실패 시 Playwright exit code ≠ 0** — 잔존 데이터 방치 금지.
+
+## 언제 실행 (verifier Step 7)
 
 | 조건 | Step 7 실행 |
 |------|-------------|
@@ -31,12 +45,14 @@ disable-model-invocation: true
 ## 워크플로 (고정)
 
 1. **Read** `scripts/cleanup-e2e-mock-data.sql` (삭제 대상·순서 확인)
-2. **Supabase MCP** `execute_sql` — 파일 내용 **전체** 1회 실행 (`apply_migration` **금지**)
-3. **검증 쿼리** (execute_sql) — 잔존 0건 확인:
+2. **우선** `node scripts/cleanup-e2e-mock-data.mjs` (Playwright globalTeardown과 동일 RPC)
+3. **대안** Supabase MCP `execute_sql` — `scripts/cleanup-e2e-mock-data.sql` 전체 1회 (`apply_migration` **금지**)
+4. **검증** — RPC `remaining` 또는 아래 쿼리로 잔존 0건 확인:
 
 ```sql
 select
-  (select count(*) from public.contract_documents where document_number ~ '^(AC|E2E|PV)-') as contracts,
+  (select count(*) from public.contract_documents where document_number ~ '^(AC|E2E|PV)') as contracts,
+  (select count(*) from public.contract_reminder_runs where run_key ~ '^(AC|E2E|PV)') as reminder_runs,
   (select count(*) from auth.users where email ilike '%@example.com' or email in ('e2e@test.local', 'prod-verify@test.local')) as users;
 ```
 
@@ -47,6 +63,7 @@ select
 | 대상 | 식별 규칙 | 근거 |
 |------|-----------|------|
 | 계약 | `document_number ~ '^(AC\|E2E\|PV)-'` | `e2e/helpers/contracts.ts`, import/list spec, 운영 PV-* 검증 |
+| 독촉 run | `run_key ~ '^(AC\|E2E\|PV)-'` | `e2e/helpers/reminders.ts`, contract-reminder API spec |
 | 사용자 | `email ilike '%@example.com'` | users E2E API/UI spec |
 | 사용자 | `e2e@test.local`, `prod-verify@test.local` | contract import / prod verify |
 | activity_logs | metadata `document_number` 또는 `email` 위 패턴 일치 | 검증 중 생성된 감사 로그 |

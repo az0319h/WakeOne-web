@@ -98,11 +98,6 @@ function cleanOptionalText(value: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function resolveUsageLocationFromUser(user?: AssetLedgerUser | null): string {
-  const department = user?.department?.trim();
-  return department ? department : ASSET_DEPARTMENT_NONE_SENTINEL;
-}
-
 function formatAssetLedgerUserLabel(user: AssetLedgerUser): string {
   const name = user.name.trim();
   const email = user.email.trim();
@@ -152,28 +147,22 @@ export function AssetItemFormSheet({ open, onOpenChange, item }: AssetItemFormSh
   const { data: usersData } = useSuspenseQuery(assetLedgerUsersQueryOptions(''));
   const { data: listMeta } = useSuspenseQuery(assetItemsQueryOptions({ page: 1, limit: 1 }));
 
-  const departmentSelectOptions = useMemo(() => {
-    const departments = new Set(usersData.departments);
-    for (const user of usersData.users) {
-      const department = user.department?.trim();
-      if (department) {
-        departments.add(department);
-      }
-    }
+  const usageLocationSelectOptions = useMemo(() => {
+    const locations = new Set(usersData.usageLocations);
     if (item?.usage_location?.trim()) {
-      departments.add(item.usage_location.trim());
+      locations.add(item.usage_location.trim());
     }
 
     return [
       { label: '미지정', value: ASSET_DEPARTMENT_NONE_SENTINEL },
-      ...Array.from(departments)
+      ...Array.from(locations)
         .sort((a, b) => a.localeCompare(b, 'ko'))
-        .map((department) => ({
-          label: department,
-          value: department
+        .map((location) => ({
+          label: location,
+          value: location
         }))
     ];
-  }, [item?.usage_location, usersData.departments, usersData.users]);
+  }, [item?.usage_location, usersData.usageLocations]);
 
   const categorySuggestions = useMemo(() => {
     const categories = new Set(listMeta.categoryOptions);
@@ -566,10 +555,6 @@ export function AssetItemFormSheet({ open, onOpenChange, item }: AssetItemFormSh
                                     <CommandItem
                                       onSelect={() => {
                                         field.handleChange('');
-                                        form.setFieldValue(
-                                          'usage_location',
-                                          ASSET_DEPARTMENT_NONE_SENTINEL
-                                        );
                                         setUserOpen(false);
                                       }}
                                     >
@@ -589,10 +574,6 @@ export function AssetItemFormSheet({ open, onOpenChange, item }: AssetItemFormSh
                                           value={label}
                                           onSelect={() => {
                                             field.handleChange(user.id);
-                                            form.setFieldValue(
-                                              'usage_location',
-                                              resolveUsageLocationFromUser(user)
-                                            );
                                             setUserOpen(false);
                                           }}
                                         >
@@ -625,9 +606,9 @@ export function AssetItemFormSheet({ open, onOpenChange, item }: AssetItemFormSh
                 <FormTextField name='model_number' label='품명(모델번호)' placeholder='모델명' />
                 <FormSelectField
                   name='usage_location'
-                  label='부서'
-                  options={departmentSelectOptions}
-                  placeholder='부서를 선택해 주세요'
+                  label='사용처'
+                  options={usageLocationSelectOptions}
+                  placeholder='사용처를 선택해 주세요'
                 />
               </div>
 

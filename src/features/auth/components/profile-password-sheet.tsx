@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
-import { changePassword } from '@/features/auth/api/profile.client';
+import { changePasswordMutation } from '@/features/auth/api/mutations';
 import { signOut } from '@/features/auth/api/service';
 import {
   changePasswordSchema,
@@ -36,7 +37,15 @@ export function ProfilePasswordSheet({
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const isControlled = controlledOpen !== undefined;
-  const [isPending, setIsPending] = useState(false);
+
+  const changePasswordMut = useMutation({
+    ...changePasswordMutation,
+    onError: (error) => {
+      notifyError(
+        error instanceof Error ? error.message : '비밀번호 변경에 실패했습니다.'
+      );
+    }
+  });
 
   const form = useAppForm({
     defaultValues: {
@@ -48,22 +57,13 @@ export function ProfilePasswordSheet({
       onSubmit: changePasswordSchema
     },
     onSubmit: async ({ value }) => {
-      setIsPending(true);
-      try {
-        await changePassword(value);
-        notifySuccess('비밀번호가 변경되었습니다. 다시 로그인해 주세요.');
-        setOpen(false);
-        form.reset();
-        await signOut();
-        router.push('/auth/sign-in');
-        router.refresh();
-      } catch (error) {
-        notifyError(
-          error instanceof Error ? error.message : '비밀번호 변경에 실패했습니다.'
-        );
-      } finally {
-        setIsPending(false);
-      }
+      await changePasswordMut.mutateAsync(value);
+      notifySuccess('비밀번호가 변경되었습니다. 다시 로그인해 주세요.');
+      setOpen(false);
+      form.reset();
+      await signOut();
+      router.push('/auth/sign-in');
+      router.refresh();
     }
   });
 
@@ -117,7 +117,11 @@ export function ProfilePasswordSheet({
           </form.Form>
         </form.AppForm>
         <SheetFooter>
-          <Button type='submit' form='profile-password-form' isLoading={isPending}>
+          <Button
+            type='submit'
+            form='profile-password-form'
+            isLoading={changePasswordMut.isPending}
+          >
             <Icons.check className='mr-2 h-4 w-4' />
             변경 저장
           </Button>

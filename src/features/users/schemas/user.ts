@@ -17,9 +17,7 @@ export const createUserSchema = z
     email: z.string().email('올바른 이메일 주소를 입력해 주세요.'),
     full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100),
     affiliation: z.union([z.enum(AFFILIATIONS), z.literal('')]),
-    department: z.string().min(1, '부서를 선택해 주세요.').max(100),
     rank: z.string().min(1, '직급을 선택해 주세요.').max(50),
-    job_title: z.string().min(1, '직책을 선택해 주세요.').max(50),
     system_role: z.union([z.enum(['admin', 'user']), z.literal('')]),
     birthday: z.string().nullable()
   })
@@ -54,9 +52,7 @@ export const createUserSchema = z
       validateOrganizationFields(
         {
           affiliation: data.affiliation,
-          department: data.department,
-          rank: data.rank,
-          job_title: data.job_title
+          rank: data.rank
         },
         ctx
       );
@@ -75,13 +71,7 @@ export const userUpdateSchema = z
     affiliation: z
       .union([z.enum(AFFILIATIONS), z.literal(SELECT_NONE_VALUE)])
       .optional(),
-    department: z
-      .union([z.string().max(100), z.literal(SELECT_NONE_VALUE)])
-      .optional(),
     rank: z
-      .union([z.string().max(50), z.literal(SELECT_NONE_VALUE)])
-      .optional(),
-    job_title: z
       .union([z.string().max(50), z.literal(SELECT_NONE_VALUE)])
       .optional(),
     system_role: z.enum(['admin', 'user'], {
@@ -111,9 +101,7 @@ export const userUpdateSchema = z
       {
         affiliation: emptyToNull(data.affiliation) as
           (typeof AFFILIATIONS)[number] | null,
-        department: emptyToNull(data.department),
-        rank: emptyToNull(data.rank),
-        job_title: emptyToNull(data.job_title)
+        rank: emptyToNull(data.rank)
       },
       ctx
     );

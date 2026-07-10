@@ -27,8 +27,8 @@ interface UserProfileModalProps {
 
 function buildSubtitle(user: User) {
   const parts: string[] = [];
-  if (user.job_title?.trim()) {
-    parts.push(user.job_title.trim());
+  if (user.rank?.trim()) {
+    parts.push(user.rank.trim());
   }
   const affiliationLabel = getAffiliationLabel(user.affiliation);
   if (affiliationLabel) {
@@ -90,10 +90,7 @@ export function UserProfileModal({ user, open, onOpenChange }: UserProfileModalP
                   label='소속'
                   value={getAffiliationLabel(user.affiliation)}
                 />
-                <ReadOnlyField label='부서' value={user.department} />
                 <ReadOnlyField label='직급' value={user.rank} />
-                <ReadOnlyField label='직책' value={user.job_title} />
-                <ReadOnlyField label='못 먹는 음식' value={user.food_restrictions} />
               </div>
 
               <aside className='space-y-4'>

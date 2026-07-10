@@ -41,6 +41,7 @@ export type ActivityLogErrorCode =
   | 'inactive_user'
   | 'not_found'
   | 'wrong_password'
+  | 'profile_edit_disabled'
   | 'internal_error';
 
 export type ActivityLogMetadata = {
@@ -58,6 +59,8 @@ export type ActivityLogMetadata = {
   recipient_email?: string;
   missing_document_numbers?: string[];
   status?: string;
+  unmatched_count?: number;
+  unmatched_author_names?: string[];
   category?: string;
   usage_location?: string;
   session_state?: string;

@@ -51,6 +51,15 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         access: { systemRole: 'admin' },
         items: []
+      },
+      {
+        title: '시스템 이메일 로그',
+        url: '/dashboard/system-email-logs',
+        icon: 'send',
+        shortcut: ['e', 'l'],
+        isActive: false,
+        access: { systemRole: 'admin' },
+        items: []
       }
     ]
   },

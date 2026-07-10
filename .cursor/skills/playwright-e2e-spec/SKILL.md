@@ -80,7 +80,8 @@ npx playwright test e2e/{feature}/
 ```
 
 - `.env`: `E2E_ADMIN_*`, `E2E_USER_*`, `CONTRACT_IMPORT_TOKEN` 등 필수 env 확인
-- `playwright.config.ts`가 `.env`를 로드하는지 확인
+- `playwright.config.ts`: `.env` 로드 · **`globalSetup`**(계정 prep) · **`globalTeardown`**(목 데이터 삭제) 확인
+- teardown 실패 = 테스트 실패 — `npm run e2e:cleanup`으로 수동 재시도
 
 ## 실패 라우팅
 

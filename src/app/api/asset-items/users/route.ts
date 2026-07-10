@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireAssetLedgerSession } from '@/features/auth/api/session.server';
-import { listAssetLedgerDepartments, listAssetLedgerUsers } from '@/features/asset-ledger/api/service.server';
+import {
+  listAssetLedgerUsageLocations,
+  listAssetLedgerUsers
+} from '@/features/asset-ledger/api/service.server';
 
 export async function GET() {
   const session = await requireAssetLedgerSession();
@@ -9,12 +12,15 @@ export async function GET() {
   }
 
   try {
-    const [users, departments] = await Promise.all([listAssetLedgerUsers(), listAssetLedgerDepartments()]);
+    const [users, usageLocations] = await Promise.all([
+      listAssetLedgerUsers(),
+      listAssetLedgerUsageLocations()
+    ]);
     return NextResponse.json({
       success: true,
       message: '실사용자 목록을 불러왔습니다.',
       users,
-      departments
+      usageLocations
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : '실사용자 목록 조회 중 오류가 발생했습니다.';

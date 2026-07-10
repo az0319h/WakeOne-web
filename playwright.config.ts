@@ -31,6 +31,8 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   reporter: 'html',
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -67,7 +69,12 @@ export default defineConfig({
         storageState: 'e2e/.auth/user.json'
       },
       dependencies: ['setup-user'],
-      testMatch: [/rbac\.spec\.ts$/, /profile\.spec\.ts$/]
+      testMatch: [
+        /rbac\.spec\.ts$/,
+        /profile\.spec\.ts$/,
+        /system-email-logs-rbac\.spec\.ts$/,
+        /asset-ledger\/.*\.spec\.ts$/
+      ]
     },
     {
       name: 'api',

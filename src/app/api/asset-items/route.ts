@@ -4,7 +4,7 @@ import { requireAssetLedgerSession } from '@/features/auth/api/session.server';
 import {
   createAssetItem,
   listAssetItems,
-  listAssetLedgerDepartments,
+  listAssetLedgerUsageLocations,
   validateUsageLocation
 } from '@/features/asset-ledger/api/service.server';
 import { ASSET_ITEM_STATUSES, ASSET_CATEGORY_NONE_SENTINEL } from '@/features/asset-ledger/api/types';
@@ -130,9 +130,9 @@ export async function POST(request: NextRequest) {
       asset_number: normalizeAssetNumber(parsed.data.asset_number)
     };
 
-    const departments = await listAssetLedgerDepartments();
+    const usageLocations = await listAssetLedgerUsageLocations();
     try {
-      payload.usage_location = validateUsageLocation(parsed.data.usage_location, departments);
+      payload.usage_location = validateUsageLocation(parsed.data.usage_location, usageLocations);
     } catch (validationError) {
       const message =
         validationError instanceof Error ? validationError.message : '사용처 값이 올바르지 않습니다.';

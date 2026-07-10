@@ -5,11 +5,6 @@ type SendContractReminderEmailParams = {
   group: ContractReminderRecipientGroup;
 };
 
-function getContractsUrl(): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000';
-  return `${appUrl.replace(/\/$/, '')}/dashboard/contracts`;
-}
-
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -19,36 +14,52 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+function formatContractDateLine(contract: ContractReminderRecipientGroup['contracts'][number]): string {
+  const approvedPart = contract.approved_at ? ` / 문서승인일: ${contract.approved_at}` : '';
+  return `${contract.document_number} / ${contract.contract_target} / 문서생성일: ${contract.document_created_at}${approvedPart}`;
+}
+
+function formatContractTextLine(contract: ContractReminderRecipientGroup['contracts'][number]): string {
+  const base = formatContractDateLine(contract);
+  if (contract.source_document_url?.trim()) {
+    return `- ${base} (${contract.source_document_url.trim()})`;
+  }
+
+  return `- ${base}`;
+}
+
+function formatContractHtmlLine(contract: ContractReminderRecipientGroup['contracts'][number]): string {
+  const documentNumber = escapeHtml(contract.document_number);
+  const documentLabel = contract.source_document_url?.trim()
+    ? `<a href="${escapeHtml(contract.source_document_url.trim())}" target="_blank" rel="noopener noreferrer">${documentNumber}</a>`
+    : documentNumber;
+  const approvedPart = contract.approved_at
+    ? ` / 문서승인일: ${escapeHtml(contract.approved_at)}`
+    : '';
+
+  return `
+        <li>
+          <strong>${documentLabel}</strong>
+          <span style="color:#666;"> / ${escapeHtml(contract.contract_target)} / 문서생성일: ${escapeHtml(contract.document_created_at)}${approvedPart}</span>
+        </li>`;
+}
+
 export async function sendContractReminderEmail({ group }: SendContractReminderEmailParams): Promise<void> {
   const transporter = getMailTransporter();
   const from = getDefaultMailFrom();
-  const contractsUrl = getContractsUrl();
-  const documentLines = group.contracts.map(
-    (contract) =>
-      `- ${contract.document_number} / ${contract.contract_target} / ${contract.document_created_at}`
-  );
 
-  const subject = `[WakeOne] 계약서 첨부 누락 안내 (${group.document_numbers.length}건)`;
+  const subject = `[WakeOne] 계약서 누락 안내 (${group.document_numbers.length}건)`;
   const text = [
     `${group.author_name}님,`,
     '',
-    '아래 계약서 체결 요청 문서에 첨부파일이 등록되어 있지 않습니다.',
-    '첨부파일을 업로드하거나 관리자에게 첨부파일 없음 처리를 요청해 주세요.',
+    '아래 계약서 체결 요청 문서의 계약서를 전달해 주시지 않아서 전달 요청드립니다.',
     '',
-    ...documentLines,
+    ...group.contracts.map(formatContractTextLine),
     '',
-    `계약서 관리: ${contractsUrl}`
+    '해당 이메일 회신을 통해 계약서를 전달을 부탁드립니다. 감사합니다.'
   ].join('\n');
 
-  const listItems = group.contracts
-    .map(
-      (contract) => `
-        <li>
-          <strong>${escapeHtml(contract.document_number)}</strong>
-          <span style="color:#666;"> / ${escapeHtml(contract.contract_target)} / ${escapeHtml(contract.document_created_at)}</span>
-        </li>`
-    )
-    .join('');
+  const listItems = group.contracts.map(formatContractHtmlLine).join('');
 
   const html = `
 <!DOCTYPE html>
@@ -64,18 +75,15 @@ export async function sendContractReminderEmail({ group }: SendContractReminderE
         <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#fff;border:1px solid #e5e5e5;border-radius:12px;">
           <tr>
             <td style="padding:32px;">
-              <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#111;">계약서 첨부 누락 안내</p>
+              <p style="margin:0 0 8px;font-size:22px;font-weight:600;color:#111;">계약서 누락 안내</p>
               <p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.6;">
-                ${escapeHtml(group.author_name)}님, 아래 계약서 체결 요청 문서에 첨부파일이 등록되어 있지 않습니다.
+                ${escapeHtml(group.author_name)}님, 아래 계약서 체결 요청 문서의 계약서를 전달해 주시지 않아서 전달 요청드립니다.
               </p>
               <ul style="margin:0 0 24px;padding-left:20px;font-size:14px;line-height:1.8;color:#111;">
                 ${listItems}
               </ul>
-              <a href="${contractsUrl}" style="display:block;background:#000;color:#fff;text-decoration:none;border-radius:8px;padding:13px;text-align:center;font-size:14px;font-weight:500;">
-                계약서 관리에서 확인하기
-              </a>
-              <p style="margin:20px 0 0;font-size:12px;color:#999;line-height:1.6;">
-                첨부파일이 필요 없는 문서는 관리자에게 첨부파일 없음 처리를 요청해 주세요.
+              <p style="margin:0;font-size:12px;color:#999;line-height:1.6;">
+                해당 이메일 회신을 통해 계약서를 전달을 부탁드립니다. 감사합니다.
               </p>
             </td>
           </tr>

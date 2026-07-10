@@ -1,5 +1,5 @@
 -- 2026-07-08: 계약서 문서승인일 컬럼 추가
--- File: 20_contract_approved_at.sql
+-- File: 19_contract_approved_at.sql
 -- Plan: 18_contract-approved-at-plan.md
 -- Date: 2026-07-08
 -- Status: Completed

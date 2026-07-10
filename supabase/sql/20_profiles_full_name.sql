@@ -1,6 +1,9 @@
+-- File: 20_profiles_full_name.sql
 -- Plan: 19_user-single-name-plan.md
 -- Date: 2026-07-09
 -- Status: Approved
+-- Remote migration: applied (version 20260709063917)
+-- Summary: Add full_name column to profiles; deprecate first_name/last_name
 
 alter table public.profiles
   add column if not exists full_name text;

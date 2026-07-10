@@ -6,7 +6,7 @@ import { assetLedgerUsersQueryOptions } from '../api/user-queries';
 import type { AssetItemsFilters } from '../api/types';
 import {
   listAssetItems as listAssetItemsServer,
-  listAssetLedgerDepartments,
+  listAssetLedgerUsageLocations,
   listAssetLedgerUsers as listAssetLedgerUsersServer
 } from '../api/service.server';
 
@@ -43,15 +43,15 @@ export function AssetLedgerListing({ currentUserId, isAdmin, filters }: AssetLed
   void queryClient.prefetchQuery({
     ...assetLedgerUsersQueryOptions(''),
     queryFn: async () => {
-      const [users, departments] = await Promise.all([
+      const [users, usageLocations] = await Promise.all([
         listAssetLedgerUsersServer(),
-        listAssetLedgerDepartments()
+        listAssetLedgerUsageLocations()
       ]);
       return {
         success: true,
         message: '실사용자 목록을 불러왔습니다.',
         users,
-        departments
+        usageLocations
       };
     }
   });

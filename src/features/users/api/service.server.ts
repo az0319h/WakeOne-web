@@ -16,10 +16,7 @@ const PROFILE_LIST_SELECT = `
         status,
         avatar_url,
         affiliation,
-        department,
         rank,
-        job_title,
-        food_restrictions,
         deactivated_at,
         created_at,
         updated_at
@@ -44,10 +41,7 @@ function mapProfileRow(row: {
   status: User['status'];
   avatar_url: string | null;
   affiliation: User['affiliation'];
-  department: string | null;
   rank: string | null;
-  job_title: string | null;
-  food_restrictions: string | null;
   created_at: string;
   updated_at: string;
 }): User {
@@ -62,10 +56,7 @@ function mapProfileRow(row: {
     status: row.status,
     avatar_url: row.avatar_url,
     affiliation: row.affiliation,
-    department: row.department,
     rank: row.rank,
-    job_title: row.job_title,
-    food_restrictions: row.food_restrictions,
     created_at: row.created_at,
     updated_at: row.updated_at
   };

@@ -31,11 +31,11 @@ disable-model-invocation: true
 | 4. Lint | `npm run lint:strict` | 경고 0 |
 | 5. React | `npx react-doctor@latest --verbose --diff` | 점수 회귀 없음 |
 | 6. Build | `npm run build` | exit 0 |
-| 7. **원격 cleanup** | `e2e-remote-cleanup/SKILL.md` + Supabase MCP | E2E 목 데이터 0건 |
+| 7. **원격 cleanup** | `e2e-remote-cleanup/SKILL.md` · `npm run e2e:cleanup` | E2E 목 데이터 0건 |
 
 > 2a: `.cursor/skills/playwright-e2e-spec/SKILL.md`
 > 2b: **Playwright MCP 판정 금지** — CLI만 사용
-> 7: `scripts/cleanup-e2e-mock-data.sql` — **2b~6 pass 후에만**
+> 7: Playwright `globalTeardown`이 자동 실행. verifier는 **`npm run e2e:cleanup`** 또는 MCP로 **2b~6 pass 후** 잔존 확인
 
 **2b를 3~6단계보다 먼저 실행한다.** 2b 실패 시 3~6단계로 넘어가지 않는다. **Step 7은 2b~6 전부 통과 후에만** 실행한다.
 
@@ -120,4 +120,4 @@ spec: e2e/{feature}/*.spec.ts
 - `docs/plans/{feature}-plan.md` 경로를 prompt에 명시
 - AC 번호별 통과/실패를 spec test title과 1:1 보고
 - CUD activity log는 API spec으로 검증
-- **2b~6 pass 후** `e2e-remote-cleanup/SKILL.md` Read → `scripts/cleanup-e2e-mock-data.sql` MCP 실행
+- **2b~6 pass 후** `e2e-remote-cleanup/SKILL.md` Read → **`npm run e2e:cleanup`** (Playwright teardown과 동일). teardown이 이미 실행됐으면 remaining 0건 확인만

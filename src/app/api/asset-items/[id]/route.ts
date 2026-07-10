@@ -5,7 +5,7 @@ import {
   deleteAssetItem,
   getAssetItemById,
   getAssetItemDeleteOwnership,
-  listAssetLedgerDepartments,
+  listAssetLedgerUsageLocations,
   updateAssetItem,
   validateUsageLocation
 } from '@/features/asset-ledger/api/service.server';
@@ -148,9 +148,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     };
 
     if ('usage_location' in parsed.data) {
-      const departments = await listAssetLedgerDepartments();
+      const usageLocations = await listAssetLedgerUsageLocations();
       try {
-        payload.usage_location = validateUsageLocation(parsed.data.usage_location, departments);
+        payload.usage_location = validateUsageLocation(parsed.data.usage_location, usageLocations);
       } catch (validationError) {
         const message =
           validationError instanceof Error ? validationError.message : '사용처 값이 올바르지 않습니다.';
