@@ -1,7 +1,12 @@
 export const CONTRACT_DOCUMENT_STATUSES = ['active', 'soft_deleted'] as const;
 export const CONTRACT_ATTACHMENT_STATUSES = ['active', 'soft_deleted'] as const;
 export const CONTRACT_ATTACHMENT_BUCKET = 'contract-attachments';
-export const CONTRACT_ATTACHMENT_MAX_BYTES = 1024 * 1024;
+export const CONTRACT_ATTACHMENT_MAX_MB = 5;
+export const CONTRACT_ATTACHMENT_MAX_BYTES = CONTRACT_ATTACHMENT_MAX_MB * 1024 * 1024;
+
+export const CONTRACT_ATTACHMENT_TOTAL_SIZE_ERROR = `계약 문서당 활성 첨부파일 총량은 ${CONTRACT_ATTACHMENT_MAX_MB}MB 이하여야 합니다.`;
+export const CONTRACT_ATTACHMENT_SELECTION_SIZE_ERROR = `활성 첨부파일과 선택 파일의 총량은 ${CONTRACT_ATTACHMENT_MAX_MB}MB 이하여야 합니다.`;
+export const CONTRACT_ATTACHMENT_LIMIT_HINT = `계약 문서당 활성 첨부파일 총량은 ${CONTRACT_ATTACHMENT_MAX_MB}MB 이하입니다.`;
 
 export type ContractDocumentStatus = (typeof CONTRACT_DOCUMENT_STATUSES)[number];
 export type ContractAttachmentStatus = (typeof CONTRACT_ATTACHMENT_STATUSES)[number];
