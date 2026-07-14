@@ -24,7 +24,7 @@ function createUserPayload(email: string, fullName = 'E2E 테스트') {
     email,
     full_name: fullName,
     affiliation: 'wake',
-    rank: '사원',
+    rank: '경영진',
     system_role: 'user',
     birthday: '1990-01-01'
   };
@@ -170,7 +170,7 @@ test.describe('사용자 추가 API와 activity log', () => {
       data: {
         full_name: 'E2E 수정이름',
         affiliation: 'wake',
-        rank: '대리',
+        rank: '마케팅팀',
         system_role: 'user',
         birthday: '1991-02-02'
       }

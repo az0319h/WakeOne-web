@@ -71,16 +71,19 @@ function resolveSort(sortRaw: string | undefined) {
       const sortItems = JSON.parse(sortRaw) as Array<{ id: string; desc: boolean }>;
       if (sortItems.length > 0) {
         const candidate = sortItems[0];
-        const allowedColumns = [
-          'full_name',
-          'email',
-          'system_role',
-          'created_at',
-          'password_set_at'
-        ];
-        if (allowedColumns.includes(candidate.id)) {
-          sortColumn = candidate.id;
-          sortDesc = candidate.desc;
+        const sortColumnById: Record<string, string> = {
+          name: 'full_name',
+          full_name: 'full_name',
+          email: 'email',
+          system_role: 'system_role',
+          affiliation: 'affiliation',
+          created_at: 'created_at',
+          password_set_at: 'password_set_at'
+        };
+        const resolvedColumn = sortColumnById[candidate.id];
+        if (resolvedColumn) {
+          sortColumn = resolvedColumn;
+          sortDesc = candidate.desc === true;
         }
       }
     } catch {

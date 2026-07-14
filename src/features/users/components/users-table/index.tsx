@@ -61,7 +61,7 @@ export function UsersTable() {
 
   useEffect(() => {
     if (params.page > pageCount) {
-      void setParams({ page: 1 });
+      void setParams({ page: pageCount });
     }
   }, [params.page, pageCount, setParams]);
 

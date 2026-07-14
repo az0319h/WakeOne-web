@@ -50,7 +50,7 @@ export function ProfilePageContent({ profile }: ProfilePageContentProps) {
         </div>
         <div className='grid gap-4 sm:grid-cols-2'>
           <ReadOnlyField label='소속' value={getAffiliationLabel(profile.affiliation)} />
-          <ReadOnlyField label='직급' value={profile.rank} />
+          <ReadOnlyField label='부서/사업장' value={profile.rank} />
         </div>
       </ProfileSection>
 

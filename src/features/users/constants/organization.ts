@@ -19,31 +19,17 @@ export const AFFILIATION_OPTIONS = [
 
 export const RANK_BY_AFFILIATION: Record<Affiliation, readonly string[]> = {
   wake: [
-    '사원',
-    '주임',
-    '대리',
-    '과장',
-    '팀장',
-    '파트장',
-    '마케터',
-    '디자이너',
-    'HR',
-    '포토그래퍼',
-    '총무',
-    'COO',
-    'CEO'
+    '경영진',
+    '사업기획팀',
+    '마케팅팀',
+    '디자인팀',
+    '구매물류팀',
+    '인사팀',
+    '회계팀',
+    '총무'
   ],
-  sans: [
-    'CEO',
-    '점장',
-    '부점장',
-    '선임매니저',
-    '매니저',
-    '쉐프',
-    '매장운영',
-    '파티쉐'
-  ],
-  sans_foundry: ['CEO', '공장장', '공장 총괄', '팀장', '차장', '오퍼레이터']
+  sans: ['익선', '신세계강남'],
+  sans_foundry: ['공장장', '생산팀', '품질팀', '공무팀', '지원팀', '물류팀']
 };
 
 export function getAffiliationLabel(
@@ -69,7 +55,7 @@ export function validateOrganizationFields(
   if (!affiliation) {
     ctx.addIssue({
       code: 'custom',
-      message: '직급을 설정하려면 소속을 먼저 선택해 주세요.',
+      message: '부서/사업장을 설정하려면 소속을 먼저 선택해 주세요.',
       path: ['rank']
     });
     return;
@@ -79,7 +65,7 @@ export function validateOrganizationFields(
   if (!allowed.includes(rank)) {
     ctx.addIssue({
       code: 'custom',
-      message: '소속에 맞지 않는 직급입니다.',
+      message: '소속에 맞지 않는 부서/사업장입니다.',
       path: ['rank']
     });
   }

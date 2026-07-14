@@ -117,11 +117,14 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   );
 
   const pagination: PaginationState = React.useMemo(() => {
+    const safePage =
+      pageCount > 0 ? Math.min(Math.max(1, page), pageCount) : Math.max(1, page);
+
     return {
-      pageIndex: page - 1, // zero-based index -> one-based index
+      pageIndex: safePage - 1, // zero-based index -> one-based index
       pageSize: perPage
     };
-  }, [page, perPage]);
+  }, [page, pageCount, perPage]);
 
   const onPaginationChange = React.useCallback(
     (updaterOrValue: Updater<PaginationState>) => {

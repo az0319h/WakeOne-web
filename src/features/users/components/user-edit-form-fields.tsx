@@ -76,10 +76,10 @@ export function UserCreateFormFields() {
       />
       <FormSelectField
         name='rank'
-        label='직급'
+        label='부서/사업장'
         options={rankOptions}
         placeholder={
-          activeAffiliation ? '직급 선택' : '소속을 먼저 선택해 주세요'
+          activeAffiliation ? '부서/사업장 선택' : '소속을 먼저 선택해 주세요'
         }
       />
       <FormSelectField
@@ -135,10 +135,10 @@ export function UserEditFormFields() {
       />
       <FormSelectField
         name='rank'
-        label='직급'
+        label='부서/사업장'
         options={[SELECT_NONE_OPTION, ...rankOptions]}
         placeholder={
-          activeAffiliation ? '직급 선택' : '소속을 먼저 선택해 주세요'
+          activeAffiliation ? '부서/사업장 선택' : '소속을 먼저 선택해 주세요'
         }
       />
       <FormSelectField

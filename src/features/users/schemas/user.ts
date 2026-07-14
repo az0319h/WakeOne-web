@@ -17,7 +17,7 @@ export const createUserSchema = z
     email: z.string().email('올바른 이메일 주소를 입력해 주세요.'),
     full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100),
     affiliation: z.union([z.enum(AFFILIATIONS), z.literal('')]),
-    rank: z.string().min(1, '직급을 선택해 주세요.').max(50),
+    rank: z.string().min(1, '부서/사업장을 선택해 주세요.').max(50),
     system_role: z.union([z.enum(['admin', 'user']), z.literal('')]),
     birthday: z.string().nullable()
   })

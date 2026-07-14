@@ -32,7 +32,7 @@ const createUserSchema = z
     affiliation: z.enum(AFFILIATIONS, {
       message: '소속을 선택해 주세요.'
     }),
-    rank: z.string().trim().min(1, '직급을 선택해 주세요.').max(50),
+    rank: z.string().trim().min(1, '부서/사업장을 선택해 주세요.').max(50),
     system_role: z.enum(['admin', 'user'], {
       message: '시스템 역할을 선택해 주세요.'
     }),

@@ -91,6 +91,14 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       }
     },
     {
+      id: 'rank',
+      accessorKey: 'rank',
+      header: ({ column }: { column: Column<User, unknown> }) => (
+        <DataTableColumnHeader column={column} title='부서/사업장' />
+      ),
+      cell: ({ cell }) => cell.getValue<string | null>() ?? '—'
+    },
+    {
       id: 'status',
       accessorKey: 'status',
       header: '계정 상태',
