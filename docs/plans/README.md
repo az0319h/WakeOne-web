@@ -61,6 +61,7 @@
 | 19 | [19_user-single-name-plan.md](./19_user-single-name-plan.md) | **Approved** · 이름 단일 필드(`full_name`) 전환 · 관리자 전용 이름 수정 |
 | 20 | [20_contract-reminder-email-plan.md](./20_contract-reminder-email-plan.md) | **In Progress** · 계약서 첨부 누락 독촉 메일 · Cron · system-email-logs |
 | 21 | [21_user-profile-slim-migration-plan.md](./21_user-profile-slim-migration-plan.md) | **Approved** · 프로필 슬림화 · 본인 수정 폐지 · SQL `27` |
+| 22 | [22_users-table-birthday-edit-init-plan.md](./22_users-table-birthday-edit-init-plan.md) | **Approved** · Users 테이블 생일 컬럼 · 수정 Sheet 초기값 · plan 09 AC #8 대체 |
 
 ## 에이전트 참조
 

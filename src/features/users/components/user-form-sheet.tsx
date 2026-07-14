@@ -16,6 +16,7 @@ import { createUserMutation, updateUserMutation } from '../api/mutations';
 import { SELECT_NONE_VALUE, type Affiliation } from '../constants/organization';
 import type { User } from '../api/types';
 import { Icons } from '@/components/icons';
+import { normalizeBirthdayToDateString } from '@/lib/birthday';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import {
   createUserSchema,
@@ -88,7 +89,7 @@ function UserEditForm({
       affiliation: toFormAffiliation(user.affiliation),
       rank: toFormOrgField(user.rank),
       system_role: user.system_role,
-      birthday: user.birthday ?? null
+      birthday: normalizeBirthdayToDateString(user.birthday) ?? null
     } as UserUpdateFormValues,
     validators: {
       onSubmit: userUpdateSchema
