@@ -40,7 +40,7 @@ test.describe('시스템 이메일 로그 UI', () => {
 });
 
 test.describe('Vercel cron config', () => {
-  test('AC-14: vercel.json defines daily 00:45 KST reminders cron', () => {
+  test('AC-14: vercel.json defines daily 00:50 KST reminders cron', () => {
     const configPath = path.join(process.cwd(), 'vercel.json');
     const raw = fs.readFileSync(configPath, 'utf8');
     const config = JSON.parse(raw) as {
@@ -49,6 +49,6 @@ test.describe('Vercel cron config', () => {
 
     const cron = config.crons?.find((item) => item.path === '/api/contracts/reminders');
     expect(cron).toBeTruthy();
-    expect(cron?.schedule).toBe('45 15 * * *');
+    expect(cron?.schedule).toBe('50 15 * * *');
   });
 });
