@@ -88,8 +88,12 @@ export function getReminderCronToken(request: Request): string | null {
   return request.headers.get('x-contract-reminder-token')?.trim() || null;
 }
 
+export function getReminderCronSecret(): string | undefined {
+  return process.env.CRON_SECRET ?? process.env.CONTRACT_REMINDER_CRON_SECRET;
+}
+
 export function isValidReminderCronToken(token: string | null): boolean {
-  const expected = process.env.CONTRACT_REMINDER_CRON_SECRET;
+  const expected = getReminderCronSecret();
   return Boolean(expected && token && token === expected);
 }
 

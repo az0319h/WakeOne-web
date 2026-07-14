@@ -3,7 +3,7 @@ export function uniqueRunKey(prefix = 'E2E') {
 }
 
 export function reminderCronHeaders() {
-  const secret = process.env.CONTRACT_REMINDER_CRON_SECRET;
+  const secret = process.env.CRON_SECRET ?? process.env.CONTRACT_REMINDER_CRON_SECRET;
   if (!secret) {
     return undefined;
   }

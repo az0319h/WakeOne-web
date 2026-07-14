@@ -1,5 +1,6 @@
 'use client';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   Sidebar,
   SidebarContent,
@@ -22,10 +23,100 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { useNavAccess } from '@/contexts/nav-access';
+import type { NavItem } from '@/types';
 import { NavUser } from '../nav-user';
 import { Icons } from '../icons';
 
-export default function AppSidebar() {
+function isPathActive(pathname: string, url: string) {
+  return pathname === url || pathname.startsWith(`${url}/`);
+}
+
+function isNavItemActive(pathname: string, item: NavItem) {
+  const childActive = item.items?.some((subItem) => isPathActive(pathname, subItem.url)) ?? false;
+  return isPathActive(pathname, item.url) || childActive;
+}
+
+function isNavItemOpen(pathname: string, item: NavItem) {
+  if (isPathActive(pathname, item.url)) {
+    return true;
+  }
+
+  return item.items?.some((subItem) => isPathActive(pathname, subItem.url)) ?? false;
+}
+
+interface SidebarNavCollapsibleItemProps {
+  item: NavItem;
+  pathname: string;
+}
+
+function SidebarNavCollapsibleItem({ item, pathname }: SidebarNavCollapsibleItemProps) {
+  const routeOpen = isNavItemOpen(pathname, item);
+  const [open, setOpen] = React.useState(routeOpen);
+  const prevPathnameRef = React.useRef(pathname);
+  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+  const isActive = isNavItemActive(pathname, item);
+
+  React.useEffect(() => {
+    if (pathname !== prevPathnameRef.current) {
+      prevPathnameRef.current = pathname;
+      setOpen(routeOpen);
+    }
+  }, [pathname, routeOpen]);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} asChild className='group/collapsible'>
+      <SidebarMenuItem>
+        <SidebarMenuButton tooltip={item.title} isActive={isActive} asChild>
+          <Link
+            href={item.url}
+            onClick={() => {
+              setOpen((current) => !current);
+            }}
+          >
+            {item.icon && <Icon />}
+            <span>{item.title}</span>
+            <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+          </Link>
+        </SidebarMenuButton>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.items?.map((subItem) => (
+              <SidebarMenuSubItem key={subItem.title}>
+                <SidebarMenuSubButton asChild isActive={isPathActive(pathname, subItem.url)}>
+                  <Link href={subItem.url}>
+                    <span>{subItem.title}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
+interface SidebarNavLeafItemProps {
+  item: NavItem;
+  pathname: string;
+}
+
+function SidebarNavLeafItem({ item, pathname }: SidebarNavLeafItemProps) {
+  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild tooltip={item.title} isActive={isPathActive(pathname, item.url)}>
+        <Link href={item.url}>
+          <Icon />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function AppSidebar() {
   const pathname = usePathname();
   const { isOpen } = useMediaQuery();
   const profile = useNavAccess();
@@ -40,56 +131,16 @@ export default function AppSidebar() {
       <SidebarHeader />
       <SidebarContent className='overflow-x-hidden'>
         {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
+          <SidebarGroup key={group.label || 'ungrouped'}>
             {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
             <SidebarMenu>
-              {group.items.map((item) => {
-                const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-                return item?.items && item?.items?.length > 0 ? (
-                  <Collapsible
-                    key={item.title}
-                    asChild
-                    defaultOpen={item.isActive}
-                    className='group/collapsible'
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton tooltip={item.title} isActive={pathname === item.url}>
-                          {item.icon && <Icon />}
-                          <span>{item.title}</span>
-                          <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
+              {group.items.map((item) =>
+                item.items && item.items.length > 0 ? (
+                  <SidebarNavCollapsibleItem key={item.title} item={item} pathname={pathname} />
                 ) : (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={pathname === item.url}
-                    >
-                      <Link href={item.url}>
-                        <Icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+                  <SidebarNavLeafItem key={item.title} item={item} pathname={pathname} />
+                )
+              )}
             </SidebarMenu>
           </SidebarGroup>
         ))}
@@ -99,3 +150,5 @@ export default function AppSidebar() {
     </Sidebar>
   );
 }
+
+export default AppSidebar;
