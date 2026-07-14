@@ -4,6 +4,7 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
+import { formatBirthdayDisplay } from '@/lib/format';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { UserAvatarCell } from '../user-profile-modal';
 import { CellAction } from './cell-action';
@@ -50,6 +51,13 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       accessorKey: 'phone',
       header: '연락처',
       cell: ({ row }) => formatPhoneDisplay(row.original.phone) ?? '—'
+    },
+    {
+      accessorKey: 'birthday',
+      header: '생일',
+      enableSorting: false,
+      enableColumnFilter: false,
+      cell: ({ row }) => formatBirthdayDisplay(row.original.birthday) ?? '—'
     },
     {
       id: 'system_role',

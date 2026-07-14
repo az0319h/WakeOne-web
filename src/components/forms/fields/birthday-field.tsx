@@ -114,22 +114,39 @@ function BirthdaySelects({
   );
 }
 
+function partsFromValue(value: string | null | undefined): {
+  year: string;
+  month: string;
+  day: string;
+} {
+  const parts = parseBirthdayParts(value);
+  if (!parts) {
+    return { year: '', month: '', day: '' };
+  }
+
+  return {
+    year: String(parts.year),
+    month: String(parts.month),
+    day: String(parts.day)
+  };
+}
+
 export function BirthdayField({ label }: BirthdayFieldProps) {
   const field = useFieldContext();
   const isTouched = useStore(field.store, (s) => s.meta.isTouched);
   const isValid = useStore(field.store, (s) => s.meta.isValid);
   const value = (useStore(field.store, (s) => s.value) as string | null | undefined) ?? null;
 
-  const [year, setYear] = useState('');
-  const [month, setMonth] = useState('');
-  const [day, setDay] = useState('');
+  const [year, setYear] = useState(() => partsFromValue(value).year);
+  const [month, setMonth] = useState(() => partsFromValue(value).month);
+  const [day, setDay] = useState(() => partsFromValue(value).day);
 
   useEffect(() => {
-    const parts = parseBirthdayParts(value);
-    if (parts) {
-      setYear(String(parts.year));
-      setMonth(String(parts.month));
-      setDay(String(parts.day));
+    const next = partsFromValue(value);
+    if (next.year && next.month && next.day) {
+      setYear(next.year);
+      setMonth(next.month);
+      setDay(next.day);
       return;
     }
 

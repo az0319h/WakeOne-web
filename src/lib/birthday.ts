@@ -35,12 +35,32 @@ export type BirthdayParts = {
   day: number;
 };
 
-export function parseBirthdayParts(value: string | null | undefined): BirthdayParts | null {
-  if (!value || !isValidCalendarDate(value)) {
+/**
+ * Coerce API/DB birthday strings (YYYY-MM-DD or ISO datetime) to YYYY-MM-DD.
+ * Returns null when the date part is missing or not a real calendar date.
+ */
+export function normalizeBirthdayToDateString(
+  value: string | null | undefined
+): string | null {
+  if (!value?.trim()) {
     return null;
   }
 
-  const [year, month, day] = value.split('-').map(Number);
+  const datePart = value.trim().slice(0, 10);
+  if (!isValidCalendarDate(datePart)) {
+    return null;
+  }
+
+  return datePart;
+}
+
+export function parseBirthdayParts(value: string | null | undefined): BirthdayParts | null {
+  const normalized = normalizeBirthdayToDateString(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const [year, month, day] = normalized.split('-').map(Number);
   return { year, month, day };
 }
 

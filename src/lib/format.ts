@@ -1,3 +1,5 @@
+import { normalizeBirthdayToDateString } from '@/lib/birthday';
+
 export function formatDate(
   date: Date | string | number | undefined,
   opts: Intl.DateTimeFormatOptions = {}
@@ -19,19 +21,12 @@ export function formatDate(
 export function formatBirthdayDisplay(
   birthday: string | null | undefined
 ): string | null {
-  if (!birthday?.trim()) {
+  const normalized = normalizeBirthdayToDateString(birthday);
+  if (!normalized) {
     return null;
   }
 
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthday);
-  if (!match) {
-    return null;
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-
+  const [year, month, day] = normalized.split('-').map(Number);
   if (!year || !month || !day) {
     return null;
   }
@@ -42,17 +37,14 @@ export function formatBirthdayDisplay(
 export function formatBirthdayMonthDay(
   birthday: string | null | undefined
 ): string | null {
-  if (!birthday?.trim()) {
+  const normalized = normalizeBirthdayToDateString(birthday);
+  if (!normalized) {
     return null;
   }
 
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthday);
-  if (!match) {
-    return null;
-  }
-
-  const month = Number(match[2]);
-  const day = Number(match[3]);
+  const [, monthStr, dayStr] = normalized.split('-');
+  const month = Number(monthStr);
+  const day = Number(dayStr);
 
   if (!month || !day) {
     return null;
