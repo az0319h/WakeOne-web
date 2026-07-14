@@ -37,13 +37,13 @@ type ReminderActor = {
   triggerSource: 'admin' | 'cron';
 };
 
-function getIsoWeekRunKey(date = new Date()): string {
-  const utc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const day = utc.getUTCDay() || 7;
-  utc.setUTCDate(utc.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  return `${utc.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+function getDateRunKey(date = new Date()): string {
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(date.getTime() + kstOffset);
+  const year = kstDate.getUTCFullYear();
+  const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function asBodyRecord(value: unknown): Record<string, unknown> {
@@ -54,7 +54,7 @@ function getRunKeyFromBody(body: unknown): string {
   const record = asBodyRecord(body);
   return typeof record.run_key === 'string' && record.run_key.trim()
     ? record.run_key.trim()
-    : getIsoWeekRunKey();
+    : getDateRunKey();
 }
 
 function truncateErrorMessage(message: string): string {

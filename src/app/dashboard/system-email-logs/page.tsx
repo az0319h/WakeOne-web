@@ -7,7 +7,7 @@ import type { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
 
 export const metadata = {
-  title: 'Dashboard: 시스템 이메일 로그'
+  title: 'Dashboard: 독촉 이메일 로그'
 };
 
 type PageProps = {
@@ -22,7 +22,7 @@ export default async function SystemEmailLogsPage(props: PageProps) {
 
   return (
     <PageContainer
-      pageTitle='시스템 이메일 로그'
+      pageTitle='독촉 이메일 로그'
       pageDescription='계약서 첨부 누락 독촉 등 시스템 발송 이메일 run 이력을 확인합니다.'
     >
       <Suspense fallback={<SystemEmailLogsTableSkeleton />}>

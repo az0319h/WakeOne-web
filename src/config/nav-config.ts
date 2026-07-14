@@ -44,7 +44,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: '시스템 이메일 로그',
+        title: '독촉 이메일 로그',
         url: '/dashboard/system-email-logs',
         icon: 'send',
         shortcut: ['e', 'l'],

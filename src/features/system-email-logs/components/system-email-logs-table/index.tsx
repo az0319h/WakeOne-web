@@ -51,7 +51,7 @@ export function SystemEmailLogsTable() {
 
   return (
     <>
-      <div data-testid='system-email-logs-page'>
+      <div data-testid='system-email-logs-page' className='flex flex-1 flex-col'>
         <SystemEmailLogsDataTable table={table} onRowClick={handleRowClick} />
       </div>
       <RunDetailDialog

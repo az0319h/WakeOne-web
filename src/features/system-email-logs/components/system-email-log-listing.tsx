@@ -1,7 +1,8 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
-import { systemEmailLogsQueryOptions } from '../api/queries';
+import { systemEmailLogKeys } from '../api/queries';
+import { listSystemEmailLogRuns } from '../api/service.server';
 import { SystemEmailLogsTable } from './system-email-logs-table';
 
 export default async function SystemEmailLogListing() {
@@ -16,7 +17,10 @@ export default async function SystemEmailLogListing() {
   };
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(systemEmailLogsQueryOptions(filters));
+  void queryClient.prefetchQuery({
+    queryKey: systemEmailLogKeys.list(filters),
+    queryFn: () => listSystemEmailLogRuns(filters)
+  });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

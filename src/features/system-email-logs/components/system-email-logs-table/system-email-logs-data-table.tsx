@@ -93,7 +93,7 @@ export function SystemEmailLogsDataTable({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columnCount} className='h-24 text-center'>
-                      시스템 이메일 run 이력이 없습니다.
+                      독촉 이메일 로그가 없습니다.
                     </TableCell>
                   </TableRow>
                 )}
