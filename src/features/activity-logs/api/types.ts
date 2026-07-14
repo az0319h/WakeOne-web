@@ -11,9 +11,6 @@ export type ActivityAction =
   | 'office_snack.candidate_update'
   | 'office_snack.candidate_delete'
   | 'office_snack.vote_submit'
-  | 'asset.create'
-  | 'asset.update'
-  | 'asset.delete'
   | 'contract.import_create'
   | 'contract.import_duplicate'
   | 'contract.import_backfill'
@@ -29,7 +26,7 @@ export type ActivityAction =
   | 'profile.update'
   | 'profile.password_change';
 
-export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'asset' | 'contract';
+export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'contract';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -42,6 +39,8 @@ export type ActivityLogErrorCode =
   | 'not_found'
   | 'wrong_password'
   | 'profile_edit_disabled'
+  | 'cron_paused'
+  | 'safety_filter_blocked'
   | 'internal_error';
 
 export type ActivityLogMetadata = {
@@ -61,6 +60,8 @@ export type ActivityLogMetadata = {
   status?: string;
   unmatched_count?: number;
   unmatched_author_names?: string[];
+  verification_mode?: string;
+  safety_filter_result?: string;
   category?: string;
   usage_location?: string;
   session_state?: string;

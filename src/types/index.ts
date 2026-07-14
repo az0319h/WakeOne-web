@@ -7,8 +7,6 @@ export interface PermissionCheck {
   systemRole?: SystemRole;
   /** 웨이크 소속 또는 admin만 노출 (사무실 간식). */
   officeSnacks?: boolean;
-  /** 웨이크 소속 또는 admin만 노출 (비품 대장). */
-  assetLedger?: boolean;
   /** @deprecated Clerk-era fields — ignored by `checkNavAccess`. */
   permission?: string;
   plan?: string;
