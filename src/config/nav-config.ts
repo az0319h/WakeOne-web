@@ -15,7 +15,7 @@ import { NavGroup } from '@/types';
  */
 export const navGroups: NavGroup[] = [
   {
-    label: '개요',
+    label: 'Overview (개요)',
     items: [
       {
         title: '대시보드',
@@ -24,7 +24,12 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         shortcut: ['d', 'd'],
         items: []
-      },
+      }
+    ]
+  },
+  {
+    label: 'Admin (관리)',
+    items: [
       {
         title: '사용자 관리',
         url: '/dashboard/users',
@@ -41,41 +46,35 @@ export const navGroups: NavGroup[] = [
         shortcut: ['c', 't'],
         isActive: false,
         access: { systemRole: 'admin' },
-        items: []
-      },
-      {
-        title: '독촉 이메일 로그',
-        url: '/dashboard/system-email-logs',
-        icon: 'send',
-        shortcut: ['e', 'l'],
-        isActive: false,
-        access: { systemRole: 'admin' },
-        items: []
+        items: [
+          {
+            title: '독촉 이메일 로그',
+            url: '/dashboard/system-email-logs',
+            icon: 'send',
+            shortcut: ['e', 'l']
+          }
+        ]
       }
     ]
   },
   {
-    label: '',
+    label: 'Account (계정)',
     items: [
       {
-        title: '계정',
-        url: '#',
-        icon: 'account',
-        isActive: true,
-        items: [
-          {
-            title: '프로필',
-            url: '/dashboard/profile',
-            icon: 'profile',
-            shortcut: ['p', 'r']
-          },
-          {
-            title: '활동 로그',
-            url: '/dashboard/logs',
-            icon: 'forms',
-            shortcut: ['l', 'g']
-          }
-        ]
+        title: '프로필',
+        url: '/dashboard/profile',
+        icon: 'profile',
+        shortcut: ['p', 'r'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: '활동 로그',
+        url: '/dashboard/logs',
+        icon: 'forms',
+        shortcut: ['l', 'g'],
+        isActive: false,
+        items: []
       }
     ]
   }

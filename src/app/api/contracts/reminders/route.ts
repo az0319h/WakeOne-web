@@ -194,6 +194,10 @@ async function resolveReminderActor(request: NextRequest, requestId: string): Pr
   return { ...actorFromProfile(session.profile), triggerSource: 'admin' as const };
 }
 
+export async function GET(request: NextRequest) {
+  return POST(request);
+}
+
 export async function POST(request: NextRequest) {
   const requestId = newContractRequestId();
   const actorOrResponse = await resolveReminderActor(request, requestId);
