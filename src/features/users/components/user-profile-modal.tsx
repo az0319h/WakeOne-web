@@ -90,7 +90,7 @@ export function UserProfileModal({ user, open, onOpenChange }: UserProfileModalP
                   label='소속'
                   value={getAffiliationLabel(user.affiliation)}
                 />
-                <ReadOnlyField label='직급' value={user.rank} />
+                <ReadOnlyField label='부서/사업장' value={user.rank} />
               </div>
 
               <aside className='space-y-4'>

@@ -182,8 +182,8 @@ export function UserFormSheet({
           <SheetTitle>{isEdit ? '사용자 수정' : '사용자 추가'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? '이름·아바타 URL·소속·직급·시스템 역할·생일을 수정합니다.'
-              : '이름·이메일·소속·직급·시스템 역할·생일을 입력해 계정을 직접 생성합니다.'}
+              ? '이름·아바타 URL·소속·부서/사업장·시스템 역할·생일을 수정합니다.'
+              : '이름·이메일·소속·부서/사업장·시스템 역할·생일을 입력해 계정을 직접 생성합니다.'}
           </SheetDescription>
         </SheetHeader>
 

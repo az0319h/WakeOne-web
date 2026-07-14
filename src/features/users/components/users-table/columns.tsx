@@ -4,6 +4,7 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
+import { formatBirthdayDisplay } from '@/lib/format';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { UserAvatarCell } from '../user-profile-modal';
 import { CellAction } from './cell-action';
@@ -52,6 +53,13 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       cell: ({ row }) => formatPhoneDisplay(row.original.phone) ?? '—'
     },
     {
+      accessorKey: 'birthday',
+      header: '생일',
+      enableSorting: false,
+      enableColumnFilter: false,
+      cell: ({ row }) => formatBirthdayDisplay(row.original.birthday) ?? '—'
+    },
+    {
       id: 'system_role',
       accessorKey: 'system_role',
       enableSorting: false,
@@ -81,6 +89,14 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       cell: ({ cell }) => {
         return getAffiliationLabel(cell.getValue<User['affiliation']>()) ?? '—';
       }
+    },
+    {
+      id: 'rank',
+      accessorKey: 'rank',
+      header: ({ column }: { column: Column<User, unknown> }) => (
+        <DataTableColumnHeader column={column} title='부서/사업장' />
+      ),
+      cell: ({ cell }) => cell.getValue<string | null>() ?? '—'
     },
     {
       id: 'status',
