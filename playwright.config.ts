@@ -72,8 +72,7 @@ export default defineConfig({
       testMatch: [
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
-        /system-email-logs-rbac\.spec\.ts$/,
-        /asset-ledger\/.*\.spec\.ts$/
+        /system-email-logs-rbac\.spec\.ts$/
       ]
     },
     {

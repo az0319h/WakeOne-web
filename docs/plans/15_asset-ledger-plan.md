@@ -1,7 +1,7 @@
 # 비품 대장 (Asset Ledger) 기획서
 
 > Date: 2026-06-10
-> Status: Approved
+> Status: Cancelled
 > Author: planner
 > **SQL:** `13` · `supabase/sql/13_asset_ledger.sql` (구현 시)
 > **선행:** [07](./07_auth-route-guard-plan.md), [08](./08_activity-audit-log-plan.md), [13](./13_office-snack-vote-plan.md) (wake RBAC·flash 패턴), [14](./14_delete-confirm-dialog-plan.md)

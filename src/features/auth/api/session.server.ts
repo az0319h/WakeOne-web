@@ -2,15 +2,10 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import { OFFICE_SNACKS_ACCESS_DENIED_KEY } from '@/config/office-snacks-routes';
-import { ASSET_LEDGER_ACCESS_DENIED_KEY } from '@/config/asset-ledger-routes';
 import {
   canAccessOfficeSnacks,
   OFFICE_SNACKS_ACCESS_DENIED_MESSAGE
 } from '@/features/office-snacks/api/access';
-import {
-  canAccessAssetLedger,
-  ASSET_LEDGER_ACCESS_DENIED_MESSAGE
-} from '@/features/asset-ledger/api/access';
 import { redirectWithAccessDeniedFlash } from '@/lib/auth/access-denied-flash.server';
 import { createClient } from '@/lib/supabase/server';
 import type { AuthProfile } from './types';
@@ -210,36 +205,6 @@ export async function requireOfficeSnacksSession(): Promise<SessionResult> {
       ok: false,
       response: NextResponse.json(
         { success: false, message: OFFICE_SNACKS_ACCESS_DENIED_MESSAGE },
-        { status: 403 }
-      )
-    };
-  }
-
-  return session;
-}
-
-export async function requireAssetLedgerPage(): Promise<AuthProfile> {
-  const profile = await requireDashboardSession();
-
-  if (!canAccessAssetLedger(profile)) {
-    await redirectWithAccessDeniedFlash(ASSET_LEDGER_ACCESS_DENIED_KEY);
-  }
-
-  return profile;
-}
-
-export async function requireAssetLedgerSession(): Promise<SessionResult> {
-  const session = await requireSession();
-
-  if (!session.ok) {
-    return session;
-  }
-
-  if (!canAccessAssetLedger(session.profile)) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { success: false, message: ASSET_LEDGER_ACCESS_DENIED_MESSAGE },
         { status: 403 }
       )
     };

@@ -3,8 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { OFFICE_SNACKS_ACCESS_DENIED_MESSAGE } from '@/features/office-snacks/api/access';
 import { OFFICE_SNACKS_ACCESS_DENIED_KEY } from '@/config/office-snacks-routes';
-import { ASSET_LEDGER_ACCESS_DENIED_KEY } from '@/config/asset-ledger-routes';
-import { ASSET_LEDGER_ACCESS_DENIED_MESSAGE } from '@/features/asset-ledger/api/access';
 import {
   clearAccessDeniedFlash,
   readAccessDeniedFlash
@@ -13,8 +11,7 @@ import { notifyError } from '@/lib/notify';
 
 const ACCESS_DENIED_MESSAGES: Record<string, string> = {
   users: '이 페이지에 접근할 권한이 없습니다.',
-  [OFFICE_SNACKS_ACCESS_DENIED_KEY]: OFFICE_SNACKS_ACCESS_DENIED_MESSAGE,
-  [ASSET_LEDGER_ACCESS_DENIED_KEY]: ASSET_LEDGER_ACCESS_DENIED_MESSAGE
+  [OFFICE_SNACKS_ACCESS_DENIED_KEY]: OFFICE_SNACKS_ACCESS_DENIED_MESSAGE
 };
 
 function readLegacyAccessDeniedParam(): string | null {

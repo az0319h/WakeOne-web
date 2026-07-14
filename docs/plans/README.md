@@ -54,14 +54,15 @@
 | 11 | [11_password-policy-set-password-removal-plan.md](./11_password-policy-set-password-removal-plan.md) | **Approved** · 비밀번호 정책·set-password 제거 |
 | 13 | [13_office-snack-vote-plan.md](./13_office-snack-vote-plan.md) | **Approved** · 사무실 간식 투표 · wake/admin RBAC |
 | 14 | [14_delete-confirm-dialog-plan.md](./14_delete-confirm-dialog-plan.md) | **Completed** · 삭제 확인 `AlertModal` 전역 규칙 |
-| 15 | [15_asset-ledger-plan.md](./15_asset-ledger-plan.md) | **Approved** · 비품 대장 · `/dashboard/product` 교체 |
+| 15 | [15_asset-ledger-plan.md](./15_asset-ledger-plan.md) | **Cancelled** · 비품 대장 — [23](./23_asset-ledger-removal-plan.md)로 폐기 |
 | 16 | [16_contract-management-plan.md](./16_contract-management-plan.md) | **Approved** · 계약서 관리 · admin-only 첨부/독촉 |
 | 17 | [17_user-management-add-flow-plan.md](./17_user-management-add-flow-plan.md) | **Approved** · 사용자 관리 개편 · 사용자 추가 흐름 변경 |
 | 18 | [18_contract-approved-at-plan.md](./18_contract-approved-at-plan.md) | **Approved** · 계약서 문서승인일 정식 필드화 |
 | 19 | [19_user-single-name-plan.md](./19_user-single-name-plan.md) | **Approved** · 이름 단일 필드(`full_name`) 전환 · 관리자 전용 이름 수정 |
-| 20 | [20_contract-reminder-email-plan.md](./20_contract-reminder-email-plan.md) | **In Progress** · 계약서 첨부 누락 독촉 메일 · Cron · system-email-logs |
+| 20 | [20_contract-reminder-email-plan.md](./20_contract-reminder-email-plan.md) | **In Progress** · 계약서 첨부 메일 독촉 · Cron · system-email-logs |
 | 21 | [21_user-profile-slim-migration-plan.md](./21_user-profile-slim-migration-plan.md) | **Approved** · 프로필 슬림화 · 본인 수정 폐지 · SQL `27` |
 | 22 | [22_users-table-birthday-edit-init-plan.md](./22_users-table-birthday-edit-init-plan.md) | **Approved** · Users 테이블 생일 컬럼 · 수정 Sheet 초기값 · plan 09 AC #8 대체 |
+| 23 | [23_asset-ledger-removal-plan.md](./23_asset-ledger-removal-plan.md) | **Completed** · 비품 대장 완전 제거 · SQL `30` |
 
 ## 에이전트 참조
 
