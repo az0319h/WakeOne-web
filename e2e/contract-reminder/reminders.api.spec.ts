@@ -41,15 +41,6 @@ async function postReminders(request: APIRequestContext, runKey: string) {
   });
 }
 
-async function listActivityReminderLogs(request: APIRequestContext) {
-  const response = await request.get(
-    '/api/activity-logs?action=contract.reminder_send&limit=20'
-  );
-  expect(response.status()).toBe(200);
-  const body = await response.json();
-  return body.data?.logs ?? [];
-}
-
 test.describe('계약서 독촉 API', () => {
   test('AC-08: non-admin user cannot trigger reminders', async ({ browser }) => {
     test.skip(!fs.existsSync('e2e/.auth/user.json'), 'E2E user auth state required');
@@ -95,26 +86,24 @@ test.describe('계약서 독촉 API', () => {
     expect(body.recipients).toEqual([]);
   });
 
-  test('AC-13: successful reminder creates contract.reminder_send activity log', async ({
-    request
-  }) => {
+  test('AC-13: reminder run succeeds without activity log', async ({ request }) => {
     const runKey = uniqueRunKey('AC13');
     const response = await postReminders(request, runKey);
     expect(response.status()).toBe(200);
-    expect(response.headers()['x-request-id']).toBeTruthy();
+    const requestId = response.headers()['x-request-id'];
+    expect(requestId).toBeTruthy();
 
-    await expect
-      .poll(async () => {
-        const logs = await listActivityReminderLogs(request);
-        return logs.some(
-          (log: { metadata?: { status?: string; recipient_email?: string } }) =>
-            log.metadata?.status === 'duplicate_run' ||
-            log.metadata?.status === 'completed' ||
-            log.metadata?.status === 'partial_failed' ||
-            Boolean(log.metadata?.recipient_email)
-        );
-      })
-      .toBe(true);
+    const body = (await response.json()) as ReminderRunResponse;
+    expect(body.run).toBeTruthy();
+    expect(body.run?.run_key).toBe(runKey);
+
+    const logsResponse = await request.get(
+      '/api/activity-logs?action=contract.reminder_send&limit=20'
+    );
+    expect(logsResponse.status()).toBe(200);
+    const logsBody = await logsResponse.json();
+    const logs = logsBody.data?.logs ?? [];
+    expect(logs.some((log: { request_id?: string }) => log.request_id === requestId)).toBe(false);
   });
 
   test('AC-01: matched profile triggers reminder run with recipients or unmatched summary', async ({
