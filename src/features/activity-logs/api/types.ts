@@ -95,7 +95,8 @@ export type ActivityLogsFilters = {
   page?: number;
   limit?: number;
   sort?: string;
+  /** Admin only: `self` (default), `all`, or target user UUID */
+  log_user?: string;
   action?: string;
-  actor_search?: string;
   search?: string;
 };

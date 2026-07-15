@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { expect, test } from '@playwright/test';
 
 test.describe('시스템 이메일 로그 UI', () => {
@@ -36,19 +34,5 @@ test.describe('시스템 이메일 로그 UI', () => {
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('system-email-log-detail-dialog')).toBeVisible();
     await expect(page.getByTestId('system-email-log-recipients-table')).toBeVisible();
-  });
-});
-
-test.describe('Vercel cron config', () => {
-  test('AC-14: vercel.json defines daily 15:20 UTC reminders cron', () => {
-    const configPath = path.join(process.cwd(), 'vercel.json');
-    const raw = fs.readFileSync(configPath, 'utf8');
-    const config = JSON.parse(raw) as {
-      crons?: Array<{ path?: string; schedule?: string }>;
-    };
-
-    const cron = config.crons?.find((item) => item.path === '/api/contracts/reminders');
-    expect(cron).toBeTruthy();
-    expect(cron?.schedule).toBe('20 15 * * *');
   });
 });

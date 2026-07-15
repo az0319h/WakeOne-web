@@ -31,13 +31,17 @@ export default async function ActivityLogsPage(props: PageProps) {
 
   const isAdmin = profile.system_role === 'admin';
 
+  if (isAdmin && searchParamsCache.get('log_user') == null) {
+    redirect('/dashboard/logs?log_user=self');
+  }
+
   return (
     <PageContainer
       pageTitle='활동 로그'
       pageDescription={
         isAdmin
-          ? '웹사이트 전체 사용자의 활동 이력을 확인합니다.'
-          : '웹사이트에서 본인과 관련된 활동 이력을 확인합니다.'
+          ? '본인 및 선택한 사용자의 활동 이력을 확인합니다.'
+          : '본인과 관련된 활동 이력을 확인합니다.'
       }
     >
       <Suspense fallback={<ActivityLogsTableSkeleton />}>

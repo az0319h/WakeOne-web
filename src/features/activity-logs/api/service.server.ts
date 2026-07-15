@@ -65,15 +65,17 @@ export async function listActivityLogs(
   if (!isAdmin) {
     query = query.or(`actor_user_id.eq.${userId},target_user_id.eq.${userId}`);
   } else {
-    if (filters.action) {
-      query = query.eq('action', filters.action);
+    const logUser = filters.log_user ?? 'self';
+
+    if (logUser !== 'all') {
+      const scopeUserId = logUser === 'self' ? userId : logUser;
+      query = query.or(
+        `actor_user_id.eq.${scopeUserId},target_user_id.eq.${scopeUserId}`
+      );
     }
 
-    if (filters.actor_search) {
-      const escaped = filters.actor_search.replaceAll(',', ' ');
-      query = query.or(
-        `actor_email.ilike.%${escaped}%,actor_display_name.ilike.%${escaped}%`
-      );
+    if (filters.action) {
+      query = query.eq('action', filters.action);
     }
 
     if (filters.search) {

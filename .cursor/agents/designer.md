@@ -32,7 +32,7 @@ model: inherit
 | 1 | `.cursor/skills/designer/SKILL.md` | `[designer Step 1/6] 입력 파악` |
 | 2 | (동일 SKILL §Step 2) + plan·코드 탐색 | `[designer Step 2/6] 기존 탐색` |
 | 3 | `.cursor/skills/ui-design-brain/SKILL.md` | `[designer Step 3/6] 컴포넌트 선정` |
-| 4 | `.cursor/skills/shadcn/SKILL.md` | `[designer Step 4/6] UI 구조` |
+| 4 | `.cursor/skills/shadcn/SKILL.md` + SKILL §Preview 제시 형식 | `[designer Step 4/6] UI 구조` — **Designer gate 시 터미널 ASCII 목업 3개 필수** |
 | 5 | `.cursor/skills/web-design-guidelines/SKILL.md` | `[designer Step 5/6] 품질 검토` |
 | 6 | designer SKILL §Step 6 | `[designer Step 6/6] 팀 전달 요약` |
 
