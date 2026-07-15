@@ -43,9 +43,7 @@ function getDateRunKey(date = new Date()): string {
   const year = kstDate.getUTCFullYear();
   const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
   const day = String(kstDate.getUTCDate()).padStart(2, '0');
-  const hour = String(kstDate.getUTCHours()).padStart(2, '0');
-  const minute = String(kstDate.getUTCMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}:${hour}:${minute}`;
+  return `${year}-${month}-${day}`;
 }
 
 function asBodyRecord(value: unknown): Record<string, unknown> {
