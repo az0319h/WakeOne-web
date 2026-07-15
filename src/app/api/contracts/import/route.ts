@@ -1,19 +1,11 @@
-import { NextRequest } from 'next/server';
-import { buildErrorMetadata, jsonWithActivityLog } from '@/features/activity-logs/api/log.server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withRequestId } from '@/features/activity-logs/api/log.server';
 import {
   importContractDocument,
   recordContractImportEvent
 } from '@/features/contracts/api/service.server';
 import { contractImportSchema, normalizeDocumentNumber } from '@/features/contracts/api/validators';
-import {
-  contractTargetLabel,
-  getImportToken,
-  isValidImportToken,
-  newContractRequestId,
-  serviceActor
-} from '../_utils';
-
-const HTTP_PATH = '/api/contracts/import';
+import { getImportToken, isValidImportToken, newContractRequestId } from '../_utils';
 
 function asPayloadRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -50,25 +42,10 @@ async function tryRecordImportFailure(input: {
 
 export async function POST(request: NextRequest) {
   const requestId = newContractRequestId();
-  const actor = serviceActor();
 
   if (!isValidImportToken(getImportToken(request))) {
     const message = '유효한 계약 import token이 필요합니다.';
-    return jsonWithActivityLog(
-      requestId,
-      {
-        ...actor,
-        action: 'contract.import_failed',
-        targetType: 'contract',
-        targetUserId: null,
-        targetLabel: contractTargetLabel({}),
-        httpMethod: 'POST',
-        httpPath: HTTP_PATH,
-        metadata: buildErrorMetadata('unauthenticated', message)
-      },
-      { success: false, message },
-      401
-    );
+    return withRequestId(NextResponse.json({ success: false, message }, { status: 401 }), requestId);
   }
 
   let body: unknown;
@@ -77,21 +54,7 @@ export async function POST(request: NextRequest) {
   } catch {
     const message = '요청 JSON을 해석할 수 없습니다.';
     await tryRecordImportFailure({ requestId, body: null, errorCode: 'validation', message });
-    return jsonWithActivityLog(
-      requestId,
-      {
-        ...actor,
-        action: 'contract.import_failed',
-        targetType: 'contract',
-        targetUserId: null,
-        targetLabel: contractTargetLabel({}),
-        httpMethod: 'POST',
-        httpPath: HTTP_PATH,
-        metadata: buildErrorMetadata('validation', message)
-      },
-      { success: false, message },
-      400
-    );
+    return withRequestId(NextResponse.json({ success: false, message }, { status: 400 }), requestId);
   }
 
   const parsed = contractImportSchema.safeParse(body);
@@ -108,23 +71,7 @@ export async function POST(request: NextRequest) {
       errorCode,
       message
     });
-    return jsonWithActivityLog(
-      requestId,
-      {
-        ...actor,
-        action: 'contract.import_failed',
-        targetType: 'contract',
-        targetUserId: null,
-        targetLabel: contractTargetLabel({
-          documentNumber: typeof payloadRecord?.document_number === 'string' ? payloadRecord.document_number : null
-        }),
-        httpMethod: 'POST',
-        httpPath: HTTP_PATH,
-        metadata: buildErrorMetadata(errorCode, message)
-      },
-      { success: false, message },
-      400
-    );
+    return withRequestId(NextResponse.json({ success: false, message }, { status: 400 }), requestId);
   }
 
   const payload = {
@@ -134,12 +81,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await importContractDocument(payload, requestId);
-    const action =
-      result.status === 'created'
-        ? 'contract.import_create'
-        : result.status === 'backfill'
-          ? 'contract.import_backfill'
-          : 'contract.import_duplicate';
     const status = result.status === 'created' ? 201 : 200;
     const message =
       result.status === 'created'
@@ -148,28 +89,9 @@ export async function POST(request: NextRequest) {
           ? '기존 계약서의 문서승인일이 보완되었습니다.'
           : '이미 import된 계약서입니다.';
 
-    return jsonWithActivityLog(
-      requestId,
-      {
-        ...actor,
-        action,
-        targetType: 'contract',
-        targetUserId: null,
-        targetLabel: contractTargetLabel({
-          id: result.contract.id,
-          documentNumber: result.contract.document_number
-        }),
-        httpMethod: 'POST',
-        httpPath: HTTP_PATH,
-        metadata: {
-          document_number: result.contract.document_number,
-          source_message_id: payload.source_message_id ?? undefined,
-          source_type: result.contract.source_type,
-          status: result.status
-        }
-      },
-      { success: true, message, contract: result.contract },
-      status
+    return withRequestId(
+      NextResponse.json({ success: true, message, contract: result.contract }, { status }),
+      requestId
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : '계약서 import 중 오류가 발생했습니다.';
@@ -181,23 +103,6 @@ export async function POST(request: NextRequest) {
       errorCode: 'internal_error',
       message
     });
-    return jsonWithActivityLog(
-      requestId,
-      {
-        ...actor,
-        action: 'contract.import_failed',
-        targetType: 'contract',
-        targetUserId: null,
-        targetLabel: contractTargetLabel({ documentNumber: payload.document_number }),
-        httpMethod: 'POST',
-        httpPath: HTTP_PATH,
-        metadata: buildErrorMetadata('internal_error', message, {
-          document_number: payload.document_number,
-          source_message_id: payload.source_message_id ?? undefined
-        })
-      },
-      { success: false, message },
-      500
-    );
+    return withRequestId(NextResponse.json({ success: false, message }, { status: 500 }), requestId);
   }
 }

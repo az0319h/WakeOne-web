@@ -105,7 +105,7 @@ function hasLog(
 }
 
 test.describe('계약 Import API', () => {
-  test('AC-01: approved_at 포함 import는 계약과 import_create 로그를 만든다', async ({ request }) => {
+  test('AC-01: approved_at 포함 import는 계약을 만든다', async ({ request }) => {
     const documentNumber = uniqueDocumentNumber('AC01');
     const approvedAt = '2026-07-02T09:00:00+09:00';
     const response = await request.post('/api/contracts/import', {
@@ -128,17 +128,10 @@ test.describe('계약 Import API', () => {
     expect(detailBody.contract.approved_at).toBeTruthy();
 
     const logs = await getActivityLogs(request, 'contract.import_create');
-    expect(
-      hasLog(logs, {
-        action: 'contract.import_create',
-        status: 201,
-        requestId,
-        documentNumber
-      })
-    ).toBe(true);
+    expect(hasLog(logs, { action: 'contract.import_create', requestId })).toBe(false);
   });
 
-  test('AC-01: 동일 document_number import는 idempotent 200과 import_duplicate 로그를 만든다', async ({ request }) => {
+  test('AC-01: 동일 document_number import는 idempotent 200을 반환한다', async ({ request }) => {
     const documentNumber = uniqueDocumentNumber('AC01D');
     const payload = buildImportPayload(documentNumber);
 
@@ -161,19 +154,10 @@ test.describe('계약 Import API', () => {
     expect(body.message).toContain('이미 import');
 
     const logs = await getActivityLogs(request, 'contract.import_duplicate');
-    expect(
-      hasLog(logs, {
-        action: 'contract.import_duplicate',
-        status: 200,
-        requestId,
-        documentNumber
-      })
-    ).toBe(true);
+    expect(hasLog(logs, { action: 'contract.import_duplicate', requestId })).toBe(false);
   });
 
-  test('AC-01B: approved_at null 기존 행 duplicate import는 backfill 후 import_backfill 로그를 남긴다', async ({
-    request
-  }) => {
+  test('AC-01B: approved_at null 기존 행 duplicate import는 backfill한다', async ({ request }) => {
     const documentNumber = uniqueDocumentNumber('AC01B');
     const approvedAt = '2026-07-08T16:34:00+09:00';
     const { contract } = await importContract(request, documentNumber, approvedAt);
@@ -202,17 +186,10 @@ test.describe('계약 Import API', () => {
     expect(detailBody.contract.approved_at).toBeTruthy();
 
     const logs = await getActivityLogs(request, 'contract.import_backfill');
-    expect(
-      hasLog(logs, {
-        action: 'contract.import_backfill',
-        status: 200,
-        requestId,
-        documentNumber
-      })
-    ).toBe(true);
+    expect(hasLog(logs, { action: 'contract.import_backfill', requestId })).toBe(false);
   });
 
-  test('AC-02: approved_at 누락 import는 400과 import_failed 로그를 만든다', async ({ request }) => {
+  test('AC-02: approved_at 누락 import는 400을 반환한다', async ({ request }) => {
     const documentNumber = uniqueDocumentNumber('AC02');
     const { approved_at: _approvedAt, ...payload } =
       buildImportPayload(documentNumber);
@@ -241,14 +218,7 @@ test.describe('계약 Import API', () => {
     ).toBe(false);
 
     const logs = await getActivityLogs(request, 'contract.import_failed');
-    expect(
-      hasLog(logs, {
-        action: 'contract.import_failed',
-        status: 400,
-        requestId,
-        errorCode: 'missing_approved_at'
-      })
-    ).toBe(true);
+    expect(hasLog(logs, { action: 'contract.import_failed', requestId })).toBe(false);
   });
 
   test('AC-06: null approved_at 계약 update는 changed_fields에 approved_at을 남긴다', async ({ request }) => {
