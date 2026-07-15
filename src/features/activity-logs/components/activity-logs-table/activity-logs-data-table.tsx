@@ -42,12 +42,12 @@ export function ActivityLogsDataTable({
   const columnCount = table.getVisibleLeafColumns().length;
 
   return (
-    <div className='flex flex-1 flex-col space-y-4'>
+    <div className='flex flex-1 flex-col space-y-4' data-testid='activity-logs-table-root'>
       {children}
       <div className='relative flex flex-1'>
         <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
           <ScrollArea className='h-full w-full'>
-            <Table>
+            <Table data-testid='activity-logs-table'>
               <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -79,6 +79,7 @@ export function ActivityLogsDataTable({
                       <Fragment key={row.id}>
                         <TableRow
                           data-state={row.getIsSelected() && 'selected'}
+                          data-testid='activity-log-row'
                           className={cn(statusHintClass)}
                         >
                           {row.getVisibleCells().map((cell) => {

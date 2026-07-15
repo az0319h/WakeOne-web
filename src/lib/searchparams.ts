@@ -17,7 +17,7 @@ export const searchParams = {
   department: parseAsString,
   org_role: parseAsString,
   sort: parseAsString,
-  actor_search: parseAsString,
+  log_user: parseAsString,
   action: parseAsString,
   search: parseAsString,
   status: parseAsString,

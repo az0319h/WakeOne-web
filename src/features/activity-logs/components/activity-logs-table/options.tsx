@@ -1,30 +1,6 @@
 import type { ActivityAction } from '../../api/types';
+import { ACTION_LABELS } from '../../labels';
 
-export const ACTION_OPTIONS: { value: ActivityAction; label: string }[] = [
-  { value: 'user.create', label: 'user.create' },
-  { value: 'user.invite', label: 'user.invite' },
-  { value: 'user.update', label: 'user.update' },
-  { value: 'user.reactivate', label: 'user.reactivate' },
-  { value: 'user.deactivate', label: 'user.deactivate' },
-  { value: 'office_snack.session_create', label: 'office_snack.session_create' },
-  { value: 'office_snack.session_update', label: 'office_snack.session_update' },
-  { value: 'office_snack.session_delete', label: 'office_snack.session_delete' },
-  { value: 'office_snack.candidate_create', label: 'office_snack.candidate_create' },
-  { value: 'office_snack.candidate_update', label: 'office_snack.candidate_update' },
-  { value: 'office_snack.candidate_delete', label: 'office_snack.candidate_delete' },
-  { value: 'office_snack.vote_submit', label: 'office_snack.vote_submit' },
-  { value: 'contract.import_create', label: 'contract.import_create' },
-  { value: 'contract.import_duplicate', label: 'contract.import_duplicate' },
-  { value: 'contract.import_backfill', label: 'contract.import_backfill' },
-  { value: 'contract.import_failed', label: 'contract.import_failed' },
-  { value: 'contract.update', label: 'contract.update' },
-  { value: 'contract.soft_delete', label: 'contract.soft_delete' },
-  { value: 'contract.attachment_upload', label: 'contract.attachment_upload' },
-  { value: 'contract.attachment_soft_delete', label: 'contract.attachment_soft_delete' },
-  { value: 'contract.no_attachment_set', label: 'contract.no_attachment_set' },
-  { value: 'contract.no_attachment_unset', label: 'contract.no_attachment_unset' },
-  { value: 'contract.reminder_send', label: 'contract.reminder_send' },
-  { value: 'contract.reminder_failed', label: 'contract.reminder_failed' },
-  { value: 'profile.update', label: 'profile.update' },
-  { value: 'profile.password_change', label: 'profile.password_change' }
-];
+export const ACTION_OPTIONS: { value: ActivityAction; label: string }[] = (
+  Object.entries(ACTION_LABELS) as [ActivityAction, string][]
+).map(([value, label]) => ({ value, label }));

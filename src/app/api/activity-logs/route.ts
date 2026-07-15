@@ -16,15 +16,15 @@ export async function GET(request: NextRequest) {
     const limit = Number(searchParams.get('limit') ?? 10);
     const sort = searchParams.get('sort') ?? undefined;
     const action = isAdmin ? (searchParams.get('action') ?? undefined) : undefined;
-    const actorSearch = isAdmin ? (searchParams.get('actor_search') ?? undefined) : undefined;
+    const logUser = isAdmin ? (searchParams.get('log_user') ?? 'self') : undefined;
     const search = isAdmin ? (searchParams.get('search') ?? undefined) : undefined;
 
     const data = await listActivityLogs(session.userId, isAdmin, {
       page,
       limit,
       sort,
+      log_user: logUser,
       action,
-      actor_search: actorSearch,
       search
     });
 

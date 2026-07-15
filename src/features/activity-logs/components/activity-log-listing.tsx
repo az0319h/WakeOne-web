@@ -1,6 +1,8 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { getSessionProfile } from '@/features/auth/api/session.server';
 import { listActivityLogs } from '@/features/activity-logs/api/service.server';
+import { usersQueryOptions } from '@/features/users/api/queries';
+import { getUsersServer } from '@/features/users/api/service.server';
 import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { activityLogsQueryOptions } from '../api/queries';
@@ -13,7 +15,7 @@ export default async function ActivityLogListing() {
   const page = searchParamsCache.get('page');
   const pageLimit = searchParamsCache.get('perPage');
   const sort = searchParamsCache.get('sort');
-  const actorSearch = searchParamsCache.get('actor_search');
+  const logUser = isAdmin ? (searchParamsCache.get('log_user') ?? 'self') : undefined;
   const action = searchParamsCache.get('action');
   const search = searchParamsCache.get('search');
 
@@ -21,7 +23,7 @@ export default async function ActivityLogListing() {
     page,
     limit: pageLimit,
     ...(sort && { sort }),
-    ...(isAdmin && actorSearch && { actor_search: actorSearch }),
+    ...(isAdmin && { log_user: logUser }),
     ...(isAdmin && action && { action }),
     ...(isAdmin && search && { search })
   };
@@ -33,6 +35,13 @@ export default async function ActivityLogListing() {
       ...activityLogsQueryOptions(filters),
       queryFn: () => listActivityLogs(profile.user_id, isAdmin, filters)
     });
+
+    if (isAdmin) {
+      void queryClient.prefetchQuery({
+        ...usersQueryOptions({ limit: 50 }),
+        queryFn: () => getUsersServer({ limit: 50 })
+      });
+    }
   }
 
   return (

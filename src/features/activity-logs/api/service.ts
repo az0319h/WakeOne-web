@@ -15,7 +15,7 @@ export async function fetchActivityLogs(
   if (filters.limit) searchParams.set('limit', String(filters.limit));
   if (filters.sort) searchParams.set('sort', filters.sort);
   if (filters.action) searchParams.set('action', filters.action);
-  if (filters.actor_search) searchParams.set('actor_search', filters.actor_search);
+  if (filters.log_user) searchParams.set('log_user', filters.log_user);
   if (filters.search) searchParams.set('search', filters.search);
 
   const queryString = searchParams.toString();

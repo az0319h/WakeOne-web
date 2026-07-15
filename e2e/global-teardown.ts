@@ -18,7 +18,7 @@ export default async function globalTeardown() {
       stdio: 'inherit',
       env: process.env
     });
-  } catch (error) {
+  } catch {
     throw new Error(
       'E2E mock data cleanup failed after test run. Fix scripts/cleanup-e2e-mock-data.mjs or apply supabase/sql/27_e2e_cleanup_rpc.sql.'
     );
