@@ -30,12 +30,11 @@ export function SystemEmailLogsDataTable({
   const columnCount = table.getVisibleLeafColumns().length;
 
   return (
-    <div className='flex flex-1 flex-col space-y-4'>
+    <div className='flex flex-col space-y-4'>
       {children}
-      <div className='relative flex flex-1'>
-        <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
-          <ScrollArea className='h-full w-full'>
-            <Table data-testid='system-email-logs-table'>
+      <div className='overflow-hidden rounded-lg border'>
+        <ScrollArea>
+          <Table data-testid='system-email-logs-table'>
               <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -99,9 +98,8 @@ export function SystemEmailLogsDataTable({
                 )}
               </TableBody>
             </Table>
-            <ScrollBar orientation='horizontal' />
-          </ScrollArea>
-        </div>
+          <ScrollBar orientation='horizontal' />
+        </ScrollArea>
       </div>
       <DataTablePagination table={table} />
     </div>

@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { contractByIdQueryOptions, contractKeys } from '../api/queries';
+import { contractByIdQueryOptions } from '../api/queries';
 import type { ContractDocument } from '../api/types';
 import { ContractDetailSheet } from './contract-detail-sheet';
 import { ContractEditSheet } from './contract-edit-sheet';
@@ -17,10 +17,9 @@ export function ContractsPageClient() {
 
   const handleView = useCallback(
     (contract: ContractDocument) => {
-      queryClient.setQueryData(contractKeys.detail(contract.id), contract);
-      void queryClient.prefetchQuery(contractByIdQueryOptions(contract.id));
       setSelectedContract(contract);
       setDetailOpen(true);
+      void queryClient.prefetchQuery(contractByIdQueryOptions(contract.id));
     },
     [queryClient]
   );
@@ -32,7 +31,9 @@ export function ContractsPageClient() {
 
   return (
     <>
-      <ContractsTable onView={handleView} onEdit={handleEdit} />
+      <div className='flex flex-1 flex-col'>
+        <ContractsTable onView={handleView} onEdit={handleEdit} />
+      </div>
       <ContractDetailSheet
         contract={selectedContract}
         open={detailOpen}

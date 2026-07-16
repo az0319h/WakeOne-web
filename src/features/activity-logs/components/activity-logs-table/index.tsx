@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { useNavAccess } from '@/contexts/nav-access';
 import { useDataTable } from '@/hooks/use-data-table';
@@ -7,7 +8,6 @@ import { getSortingStateParser } from '@/lib/parsers';
 import { cn } from '@/lib/utils';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { useMemo } from 'react';
 import { activityLogsQueryOptions } from '../../api/queries';
 import { LogUserCombobox } from '../log-user-combobox';
 import { ActivityLogsDataTable } from './activity-logs-data-table';
@@ -69,16 +69,6 @@ export function ActivityLogsTable() {
           <DataTableToolbar table={table} className={cn('min-w-0 flex-1 p-0')} />
         </div>
       </ActivityLogsDataTable>
-    </div>
-  );
-}
-
-export function ActivityLogsTableSkeleton() {
-  return (
-    <div className='flex flex-1 animate-pulse flex-col gap-4'>
-      <div className='bg-muted h-10 w-full rounded' />
-      <div className='bg-muted h-96 w-full rounded-lg' />
-      <div className='bg-muted h-10 w-full rounded' />
     </div>
   );
 }

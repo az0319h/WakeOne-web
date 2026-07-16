@@ -5,7 +5,7 @@ import { searchParamsCache } from '@/lib/searchparams';
 import type { SearchParams } from 'nuqs/server';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { ActivityLogsTableSkeleton } from '@/features/activity-logs/components/activity-logs-table';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 
 export const metadata = {
   title: 'Dashboard: 활동 로그'
@@ -44,7 +44,7 @@ export default async function ActivityLogsPage(props: PageProps) {
           : '본인과 관련된 활동 이력을 확인합니다.'
       }
     >
-      <Suspense fallback={<ActivityLogsTableSkeleton />}>
+      <Suspense fallback={<PageLoadingSpinner variant='fill' />}>
         <ActivityLogListing />
       </Suspense>
     </PageContainer>

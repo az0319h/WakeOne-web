@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { fetchActivityLogs } from './service';
 import type { ActivityLog, ActivityLogsFilters } from './types';
 
@@ -12,5 +12,6 @@ export const activityLogKeys = {
 export const activityLogsQueryOptions = (filters: ActivityLogsFilters) =>
   queryOptions({
     queryKey: activityLogKeys.list(filters),
-    queryFn: () => fetchActivityLogs(filters)
+    queryFn: () => fetchActivityLogs(filters),
+    placeholderData: keepPreviousData
   });

@@ -18,6 +18,31 @@ test.describe('본인 프로필 read-only', () => {
     await expect(page.getByText('못 먹는 음식')).toHaveCount(0);
   });
 
+  test('AC-05 plan26: profile loading shows spinner without form-card skeleton', async ({
+    page
+  }) => {
+    await page.route((url) => url.pathname === '/dashboard/profile', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      await route.continue();
+    });
+
+    await page.goto('/dashboard/overview');
+    const navigation = page.getByRole('link', { name: '프로필' }).click();
+
+    await expect(page.getByRole('status', { name: 'Loading' })).toBeVisible({
+      timeout: 10_000
+    });
+    await expect(page.getByRole('heading', { name: '프로필' })).toBeVisible({
+      timeout: 15_000
+    });
+    await expect(page.getByRole('button', { name: '비밀번호 변경' })).toHaveCount(0);
+
+    await navigation;
+    await expect(page.getByRole('button', { name: '비밀번호 변경' })).toBeVisible({
+      timeout: 15_000
+    });
+  });
+
   test('AC-5 plan21: Security 비밀번호 변경·로그아웃은 유지된다', async ({ page }) => {
     await page.goto('/dashboard/profile');
 

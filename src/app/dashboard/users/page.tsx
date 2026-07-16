@@ -1,10 +1,12 @@
 import PageContainer from '@/components/layout/page-container';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import UserListingPage from '@/features/users/components/user-listing';
 import { searchParamsCache } from '@/lib/searchparams';
 import type { SearchParams } from 'nuqs/server';
 import { usersInfoContent } from '@/features/users/info-content';
 import { UserFormSheetTrigger } from '@/features/users/components/user-form-sheet';
 import { requireAdminPage } from '@/features/auth/api/session.server';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: 'Dashboard: 사용자 관리'
@@ -27,7 +29,9 @@ export default async function UsersPage(props: PageProps) {
       infoContent={usersInfoContent}
       pageHeaderAction={<UserFormSheetTrigger />}
     >
-      <UserListingPage />
+      <Suspense fallback={<PageLoadingSpinner variant='fill' />}>
+        <UserListingPage />
+      </Suspense>
     </PageContainer>
   );
 }
