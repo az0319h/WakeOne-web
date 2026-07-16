@@ -3,7 +3,7 @@
 -- Plan: 24_contract-reminder-cron-migration-plan.md
 -- Date: 2026-07-15
 -- Status: Completed
--- Remote migration: pending (33_contract_reminder_cron_weekdays)
+-- Remote migration: applied (33_contract_reminder_cron_weekdays)
 -- Summary: contract-reminder-daily = 0 9 * * 1-5 UTC (평일 18:00 KST, 주말 제외)
 
 create or replace function public.switch_contract_reminder_to_production()

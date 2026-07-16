@@ -4,24 +4,16 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import type { SystemEmailLogRun } from '../../api/types';
 import { RunStatusBadge, TriggerSourceBadge } from './status-badges';
 
 function TimeCell({ createdAt }: { createdAt: string }) {
   const date = new Date(createdAt);
-  const relative = formatDistanceToNow(date, { addSuffix: true, locale: ko });
-  const absolute = format(date, 'yyyy.MM.dd HH:mm:ss', { locale: ko });
+  const executedAt = format(date, 'yyyy-MM-dd (EEE) HH:mm:ss', { locale: ko });
 
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className='text-sm whitespace-nowrap'>{relative}</span>
-      </TooltipTrigger>
-      <TooltipContent>{absolute}</TooltipContent>
-    </Tooltip>
-  );
+  return <span className='font-mono text-xs whitespace-nowrap'>{executedAt}</span>;
 }
 
 function RunKeyCell({ runKey }: { runKey: string }) {
