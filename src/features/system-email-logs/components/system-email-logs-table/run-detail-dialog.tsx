@@ -14,7 +14,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import {
   Table,
   TableBody,
@@ -46,16 +46,6 @@ function DocumentNumbersCell({ documentNumbers }: { documentNumbers: string[] })
   );
 }
 
-function DetailSkeleton() {
-  return (
-    <div className='space-y-4'>
-      <Skeleton className='h-16 w-full' />
-      <Skeleton className='h-40 w-full' />
-      <Skeleton className='h-24 w-full' />
-    </div>
-  );
-}
-
 export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogProps) {
   const { data, isLoading, isError } = useQuery({
     ...systemEmailLogDetailQueryOptions(runId ?? 0),
@@ -76,7 +66,9 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
             <DialogDescription className='flex flex-wrap items-center gap-2 pt-1'>
               <span className='font-mono text-xs'>{run.run_key}</span>
               <span>·</span>
-              <span>{format(new Date(run.created_at), 'yyyy.MM.dd HH:mm:ss', { locale: ko })}</span>
+              <span className='font-mono text-xs whitespace-nowrap'>
+                {format(new Date(run.created_at), 'yyyy-MM-dd (EEE) HH:mm:ss', { locale: ko })}
+              </span>
               <TriggerSourceBadge source={run.trigger_source} />
               <RunStatusBadge status={run.status} />
             </DialogDescription>
@@ -84,7 +76,7 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
         </DialogHeader>
 
         <ScrollArea className='min-h-0 flex-1 pr-3'>
-          {isLoading ? <DetailSkeleton /> : null}
+          {isLoading ? <PageLoadingSpinner variant='compact' /> : null}
           {isError ? (
             <p className='text-destructive text-sm'>상세 정보를 불러오지 못했습니다.</p>
           ) : null}

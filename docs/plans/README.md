@@ -64,6 +64,7 @@
 | 22 | [22_users-table-birthday-edit-init-plan.md](./22_users-table-birthday-edit-init-plan.md) | **Approved** · Users 테이블 생일 컬럼 · 수정 Sheet 초기값 · plan 09 AC #8 대체 |
 | 23 | [23_asset-ledger-removal-plan.md](./23_asset-ledger-removal-plan.md) | **Completed** · 비품 대장 완전 제거 · SQL `30` |
 | 25 | [25_activity-logs-ui-improvement-plan.md](./25_activity-logs-ui-improvement-plan.md) | **Approved** · 활동 로그 UI 한국어·admin Combobox · plan 08 확장 |
+| 26 | [26_loading-spinner-unification-plan.md](./26_loading-spinner-unification-plan.md) | **Approved** · overview 제외 dashboard Read 로딩 Spinner 통일 · plan 12 supersede |
 
 ## 에이전트 참조
 

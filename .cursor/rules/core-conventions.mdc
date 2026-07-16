@@ -199,13 +199,16 @@ const createMutation = useMutation({
 - 신규/수정 feature의 CUD 폼 완료 조건에 **성공 후 reset** 포함.
 - 참조: `docs/forms.md` §Form in a Sheet or Dialog
 
-## 스켈레톤 UI (필수)
+## 로딩 UI (필수)
 
-- 신규/수정 화면에서 **비동기 Read 경로(RSC fetch, `useSuspenseQuery`, Suspense)** 가 있으면 로딩 상태를 반드시 구현한다.
-- 우선순위는 **기존 스켈레톤 재사용**이다. (`DataTableSkeleton`, `FormCardSkeleton`, feature별 `*Skeleton`)
-- 재사용 가능한 스켈레톤이 없으면 feature 내부에 `{Feature}Skeleton` 컴포넌트를 추가한다.
-- App Router 화면은 `loading.tsx` 또는 `Suspense fallback` 중 최소 1개를 필수로 둔다.
-- 완료 보고 전 "초기 진입/필터 변경/느린 네트워크"에서 레이아웃 점프가 과도하지 않은지 확인한다.
+- 신규/수정 화면에서 **비동기 Read 경로**(`loading.tsx`, RSC fetch, `useSuspenseQuery`, `Suspense fallback`)는 로딩 상태를 반드시 구현한다.
+- **`/dashboard/overview`**: 기존 skeleton 재사용 유지 (`*GraphSkeleton`, `BirthdayCelebrantsBannerSkeleton` 등).
+- **그 외 `/dashboard/*`**: `PageLoadingSpinner` / `Spinner` 우선 — skeleton·pulse 블록 fallback **금지**.
+- Sheet·Dialog·Popover Read: `PageLoadingSpinner variant="compact"`.
+- mutation Button `isLoading` / `isPending`: 기존 Button 내 Spinner **유지**.
+- App Router 화면은 `loading.tsx` 또는 `Suspense fallback` 중 **최소 1개** 필수.
+- `PageLoadingSpinner` variants: `default` (route·page), `fill` (listing 내부·pagination), `compact` (Sheet·Dialog·Popover).
+- 페이지 헤더(`PageContainer` title/description)는 fallback 밖(shell)에 두어 로딩 중에도 표시한다.
 
 ## 삭제 확인 Dialog (필수)
 

@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
-import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { getQueryClient } from '@/lib/query-client';
 import { contractsQueryOptions } from '../api/queries';
 import { listContracts as listContractsServer } from '../api/service.server';
@@ -28,11 +28,7 @@ export async function ContractListing({ filters }: ContractListingProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense
-        fallback={
-          <DataTableSkeleton columnCount={8} rowCount={10} filterCount={3} />
-        }
-      >
+      <Suspense fallback={<PageLoadingSpinner variant='fill' />}>
         <ContractsPageClient />
       </Suspense>
     </HydrationBoundary>

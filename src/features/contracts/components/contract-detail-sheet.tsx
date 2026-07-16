@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -74,34 +74,6 @@ function DetailItem({
     <div className='space-y-1'>
       <dt className='text-muted-foreground text-xs font-medium'>{label}</dt>
       <dd className='text-sm'>{value || '-'}</dd>
-    </div>
-  );
-}
-
-function ContractDetailSheetSkeleton() {
-  return (
-    <div className='space-y-6'>
-      <section className='space-y-4 rounded-lg border p-4'>
-        <div className='flex items-center justify-between gap-2'>
-          <div className='space-y-2'>
-            <Skeleton className='h-5 w-40' />
-            <Skeleton className='h-4 w-56' />
-          </div>
-          <Skeleton className='h-6 w-20' />
-        </div>
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className='space-y-2'>
-              <Skeleton className='h-3 w-16' />
-              <Skeleton className='h-4 w-full' />
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className='space-y-3'>
-        <Skeleton className='h-5 w-24' />
-        <Skeleton className='h-20 w-full' />
-      </section>
     </div>
   );
 }
@@ -343,7 +315,7 @@ export function ContractDetailSheet({
         </SheetHeader>
         <div className='min-h-0 flex-1 overflow-auto py-2 pr-1'>
           {contract ? (
-            <Suspense fallback={<ContractDetailSheetSkeleton />}>
+            <Suspense fallback={<PageLoadingSpinner variant='compact' />}>
               <ContractDetailContent
                 key={contract.id}
                 contractId={contract.id}

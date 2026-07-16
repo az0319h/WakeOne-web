@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { getContractById, listContracts } from './service';
 import type { ContractDocument, ContractFilters } from './types';
 
@@ -13,7 +13,8 @@ export const contractKeys = {
 export const contractsQueryOptions = (filters: ContractFilters) =>
   queryOptions({
     queryKey: contractKeys.list(filters),
-    queryFn: () => listContracts(filters)
+    queryFn: () => listContracts(filters),
+    placeholderData: keepPreviousData
   });
 
 export const contractByIdQueryOptions = (id: number) =>

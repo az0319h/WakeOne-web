@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { fetchSystemEmailLogDetail, fetchSystemEmailLogs } from './service';
 import type { SystemEmailLogsFilters } from './types';
 
@@ -11,7 +11,8 @@ export const systemEmailLogKeys = {
 export const systemEmailLogsQueryOptions = (filters: SystemEmailLogsFilters) =>
   queryOptions({
     queryKey: systemEmailLogKeys.list(filters),
-    queryFn: () => fetchSystemEmailLogs(filters)
+    queryFn: () => fetchSystemEmailLogs(filters),
+    placeholderData: keepPreviousData
   });
 
 export const systemEmailLogDetailQueryOptions = (runId: number) =>

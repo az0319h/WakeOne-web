@@ -1,6 +1,5 @@
 'use client';
 
-import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
 import { useDataTable } from '@/hooks/use-data-table';
 import { getSortingStateParser } from '@/lib/parsers';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -66,8 +65,4 @@ export function SystemEmailLogsTable() {
       />
     </>
   );
-}
-
-export function SystemEmailLogsTableSkeleton() {
-  return <DataTableSkeleton columnCount={8} rowCount={10} filterCount={0} />;
 }

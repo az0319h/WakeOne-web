@@ -1,5 +1,5 @@
 import PageContainer from '@/components/layout/page-container';
-import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 
 export default function ContractsLoading() {
   return (
@@ -7,7 +7,7 @@ export default function ContractsLoading() {
       pageTitle='계약서 관리'
       pageDescription='계약서 체결 요청 문서와 첨부 상태를 관리합니다.'
     >
-      <DataTableSkeleton columnCount={8} rowCount={10} filterCount={3} />
+      <PageLoadingSpinner variant='fill' />
     </PageContainer>
   );
 }

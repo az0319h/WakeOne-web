@@ -5,7 +5,7 @@ import { listOfficeSnackSessions } from '../api/service.server';
 import { officeSnackSessionsQueryOptions } from '../api/queries';
 import { OfficeSnacksListClient } from './office-snacks-listing-client';
 import { OfficeSnacksListingErrorBoundary } from './office-snacks-listing-error-boundary';
-import { OfficeSnacksPageSkeleton } from './office-snacks-skeleton';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 
 export default function OfficeSnacksListing() {
   const queryClient = getQueryClient();
@@ -18,7 +18,7 @@ export default function OfficeSnacksListing() {
   return (
     <OfficeSnacksListingErrorBoundary>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <Suspense fallback={<OfficeSnacksPageSkeleton />}>
+        <Suspense fallback={<PageLoadingSpinner variant='fill' />}>
           <OfficeSnacksListClient />
         </Suspense>
       </HydrationBoundary>

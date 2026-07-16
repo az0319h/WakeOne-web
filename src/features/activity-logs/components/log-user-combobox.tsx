@@ -13,6 +13,7 @@ import {
   CommandSeparator
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
@@ -153,7 +154,7 @@ export function LogUserCombobox({ value, onValueChange }: LogUserComboboxProps) 
               ))}
             </CommandGroup>
             <CommandSeparator />
-            <Suspense fallback={<CommandEmpty>불러오는 중…</CommandEmpty>}>
+            <Suspense fallback={<PageLoadingSpinner variant='compact' />}>
               <LogUserComboboxUserList
                 search={debouncedUserSearch}
                 value={value}
