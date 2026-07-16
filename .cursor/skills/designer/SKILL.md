@@ -114,6 +114,20 @@ shadcn 컴포넌트 추가가 필요하면 먼저 shadcn MCP로 검색한다.
 - KPI → 트렌드 → 상세 계층 구조
 - Compact 간격 (4/8/12/16/24 px)
 
+**로딩 UI (plan 26 · `core-conventions.mdc` §로딩 UI):**
+
+| 구분 | 설계 |
+|------|------|
+| `/dashboard/overview` | 기존 `*GraphSkeleton`·`BirthdayCelebrantsBannerSkeleton` **유지** |
+| 그 외 `/dashboard/*` Read | **`PageLoadingSpinner`** — skeleton·pulse **금지** |
+| `default` | route `loading.tsx` (신규는 `fill` 권장) |
+| `fill` | page/listing `Suspense`, pagination refetch — **콘텐츠 영역 중앙** |
+| `compact` | Sheet·Dialog·Popover Read |
+| 헤더 | `PageContainer` title/description은 fallback **밖** |
+| 테이블 | content-height 레이아웃 (`flex-1` + `absolute inset-0` 테이블 wrapper **금지**) |
+
+참조: `src/app/dashboard/logs/page.tsx` · `src/features/users/components/users-table/index.tsx`
+
 ---
 
 ## Preview 제시 형식 (필수 · plan §Designer gate)
@@ -207,7 +221,7 @@ PageContainer
 
 **UX**
 - [ ] 빈 상태(Empty state) 처리되는가?
-- [ ] 로딩 상태는 Skeleton으로 처리되는가?
+- [ ] 로딩 상태는 `PageLoadingSpinner`(overview 제외 dashboard) 또는 overview skeleton으로 처리되는가?
 - [ ] 에러 상태 UI가 있는가?
 - [ ] 모바일 375px에서 동작하는가?
 
@@ -257,11 +271,12 @@ API 응답에 필요한 필드: {필드 목록}
 - 기존 패턴을 탐색하지 않고 새 컴포넌트를 만들지 않는다
 - DB 스키마 반영과 무관한 디자인 변경을 하지 않는다
 - Tailwind v3 문법(`@apply`, `theme()`)을 사용하지 않는다 (v4 사용)
+- dashboard(overview 제외) Read fallback에 skeleton·`DataTableSkeleton`·테이블 overlay spinner를 설계하지 않는다
 
 ## ALWAYS
 
 - 탐색 → 재사용 → 최소 신규 순서를 지킨다
 - 모든 컴포넌트에 hover/focus/active/disabled 상태를 고려한다
-- 로딩은 Skeleton, 에러는 Alert/Toast, 빈 상태는 Empty state로 처리한다
+- 로딩: overview = skeleton 유지 · 그 외 dashboard Read = `PageLoadingSpinner` (`default`/`fill`/`compact`). 에러는 Alert/Toast, 빈 상태는 Empty state
 - Tailwind 간격은 8px 그리드 기준 (`p-2`, `gap-4` 등)으로 맞춘다
 - WakeOne 컨벤션(`CLAUDE.md`, `AGENTS.md`)이 모든 설계의 상한이다
