@@ -27,7 +27,9 @@ const METADATA_ALLOWLIST = new Set([
   'missing_document_numbers',
   'status',
   'unmatched_count',
-  'unmatched_author_names'
+  'unmatched_author_names',
+  'notification_id',
+  'count'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -167,6 +169,16 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === 'unmatched_count' && typeof value === 'number') {
       sanitized.unmatched_count = value;
+      continue;
+    }
+
+    if (key === 'count' && typeof value === 'number') {
+      sanitized.count = value;
+      continue;
+    }
+
+    if (key === 'notification_id' && typeof value === 'number') {
+      sanitized.notification_id = value;
       continue;
     }
 

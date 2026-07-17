@@ -1,92 +1,123 @@
 'use client';
 
-import { Icons } from '@/components/icons';
-import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
-import { NotificationCard } from '@/components/ui/notification-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useRouter } from 'next/navigation';
-import { useNotificationStore } from '../utils/store';
+import { useNavAccess } from '@/contexts/nav-access';
+import { parseAsString, useQueryStates } from 'nuqs';
+import { Suspense, useMemo } from 'react';
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { NotifUserCombobox } from './notif-user-combobox';
+import {
+  NotificationInfiniteList,
+  useMarkAllNotificationsRead
+} from './notification-infinite-list';
+import { notificationsInfiniteQueryOptions } from '../api/queries';
+import type { Notification } from '../api/types';
 
-const actionRoutes: Record<string, string> = {
-  view: '/dashboard/workspaces',
-  'view-product': '/dashboard/overview',
-  billing: '/dashboard/billing',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
-};
+function flattenNotifications(
+  pages: { notifications: Notification[] }[] | undefined
+): Notification[] {
+  if (!pages) return [];
+  const seen = new Set<number>();
+  const result: Notification[] = [];
 
-export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
-  const router = useRouter();
-  const count = unreadCount();
-
-  const unreadNotifications = notifications.filter((n) => n.status === 'unread');
-  const readNotifications = notifications.filter((n) => n.status === 'read');
-
-  const renderList = (items: typeof notifications) => {
-    if (items.length === 0) {
-      return (
-        <div className='flex flex-col items-center justify-center py-16'>
-          <Icons.notification className='text-muted-foreground/40 mb-3 h-10 w-10' />
-          <p className='text-muted-foreground text-sm'>No notifications</p>
-        </div>
-      );
+  for (const page of pages) {
+    for (const notification of page.notifications) {
+      if (!seen.has(notification.id)) {
+        seen.add(notification.id);
+        result.push(notification);
+      }
     }
+  }
 
-    return (
-      <div className='flex flex-col gap-2'>
-        {items.map((notification) => (
-          <NotificationCard
-            key={notification.id}
-            id={notification.id}
-            title={notification.title}
-            body={notification.body}
-            status={notification.status}
-            createdAt={notification.createdAt}
-            actions={notification.actions}
-            onMarkAsRead={markAsRead}
-            onAction={(notifId, actionId) => {
-              const route = actionRoutes[actionId];
-              if (route) {
-                markAsRead(notifId);
-                router.push(route);
-              }
-            }}
-          />
-        ))}
-      </div>
-    );
+  return result;
+}
+
+function NotificationsPageContent() {
+  const profile = useNavAccess();
+  const isAdmin = profile?.system_role === 'admin';
+
+  const [params, setParams] = useQueryStates({
+    notif_user: parseAsString.withDefault('self')
+  });
+
+  const notifUser = isAdmin ? (params.notif_user ?? 'self') : undefined;
+  const filters = {
+    ...(isAdmin && { notif_user: notifUser })
   };
 
+  const isViewingSelf =
+    !isAdmin || notifUser === 'self' || notifUser === profile?.user_id;
+
+  const { data } = useSuspenseInfiniteQuery(notificationsInfiniteQueryOptions(filters));
+  const allNotifications = useMemo(() => flattenNotifications(data.pages), [data.pages]);
+  const unreadCount = allNotifications.filter((n) => n.status === 'unread').length;
+  const readCount = allNotifications.filter((n) => n.status === 'read').length;
+
+  const markAllMutation = useMarkAllNotificationsRead();
+
+  function handleNotifUserChange(nextValue: string) {
+    void setParams({ notif_user: nextValue });
+  }
+
   return (
-    <PageContainer
-      pageTitle='Notifications'
-      pageDescription='View and manage all your notifications.'
-      pageHeaderAction={
-        count > 0 ? (
-          <Button variant='outline' size='sm' onClick={markAllAsRead}>
-            Mark all as read
+    <div data-testid='notifications-page' className='flex flex-1 flex-col gap-4'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        {isAdmin ? (
+          <NotifUserCombobox value={notifUser ?? 'self'} onValueChange={handleNotifUserChange} />
+        ) : (
+          <div />
+        )}
+        {isViewingSelf && unreadCount > 0 ? (
+          <Button
+            variant='outline'
+            size='sm'
+            isLoading={markAllMutation.isPending}
+            onClick={() => markAllMutation.mutate()}
+          >
+            모두 읽음
           </Button>
-        ) : undefined
-      }
-    >
+        ) : null}
+      </div>
+
       <Tabs defaultValue='all'>
         <TabsList>
-          <TabsTrigger value='all'>All ({notifications.length})</TabsTrigger>
-          <TabsTrigger value='unread'>Unread ({unreadNotifications.length})</TabsTrigger>
-          <TabsTrigger value='read'>Read ({readNotifications.length})</TabsTrigger>
+          <TabsTrigger value='all'>전체 ({allNotifications.length})</TabsTrigger>
+          <TabsTrigger value='unread'>읽지 않음 ({unreadCount})</TabsTrigger>
+          <TabsTrigger value='read'>읽음 ({readCount})</TabsTrigger>
         </TabsList>
         <TabsContent value='all' className='mt-4'>
-          {renderList(notifications)}
+          <NotificationInfiniteList
+            filters={filters}
+            statusFilter='all'
+            readOnly={!isViewingSelf}
+          />
         </TabsContent>
         <TabsContent value='unread' className='mt-4'>
-          {renderList(unreadNotifications)}
+          <NotificationInfiniteList
+            filters={filters}
+            statusFilter='unread'
+            readOnly={!isViewingSelf}
+            emptyMessage='읽지 않은 알림이 없습니다'
+          />
         </TabsContent>
         <TabsContent value='read' className='mt-4'>
-          {renderList(readNotifications)}
+          <NotificationInfiniteList
+            filters={filters}
+            statusFilter='read'
+            readOnly={!isViewingSelf}
+            emptyMessage='읽은 알림이 없습니다'
+          />
         </TabsContent>
       </Tabs>
-    </PageContainer>
+    </div>
+  );
+}
+
+export function NotificationsPage() {
+  return (
+    <Suspense fallback={null}>
+      <NotificationsPageContent />
+    </Suspense>
   );
 }

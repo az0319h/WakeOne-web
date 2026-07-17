@@ -18,6 +18,7 @@ export const searchParams = {
   org_role: parseAsString,
   sort: parseAsString,
   log_user: parseAsString,
+  notif_user: parseAsString,
   action: parseAsString,
   search: parseAsString,
   status: parseAsString,

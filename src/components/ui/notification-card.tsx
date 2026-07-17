@@ -22,6 +22,7 @@ export interface NotificationCardProps {
   body: string;
   status?: NotificationStatus;
   createdAt?: string | Date;
+  relativeTimeLabel?: string;
   actions?: NotificationAction[];
   onMarkAsRead?: (id: string) => void;
   onAction?: (notificationId: string, actionId: string, actionType: ActionType) => void;
@@ -70,6 +71,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
   body,
   status = 'unread',
   createdAt,
+  relativeTimeLabel,
   actions = [],
   onMarkAsRead,
   onAction,
@@ -123,7 +125,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
                 'rounded-lg p-1.5 transition-colors',
                 'text-muted-foreground hover:bg-accent hover:text-foreground'
               )}
-              aria-label='Mark as read'
+              aria-label='읽음 처리'
             >
               <Icons.check size={16} />
             </button>
@@ -177,7 +179,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
           {/* Timestamp */}
           {createdAt && (
             <span className='text-muted-foreground/60 inline-block text-[11px]'>
-              {formatDate(createdAt)}
+              {relativeTimeLabel ?? formatDate(createdAt)}
             </span>
           )}
         </div>

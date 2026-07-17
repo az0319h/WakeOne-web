@@ -69,6 +69,14 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: '알림',
+        url: '/dashboard/notifications',
+        icon: 'notification',
+        shortcut: ['n', 't'],
+        isActive: false,
+        items: []
+      },
+      {
         title: '활동 로그',
         url: '/dashboard/logs',
         icon: 'forms',

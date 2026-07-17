@@ -24,7 +24,9 @@ export type ActivityAction =
   | 'contract.reminder_send'
   | 'contract.reminder_failed'
   | 'profile.update'
-  | 'profile.password_change';
+  | 'profile.password_change'
+  | 'notification.read'
+  | 'notification.read_all';
 
 export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'contract';
 
@@ -65,6 +67,8 @@ export type ActivityLogMetadata = {
   category?: string;
   usage_location?: string;
   session_state?: string;
+  notification_id?: number;
+  count?: number;
 };
 
 export type ActivityLog = {
