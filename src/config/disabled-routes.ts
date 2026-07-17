@@ -7,7 +7,6 @@ export const DISABLED_DASHBOARD_PATHS = [
   '/dashboard/exclusive',
   '/dashboard/react-query',
   '/dashboard/elements',
-  '/dashboard/notifications',
   '/dashboard/office-snacks'
 ] as const;
 

@@ -34,6 +34,7 @@ import {
   IconDownload,
   IconEdit,
   IconExternalLink,
+  IconEye,
   IconEyeOff,
   IconFile,
   IconFileText,
@@ -87,6 +88,7 @@ import {
   IconUserX,
   IconUsers,
   IconVideo,
+  IconWallet,
   IconCrown,
   IconX
 } from '@tabler/icons-react';
@@ -198,7 +200,9 @@ export const Icons = {
   // Data / Charts
   trendingDown: IconTrendingDown,
   trendingUp: IconTrendingUp,
+  eye: IconEye,
   eyeOff: IconEyeOff,
+  wallet: IconWallet,
   adjustments: IconAdjustmentsHorizontal,
 
   // Text formatting

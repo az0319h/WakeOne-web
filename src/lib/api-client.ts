@@ -1,15 +1,7 @@
 function resolveApiUrl(endpoint: string): string {
-  const path = endpoint.startsWith('/api')
+  return endpoint.startsWith('/api')
     ? endpoint
     : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-
-  if (typeof window !== 'undefined') {
-    return path;
-  }
-
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000';
-  return `${origin}${path}`;
 }
 
 function createRequestInit(options?: RequestInit): RequestInit {
@@ -17,6 +9,7 @@ function createRequestInit(options?: RequestInit): RequestInit {
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
+
   return { ...options, headers };
 }
 

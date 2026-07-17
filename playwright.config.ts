@@ -60,7 +60,14 @@ export default defineConfig({
         storageState: 'e2e/.auth/admin.json'
       },
       dependencies: ['setup'],
-      testIgnore: [/auth\.setup\.ts/, /auth\.user\.setup\.ts/, /\.api\.spec\.ts$/, /rbac\.spec\.ts$/, /profile\.spec\.ts$/]
+      testIgnore: [
+        /auth\.setup\.ts/,
+        /auth\.user\.setup\.ts/,
+        /\.api\.spec\.ts$/,
+        /rbac\.spec\.ts$/,
+        /profile\.spec\.ts$/,
+        /notifications\/notifications-page\.spec\.ts$/
+      ]
     },
     {
       name: 'chromium-user',
@@ -72,7 +79,9 @@ export default defineConfig({
       testMatch: [
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
-        /system-email-logs-rbac\.spec\.ts$/
+        /system-email-logs-rbac\.spec\.ts$/,
+        /notifications\/notifications-page\.spec\.ts$/,
+        /notifications\/rbac\.spec\.ts$/
       ]
     },
     {

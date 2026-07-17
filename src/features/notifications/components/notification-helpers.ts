@@ -1,0 +1,23 @@
+import type { NotificationAction } from '@/components/ui/notification-card';
+import type { Notification } from '../api/types';
+
+export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
+  'view-profile': '/dashboard/profile'
+};
+
+export function getNotificationActions(
+  notification: Notification
+): NotificationAction[] {
+  if (notification.type === 'user.update') {
+    return [
+      {
+        id: 'view-profile',
+        label: '프로필 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  return [];
+}

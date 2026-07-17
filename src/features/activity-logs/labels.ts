@@ -26,7 +26,9 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'contract.reminder_send': '계약서 독촉 메일 발송',
   'contract.reminder_failed': '계약서 독촉 메일 실패',
   'profile.update': '프로필 수정',
-  'profile.password_change': '비밀번호 변경'
+  'profile.password_change': '비밀번호 변경',
+  'notification.read': '알림 읽음',
+  'notification.read_all': '알림 모두 읽음'
 };
 
 export const METADATA_LABELS: Record<string, string> = {

@@ -17,6 +17,7 @@ import {
   validateOrganizationFields,
   type Affiliation
 } from '@/features/users/constants/organization';
+import { insertUserUpdateNotification } from '@/features/notifications/api/fan-out.server';
 import { birthdaySchema, refineBirthday } from '@/lib/birthday';
 import { z } from 'zod';
 
@@ -269,6 +270,18 @@ export async function PUT(request: NextRequest, { params }: Params) {
         { success: false, message: profileError.message },
         400
       );
+    }
+
+    try {
+      await insertUserUpdateNotification({
+        recipientUserId: id,
+        changedFields: Object.keys(updates),
+        actorUserId: adminCheck.profile.user_id
+      });
+    } catch (fanOutError) {
+      const message =
+        fanOutError instanceof Error ? fanOutError.message : 'Notification fan-out failed';
+      console.error('[notifications] fan-out failed:', message);
     }
 
     return jsonWithActivityLog(
