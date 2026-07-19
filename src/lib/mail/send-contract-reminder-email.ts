@@ -44,7 +44,23 @@ function formatContractHtmlLine(contract: ContractReminderRecipientGroup['contra
         </li>`;
 }
 
+function shouldSimulateSmtpFailure(authorName: string): boolean {
+  return authorName.trim().startsWith('E2E-SMTP-FAIL-');
+}
+
+function isReminderDryRun(): boolean {
+  return process.env.E2E_REMINDER_DRY_RUN === '1';
+}
+
 export async function sendContractReminderEmail({ group }: SendContractReminderEmailParams): Promise<void> {
+  if (shouldSimulateSmtpFailure(group.author_name)) {
+    throw new Error('E2E simulated SMTP failure');
+  }
+
+  if (isReminderDryRun()) {
+    return;
+  }
+
   const transporter = getMailTransporter();
   const from = getDefaultMailFrom();
 
@@ -56,7 +72,7 @@ export async function sendContractReminderEmail({ group }: SendContractReminderE
     '',
     ...group.contracts.map(formatContractTextLine),
     '',
-    '계약서를 보유하고 계시다면 개인 Slack DM으로만 전달해 주시면 됩니다.',
+    '계약서를 보유하고 계시다면 Slack DM으로만 전달해 주시면 됩니다.',
     '추가로 실물 계약서를 가지고 계신다면, 추후 실물 계약서도 전달해 주시면 감사하겠습니다.'
   ].join('\n');
 
@@ -84,7 +100,7 @@ export async function sendContractReminderEmail({ group }: SendContractReminderE
                 ${listItems}
               </ul>
               <p style="margin:0;font-size:12px;color:#999;line-height:1.6;">
-                계약서를 보유하고 계시다면 <strong>개인 총무팀 Slack</strong>으로만 전달해 주시면 됩니다.<br />
+                계약서를 보유하고 계시다면 <strong>Slack DM</strong>으로만 전달해 주시면 됩니다.<br />
                 추가로 <strong>실물 계약서</strong>를 가지고 계신다면, 추후 실물 계약서도 전달해 주시면 감사하겠습니다.
               </p>
             </td>

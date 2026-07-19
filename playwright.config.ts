@@ -66,7 +66,8 @@ export default defineConfig({
         /\.api\.spec\.ts$/,
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
-        /notifications\/notifications-page\.spec\.ts$/
+        /notifications\/notifications-page\.spec\.ts$/,
+        /profile-name-live-display\//
       ]
     },
     {
@@ -85,13 +86,46 @@ export default defineConfig({
       ]
     },
     {
+      name: 'chromium-profile-name-live-display-user',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup-user', 'setup'],
+      testMatch: [
+        /profile-name-live-display\/notifications-unchanged\.spec\.ts$/,
+        /profile-name-live-display\/nav-user-refresh\.spec\.ts$/
+      ],
+      fullyParallel: false
+    },
+    {
+      name: 'setup-admin-refresh',
+      testMatch: /auth\.setup\.ts/,
+      dependencies: ['chromium-profile-name-live-display-user']
+    },
+    {
+      name: 'chromium-profile-name-live-display-admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin.json'
+      },
+      dependencies: ['setup-admin-refresh'],
+      testMatch: [
+        /profile-name-live-display\/logs-live-name\.spec\.ts$/,
+        /profile-name-live-display\/snapshots-unchanged\.spec\.ts$/,
+        /profile-name-live-display\/live-display\.api\.spec\.ts$/
+      ],
+      fullyParallel: false
+    },
+    {
       name: 'api',
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
       dependencies: ['setup', 'setup-user'],
-      testMatch: /\.api\.spec\.ts$/
+      testMatch: /\.api\.spec\.ts$/,
+      testIgnore: [/profile-name-live-display\//]
     }
   ]
 });

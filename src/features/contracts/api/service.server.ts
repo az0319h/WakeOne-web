@@ -822,6 +822,15 @@ export async function setContractNoAttachment(input: {
   return mapContract(row, attachmentsByContractId.get(row.id) ?? []);
 }
 
+function isE2eReminderContractScope(authorName: string, documentNumber: string): boolean {
+  const author = authorName.trim();
+  if (author.startsWith('E2E') || author.startsWith('미등록작성자')) {
+    return true;
+  }
+
+  return /^[A-Za-z][A-Za-z0-9]*-\d{10,}-/.test(documentNumber.trim());
+}
+
 export async function listContractReminderRecipientGroups(): Promise<ContractReminderRecipientScanResult> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
@@ -861,7 +870,13 @@ export async function listContractReminderRecipientGroups(): Promise<ContractRem
     profilesByNormalizedName.set(key, profiles);
   }
 
-  const rows = (data ?? []) as unknown as ContractReminderTargetRow[];
+  const rows = ((data ?? []) as unknown as ContractReminderTargetRow[]).filter((row) => {
+    if (process.env.E2E_REMINDER_DRY_RUN !== '1') {
+      return true;
+    }
+
+    return isE2eReminderContractScope(row.author_name, row.document_number);
+  });
   const attachmentsByContractId = await listAttachmentsByContractIds(rows.map((row) => row.id));
   const groups = new Map<string, ContractReminderRecipientGroup>();
   const unmatchedByAuthor = new Map<string, ContractReminderUnmatchedTarget>();
@@ -896,6 +911,7 @@ export async function listContractReminderRecipientGroups(): Promise<ContractRem
       const group =
         groups.get(profile.email) ??
         ({
+          recipient_user_id: profile.user_id,
           recipient_email: profile.email,
           author_name: target.author_name,
           contracts: [],

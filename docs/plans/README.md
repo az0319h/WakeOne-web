@@ -66,6 +66,7 @@
 | 25 | [25_activity-logs-ui-improvement-plan.md](./25_activity-logs-ui-improvement-plan.md) | **Approved** · 활동 로그 UI 한국어·admin Combobox · plan 08 확장 |
 | 26 | [26_loading-spinner-unification-plan.md](./26_loading-spinner-unification-plan.md) | **Approved** · overview 제외 dashboard Read 로딩 Spinner 통일 · plan 12 supersede |
 | 27 | [27_in-app-notifications-user-update-plan.md](./27_in-app-notifications-user-update-plan.md) | **Approved** · 인앱 알림 MVP · user.update Realtime · admin notif_user 뷰어 · SQL `34` |
+| 28 | [28_contract-reminder-notifications-plan.md](./28_contract-reminder-notifications-plan.md) | **Approved** · 계약서 독촉 인앱 알림 · admin run 요약 · recipient sent-only · SQL `35` |
 
 ## 에이전트 참조
 
