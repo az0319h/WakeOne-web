@@ -1,5 +1,4 @@
 import { expect, type APIRequestContext } from '@playwright/test';
-import { cleanupE2eMockData } from './cleanup';
 import {
   buildImportPayload,
   importAuthHeaders,
@@ -113,8 +112,6 @@ export async function listActivityLogs(
   };
   return body.data?.logs ?? [];
 }
-
-export { cleanupE2eMockData } from './cleanup';
 
 export async function countAdminNotificationsForRun(
   request: APIRequestContext,
