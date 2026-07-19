@@ -1,5 +1,5 @@
 /**
- * Plan 03 E2E 사전 준비: 테스트 계정 active + 비밀번호·ban 복구
+ * Plan 03 E2E 사전 준비: 테스트 계정 active + 비밀번호·ban·full_name 복구
  * Usage: node scripts/e2e-plan03-prep.cjs
  */
 const fs = require('fs');
@@ -19,6 +19,12 @@ const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 const E2E_USER_ID = 'f908749c-601d-4f53-8921-6b503783dc8b';
 
+const FIXTURE_FULL_NAMES = {
+  [env.E2E_ADMIN_EMAIL]: env.E2E_ADMIN_FULL_NAME ?? '관리자',
+  [env.E2E_USER_EMAIL]: env.E2E_USER_FULL_NAME ?? '테스트 계정1',
+  [env.E2E_USER2_EMAIL]: env.E2E_USER2_FULL_NAME ?? '테스트 계정2'
+};
+
 async function main() {
   const admin = createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false }
@@ -27,11 +33,19 @@ async function main() {
   const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
   const targets = [
     { email: env.E2E_ADMIN_EMAIL, password: env.E2E_ADMIN_PASSWORD },
-  { email: env.E2E_USER_EMAIL, password: env.E2E_USER_PASSWORD, userId: E2E_USER_ID },
-  { email: env.E2E_USER2_EMAIL, password: env.E2E_USER2_PASSWORD }
+    {
+      email: env.E2E_USER_EMAIL,
+      password: env.E2E_USER_PASSWORD,
+      userId: E2E_USER_ID
+    },
+    { email: env.E2E_USER2_EMAIL, password: env.E2E_USER2_PASSWORD }
   ];
 
   for (const t of targets) {
+    if (!t.email) {
+      continue;
+    }
+
     const user = users.users.find((u) => u.email === t.email);
     if (!user) {
       console.warn(`skip: ${t.email} not found`);
@@ -47,15 +61,20 @@ async function main() {
       continue;
     }
     const uid = t.userId ?? user.id;
+    const baselineFullName = FIXTURE_FULL_NAMES[t.email];
     const { error: profileErr } = await admin
       .from('profiles')
-      .update({ status: 'active', deactivated_at: null })
+      .update({
+        status: 'active',
+        deactivated_at: null,
+        ...(baselineFullName ? { full_name: baselineFullName } : {})
+      })
       .eq('user_id', uid);
     if (profileErr) {
       console.error(`profile reset failed ${t.email}:`, profileErr.message);
       process.exitCode = 1;
     } else {
-      console.log(`ok: ${t.email}`);
+      console.log(`ok: ${t.email}${baselineFullName ? ` (${baselineFullName})` : ''}`);
     }
   }
 }
