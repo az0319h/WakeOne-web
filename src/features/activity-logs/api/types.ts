@@ -69,6 +69,7 @@ export type ActivityLogMetadata = {
   session_state?: string;
   notification_id?: number;
   count?: number;
+  duplicate_run?: boolean;
 };
 
 export type ActivityLog = {

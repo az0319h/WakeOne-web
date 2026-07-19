@@ -40,7 +40,7 @@ function NavUserAvatar({
   const showImage = Boolean(profile.avatar_url) && !imageError;
 
   return (
-    <Avatar className='h-8 w-8 rounded-lg'>
+    <Avatar key={profile.avatar_url ?? 'no-avatar'} className='h-8 w-8 rounded-lg'>
       {showImage ? (
         <AvatarImage
           src={profile.avatar_url!}
@@ -75,7 +75,9 @@ export function NavUser({ profile }: NavUserProps) {
             >
               <NavUserAvatar profile={profile} displayName={displayName} initials={initials} />
               <div className='grid flex-1 text-left text-sm leading-tight'>
-                <span className='truncate font-semibold'>{displayName}</span>
+                <span className='truncate font-semibold' data-testid='nav-user-display-name'>
+                  {displayName}
+                </span>
                 <span className='truncate text-xs'>{profile.email}</span>
               </div>
               <Icons.chevronsDown className='ml-auto size-4' />
