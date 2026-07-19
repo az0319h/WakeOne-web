@@ -40,12 +40,13 @@ function EndpointCell({ path }: { path: string }) {
 }
 
 function ActorCell({ log }: { log: ActivityLog }) {
-  const label = log.actor_display_name ?? log.actor_email;
+  const displayName = log.actor_display_name_resolved ?? log.actor_display_name;
+  const label = displayName ?? log.actor_email;
 
   return (
     <div className='flex flex-col'>
       <span className='text-sm font-medium'>{label}</span>
-      {log.actor_display_name ? (
+      {displayName ? (
         <span className='text-muted-foreground text-xs'>{log.actor_email}</span>
       ) : null}
     </div>
@@ -53,7 +54,9 @@ function ActorCell({ log }: { log: ActivityLog }) {
 }
 
 function TargetCell({ log }: { log: ActivityLog }) {
-  return <span className='text-sm'>{formatTargetLabel(log.target_label)}</span>;
+  const targetLabel = log.target_label_resolved ?? log.target_label;
+
+  return <span className='text-sm'>{formatTargetLabel(targetLabel)}</span>;
 }
 
 function ResultCell({ httpStatus }: { httpStatus: number }) {
@@ -84,7 +87,8 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
     },
     {
       id: 'actor',
-      accessorFn: (row) => row.actor_display_name ?? row.actor_email,
+      accessorFn: (row) =>
+        row.actor_display_name_resolved ?? row.actor_display_name ?? row.actor_email,
       header: '행위자',
       enableSorting: false,
       enableColumnFilter: false,

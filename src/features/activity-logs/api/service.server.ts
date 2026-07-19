@@ -1,10 +1,17 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import type { ActivityLog, ActivityLogsFilters, ActivityLogsListResponse } from './types';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
+
+type ProfileRow = {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+};
 
 function parseSort(sortRaw: string | undefined): { column: string; desc: boolean } {
   let column = 'created_at';
@@ -50,6 +57,126 @@ function mapRow(row: Record<string, unknown>): ActivityLog {
   };
 }
 
+function formatUserTargetLabel(profile: Pick<ProfileRow, 'full_name' | 'email'>): string {
+  const name = profile.full_name?.trim() ?? '';
+  if (name) {
+    return `${name} (${profile.email})`;
+  }
+  return profile.email;
+}
+
+function resolveActorDisplayName(log: ActivityLog, profiles: Map<string, ProfileRow>): string {
+  if (log.actor_user_id) {
+    const profile = profiles.get(log.actor_user_id);
+    const liveName = profile?.full_name?.trim() ?? '';
+    if (liveName) {
+      return liveName;
+    }
+  }
+
+  if (log.actor_display_name?.trim()) {
+    return log.actor_display_name.trim();
+  }
+
+  return log.actor_email;
+}
+
+function resolveUserTargetLabel(log: ActivityLog, profiles: Map<string, ProfileRow>): string {
+  if (log.target_user_id) {
+    const profile = profiles.get(log.target_user_id);
+    if (profile) {
+      return formatUserTargetLabel(profile);
+    }
+  }
+
+  if (log.target_label?.trim()) {
+    return log.target_label;
+  }
+
+  return log.target_user_id ?? '';
+}
+
+function resolveTargetLabel(log: ActivityLog, profiles: Map<string, ProfileRow>): string {
+  if (log.target_type === 'user' && log.target_user_id) {
+    return resolveUserTargetLabel(log, profiles);
+  }
+
+  return log.target_label;
+}
+
+async function fetchProfilesByUserIds(userIds: string[]): Promise<Map<string, ProfileRow>> {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const supabase = getServiceRoleClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', userIds);
+
+    if (error) {
+      console.error('[activity-logs] profile batch fetch failed:', error.message);
+      return new Map();
+    }
+
+    return new Map((data ?? []).map((row) => [row.user_id, row as ProfileRow]));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[activity-logs] profile batch fetch failed:', message);
+    return new Map();
+  }
+}
+
+async function findUserIdsByFullNameSearch(search: string): Promise<string[]> {
+  try {
+    const supabase = getServiceRoleClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .ilike('full_name', `%${search}%`);
+
+    if (error) {
+      console.error('[activity-logs] profile search failed:', error.message);
+      return [];
+    }
+
+    return (data ?? []).map((row) => row.user_id as string);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[activity-logs] profile search failed:', message);
+    return [];
+  }
+}
+
+export function enrichActivityLogsWithLiveNames(
+  logs: ActivityLog[],
+  profiles: Map<string, ProfileRow>
+): ActivityLog[] {
+  return logs.map((log) => ({
+    ...log,
+    actor_display_name_resolved: resolveActorDisplayName(log, profiles),
+    target_label_resolved: resolveTargetLabel(log, profiles)
+  }));
+}
+
+function collectProfileUserIds(logs: ActivityLog[]): string[] {
+  const userIds = new Set<string>();
+
+  for (const log of logs) {
+    if (log.actor_user_id) {
+      userIds.add(log.actor_user_id);
+    }
+
+    if (log.target_type === 'user' && log.target_user_id) {
+      userIds.add(log.target_user_id);
+    }
+  }
+
+  return [...userIds];
+}
+
 export async function listActivityLogs(
   userId: string,
   isAdmin: boolean,
@@ -80,7 +207,15 @@ export async function listActivityLogs(
 
     if (filters.search) {
       const escaped = filters.search.replaceAll(',', ' ');
-      query = query.ilike('target_label', `%${escaped}%`);
+      const matchingUserIds = await findUserIdsByFullNameSearch(escaped);
+
+      if (matchingUserIds.length > 0) {
+        query = query.or(
+          `target_label.ilike.%${escaped}%,target_user_id.in.(${matchingUserIds.join(',')})`
+        );
+      } else {
+        query = query.ilike('target_label', `%${escaped}%`);
+      }
     }
   }
 
@@ -95,8 +230,11 @@ export async function listActivityLogs(
     throw error;
   }
 
+  const logs = (data ?? []).map((row) => mapRow(row as Record<string, unknown>));
+  const profiles = await fetchProfilesByUserIds(collectProfileUserIds(logs));
+
   return {
-    logs: (data ?? []).map((row) => mapRow(row as Record<string, unknown>)),
+    logs: enrichActivityLogsWithLiveNames(logs, profiles),
     total: count ?? 0,
     page,
     limit

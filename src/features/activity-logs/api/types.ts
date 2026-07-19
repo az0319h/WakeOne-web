@@ -78,10 +78,14 @@ export type ActivityLog = {
   actor_user_id: string | null;
   actor_email: string;
   actor_display_name: string | null;
+  /** Read-time join from profiles.full_name (plan 29) */
+  actor_display_name_resolved?: string | null;
   action: ActivityAction;
   target_type: ActivityTargetType;
   target_user_id: string | null;
   target_label: string;
+  /** Read-time join from profiles.full_name for user targets (plan 29) */
+  target_label_resolved?: string;
   http_method: string;
   http_path: string;
   http_status: number;

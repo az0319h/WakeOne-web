@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavAccess, useNavProfilePatch } from '@/contexts/nav-access';
 import { createClient } from '@/lib/supabase/client';
 import { signOut } from '@/features/auth/api/service';
 import { notifyError } from '@/lib/notify';
@@ -13,6 +14,13 @@ interface ProfileStatusRealtimeProps {
 
 export function ProfileStatusRealtime({ profile }: ProfileStatusRealtimeProps) {
   const router = useRouter();
+  const liveProfile = useNavAccess();
+  const patchProfile = useNavProfilePatch();
+  const profileRef = useRef(profile);
+
+  useEffect(() => {
+    profileRef.current = liveProfile ?? profile;
+  }, [liveProfile, profile]);
 
   useEffect(() => {
     if (profile.status === 'inactive') {
@@ -49,17 +57,37 @@ export function ProfileStatusRealtime({ profile }: ProfileStatusRealtimeProps) {
             filter: `user_id=eq.${profile.user_id}`
           },
           (payload) => {
-            const next = payload.new as { status?: string };
-            if (next.status !== 'inactive') {
+            const next = payload.new as {
+              status?: string;
+              full_name?: string | null;
+              avatar_url?: string | null;
+            };
+            const current = profileRef.current;
+
+            if (next.status === 'inactive') {
+              void (async () => {
+                notifyError('비활성화된 계정입니다.');
+                await signOut();
+                router.replace('/auth/sign-in?accountDisabled=1');
+                router.refresh();
+              })();
               return;
             }
 
-            void (async () => {
-              notifyError('비활성화된 계정입니다.');
-              await signOut();
-              router.replace('/auth/sign-in?accountDisabled=1');
+            const fullNameChanged =
+              next.full_name !== undefined &&
+              (next.full_name ?? null) !== (current.full_name ?? null);
+            const avatarChanged =
+              next.avatar_url !== undefined &&
+              (next.avatar_url ?? null) !== (current.avatar_url ?? null);
+
+            if (fullNameChanged || avatarChanged) {
+              patchProfile({
+                ...(fullNameChanged ? { full_name: next.full_name ?? '' } : {}),
+                ...(avatarChanged ? { avatar_url: next.avatar_url ?? null } : {})
+              });
               router.refresh();
-            })();
+            }
           }
         )
         .subscribe();
@@ -73,7 +101,7 @@ export function ProfileStatusRealtime({ profile }: ProfileStatusRealtimeProps) {
         void supabase.removeChannel(channel);
       }
     };
-  }, [profile.status, profile.user_id, router]);
+  }, [patchProfile, profile.status, profile.user_id, router]);
 
   return null;
 }

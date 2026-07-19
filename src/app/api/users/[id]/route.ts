@@ -284,6 +284,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
       console.error('[notifications] fan-out failed:', message);
     }
 
+    const successTargetLabel = await fetchUserTargetLabel(id);
+
     return jsonWithActivityLog(
       requestId,
       {
@@ -291,7 +293,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         action: 'user.update',
         targetType: 'user',
         targetUserId: id,
-        targetLabel,
+        targetLabel: successTargetLabel,
         httpMethod: 'PUT',
         httpPath,
         metadata: { changed_fields: Object.keys(updates) }
