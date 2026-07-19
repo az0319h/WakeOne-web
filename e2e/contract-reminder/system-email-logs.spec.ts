@@ -4,19 +4,24 @@ test.describe('시스템 이메일 로그 UI', () => {
   test('AC-09: admin sees system email logs page and table', async ({ page }) => {
     await page.goto('/dashboard/system-email-logs');
 
-    await expect(page.getByRole('heading', { name: '시스템 이메일 로그' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '독촉 이메일 로그' })).toBeVisible();
     await expect(page.getByTestId('system-email-logs-table')).toBeVisible();
   });
 
   test('AC-12: admin nav includes system email logs entry', async ({ page }) => {
-    await page.goto('/dashboard/overview');
+    await page.goto('/dashboard/contracts');
 
-    await expect(page.getByRole('link', { name: '시스템 이메일 로그' })).toBeVisible();
+    const subLink = page.getByRole('link', { name: '독촉 이메일 로그' });
+    if (!(await subLink.isVisible())) {
+      await page.locator('[data-sidebar="trigger"]').click();
+    }
+
+    await expect(subLink).toBeVisible();
   });
 
-  test('AC-11: admin opens run detail dialog when a run exists', async ({ page, request }) => {
+  test('AC-11: admin opens run detail dialog when a run exists', async ({ page }) => {
     const runKey = `E2E-UI-${Date.now()}`;
-    const trigger = await request.post('/api/contracts/reminders', {
+    const trigger = await page.request.post('/api/contracts/reminders', {
       data: { run_key: runKey }
     });
 
@@ -30,8 +35,7 @@ test.describe('시스템 이메일 로그 UI', () => {
 
     test.skip(rowCount === 0, 'No reminder runs available for dialog test');
 
-    await firstRow.focus();
-    await page.keyboard.press('Enter');
+    await firstRow.click();
     await expect(page.getByTestId('system-email-log-detail-dialog')).toBeVisible();
     await expect(page.getByTestId('system-email-log-recipients-table')).toBeVisible();
   });

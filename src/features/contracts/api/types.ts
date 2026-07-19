@@ -154,6 +154,7 @@ export type ContractReminderTarget = {
 };
 
 export type ContractReminderRecipientGroup = {
+  recipient_user_id: string;
   recipient_email: string;
   author_name: string;
   contracts: ContractReminderTarget[];

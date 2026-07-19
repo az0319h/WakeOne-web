@@ -1,6 +1,6 @@
 -- E2E / verifier 목 데이터 일괄 삭제 RPC (Playwright globalTeardown · verifier Step 7)
 -- File: 27_e2e_cleanup_rpc.sql
--- Status: Completed (remote applied)
+-- Status: Superseded by 36_e2e_cleanup_rpc_extend.sql (remote apply 36)
 -- Summary: security definer cleanup for append-only activity_logs trigger bypass
 
 create or replace function public.cleanup_e2e_mock_data()

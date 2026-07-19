@@ -2,7 +2,7 @@
  * Playwright globalTeardown · verifier Step 7 — 원격 Supabase E2E 목 데이터 삭제
  * Usage: node scripts/cleanup-e2e-mock-data.mjs
  * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- * RPC: public.cleanup_e2e_mock_data() (supabase/sql/27_e2e_cleanup_rpc.sql)
+ * RPC: public.cleanup_e2e_mock_data() (supabase/sql/36_e2e_cleanup_rpc_extend.sql)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,7 +48,7 @@ async function main() {
   if (error) {
     console.error('cleanup-e2e-mock-data: RPC failed:', error.message);
     console.error(
-      'Apply supabase/sql/27_e2e_cleanup_rpc.sql to the remote project, then retry.'
+      'Apply supabase/sql/36_e2e_cleanup_rpc_extend.sql to the remote project, then retry.'
     );
     process.exit(1);
   }
@@ -59,7 +59,8 @@ async function main() {
   if (
     (remaining.contracts ?? 0) > 0 ||
     (remaining.reminder_runs ?? 0) > 0 ||
-    (remaining.users ?? 0) > 0
+    (remaining.users ?? 0) > 0 ||
+    (remaining.activity_logs_e2e ?? 0) > 0
   ) {
     console.error('cleanup-e2e-mock-data: mock data still remains.', remaining);
     process.exit(1);

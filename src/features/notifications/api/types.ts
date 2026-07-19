@@ -1,10 +1,23 @@
-export type NotificationType = 'user.update';
+export type NotificationType =
+  | 'user.update'
+  | 'contract.reminder_admin'
+  | 'contract.reminder_recipient';
 
 export type NotificationStatus = 'unread' | 'read';
 
 export type NotificationMetadata = {
   changed_fields?: string[];
-  kind?: 'user.update';
+  kind?: 'user.update' | 'contract.reminder_admin' | 'contract.reminder_recipient';
+  run_id?: number;
+  run_key?: string;
+  trigger_source?: 'admin' | 'cron';
+  sent_count?: number;
+  failed_count?: number;
+  unmatched_count?: number;
+  run_status?: 'completed' | 'partial_failed' | 'failed';
+  author_name?: string;
+  document_count?: number;
+  document_numbers?: string[];
 };
 
 export type Notification = {
