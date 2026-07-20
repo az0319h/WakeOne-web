@@ -93,6 +93,15 @@ plan에 **CUD In**이 있으면 아래를 **추가** 검증한다.
 
 완료 보고 AC 표에 **activity log 항목** pass/fail/skip(해당 없음)을 포함한다.
 
+## 날짜·시각 표시 검증 (전역)
+
+`core-conventions.mdc` §날짜·시각 표시
+
+| 검증 | 방법 |
+|------|------|
+| **절대 시각** | 로그·알림·감사 UI 타임스탬프가 `yyyy-MM-dd (EEE) HH:mm:ss` 형식인지 확인 |
+| **상대 시각 금지** | `formatRelativeTimeKo`·`N분/시간/일 전`·`방금 전` UI **없어야** 함 (grep) |
+
 ## 삭제 확인 Dialog 검증 (전역)
 
 `core-conventions.mdc` §삭제 확인 Dialog

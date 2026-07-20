@@ -663,7 +663,7 @@ A component that groups related items into an ordered or unordered sequence.
 **Common layouts:**
 - Email inbox with sender, subject, preview, and timestamp per row
 - Settings list with label, value/toggle, and optional chevron
-- Activity feed with avatar, description, and relative timestamp
+- Activity feed with avatar, description, and absolute timestamp (`yyyy-MM-dd (EEE) HH:mm:ss`, e.g. `2026-07-20 (월) 22:07:12`)
 - File list with icon, name, size, and date columns
 
 ---

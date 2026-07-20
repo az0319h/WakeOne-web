@@ -166,6 +166,20 @@ const updateMutation = useMutation({
 | Props 인터페이스 | `{ComponentName}Props` 네이밍 |
 | Server Component | 기본값. `'use client'`는 브라우저 API/훅 필요 시만 |
 
+## 날짜·시각 표시 (필수)
+
+대시보드·로그·알림·감사 목적의 **타임스탬프**는 상대 시각(`N분 전`, `N시간 전`, `방금 전` 등)이 아니라 **절대 시각**으로 표시한다.
+
+| 항목 | 규칙 |
+|------|------|
+| **표준 형식** | `yyyy-MM-dd (EEE) HH:mm:ss` — 예: `2026-07-20 (월) 22:07:12` |
+| **구현** | `@/lib/format-datetime` `formatAbsoluteDateTimeKo` (내부: `date-fns` `format(..., 'yyyy-MM-dd (EEE) HH:mm:ss', { locale: ko })`) |
+| **스타일** | 테이블·로그 행: `font-mono text-xs whitespace-nowrap` (참조 구현과 동일) |
+| **금지** | `formatRelativeTimeKo`, `formatDistanceToNow`, `N분/시간/일 전` 등 상대 시각 UI |
+| **예외** | 생일·계약 시작/종료일 등 **날짜만** 필요한 필드 — `formatDate`·`toLocaleDateString('ko-KR')` 등 날짜 전용 포맷 허용 |
+
+**참조 구현:** `src/features/activity-logs/components/activity-logs-table/columns.tsx` (`TimeCell`) · `src/features/system-email-logs/components/system-email-logs-table/columns.tsx`
+
 ## 폼
 `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form` 사용.
 `AppField` render props 내부에서 `useState` 사용 금지 — 별도 컴포넌트로 분리.
