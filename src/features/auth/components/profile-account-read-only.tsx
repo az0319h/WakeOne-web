@@ -1,6 +1,6 @@
 import type { AuthProfile } from '@/features/auth/api/types';
 import { ReadOnlyField } from './profile-display';
-import { formatBirthdayDisplay } from '@/lib/format';
+import { formatBirthdayDisplay } from '@/lib/format-date';
 import { formatPhoneDisplay } from '@/lib/phone';
 
 interface ProfileAccountReadOnlyProps {

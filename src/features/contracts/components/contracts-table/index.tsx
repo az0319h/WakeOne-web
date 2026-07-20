@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { useDataTable } from '@/hooks/use-data-table';
 import { getSortingStateParser } from '@/lib/parsers';
-import { formatDate } from '@/lib/format';
+import { formatAbsoluteDateKo } from '@/lib/format-date';
 import { contractsQueryOptions } from '../../api/queries';
 import type { ContractDocument, ContractFilters } from '../../api/types';
 import { createContractColumns, getContractExternalDocumentUrl } from './columns';
@@ -64,8 +64,8 @@ function ContractDateRangeFilter() {
 
   const hasValue = Boolean(selected.from || selected.to);
   const label = hasValue
-    ? `${selected.from ? formatDate(selected.from) : '시작일'} - ${
-        selected.to ? formatDate(selected.to) : '종료일'
+    ? `${selected.from ? formatAbsoluteDateKo(selected.from) : '시작일'} - ${
+        selected.to ? formatAbsoluteDateKo(selected.to) : '종료일'
       }`
     : '전체';
 

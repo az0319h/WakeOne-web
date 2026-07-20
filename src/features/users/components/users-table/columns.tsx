@@ -4,7 +4,7 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
-import { formatBirthdayDisplay } from '@/lib/format';
+import { formatBirthdayDisplay } from '@/lib/format-date';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { UserAvatarCell } from '../user-profile-modal';
 import { CellAction } from './cell-action';
