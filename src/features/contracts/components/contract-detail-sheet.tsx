@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { notifyError } from '@/lib/notify';
+import { formatAbsoluteDateKoOrPlaceholder } from '@/lib/format-date';
 import { cn } from '@/lib/utils';
 import { contractByIdQueryOptions } from '../api/queries';
 import {
@@ -30,16 +31,6 @@ interface ContractDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: (contract: ContractDocument) => void;
-}
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString('ko-KR');
 }
 
 function formatAmount(value: number | null): string {
@@ -133,7 +124,7 @@ function AttachmentRow({
         </div>
         <p className='text-muted-foreground mt-1 text-xs'>
           {formatBytes(attachment.file_size)} ·{' '}
-          {formatDate(attachment.created_at)}
+          {formatAbsoluteDateKoOrPlaceholder(attachment.created_at)}
         </p>
       </div>
       <div className='flex gap-2'>
@@ -199,11 +190,11 @@ function ContractDetailContent({
           <dl className='grid grid-cols-1 gap-4 md:grid-cols-2'>
             <DetailItem
               label='문서승인일'
-              value={formatDate(contract.approved_at)}
+              value={formatAbsoluteDateKoOrPlaceholder(contract.approved_at)}
             />
             <DetailItem
               label='문서 생성일'
-              value={formatDate(contract.document_created_at)}
+              value={formatAbsoluteDateKoOrPlaceholder(contract.document_created_at)}
             />
             <DetailItem
               label='작성자'
@@ -211,11 +202,11 @@ function ContractDetailContent({
             />
             <DetailItem
               label='계약 시작일'
-              value={formatDate(contract.contract_start_date)}
+              value={formatAbsoluteDateKoOrPlaceholder(contract.contract_start_date)}
             />
             <DetailItem
               label='계약 종료일'
-              value={formatDate(contract.contract_end_date)}
+              value={formatAbsoluteDateKoOrPlaceholder(contract.contract_end_date)}
             />
             <DetailItem label='금액' value={formatAmount(contract.amount)} />
             <DetailItem label='출처' value={contract.source_type} />

@@ -8,7 +8,7 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import type { OfficeSnackSession } from '../api/types';
-import { formatKoreanDateTime } from './office-snack-utils';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 
 interface OfficeSnackInfoSheetProps {
   open: boolean;
@@ -39,16 +39,16 @@ export function OfficeSnackInfoSheet({ open, onOpenChange, session }: OfficeSnac
           <section className='space-y-1'>
             <p className='text-muted-foreground'>등록 기간</p>
             <p>
-              {formatKoreanDateTime(session.registration_start_at)} ~{' '}
-              {formatKoreanDateTime(session.registration_end_at)}
+              {formatAbsoluteDateTimeKo(session.registration_start_at)} ~{' '}
+              {formatAbsoluteDateTimeKo(session.registration_end_at)}
             </p>
           </section>
 
           <section className='space-y-1'>
             <p className='text-muted-foreground'>투표 기간</p>
             <p>
-              {formatKoreanDateTime(session.voting_start_at)} ~{' '}
-              {formatKoreanDateTime(session.voting_end_at)}
+              {formatAbsoluteDateTimeKo(session.voting_start_at)} ~{' '}
+              {formatAbsoluteDateTimeKo(session.voting_end_at)}
             </p>
           </section>
         </div>

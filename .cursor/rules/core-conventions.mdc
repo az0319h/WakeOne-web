@@ -170,15 +170,28 @@ const updateMutation = useMutation({
 
 대시보드·로그·알림·감사 목적의 **타임스탬프**는 상대 시각(`N분 전`, `N시간 전`, `방금 전` 등)이 아니라 **절대 시각**으로 표시한다.
 
+### 시각 (날짜 + 시간)
+
 | 항목 | 규칙 |
 |------|------|
 | **표준 형식** | `yyyy-MM-dd (EEE) HH:mm:ss` — 예: `2026-07-20 (월) 22:07:12` |
-| **구현** | `@/lib/format-datetime` `formatAbsoluteDateTimeKo` (내부: `date-fns` `format(..., 'yyyy-MM-dd (EEE) HH:mm:ss', { locale: ko })`) |
-| **스타일** | 테이블·로그 행: `font-mono text-xs whitespace-nowrap` (참조 구현과 동일) |
-| **금지** | `formatRelativeTimeKo`, `formatDistanceToNow`, `N분/시간/일 전` 등 상대 시각 UI |
-| **예외** | 생일·계약 시작/종료일 등 **날짜만** 필요한 필드 — `formatDate`·`toLocaleDateString('ko-KR')` 등 날짜 전용 포맷 허용 |
+| **구현** | **`@/lib/format-datetime` `formatAbsoluteDateTimeKo`만 사용** — `date-fns`·`Intl`·feature별 datetime 포맷 함수 **직접 작성 금지** |
+| **스타일** | 테이블·로그 행: `font-mono text-xs whitespace-nowrap` |
+| **금지** | `formatRelativeTimeKo`, `formatKoreanDateTime`, `formatWalletDate`, `formatDistanceToNow`, `N분/시간/일 전` 등 상대 시각 UI |
 
-**참조 구현:** `src/features/activity-logs/components/activity-logs-table/columns.tsx` (`TimeCell`) · `src/features/system-email-logs/components/system-email-logs-table/columns.tsx`
+**참조:** `src/lib/format-datetime.ts`
+
+### 날짜만 (시간 없음)
+
+| 항목 | 규칙 |
+|------|------|
+| **일반 날짜** | `yyyy-MM-dd` — 예: `2026-07-20` · `formatAbsoluteDateKo` |
+| **null/빈값** | `formatAbsoluteDateKoOrPlaceholder(value, '-')` |
+| **생일 (연·월·일)** | `formatBirthdayDisplay` — 예: `1990년 7월 20일` |
+| **생일 (월·일)** | `formatBirthdayMonthDay` — 예: `7월 20일` |
+| **구현** | **`@/lib/format-date`만 사용** — `toLocaleDateString`·feature별 `formatDate` **직접 작성 금지** |
+
+**참조:** `src/lib/format-date.ts`
 
 ## 폼
 `useAppForm` + `useFormFields<T>()` from `@/components/ui/tanstack-form` 사용.

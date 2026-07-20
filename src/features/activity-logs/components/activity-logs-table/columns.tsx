@@ -5,9 +5,8 @@ import { Icons } from '@/components/icons';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import type { Column, ColumnDef } from '@tanstack/react-table';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
 import type { ActivityLog } from '../../api/types';
 import {
   ACTION_LABELS,
@@ -22,10 +21,11 @@ interface CreateColumnsOptions {
 }
 
 function TimeCell({ createdAt }: { createdAt: string }) {
-  const date = new Date(createdAt);
-  const executedAt = format(date, 'yyyy-MM-dd (EEE) HH:mm:ss', { locale: ko });
-
-  return <span className='font-mono text-xs whitespace-nowrap'>{executedAt}</span>;
+  return (
+    <span className='font-mono text-xs whitespace-nowrap'>
+      {formatAbsoluteDateTimeKo(createdAt)}
+    </span>
+  );
 }
 
 function EndpointCell({ path }: { path: string }) {

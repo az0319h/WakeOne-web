@@ -99,8 +99,10 @@ plan에 **CUD In**이 있으면 아래를 **추가** 검증한다.
 
 | 검증 | 방법 |
 |------|------|
-| **절대 시각** | 로그·알림·감사 UI 타임스탬프가 `yyyy-MM-dd (EEE) HH:mm:ss` 형식인지 확인 |
+| **절대 시각** | `formatAbsoluteDateTimeKo`(`@/lib/format-datetime`) · `yyyy-MM-dd (EEE) HH:mm:ss` |
+| **절대 날짜** | `formatAbsoluteDateKo` / `formatBirthdayDisplay`(`@/lib/format-date`) · `toLocaleDateString`·feature별 `formatDate` **없어야** 함 |
 | **상대 시각 금지** | `formatRelativeTimeKo`·`N분/시간/일 전`·`방금 전` UI **없어야** 함 (grep) |
+| **단일 포맷터** | 시각·날짜 표시용 feature별 `format*Date(Time)` **없어야** 함 — `@/lib/format-datetime`·`@/lib/format-date`만 허용 |
 
 ## 삭제 확인 Dialog 검증 (전역)
 

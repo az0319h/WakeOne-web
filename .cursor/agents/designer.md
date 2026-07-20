@@ -40,11 +40,11 @@ model: inherit
 
 | 항목 | 규칙 |
 |------|------|
-| **형식** | `2026-07-20 (월) 22:07:12` (`yyyy-MM-dd (EEE) HH:mm:ss`) |
-| **금지** | `N분 전` · `N시간 전` · `방금 전` 등 상대 시각 |
-| **참조** | 활동 로그(`/dashboard/logs`) · 시스템 이메일 로그 테이블 `TimeCell` |
-
-생일·계약 기간 등 **날짜만** 필요한 필드는 날짜 전용 포맷 예외.
+| **시각** | `formatAbsoluteDateTimeKo` (`@/lib/format-datetime`) — `2026-07-20 (월) 22:07:12` |
+| **날짜** | `formatAbsoluteDateKo` (`@/lib/format-date`) — `2026-07-20` |
+| **생일** | `formatBirthdayDisplay` / `formatBirthdayMonthDay` (`@/lib/format-date`) |
+| **금지** | 상대 시각 · `toLocaleDateString` · feature별 `formatDate` |
+| **참조** | `src/lib/format-datetime.ts` · `src/lib/format-date.ts` |
 
 ## 작업 전 확인 (필수)
 

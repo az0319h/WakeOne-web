@@ -12,7 +12,7 @@ import {
 import { ProfileAvatar, ReadOnlyField } from '@/features/auth/components/profile-display';
 import { useNavAccess } from '@/contexts/nav-access';
 import { cn } from '@/lib/utils';
-import { formatBirthdayDisplay } from '@/lib/format';
+import { formatBirthdayDisplay } from '@/lib/format-date';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { getAffiliationLabel } from '../constants/organization';
 import type { User } from '../api/types';

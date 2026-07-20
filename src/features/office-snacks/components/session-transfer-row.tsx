@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import type { OfficeSnackSession } from '../api/types';
 import {
   canAdminDeleteOfficeSnackSession,
-  formatKoreanDateTime,
   getSessionRowDeadline,
   getSessionStateDescription,
   getSessionStateLabel
@@ -77,7 +77,9 @@ export function SessionTransferRow({
 
         <div className='flex shrink-0 flex-col items-end gap-1 text-right'>
           <p className='hidden text-sm font-semibold sm:block'>{deadline.label}</p>
-          <p className='text-muted-foreground text-xs'>{formatKoreanDateTime(deadline.at)}</p>
+          <p className='text-muted-foreground text-xs font-mono whitespace-nowrap'>
+            {formatAbsoluteDateTimeKo(deadline.at)}
+          </p>
           <SessionStatusBadge session={session} />
         </div>
       </Link>
