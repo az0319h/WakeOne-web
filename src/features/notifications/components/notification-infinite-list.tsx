@@ -5,7 +5,6 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Icons } from '@/components/icons';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
-import { formatRelativeTimeKo } from '@/lib/format-relative-time';
 import { useRouter } from 'next/navigation';
 import {
   markAllNotificationsReadMutation,
@@ -140,7 +139,6 @@ export function NotificationInfiniteList({
             body={notification.body}
             status={notification.status}
             createdAt={notification.created_at}
-            relativeTimeLabel={formatRelativeTimeKo(notification.created_at)}
             actions={readOnly ? [] : getNotificationActions(notification)}
             onMarkAsRead={readOnly ? undefined : handleMarkAsRead}
             onAction={readOnly ? undefined : handleAction}

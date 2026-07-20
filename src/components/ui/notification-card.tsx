@@ -2,6 +2,7 @@
 
 import type { FC } from 'react';
 import { Icons } from '@/components/icons';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 
 export type NotificationStatus = 'unread' | 'read' | 'archived';
@@ -22,32 +23,12 @@ export interface NotificationCardProps {
   body: string;
   status?: NotificationStatus;
   createdAt?: string | Date;
-  relativeTimeLabel?: string;
   actions?: NotificationAction[];
   onMarkAsRead?: (id: string) => void;
   onAction?: (notificationId: string, actionId: string, actionType: ActionType) => void;
   loadingActionId?: string;
   className?: string;
 }
-
-const formatDate = (date: string | Date): string => {
-  const d = new Date(date);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  });
-};
 
 const getActionIcon = (actionType: ActionType) => {
   const iconProps = { size: 12, strokeWidth: 2.5 };
@@ -71,7 +52,6 @@ export const NotificationCard: FC<NotificationCardProps> = ({
   body,
   status = 'unread',
   createdAt,
-  relativeTimeLabel,
   actions = [],
   onMarkAsRead,
   onAction,
@@ -178,8 +158,8 @@ export const NotificationCard: FC<NotificationCardProps> = ({
 
           {/* Timestamp */}
           {createdAt && (
-            <span className='text-muted-foreground/60 inline-block text-[11px]'>
-              {relativeTimeLabel ?? formatDate(createdAt)}
+            <span className='text-muted-foreground/60 inline-block font-mono text-[11px] whitespace-nowrap'>
+              {formatAbsoluteDateTimeKo(createdAt)}
             </span>
           )}
         </div>

@@ -34,6 +34,18 @@ model: inherit
 
 **참조 구현:** `src/app/dashboard/users/page.tsx` · `src/app/dashboard/logs/page.tsx` · `src/components/ui/page-loading-spinner.tsx`
 
+## 날짜·시각 표시 (필수)
+
+`core-conventions.mdc` §날짜·시각 표시 — 로그·알림·감사 UI의 타임스탬프는 **절대 시각**으로 설계한다.
+
+| 항목 | 규칙 |
+|------|------|
+| **형식** | `2026-07-20 (월) 22:07:12` (`yyyy-MM-dd (EEE) HH:mm:ss`) |
+| **금지** | `N분 전` · `N시간 전` · `방금 전` 등 상대 시각 |
+| **참조** | 활동 로그(`/dashboard/logs`) · 시스템 이메일 로그 테이블 `TimeCell` |
+
+생일·계약 기간 등 **날짜만** 필요한 필드는 날짜 전용 포맷 예외.
+
 ## 작업 전 확인 (필수)
 
 1. **planner 산출물 확인**: `docs/plans/{feature}-plan.md` 의 UI 요구사항 섹션 읽기
