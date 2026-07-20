@@ -3,10 +3,11 @@
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import { motion, useReducedMotion } from 'motion/react';
 import type { WalletTransaction, WalletTransactionType } from '../data/mock-data';
-import { formatSignedWalletAmount, formatWalletAmount, formatWalletDate } from '../utils/format';
+import { formatSignedWalletAmount, formatWalletAmount } from '../utils/format';
 
 interface WalletTransactionListProps {
   transactions: WalletTransaction[];
@@ -85,8 +86,8 @@ export function WalletTransactionList({ transactions }: WalletTransactionListPro
                         <Badge variant={TRANSACTION_TYPE_VARIANTS[transaction.type]}>
                           {TRANSACTION_TYPE_LABELS[transaction.type]}
                         </Badge>
-                        <span className='text-muted-foreground text-xs'>
-                          {formatWalletDate(transaction.createdAt)}
+                        <span className='text-muted-foreground text-xs font-mono whitespace-nowrap'>
+                          {formatAbsoluteDateTimeKo(transaction.createdAt)}
                         </span>
                       </div>
                     </div>

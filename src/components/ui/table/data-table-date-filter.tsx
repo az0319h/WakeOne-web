@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { formatDate } from '@/lib/format';
+import { formatAbsoluteDateKo } from '@/lib/format-date';
 
 type DateSelection = Date[] | DateRange;
 
@@ -114,9 +114,10 @@ export function DataTableDateFilter<TData>({
   const formatDateRange = React.useCallback((range: DateRange) => {
     if (!range.from && !range.to) return '';
     if (range.from && range.to) {
-      return `${formatDate(range.from)} - ${formatDate(range.to)}`;
+      return `${formatAbsoluteDateKo(range.from)} - ${formatAbsoluteDateKo(range.to)}`;
     }
-    return formatDate(range.from ?? range.to);
+    const value = range.from ?? range.to;
+    return value ? formatAbsoluteDateKo(value) : '';
   }, []);
 
   const label = React.useMemo(() => {
@@ -145,7 +146,7 @@ export function DataTableDateFilter<TData>({
     if (getIsDateRange(selectedDates)) return null;
 
     const hasSelectedDate = selectedDates.length > 0;
-    const dateText = hasSelectedDate ? formatDate(selectedDates[0]) : 'Select date';
+    const dateText = hasSelectedDate ? formatAbsoluteDateKo(selectedDates[0]) : 'Select date';
 
     return (
       <span className='flex items-center gap-2'>

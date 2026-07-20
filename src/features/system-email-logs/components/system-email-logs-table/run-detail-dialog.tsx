@@ -1,8 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +22,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { systemEmailLogDetailQueryOptions } from '../../api/queries';
 import { RecipientStatusBadge, RunStatusBadge, TriggerSourceBadge, UnmatchedReasonBadge } from './status-badges';
 
@@ -67,7 +66,7 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
               <span className='font-mono text-xs'>{run.run_key}</span>
               <span>·</span>
               <span className='font-mono text-xs whitespace-nowrap'>
-                {format(new Date(run.created_at), 'yyyy-MM-dd (EEE) HH:mm:ss', { locale: ko })}
+                {formatAbsoluteDateTimeKo(run.created_at)}
               </span>
               <TriggerSourceBadge source={run.trigger_source} />
               <RunStatusBadge status={run.status} />

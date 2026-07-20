@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { ProfileAvatar } from '@/features/auth/components/profile-display';
-import { formatBirthdayMonthDay } from '@/lib/format';
+import { formatBirthdayMonthDay } from '@/lib/format-date';
 import { cn } from '@/lib/utils';
 
 interface BirthdayCelebrationSlideProps {

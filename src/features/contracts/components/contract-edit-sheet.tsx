@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
+import { formatAbsoluteDateKoOrPlaceholder } from '@/lib/format-date';
 import { cn } from '@/lib/utils';
 import {
   setContractNoAttachmentMutation,
@@ -103,16 +104,6 @@ function toFormValues(
 function cleanOptionalText(value: string): string | null {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
-}
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString('ko-KR');
 }
 
 function formatBytes(value: number): string {
@@ -240,7 +231,7 @@ function ContractAttachmentRow({
         </div>
         <p className='text-muted-foreground mt-1 text-xs'>
           {formatBytes(attachment.file_size)} ·{' '}
-          {formatDate(attachment.created_at)}
+          {formatAbsoluteDateKoOrPlaceholder(attachment.created_at)}
         </p>
       </div>
       <div className='flex gap-2'>

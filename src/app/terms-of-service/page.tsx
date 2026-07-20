@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { formatAbsoluteDateKo } from '@/lib/format-date';
+
 export const metadata: Metadata = {
   title: 'Terms of Service',
   robots: {
@@ -15,12 +17,7 @@ export default function TermsOfServicePage() {
         <div className='text-center'>
           <h1 className='text-foreground text-3xl font-bold'>Terms of Service</h1>
           <p className='text-muted-foreground mt-2 text-sm'>
-            Last updated:{' '}
-            {new Date().toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric'
-            })}
+            Last updated: {formatAbsoluteDateKo(new Date())}
           </p>
         </div>
 

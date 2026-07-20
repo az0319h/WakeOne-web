@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { formatAbsoluteDateKoOrPlaceholder } from '@/lib/format-date';
 import type { Column, ColumnDef } from '@tanstack/react-table';
 import type { ContractDocument } from '../../api/types';
 import { ContractRowAction } from './row-action';
@@ -15,19 +16,6 @@ import {
 interface CreateContractColumnsOptions {
   onView: (contract: ContractDocument) => void;
   onEdit: (contract: ContractDocument) => void;
-}
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString('ko-KR');
 }
 
 function formatAmount(value: number | null): string {
@@ -97,7 +85,7 @@ export function createContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='문서승인일' />
       ),
-      cell: ({ row }) => formatDate(row.original.approved_at)
+      cell: ({ row }) => formatAbsoluteDateKoOrPlaceholder(row.original.approved_at)
     },
     {
       id: 'author_name',
