@@ -10,7 +10,7 @@ function createRequestInit(options?: RequestInit): RequestInit {
     headers.set('Content-Type', 'application/json');
   }
 
-  return { ...options, headers };
+  return { ...options, headers, credentials: 'include' };
 }
 
 export async function apiClient<T>(endpoint: string, options?: RequestInit): Promise<T> {

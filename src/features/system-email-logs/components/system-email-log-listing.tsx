@@ -9,11 +9,13 @@ export default async function SystemEmailLogListing() {
   const page = searchParamsCache.get('page');
   const pageLimit = searchParamsCache.get('perPage');
   const sort = searchParamsCache.get('sort');
+  const search = searchParamsCache.get('search');
 
   const filters = {
     page,
     limit: pageLimit,
-    ...(sort && { sort })
+    ...(sort && { sort }),
+    ...(search && { search })
   };
 
   const queryClient = getQueryClient();

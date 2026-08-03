@@ -1,5 +1,6 @@
 'use client';
 
+import { Icons } from '@/components/icons';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -53,7 +54,15 @@ export function createColumns(): ColumnDef<SystemEmailLogRun>[] {
       id: 'run_key',
       accessorKey: 'run_key',
       header: ({ column }) => <DataTableColumnHeader column={column} title='run_key' />,
-      cell: ({ row }) => <RunKeyCell runKey={row.original.run_key} />
+      cell: ({ row }) => <RunKeyCell runKey={row.original.run_key} />,
+      meta: {
+        label: '검색',
+        placeholder: 'run_key, 수신자, 작성자 검색',
+        variant: 'text',
+        icon: Icons.search,
+        queryKey: 'search'
+      },
+      enableColumnFilter: true
     },
     {
       id: 'trigger_source',

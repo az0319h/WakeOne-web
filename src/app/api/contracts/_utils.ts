@@ -71,6 +71,13 @@ export function isValidImportToken(token: string | null): boolean {
   return Boolean(expected && token && token === expected);
 }
 
+/** E2E/Playwright mock prefixes — must never reach production import from external OpenClaw. */
+const MOCK_CONTRACT_DOCUMENT_NUMBER = /^(AC|E2E|PV|P28|P29|KBAR)-/i;
+
+export function isMockContractDocumentNumber(documentNumber: string): boolean {
+  return MOCK_CONTRACT_DOCUMENT_NUMBER.test(documentNumber.trim());
+}
+
 export function serviceActor() {
   return {
     actorUserId: null,

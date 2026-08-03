@@ -23,6 +23,7 @@ export async function fetchSystemEmailLogs(
   if (filters.page) searchParams.set('page', String(filters.page));
   if (filters.limit) searchParams.set('limit', String(filters.limit));
   if (filters.sort) searchParams.set('sort', filters.sort);
+  if (filters.search) searchParams.set('search', filters.search);
 
   const queryString = searchParams.toString();
   const response = await apiClient<SystemEmailLogsApiResponse>(

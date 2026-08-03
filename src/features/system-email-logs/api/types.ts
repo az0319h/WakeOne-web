@@ -10,6 +10,7 @@ export type SystemEmailLogsFilters = {
   page?: number;
   limit?: number;
   sort?: string;
+  search?: string;
 };
 
 export type SystemEmailLogRun = {
