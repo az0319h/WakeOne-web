@@ -39,6 +39,7 @@ export type User = {
 export type CreateUserPayload = {
   email: string;
   full_name: string;
+  phone: string;
   affiliation: Affiliation;
   rank: string;
   system_role: 'admin' | 'user';
@@ -52,6 +53,7 @@ export type InvitePayload = {
 
 export type UserUpdatePayload = {
   full_name?: string;
+  phone: string;
   avatar_url?: string | null;
   affiliation?: Affiliation | null;
   rank?: string | null;

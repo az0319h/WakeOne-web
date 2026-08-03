@@ -117,7 +117,8 @@ test.describe('계약서 독촉 API', () => {
         data: {
           full_name: authorName,
           affiliation: 'wake',
-          rank: '경영진'
+          rank: '경영진',
+          phone: '01012345678'
         }
       });
 

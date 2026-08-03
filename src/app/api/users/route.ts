@@ -14,6 +14,7 @@ import {
   validateOrganizationFields
 } from '@/features/users/constants/organization';
 import { refineBirthday } from '@/lib/birthday';
+import { PHONE_REGEX } from '@/lib/phone';
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
@@ -36,7 +37,11 @@ const createUserSchema = z
     system_role: z.enum(['admin', 'user'], {
       message: '시스템 역할을 선택해 주세요.'
     }),
-    birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+    birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    phone: z
+      .string()
+      .min(1, '연락처를 입력해 주세요.')
+      .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.')
   })
   .superRefine((data, ctx) => {
     validateOrganizationFields(data, ctx);
@@ -289,6 +294,7 @@ export async function POST(request: NextRequest) {
         rank: payload.rank,
         system_role: payload.system_role,
         birthday: payload.birthday,
+        phone: payload.phone,
         status: 'active',
         deactivated_at: null,
         password_set_at: new Date().toISOString()

@@ -1,5 +1,7 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
+export const E2E_TEST_PHONE = '01012345678';
+
 export function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 }
@@ -33,7 +35,8 @@ export async function createUserViaApi(
       affiliation: 'wake',
       rank: '경영진',
       system_role: 'user',
-      birthday: '1990-01-01'
+      birthday: '1990-01-01',
+      phone: E2E_TEST_PHONE
     }
   });
 
@@ -51,7 +54,26 @@ export async function updateUserFullName(
     data: {
       full_name: fullName,
       affiliation: 'wake',
-      rank: '경영진'
+      rank: '경영진',
+      phone: E2E_TEST_PHONE
+    }
+  });
+  expect(response.status()).toBe(200);
+  return response;
+}
+
+export async function updateUserPhone(
+  request: APIRequestContext,
+  userId: string,
+  phone: string
+) {
+  const response = await request.put(`/api/users/${userId}`, {
+    data: {
+      affiliation: 'wake',
+      rank: '경영진',
+      system_role: 'user',
+      birthday: '1990-01-01',
+      phone
     }
   });
   expect(response.status()).toBe(200);
@@ -67,7 +89,8 @@ export async function updateUserBirthday(
     data: {
       birthday,
       affiliation: 'wake',
-      rank: '경영진'
+      rank: '경영진',
+      phone: E2E_TEST_PHONE
     }
   });
   expect(response.status()).toBe(200);

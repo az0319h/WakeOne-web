@@ -15,7 +15,8 @@ function createUserPayload(
     affiliation: 'wake',
     rank: '사원',
     system_role: 'user',
-    ...(birthday ? { birthday } : { birthday: '1990-01-01' })
+    birthday: birthday ?? '1990-01-01',
+    phone: '01012345678'
   };
 }
 
@@ -79,7 +80,7 @@ test.describe('plan22 Users 테이블 생일 · 수정 Sheet 초기값', () => {
     await createUserViaApi(request, withBirthdayEmail, withBirthdayName, '1990-01-15');
 
     const nullBirthdayResponse = await request.put(`/api/users/${nullUserId}`, {
-      data: { birthday: null }
+      data: { birthday: null, phone: '01012345678' }
     });
     expect(nullBirthdayResponse.status()).toBe(200);
 

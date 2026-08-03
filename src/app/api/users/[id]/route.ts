@@ -19,11 +19,12 @@ import {
 } from '@/features/users/constants/organization';
 import { insertUserUpdateNotification } from '@/features/notifications/api/fan-out.server';
 import { birthdaySchema, refineBirthday } from '@/lib/birthday';
+import { PHONE_REGEX } from '@/lib/phone';
 import { z } from 'zod';
 
 type Params = { params: Promise<{ id: string }> };
 
-const DISALLOWED_PUT_FIELDS = ['phone', 'food_restrictions', 'department', 'job_title'] as const;
+const DISALLOWED_PUT_FIELDS = ['food_restrictions', 'department', 'job_title'] as const;
 
 const updateUserSchema = z
   .object({
@@ -32,7 +33,11 @@ const updateUserSchema = z
     affiliation: z.enum(AFFILIATIONS).nullable().optional(),
     rank: z.string().max(50).nullable().optional(),
     system_role: z.enum(['admin', 'user']).optional(),
-    birthday: birthdaySchema
+    birthday: birthdaySchema,
+    phone: z
+      .string()
+      .min(1, '연락처를 입력해 주세요.')
+      .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.')
   })
   .superRefine((data, ctx) => {
     validateOrganizationFields(data, ctx);
@@ -229,12 +234,21 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const effectiveAffiliation = (updates.affiliation ?? target.affiliation) as Affiliation | null;
     const effectiveRank = 'rank' in updates ? (updates.rank as string | null) : target.rank;
 
-    const mergedValidation = updateUserSchema.safeParse({
-      affiliation: effectiveAffiliation,
-      rank: effectiveRank
-    });
+    const mergedOrgValidation = z
+      .object({
+        affiliation: z.enum(AFFILIATIONS).nullable(),
+        rank: z.string().max(50).nullable()
+      })
+      .superRefine((data, ctx) => validateOrganizationFields(data, ctx))
+      .safeParse({
+        affiliation: effectiveAffiliation,
+        rank: effectiveRank
+      });
 
-    if (!mergedValidation.success) {
+    if (!mergedOrgValidation.success) {
+      const orgMessage =
+        mergedOrgValidation.error.issues[0]?.message ??
+        '소속에 맞지 않는 조직 정보입니다.';
       return jsonWithActivityLog(
         requestId,
         {
@@ -245,9 +259,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
           targetLabel,
           httpMethod: 'PUT',
           httpPath,
-          metadata: buildErrorMetadata('validation', '소속에 맞지 않는 조직 정보입니다.')
+          metadata: buildErrorMetadata('validation', orgMessage)
         },
-        { success: false, message: '소속에 맞지 않는 조직 정보입니다.' },
+        { success: false, message: orgMessage },
         400
       );
     }

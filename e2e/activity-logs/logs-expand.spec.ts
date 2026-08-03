@@ -51,7 +51,8 @@ test.describe('활동 로그 행 확장', () => {
         affiliation: 'wake',
         rank: '경영진',
         system_role: 'user',
-        birthday: '1990-01-01'
+        birthday: '1990-01-01',
+        phone: '01012345678'
       }
     });
     expect(createResponse.status()).toBe(201);
@@ -60,7 +61,7 @@ test.describe('활동 로그 행 확장', () => {
     expect(userId).toBeTruthy();
 
     const updateResponse = await request.put(`/api/users/${userId}`, {
-      data: { full_name: `AC11-updated-${Date.now()}` }
+      data: { full_name: `AC11-updated-${Date.now()}`, phone: '01012345678' }
     });
     expect(updateResponse.status()).toBe(200);
     const requestId = updateResponse.headers()['x-request-id'];

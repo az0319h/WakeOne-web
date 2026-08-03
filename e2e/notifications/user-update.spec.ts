@@ -6,7 +6,8 @@ import {
   openNotificationPopover,
   resolveUserIdByEmail,
   uniqueEmail,
-  updateUserFullName
+  updateUserFullName,
+  updateUserPhone
 } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
@@ -62,7 +63,7 @@ test.describe('알림 user.update fan-out', () => {
     await userRequest.dispose();
   });
 
-  test('AC-02: 감시 필드 외 PUT 시 알림이 추가되지 않는다', async ({
+  test('AC-02: phone 누락 PUT 실패 시 알림이 추가되지 않는다', async ({
     request
   }) => {
     const email = uniqueEmail('notif-ac02');
@@ -78,10 +79,10 @@ test.describe('알림 user.update fan-out', () => {
     };
     const beforeCount = beforeBody.data?.notifications?.length ?? 0;
 
-    const phoneOnlyResponse = await request.put(`/api/users/${userId}`, {
-      data: { phone: '010-1234-5678' }
+    const missingPhoneResponse = await request.put(`/api/users/${userId}`, {
+      data: { full_name: '이름만 변경 시도' }
     });
-    expect(phoneOnlyResponse.status()).toBe(400);
+    expect(missingPhoneResponse.status()).toBe(400);
 
     const afterResponse = await fetchNotifications(
       request,
@@ -94,6 +95,57 @@ test.describe('알림 user.update fan-out', () => {
     const afterCount = afterBody.data?.notifications?.length ?? 0;
 
     expect(afterCount).toBe(beforeCount);
+  });
+
+  test('AC-10 plan30: admin이 연락처 변경 시 대상 사용자 알림에 연락처 문구가 표시된다', async ({
+    request,
+    browser,
+    playwright
+  }) => {
+    const userEmail = process.env.E2E_USER_EMAIL!;
+    const userId = await resolveUserIdByEmail(request, userEmail);
+
+    const userRequest = await playwright.request.newContext({
+      storageState: 'e2e/.auth/user.json'
+    });
+    await markAllNotificationsReadAsUser(userRequest);
+
+    await updateUserPhone(request, userId, '01099887766');
+
+    const userContext = await browser.newContext({
+      storageState: 'e2e/.auth/user.json'
+    });
+    const userPage = await userContext.newPage();
+    await userPage.goto('/dashboard/overview');
+
+    await expect
+      .poll(async () => {
+        const response = await userRequest.get('/api/notifications?limit=10');
+        const body = (await response.json()) as {
+          data?: { notifications?: Array<{ status: string }> };
+        };
+        return (
+          body.data?.notifications?.filter((item) => item.status === 'unread')
+            .length ?? 0
+        );
+      })
+      .toBeGreaterThan(0);
+
+    await openNotificationPopover(userPage);
+    await expect(
+      userPage
+        .getByRole('heading', {
+          name: '프로필 정보가 변경되었습니다',
+          level: 3
+        })
+        .first()
+    ).toBeVisible();
+    await expect(
+      userPage.getByText('연락처이(가) 관리자에 의해 변경되었습니다').first()
+    ).toBeVisible();
+
+    await userContext.close();
+    await userRequest.dispose();
   });
 
   test('AC-03: admin 본인 수정 시 신규 알림이 없다', async ({ request }) => {

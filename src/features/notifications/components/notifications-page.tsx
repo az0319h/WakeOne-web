@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavAccess } from '@/contexts/nav-access';
 import { parseAsString, useQueryStates } from 'nuqs';
@@ -115,8 +116,17 @@ function NotificationsPageContent() {
 }
 
 export function NotificationsPage() {
+  const profile = useNavAccess();
+  const isAdmin = profile?.system_role === 'admin';
+
+  const [params] = useQueryStates({
+    notif_user: parseAsString.withDefault('self')
+  });
+
+  const suspenseKey = isAdmin ? (params.notif_user ?? 'self') : 'self';
+
   return (
-    <Suspense fallback={null}>
+    <Suspense key={suspenseKey} fallback={<PageLoadingSpinner variant='fill' />}>
       <NotificationsPageContent />
     </Suspense>
   );

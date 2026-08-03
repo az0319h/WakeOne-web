@@ -4,6 +4,8 @@ function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 }
 
+const E2E_TEST_PHONE = '01012345678';
+
 function createUserPayload(email: string, fullName = 'E2E 테스트') {
   return {
     email,
@@ -11,7 +13,8 @@ function createUserPayload(email: string, fullName = 'E2E 테스트') {
     affiliation: 'wake',
     rank: '경영진',
     system_role: 'user',
-    birthday: '1990-01-01'
+    birthday: '1990-01-01',
+    phone: E2E_TEST_PHONE
   };
 }
 
@@ -33,6 +36,9 @@ async function createUserViaApi(
 
 async function openUserAddDialog(page: Page) {
   await page.goto('/dashboard/users');
+  await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    timeout: 30_000
+  });
   await page.getByRole('button', { name: '사용자 추가' }).click();
   const dialog = page.getByRole('dialog', { name: '사용자 추가' });
   await expect(dialog).toBeVisible();
@@ -52,6 +58,7 @@ async function fillRequiredCreateFields(
 ) {
   await dialog.getByRole('textbox', { name: '이름' }).fill(fullName);
   await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
+  await dialog.getByRole('textbox', { name: '연락처' }).fill('01012345678');
   await selectOption(page, dialog.getByRole('combobox', { name: '소속' }), '웨이크');
   await selectOption(page, dialog.getByRole('combobox', { name: '부서/사업장' }), '경영진');
   await selectOption(page, dialog.getByRole('combobox', { name: '시스템 역할' }), 'User');
@@ -231,6 +238,7 @@ test.describe('사용자 목록', () => {
 
     await dialog.getByRole('textbox', { name: '이름' }).fill('생일검증');
     await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
+    await dialog.getByRole('textbox', { name: '연락처' }).fill('01012345678');
     await selectOption(page, dialog.getByRole('combobox', { name: '소속' }), '웨이크');
     await selectOption(page, dialog.getByRole('combobox', { name: '부서/사업장' }), '경영진');
     await selectOption(page, dialog.getByRole('combobox', { name: '시스템 역할' }), 'User');
@@ -238,6 +246,20 @@ test.describe('사용자 목록', () => {
 
     await expect(
       dialog.getByRole('alert').filter({ hasText: '생일을 선택해 주세요.' })
+    ).toBeVisible();
+    await expect(page.getByRole('cell', { name: new RegExp(email) })).toHaveCount(0);
+  });
+
+  test('AC-1 plan30: 연락처를 비우면 오류가 표시되고 생성되지 않는다', async ({ page }) => {
+    const dialog = await openUserAddDialog(page);
+    const email = uniqueEmail('ac1-plan30');
+
+    await fillRequiredCreateFields(page, dialog, email);
+    await dialog.getByRole('textbox', { name: '연락처' }).clear();
+    await dialog.getByRole('button', { name: '사용자 추가' }).click();
+
+    await expect(
+      dialog.getByRole('alert').filter({ hasText: '연락처를 입력해 주세요.' })
     ).toBeVisible();
     await expect(page.getByRole('cell', { name: new RegExp(email) })).toHaveCount(0);
   });
@@ -289,7 +311,7 @@ test.describe('사용자 목록', () => {
     const userId = await createUserViaApi(request, email, fullName);
 
     const nullBirthdayResponse = await request.put(`/api/users/${userId}`, {
-      data: { birthday: null }
+      data: { birthday: null, phone: E2E_TEST_PHONE }
     });
     expect(nullBirthdayResponse.status()).toBe(200);
 

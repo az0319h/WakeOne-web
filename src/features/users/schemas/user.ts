@@ -5,6 +5,12 @@ import {
   validateOrganizationFields
 } from '@/features/users/constants/organization';
 import { refineBirthday } from '@/lib/birthday';
+import { PHONE_REGEX } from '@/lib/phone';
+
+const requiredPhoneSchema = z
+  .string()
+  .min(1, '연락처를 입력해 주세요.')
+  .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.');
 
 export const inviteUserSchema = z.object({
   email: z.string().email('올바른 이메일 주소를 입력해 주세요.')
@@ -19,7 +25,8 @@ export const createUserSchema = z
     affiliation: z.union([z.enum(AFFILIATIONS), z.literal('')]),
     rank: z.string().min(1, '부서/사업장을 선택해 주세요.').max(50),
     system_role: z.union([z.enum(['admin', 'user']), z.literal('')]),
-    birthday: z.string().nullable()
+    birthday: z.string().nullable(),
+    phone: requiredPhoneSchema
   })
   .superRefine((data, ctx) => {
     if (!data.affiliation) {
@@ -77,7 +84,8 @@ export const userUpdateSchema = z
     system_role: z.enum(['admin', 'user'], {
       message: '시스템 역할을 선택해 주세요.'
     }),
-    birthday: z.string().nullable().optional()
+    birthday: z.string().nullable().optional(),
+    phone: requiredPhoneSchema
   })
   .superRefine((data, ctx) => {
     refineBirthday(data.birthday, ctx);
