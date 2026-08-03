@@ -18,6 +18,14 @@ test.describe('본인 프로필 read-only', () => {
     await expect(page.getByText('못 먹는 음식')).toHaveCount(0);
   });
 
+  test('AC-11 plan30: 연락처는 read-only이고 입력 필드가 없다', async ({ page }) => {
+    await page.goto('/dashboard/profile');
+
+    await expect(page.getByText('연락처', { exact: true })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: '연락처' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '수정' })).toHaveCount(0);
+  });
+
   test('AC-05 plan26: profile loading shows spinner without form-card skeleton', async ({
     page
   }) => {

@@ -105,7 +105,8 @@ export async function updateUserAvatar(
     data: {
       avatar_url: avatarUrl,
       affiliation: 'wake',
-      rank: '경영진'
+      rank: '경영진',
+      phone: '01012345678'
     }
   });
   expect(response.status()).toBe(200);
@@ -125,7 +126,8 @@ export async function createDisposableUser(
       affiliation: 'wake',
       rank: '경영진',
       system_role: 'user',
-      birthday: '1990-01-01'
+      birthday: '1990-01-01',
+      phone: '01012345678'
     }
   });
   expect(response.status()).toBe(201);

@@ -3,6 +3,7 @@
 import { useStore } from '@tanstack/react-form';
 import { useFormFields } from '@/components/ui/tanstack-form';
 import { useFormContext } from '@/components/ui/form-context';
+import { FormPhoneField } from '@/features/auth/components/phone-field';
 import {
   AFFILIATION_OPTIONS,
   RANK_BY_AFFILIATION,
@@ -63,6 +64,11 @@ export function UserCreateFormFields() {
         type='email'
         placeholder='user@example.com'
       />
+      <FormPhoneField
+        name='phone'
+        label='연락처'
+        placeholder='010-0000-0000'
+      />
       <FormSelectField
         name='affiliation'
         label='소속'
@@ -115,6 +121,11 @@ export function UserEditFormFields() {
         name='full_name'
         label='이름'
         placeholder='이름'
+      />
+      <FormPhoneField
+        name='phone'
+        label='연락처'
+        placeholder='010-0000-0000'
       />
       <FormTextField
         name='avatar_url'

@@ -8,8 +8,8 @@ import {
   openNotificationPopover
 } from '../notifications/helpers';
 import { reminderCronHeaders, uniqueRunKey } from '../helpers/reminders';
+import { cleanupE2eMockData } from '../helpers/cleanup';
 import {
-  cleanupE2eMockData,
   countAdminNotificationsForRun,
   countRecipientNotificationsForRun,
   countNotificationsByType,

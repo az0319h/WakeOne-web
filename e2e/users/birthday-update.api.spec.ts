@@ -66,7 +66,8 @@ test.describe('plan22 PUT birthday · user.update activity log', () => {
         affiliation: 'wake',
         rank: '사원',
         system_role: 'user',
-        birthday: '1990-01-01'
+        birthday: '1990-01-01',
+        phone: '01012345678'
       }
     });
     expect(createResponse.status()).toBe(201);
@@ -74,7 +75,7 @@ test.describe('plan22 PUT birthday · user.update activity log', () => {
     const userId = createBody.user_id as string;
 
     const response = await request.put(`/api/users/${userId}`, {
-      data: { birthday: '1991-06-18' }
+      data: { birthday: '1991-06-18', phone: '01012345678' }
     });
 
     expect(response.status()).toBe(200);

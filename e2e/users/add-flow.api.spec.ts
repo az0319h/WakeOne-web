@@ -19,6 +19,8 @@ function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 }
 
+const E2E_TEST_PHONE = '01012345678';
+
 function createUserPayload(email: string, fullName = 'E2E 테스트') {
   return {
     email,
@@ -26,7 +28,8 @@ function createUserPayload(email: string, fullName = 'E2E 테스트') {
     affiliation: 'wake',
     rank: '경영진',
     system_role: 'user',
-    birthday: '1990-01-01'
+    birthday: '1990-01-01',
+    phone: E2E_TEST_PHONE
   };
 }
 
@@ -164,6 +167,48 @@ test.describe('사용자 추가 API와 activity log', () => {
     await expectUserCreateLog(request, requestId, 400);
   });
 
+  test('AC-07 plan30: POST body phone 누락은 400 validation이다', async ({ request }) => {
+    const email = uniqueEmail('ac07-plan30-phone');
+    const response = await request.post('/api/users', {
+      data: {
+        email,
+        full_name: 'E2E 테스트',
+        affiliation: 'wake',
+        rank: '경영진',
+        system_role: 'user',
+        birthday: '1990-01-01'
+      }
+    });
+
+    expect(response.status()).toBe(400);
+    const requestId = response.headers()['x-request-id'];
+    expect(requestId).toBeTruthy();
+    await expectUserCreateLog(request, requestId, 400);
+  });
+
+  test('AC-08 plan30: PUT phone 포함 시 200 · changed_fields에 phone', async ({
+    request
+  }) => {
+    const { userId } = await createUserViaApi(request, 'ac08-plan30-phone');
+
+    const response = await request.put(`/api/users/${userId}`, {
+      data: {
+        phone: '01098765432',
+        affiliation: 'wake',
+        rank: '경영진',
+        system_role: 'user',
+        birthday: '1990-01-01'
+      }
+    });
+
+    expect(response.status()).toBe(200);
+    const requestId = response.headers()['x-request-id'];
+    expect(requestId).toBeTruthy();
+
+    const log = await expectActivityLog(request, 'user.update', requestId, 200);
+    expect(JSON.stringify(log?.metadata ?? {})).toContain('phone');
+  });
+
   test('AC-10: 관리자 사용자 수정은 user.update 로그를 남긴다', async ({ request }) => {
     const { userId } = await createUserViaApi(request, 'ac10-user');
     const response = await request.put(`/api/users/${userId}`, {
@@ -172,7 +217,8 @@ test.describe('사용자 추가 API와 activity log', () => {
         affiliation: 'wake',
         rank: '마케팅팀',
         system_role: 'user',
-        birthday: '1991-02-02'
+        birthday: '1991-02-02',
+        phone: E2E_TEST_PHONE
       }
     });
 

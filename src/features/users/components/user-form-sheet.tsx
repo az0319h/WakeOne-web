@@ -18,6 +18,7 @@ import type { User } from '../api/types';
 import { Icons } from '@/components/icons';
 import { normalizeBirthdayToDateString } from '@/lib/birthday';
 import { notifyError, notifySuccess } from '@/lib/notify';
+import { PHONE_REGEX, parsePhoneDigits } from '@/lib/phone';
 import {
   createUserSchema,
   userUpdateSchema,
@@ -50,6 +51,21 @@ function toPayloadValue(value: string | undefined) {
   return value.trim() ? value.trim() : null;
 }
 
+function toFormPhone(value: string | null | undefined): string {
+  const digits = parsePhoneDigits(value ?? '');
+  return PHONE_REGEX.test(digits) ? digits : '';
+}
+
+const CREATE_EMPTY_DEFAULT_VALUES = {
+  email: '',
+  full_name: '',
+  affiliation: '',
+  rank: '',
+  system_role: '',
+  birthday: null,
+  phone: ''
+} as CreateUserFormValues;
+
 interface UserEditFormProps {
   user: User;
   onSuccess: () => void;
@@ -63,25 +79,6 @@ function UserEditForm({
   onError,
   onPendingChange
 }: UserEditFormProps) {
-  const updateMutation = useMutation({
-    ...updateUserMutation,
-    onSuccess: () => {
-      notifySuccess('사용자 정보가 저장되었습니다.');
-      editForm.reset();
-      onSuccess();
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : '저장에 실패했습니다.';
-      onError(message);
-      notifyError(message);
-    }
-  });
-
-  useEffect(() => {
-    onPendingChange(updateMutation.isPending);
-  }, [onPendingChange, updateMutation.isPending]);
-
   const editForm = useAppForm({
     defaultValues: {
       full_name: user.full_name,
@@ -89,7 +86,8 @@ function UserEditForm({
       affiliation: toFormAffiliation(user.affiliation),
       rank: toFormOrgField(user.rank),
       system_role: user.system_role,
-      birthday: normalizeBirthdayToDateString(user.birthday) ?? null
+      birthday: normalizeBirthdayToDateString(user.birthday) ?? null,
+      phone: toFormPhone(user.phone)
     } as UserUpdateFormValues,
     validators: {
       onSubmit: userUpdateSchema
@@ -108,11 +106,31 @@ function UserEditForm({
               : null,
           rank: toPayloadValue(value.rank),
           system_role: value.system_role,
-          birthday: value.birthday ?? null
+          birthday: value.birthday ?? null,
+          phone: value.phone
         }
       });
     }
   });
+
+  const updateMutation = useMutation({
+    ...updateUserMutation,
+    onSuccess: () => {
+      notifySuccess('사용자 정보가 저장되었습니다.');
+      editForm.reset();
+      onSuccess();
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : '저장에 실패했습니다.';
+      onError(message);
+      notifyError(message);
+    }
+  });
+
+  useEffect(() => {
+    onPendingChange(updateMutation.isPending);
+  }, [onPendingChange, updateMutation.isPending]);
 
   return (
     <editForm.AppForm>
@@ -136,7 +154,7 @@ export function UserFormSheet({
     ...createUserMutation,
     onSuccess: () => {
       notifySuccess('사용자가 추가되었습니다.');
-      createForm.reset();
+      createForm.reset(CREATE_EMPTY_DEFAULT_VALUES);
       onOpenChange(false);
       setApiError(null);
     },
@@ -149,14 +167,7 @@ export function UserFormSheet({
   });
 
   const createForm = useAppForm({
-    defaultValues: {
-      email: '',
-      full_name: '',
-      affiliation: '',
-      rank: '',
-      system_role: '',
-      birthday: null
-    } as CreateUserFormValues,
+    defaultValues: CREATE_EMPTY_DEFAULT_VALUES,
     validators: {
       onSubmit: createUserSchema
     },
@@ -168,7 +179,8 @@ export function UserFormSheet({
         affiliation: value.affiliation as Affiliation,
         rank: value.rank.trim(),
         system_role: value.system_role as 'admin' | 'user',
-        birthday: value.birthday ?? ''
+        birthday: value.birthday ?? '',
+        phone: value.phone
       });
     }
   });
@@ -183,8 +195,8 @@ export function UserFormSheet({
           <SheetTitle>{isEdit ? '사용자 수정' : '사용자 추가'}</SheetTitle>
           <SheetDescription>
             {isEdit
-              ? '이름·아바타 URL·소속·부서/사업장·시스템 역할·생일을 수정합니다.'
-              : '이름·이메일·소속·부서/사업장·시스템 역할·생일을 입력해 계정을 직접 생성합니다.'}
+              ? '이름·연락처·아바타 URL·소속·부서/사업장·시스템 역할·생일을 수정합니다.'
+              : '이름·이메일·연락처·소속·부서/사업장·시스템 역할·생일을 입력해 계정을 직접 생성합니다.'}
           </SheetDescription>
         </SheetHeader>
 

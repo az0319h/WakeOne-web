@@ -4,7 +4,8 @@ export const MONITORED_USER_UPDATE_FIELDS = [
   'affiliation',
   'rank',
   'system_role',
-  'birthday'
+  'birthday',
+  'phone'
 ] as const;
 
 export type MonitoredUserUpdateField = (typeof MONITORED_USER_UPDATE_FIELDS)[number];
@@ -15,7 +16,8 @@ export const FIELD_LABELS: Record<MonitoredUserUpdateField, string> = {
   affiliation: '소속',
   rank: '직급',
   system_role: '시스템 역할',
-  birthday: '생일'
+  birthday: '생일',
+  phone: '연락처'
 };
 
 export const USER_UPDATE_NOTIFICATION_TITLE = '프로필 정보가 변경되었습니다';

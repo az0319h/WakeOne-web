@@ -284,7 +284,8 @@ test.describe('알림 API activity log', () => {
       data: {
         full_name: `AC19-updated-${Date.now()}`,
         affiliation: 'wake',
-        rank: '경영진'
+        rank: '경영진',
+        phone: '01012345678'
       }
     });
     expect(response.status()).toBe(200);

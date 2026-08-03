@@ -97,7 +97,8 @@ test.describe('활동 로그 admin 필터', () => {
         affiliation: 'wake',
         rank: '경영진',
         system_role: 'user',
-        birthday: '1990-01-01'
+        birthday: '1990-01-01',
+        phone: '01012345678'
       }
     });
     expect(createResponse.status()).toBe(201);
