@@ -115,6 +115,39 @@ function mapRecipient(row: ReminderRecipientRow): SystemEmailLogRecipient {
   };
 }
 
+function escapeIlikePattern(value: string): string {
+  return value.replaceAll(',', ' ').trim();
+}
+
+async function findRunIdsMatchingRecipientSearch(
+  supabase: ReturnType<typeof getServiceRoleClient>,
+  search: string
+): Promise<number[]> {
+  const escaped = escapeIlikePattern(search);
+  if (!escaped) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('contract_reminder_recipients')
+    .select('run_id')
+    .or(`recipient_email.ilike.%${escaped}%,author_name.ilike.%${escaped}%`);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const runIds = new Set<number>();
+  for (const row of data ?? []) {
+    const runId = (row as { run_id: number }).run_id;
+    if (typeof runId === 'number') {
+      runIds.add(runId);
+    }
+  }
+
+  return [...runIds];
+}
+
 function parseSort(sortRaw: string | undefined): { column: string; desc: boolean } {
   let column = 'created_at';
   let desc = true;
@@ -148,13 +181,24 @@ export async function listSystemEmailLogRuns(
   const { column, desc } = parseSort(filters.sort);
   const from = (page - 1) * limit;
   const to = from + limit - 1;
+  const search = filters.search?.trim();
 
   const supabase = getServiceRoleClient();
-  const { data, error, count } = await supabase
-    .from('contract_reminder_runs')
-    .select(REMINDER_RUN_SELECT, { count: 'exact' })
-    .order(column, { ascending: !desc })
-    .range(from, to);
+  let query = supabase.from('contract_reminder_runs').select(REMINDER_RUN_SELECT, { count: 'exact' });
+
+  if (search) {
+    const escaped = escapeIlikePattern(search);
+    if (escaped) {
+      const recipientRunIds = await findRunIdsMatchingRecipientSearch(supabase, escaped);
+      if (recipientRunIds.length > 0) {
+        query = query.or(`run_key.ilike.%${escaped}%,id.in.(${recipientRunIds.join(',')})`);
+      } else {
+        query = query.ilike('run_key', `%${escaped}%`);
+      }
+    }
+  }
+
+  const { data, error, count } = await query.order(column, { ascending: !desc }).range(from, to);
 
   if (error) {
     throw new Error(error.message);

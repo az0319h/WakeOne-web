@@ -5,7 +5,7 @@ import {
   recordContractImportEvent
 } from '@/features/contracts/api/service.server';
 import { contractImportSchema, normalizeDocumentNumber } from '@/features/contracts/api/validators';
-import { getImportToken, isValidImportToken, newContractRequestId } from '../_utils';
+import { getImportToken, isMockContractDocumentNumber, isValidImportToken, newContractRequestId } from '../_utils';
 
 function asPayloadRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -78,6 +78,20 @@ export async function POST(request: NextRequest) {
     ...parsed.data,
     document_number: normalizeDocumentNumber(parsed.data.document_number)
   };
+
+  if (isMockContractDocumentNumber(payload.document_number)) {
+    const message =
+      '테스트용 문서번호(AC/E2E/KBAR 등)는 import할 수 없습니다. E2E는 POST /api/contracts/import 호출 금지.';
+    await tryRecordImportFailure({
+      requestId,
+      body,
+      documentNumber: payload.document_number,
+      sourceMessageId: payload.source_message_id ?? null,
+      errorCode: 'forbidden_mock_document',
+      message
+    });
+    return withRequestId(NextResponse.json({ success: false, message }, { status: 403 }), requestId);
+  }
 
   try {
     const result = await importContractDocument(payload, requestId);

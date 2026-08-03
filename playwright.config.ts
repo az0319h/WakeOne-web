@@ -67,7 +67,8 @@ export default defineConfig({
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
         /notifications\/notifications-page\.spec\.ts$/,
-        /profile-name-live-display\//
+        /profile-name-live-display\//,
+        /kbar\/nav-user\.spec\.ts$/
       ]
     },
     {
@@ -82,7 +83,8 @@ export default defineConfig({
         /profile\.spec\.ts$/,
         /system-email-logs-rbac\.spec\.ts$/,
         /notifications\/notifications-page\.spec\.ts$/,
-        /notifications\/rbac\.spec\.ts$/
+        /notifications\/rbac\.spec\.ts$/,
+        /kbar\/nav-user\.spec\.ts$/
       ]
     },
     {

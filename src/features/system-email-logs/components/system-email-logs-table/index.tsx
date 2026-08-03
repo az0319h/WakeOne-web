@@ -3,7 +3,8 @@
 import { useDataTable } from '@/hooks/use-data-table';
 import { getSortingStateParser } from '@/lib/parsers';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { parseAsInteger, useQueryStates } from 'nuqs';
+import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
+import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { useMemo, useState } from 'react';
 import { systemEmailLogsQueryOptions } from '../../api/queries';
 import type { SystemEmailLogRun } from '../../api/types';
@@ -20,12 +21,14 @@ export function SystemEmailLogsTable() {
   const [params] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     perPage: parseAsInteger.withDefault(10),
+    search: parseAsString,
     sort: getSortingStateParser(columnIds).withDefault([])
   });
 
   const filters = {
     page: params.page,
     limit: params.perPage,
+    ...(params.search && { search: params.search }),
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
@@ -51,7 +54,9 @@ export function SystemEmailLogsTable() {
   return (
     <>
       <div data-testid='system-email-logs-page' className='flex flex-1 flex-col'>
-        <SystemEmailLogsDataTable table={table} onRowClick={handleRowClick} />
+        <SystemEmailLogsDataTable table={table} onRowClick={handleRowClick}>
+          <DataTableToolbar table={table} />
+        </SystemEmailLogsDataTable>
       </div>
       <RunDetailDialog
         runId={selectedRunId}

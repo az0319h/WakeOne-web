@@ -68,6 +68,7 @@
 | 27 | [27_in-app-notifications-user-update-plan.md](./27_in-app-notifications-user-update-plan.md) | **Approved** · 인앱 알림 MVP · user.update Realtime · admin notif_user 뷰어 · SQL `34` |
 | 29 | [29_profile-name-live-display-plan.md](./29_profile-name-live-display-plan.md) | **Approved** · 프로필 `full_name` live 표시 · activity log join · NavUser Realtime · PUT `target_label` bugfix |
 | 30 | [30_admin-user-phone-edit-plan.md](./30_admin-user-phone-edit-plan.md) | **Approved** · admin Users 연락처 필수 추가·수정 · plan 21/09 supersede · plan 27 알림 |
+| 31 | [31_global-kbar-search-plan.md](./31_global-kbar-search-plan.md) | **Revised** · kbar nav synonym + RBAC page search + theme (entity search Out) |
 
 ## 에이전트 참조
 
