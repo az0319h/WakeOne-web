@@ -2,10 +2,6 @@ import PageContainer from '@/components/layout/page-container';
 import { requireOfficeSnacksPage } from '@/features/auth/api/session.server';
 import OfficeSnacksListing from '@/features/office-snacks/components/office-snacks-listing';
 
-export const metadata = {
-  title: 'Dashboard: 사무실 간식'
-};
-
 export default async function OfficeSnacksPage() {
   await requireOfficeSnacksPage();
   return (

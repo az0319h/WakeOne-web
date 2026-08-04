@@ -5,16 +5,14 @@ import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
 import { ThemeColorSync, META_THEME_COLORS } from '@/components/themes/theme-color-sync';
 import ThemeProvider from '@/components/themes/theme-provider';
 import { cn } from '@/lib/utils';
-import type { Metadata, Viewport } from 'next';
+import { siteMetadata } from '@/lib/site-metadata';
+import type { Viewport } from 'next';
 import { cookies } from 'next/headers';
 import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import '../styles/globals.css';
 
-export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
-};
+export const metadata = siteMetadata;
 
 export const viewport: Viewport = {
   themeColor: [
@@ -30,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const themeToApply = isValidTheme ? activeThemeValue! : DEFAULT_THEME;
 
   return (
-    <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
+    <html lang='ko' suppressHydrationWarning data-theme={themeToApply}>
       <body
         className={cn(
           'bg-background overflow-x-hidden overscroll-none font-sans antialiased',

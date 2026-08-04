@@ -1,10 +1,6 @@
 import PageContainer from '@/components/layout/page-container';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const metadata = {
-  title: 'Dashboard: Billing'
-};
-
 export default function BillingPage() {
   return (
     <PageContainer

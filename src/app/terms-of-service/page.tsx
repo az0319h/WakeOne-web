@@ -1,16 +1,7 @@
-import type { Metadata } from 'next';
-
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 
 /** 약관 시행일 — 약관 본문을 개정할 때 함께 갱신합니다. */
 const TERMS_EFFECTIVE_DATE = '2026-08-04';
-
-export const metadata: Metadata = {
-  title: '이용약관',
-  robots: {
-    index: false
-  }
-};
 
 export default function TermsOfServicePage() {
   return (

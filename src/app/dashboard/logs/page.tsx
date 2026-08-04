@@ -7,10 +7,6 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 
-export const metadata = {
-  title: 'Dashboard: 활동 로그'
-};
-
 type PageProps = {
   searchParams: Promise<SearchParams>;
 };

@@ -83,25 +83,23 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      <Card className='relative' aria-label='다가오는 생일 축하'>
-        <div className='pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]'>
-          <canvas
-            ref={confettiCanvasRef}
-            aria-hidden
-            className='size-full'
-          />
-        </div>
-        <CardContent className='relative z-[2] mx-auto max-w-2xl p-0'>
+      <Card className='relative overflow-hidden' aria-label='다가오는 생일 축하'>
+        <canvas
+          ref={confettiCanvasRef}
+          aria-hidden
+          className='pointer-events-none absolute inset-0 z-[1] size-full'
+        />
+        <CardContent className='relative z-[2] w-full p-0'>
           {showCarousel ? (
             <>
               <Carousel
                 setApi={setCarouselApi}
-                opts={{ align: 'center', loop: true }}
+                opts={{ align: 'start', loop: true, containScroll: 'trimSnaps' }}
                 className='w-full'
               >
                 <CarouselContent className='-ml-0'>
                   {celebrants.map((celebrant) => (
-                    <CarouselItem key={celebrant.user_id} className='pl-0'>
+                    <CarouselItem key={celebrant.user_id} className='basis-full pl-0'>
                       <BirthdayCelebrationSlide {...slideProps(celebrant)} />
                     </CarouselItem>
                   ))}

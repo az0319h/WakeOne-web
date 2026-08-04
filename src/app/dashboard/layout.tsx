@@ -4,7 +4,6 @@ import Header from '@/components/layout/header';
 import { InfoSidebar } from '@/components/layout/info-sidebar';
 import { InfobarProvider } from '@/components/ui/infobar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
@@ -19,15 +18,6 @@ import {
 } from '@/features/notifications/api/queries';
 import { listNotifications } from '@/features/notifications/api/service.server';
 import { getQueryClient } from '@/lib/query-client';
-
-export const metadata: Metadata = {
-  title: 'Next Shadcn Dashboard Starter',
-  description: 'Basic dashboard with Next.js and Shadcn',
-  robots: {
-    index: false,
-    follow: false
-  }
-};
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireDashboardSession();

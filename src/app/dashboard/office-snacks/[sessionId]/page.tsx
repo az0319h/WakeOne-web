@@ -3,10 +3,6 @@ import OfficeSnackDetail from '@/features/office-snacks/components/office-snack-
 import { requireOfficeSnacksPage } from '@/features/auth/api/session.server';
 import { redirect } from 'next/navigation';
 
-export const metadata = {
-  title: 'Dashboard: 간식 회차 상세'
-};
-
 interface OfficeSnackDetailPageProps {
   params: Promise<{ sessionId: string }>;
 }

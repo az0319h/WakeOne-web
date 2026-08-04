@@ -7,10 +7,6 @@ import type { SearchParams } from 'nuqs/server';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-export const metadata = {
-  title: 'Dashboard: Wallet'
-};
-
 type PageProps = {
   searchParams: Promise<SearchParams>;
 };
