@@ -5,7 +5,7 @@ export default function WalletLoading() {
   return (
     <PageContainer
       pageTitle='지갑'
-      pageDescription='잔액 충전, 거래 내역, 자동 충전 설정을 관리합니다.'
+      pageDescription='KB국민카드에서 동기화된 월간 한도를 본인 및 선택한 사용자 기준으로 확인합니다.'
     >
       <div className='mx-auto flex w-full max-w-5xl flex-1 flex-col'>
         <PageLoadingSpinner variant='fill' />

@@ -2,6 +2,7 @@ import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
 import type * as React from 'react';
 
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
+import { DataTableScrollContainer } from '@/components/ui/table/data-table-scroll-container';
 import {
   Table,
   TableBody,
@@ -11,7 +12,6 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/lib/data-table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
@@ -38,11 +38,10 @@ export function DataTable<TData>({
   isRowClickable
 }: DataTableProps<TData>) {
   return (
-    <div className='flex flex-col space-y-4'>
+    <div className='flex min-w-0 flex-col space-y-4'>
       {children}
-      <div className='overflow-hidden rounded-lg border'>
-        <ScrollArea>
-          <Table>
+      <DataTableScrollContainer>
+        <Table className='w-max min-w-full'>
               <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -106,9 +105,7 @@ export function DataTable<TData>({
                 )}
               </TableBody>
             </Table>
-          <ScrollBar orientation='horizontal' />
-        </ScrollArea>
-      </div>
+      </DataTableScrollContainer>
       <div className='flex flex-col gap-2.5'>
         <DataTablePagination table={table} />
         {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}

@@ -60,7 +60,7 @@ export function ActivityLogsTable() {
   }
 
   return (
-    <div data-testid='activity-logs-page' className='flex flex-1 flex-col'>
+    <div data-testid='activity-logs-page' className='flex min-w-0 flex-1 flex-col'>
       <ActivityLogsDataTable table={table}>
         <div className='flex w-full flex-wrap items-start gap-2 p-1'>
           {isAdmin ? (

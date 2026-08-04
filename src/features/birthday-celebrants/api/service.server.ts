@@ -1,6 +1,11 @@
 import 'server-only';
 
-import { getKstYearMonth } from '@/lib/kst';
+import {
+  BIRTHDAY_UPCOMING_WINDOW_DAYS,
+  getDaysUntilBirthday,
+  isBirthdayWithinUpcomingWindow
+} from '@/lib/birthday';
+import { getKstTodayDateString } from '@/lib/kst';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import type { BirthdayCelebrant, BirthdayCelebrantsResponse } from './types';
 
@@ -15,21 +20,6 @@ type ProfileRow = {
   status: string;
 };
 
-function getBirthdayMonth(birthday: string): number | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthday);
-  if (!match) {
-    return null;
-  }
-
-  const month = Number(match[2]);
-  return month >= 1 && month <= 12 ? month : null;
-}
-
-function getBirthdayDay(birthday: string): number {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthday);
-  return match ? Number(match[3]) : 0;
-}
-
 function toCelebrant(row: ProfileRow): BirthdayCelebrant {
   return {
     user_id: row.user_id,
@@ -40,7 +30,7 @@ function toCelebrant(row: ProfileRow): BirthdayCelebrant {
 }
 
 export async function getBirthdayCelebrantsServer(): Promise<BirthdayCelebrantsResponse> {
-  const { year, month } = getKstYearMonth();
+  const referenceDate = getKstTodayDateString();
   const supabase = getServiceRoleClient();
 
   const { data, error } = await supabase
@@ -54,20 +44,31 @@ export async function getBirthdayCelebrantsServer(): Promise<BirthdayCelebrantsR
   }
 
   const celebrants = (data as ProfileRow[] | null)
-    ?.filter((row) => row.birthday && getBirthdayMonth(row.birthday) === month)
+    ?.filter(
+      (row) =>
+        row.birthday &&
+        isBirthdayWithinUpcomingWindow(
+          row.birthday,
+          referenceDate,
+          BIRTHDAY_UPCOMING_WINDOW_DAYS
+        )
+    )
     .map(toCelebrant)
     .toSorted((a, b) => {
-      const dayDiff = getBirthdayDay(a.birthday) - getBirthdayDay(b.birthday);
-      if (dayDiff !== 0) {
-        return dayDiff;
+      const daysUntilA = getDaysUntilBirthday(a.birthday, referenceDate) ?? Number.MAX_SAFE_INTEGER;
+      const daysUntilB = getDaysUntilBirthday(b.birthday, referenceDate) ?? Number.MAX_SAFE_INTEGER;
+      const daysDiff = daysUntilA - daysUntilB;
+
+      if (daysDiff !== 0) {
+        return daysDiff;
       }
 
       return a.full_name.localeCompare(b.full_name, 'ko');
     });
 
   return {
-    month,
-    year,
+    referenceDate,
+    windowDays: BIRTHDAY_UPCOMING_WINDOW_DAYS,
     celebrants: celebrants ?? []
   };
 }

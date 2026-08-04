@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { DataTableScrollContainer } from '@/components/ui/table/data-table-scroll-container';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { OfficeSnackResult } from '../api/types';
@@ -43,7 +44,8 @@ export function ClosedResultTable({ results }: ClosedResultTableProps) {
         {results.length === 0 ? (
           <p className='text-muted-foreground text-sm'>집계된 결과가 없습니다.</p>
         ) : (
-          <Table>
+          <DataTableScrollContainer>
+            <Table className='w-max min-w-full'>
             <TableHeader>
               <TableRow>
                 <TableHead>순위</TableHead>
@@ -106,7 +108,8 @@ export function ClosedResultTable({ results }: ClosedResultTableProps) {
               );
               })}
             </TableBody>
-          </Table>
+            </Table>
+          </DataTableScrollContainer>
         )}
       </CardContent>
     </Card>

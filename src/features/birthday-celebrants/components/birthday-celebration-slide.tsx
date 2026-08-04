@@ -11,7 +11,6 @@ interface BirthdayCelebrationSlideProps {
   fullName: string;
   avatarUrl: string | null;
   birthday: string;
-  month: number;
   className?: string;
 }
 
@@ -19,7 +18,6 @@ export function BirthdayCelebrationSlide({
   fullName,
   avatarUrl,
   birthday,
-  month,
   className
 }: BirthdayCelebrationSlideProps) {
   const prefersReducedMotion = useReducedMotion();
@@ -39,7 +37,7 @@ export function BirthdayCelebrationSlide({
 
       <Badge variant='outline' className='mb-5'>
         <Icons.sparkles className='text-muted-foreground size-3.5' />
-        {month}월 생일
+        다가오는 생일
       </Badge>
 
       <div className='relative mx-auto mb-5 size-20 sm:size-24'>

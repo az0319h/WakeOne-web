@@ -6,7 +6,7 @@ export type BirthdayCelebrant = {
 };
 
 export type BirthdayCelebrantsResponse = {
-  month: number;
-  year: number;
+  referenceDate: string;
+  windowDays: number;
   celebrants: BirthdayCelebrant[];
 };

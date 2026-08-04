@@ -54,6 +54,78 @@ export function normalizeBirthdayToDateString(
   return datePart;
 }
 
+export const BIRTHDAY_UPCOMING_WINDOW_DAYS = 31;
+
+function daysBetweenDateStrings(from: string, to: string): number {
+  const [fromYear, fromMonth, fromDay] = from.split('-').map(Number);
+  const [toYear, toMonth, toDay] = to.split('-').map(Number);
+  const fromMs = Date.UTC(fromYear, fromMonth - 1, fromDay);
+  const toMs = Date.UTC(toYear, toMonth - 1, toDay);
+
+  return Math.round((toMs - fromMs) / (24 * 60 * 60 * 1000));
+}
+
+function composeBirthdayOccurrence(year: number, month: number, day: number): string | null {
+  const direct = composeBirthdayString(year, month, day);
+  if (direct) {
+    return direct;
+  }
+
+  if (month === 2 && day === 29) {
+    return composeBirthdayString(year, 2, 28);
+  }
+
+  return null;
+}
+
+/** referenceDate(KST) 이후(포함) 가장 가까운 생일 발생일 */
+export function getNextBirthdayOccurrence(
+  birthday: string,
+  referenceDate: string
+): string | null {
+  const parts = parseBirthdayParts(birthday);
+  const referenceParts = parseBirthdayParts(referenceDate);
+  if (!parts || !referenceParts) {
+    return null;
+  }
+
+  const { month, day } = parts;
+  const refYear = referenceParts.year;
+
+  let occurrence = composeBirthdayOccurrence(refYear, month, day);
+  if (!occurrence) {
+    return null;
+  }
+
+  if (occurrence < referenceDate) {
+    occurrence = composeBirthdayOccurrence(refYear + 1, month, day);
+  }
+
+  return occurrence;
+}
+
+/** referenceDate(KST) 기준 daysUntil (0 = 오늘). 유효하지 않으면 null */
+export function getDaysUntilBirthday(
+  birthday: string,
+  referenceDate: string
+): number | null {
+  const nextOccurrence = getNextBirthdayOccurrence(birthday, referenceDate);
+  if (!nextOccurrence) {
+    return null;
+  }
+
+  return daysBetweenDateStrings(referenceDate, nextOccurrence);
+}
+
+export function isBirthdayWithinUpcomingWindow(
+  birthday: string,
+  referenceDate: string,
+  windowDays = BIRTHDAY_UPCOMING_WINDOW_DAYS
+): boolean {
+  const daysUntil = getDaysUntilBirthday(birthday, referenceDate);
+  return daysUntil !== null && daysUntil >= 0 && daysUntil <= windowDays;
+}
+
 export function parseBirthdayParts(value: string | null | undefined): BirthdayParts | null {
   const normalized = normalizeBirthdayToDateString(value);
   if (!normalized) {

@@ -6,11 +6,11 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
   type CarouselApi
 } from '@/components/ui/carousel';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { BirthdayCelebrantsResponse } from '../api/types';
 import {
@@ -24,7 +24,7 @@ interface BirthdayCelebrantsBannerProps {
 }
 
 export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps) {
-  const { celebrants, month, year } = data;
+  const { celebrants, referenceDate } = data;
   const showCarousel = celebrants.length > 1;
   const prefersReducedMotion = useReducedMotion();
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,7 +38,7 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
     }
 
     const canvas = confettiCanvasRef.current;
-    const storageKey = getBirthdayConfettiStorageKey(year, month);
+    const storageKey = getBirthdayConfettiStorageKey(referenceDate);
 
     if (!canvas || sessionStorage.getItem(storageKey)) {
       return;
@@ -48,7 +48,7 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
     const cleanup = fireBirthdayConfetti(canvas);
 
     return cleanup;
-  }, [month, prefersReducedMotion, year]);
+  }, [prefersReducedMotion, referenceDate]);
 
   useEffect(() => {
     if (!carouselApi) {
@@ -74,8 +74,7 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
   const slideProps = (celebrant: (typeof celebrants)[number]) => ({
     fullName: celebrant.full_name,
     avatarUrl: celebrant.avatar_url,
-    birthday: celebrant.birthday,
-    month
+    birthday: celebrant.birthday
   });
 
   return (
@@ -84,15 +83,17 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      <Card className='relative overflow-hidden' aria-label='이번 달 생일 축하'>
-        <canvas
-          ref={confettiCanvasRef}
-          aria-hidden
-          className='pointer-events-none absolute inset-0 z-[1] size-full'
-        />
+      <Card className='relative' aria-label='다가오는 생일 축하'>
+        <div className='pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]'>
+          <canvas
+            ref={confettiCanvasRef}
+            aria-hidden
+            className='size-full'
+          />
+        </div>
         <CardContent className='relative z-[2] mx-auto max-w-2xl p-0'>
           {showCarousel ? (
-            <div className='px-10 sm:px-14'>
+            <>
               <Carousel
                 setApi={setCarouselApi}
                 opts={{ align: 'center', loop: true }}
@@ -105,32 +106,55 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className='size-9' />
-                <CarouselNext className='size-9' />
               </Carousel>
 
-              <div className='flex flex-col items-center gap-3 pb-6'>
-                <p className='text-muted-foreground text-xs'>
-                  {currentSlide} / {slideCount}
-                </p>
-                <div className='flex items-center gap-1.5'>
-                  {celebrants.map((celebrant, index) => (
-                    <button
-                      key={celebrant.user_id}
-                      type='button'
-                      aria-label={`${index + 1}번째 생일자 보기`}
-                      onClick={() => carouselApi?.scrollTo(index)}
-                      className={cn(
-                        'size-2 rounded-full transition-colors',
-                        currentSlide === index + 1
-                          ? 'bg-primary'
-                          : 'bg-muted-foreground/25 hover:bg-muted-foreground/40'
-                      )}
-                    />
-                  ))}
+              <div className='flex items-center justify-center gap-4 px-4 pb-6'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='size-9 shrink-0 rounded-full'
+                  aria-label='이전 생일자'
+                  onClick={() => carouselApi?.scrollPrev()}
+                >
+                  <Icons.chevronLeft />
+                </Button>
+
+                <div className='flex min-w-0 flex-col items-center gap-2'>
+                  <p className='text-muted-foreground text-xs'>
+                    {currentSlide} / {slideCount}
+                  </p>
+                  <div className='flex items-center gap-1.5'>
+                    {celebrants.map((celebrant, index) => (
+                      <button
+                        key={celebrant.user_id}
+                        type='button'
+                        aria-label={`${index + 1}번째 생일자 보기`}
+                        aria-current={currentSlide === index + 1 ? 'true' : undefined}
+                        onClick={() => carouselApi?.scrollTo(index)}
+                        className={cn(
+                          'size-2 rounded-full transition-colors',
+                          currentSlide === index + 1
+                            ? 'bg-primary'
+                            : 'bg-muted-foreground/25 hover:bg-muted-foreground/40'
+                        )}
+                      />
+                    ))}
+                  </div>
                 </div>
+
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='size-9 shrink-0 rounded-full'
+                  aria-label='다음 생일자'
+                  onClick={() => carouselApi?.scrollNext()}
+                >
+                  <Icons.chevronRight />
+                </Button>
               </div>
-            </div>
+            </>
           ) : (
             <BirthdayCelebrationSlide {...slideProps(celebrants[0])} className='pb-2' />
           )}
