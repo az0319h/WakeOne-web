@@ -49,7 +49,11 @@ function isApiPath(pathname: string): boolean {
 }
 
 function isServiceTokenApiPath(pathname: string): boolean {
-  return pathname === '/api/contracts/import' || pathname === '/api/contracts/reminders';
+  return (
+    pathname === '/api/contracts/import' ||
+    pathname === '/api/contracts/reminders' ||
+    pathname === '/api/wallet/sync'
+  );
 }
 
 function isDashboardPath(pathname: string): boolean {
