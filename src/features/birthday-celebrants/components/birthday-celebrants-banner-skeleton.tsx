@@ -3,8 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function BirthdayCelebrantsBannerSkeleton() {
   return (
-    <div className='col-span-4 md:col-span-3'>
-      <Card className='relative overflow-hidden'>
+    <Card className='relative overflow-hidden'>
         <CardContent className='mx-auto max-w-2xl p-0'>
           <div className='px-6 py-8 text-center sm:px-10 sm:py-10'>
             <Skeleton className='mx-auto mb-5 h-6 w-20 rounded-full' />
@@ -14,6 +13,5 @@ export function BirthdayCelebrantsBannerSkeleton() {
           </div>
         </CardContent>
       </Card>
-    </div>
   );
 }
