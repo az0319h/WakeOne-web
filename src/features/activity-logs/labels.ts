@@ -53,6 +53,8 @@ export const METADATA_LABELS: Record<string, string> = {
   status: '상태',
   unmatched_count: '미매칭 건수',
   unmatched_author_names: '미매칭 작성자',
+  matched_count: '매칭 건수',
+  request_id: '요청 ID',
   verification_mode: '검증 모드',
   safety_filter_result: '안전 필터 결과'
 };

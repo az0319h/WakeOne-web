@@ -69,6 +69,7 @@
 | 29 | [29_profile-name-live-display-plan.md](./29_profile-name-live-display-plan.md) | **Approved** · 프로필 `full_name` live 표시 · activity log join · NavUser Realtime · PUT `target_label` bugfix |
 | 30 | [30_admin-user-phone-edit-plan.md](./30_admin-user-phone-edit-plan.md) | **Approved** · admin Users 연락처 필수 추가·수정 · plan 21/09 supersede · plan 27 알림 |
 | 31 | [31_global-kbar-search-plan.md](./31_global-kbar-search-plan.md) | **Revised** · kbar nav synonym + RBAC page search + theme (entity search Out) |
+| 32 | [32_wallet-kbcard-sync-plan.md](./32_wallet-kbcard-sync-plan.md) | **Approved** · KB카드 wallet sync active admin 요약·matched user 인앱 알림 · SQL `38` 예정 |
 
 ## 에이전트 참조
 

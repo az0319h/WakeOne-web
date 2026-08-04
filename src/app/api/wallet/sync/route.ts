@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordActivityLog, withRequestId } from '@/features/activity-logs/api/log.server';
+import { insertWalletSyncNotifications } from '@/features/notifications/api/fan-out.server';
 import {
   getWalletSyncToken,
   isValidWalletSyncToken,
@@ -59,6 +60,29 @@ export async function POST(request: NextRequest) {
         unmatched_author_names: result.unmatched
       }
     });
+
+    try {
+      const matchedUserIds = result.results.flatMap((item) =>
+        item.status === 'matched' && item.user_id ? [item.user_id] : []
+      );
+
+      await insertWalletSyncNotifications({
+        requestId,
+        matchedUserIds,
+        matchedCount: result.matched,
+        unmatchedCount: result.unmatched.length
+      });
+    } catch (notificationError) {
+      console.error('[wallet-sync] notification fan-out failed', {
+        requestId,
+        matched: result.matched,
+        unmatched: result.unmatched.length,
+        message:
+          notificationError instanceof Error
+            ? notificationError.message
+            : 'Unknown notification fan-out error'
+      });
+    }
 
     return withRequestId(
       NextResponse.json({ success: true, message, ...result }, { status: 200 }),
