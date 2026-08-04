@@ -1,13 +1,20 @@
 export type NotificationType =
   | 'user.update'
   | 'contract.reminder_admin'
-  | 'contract.reminder_recipient';
+  | 'contract.reminder_recipient'
+  | 'wallet.sync_admin'
+  | 'wallet.sync_recipient';
 
 export type NotificationStatus = 'unread' | 'read';
 
 export type NotificationMetadata = {
   changed_fields?: string[];
-  kind?: 'user.update' | 'contract.reminder_admin' | 'contract.reminder_recipient';
+  kind?:
+    | 'user.update'
+    | 'contract.reminder_admin'
+    | 'contract.reminder_recipient'
+    | 'wallet.sync_admin'
+    | 'wallet.sync_recipient';
   run_id?: number;
   run_key?: string;
   trigger_source?: 'admin' | 'cron';
@@ -18,6 +25,8 @@ export type NotificationMetadata = {
   author_name?: string;
   document_count?: number;
   document_numbers?: string[];
+  request_id?: string;
+  matched_count?: number;
 };
 
 export type Notification = {

@@ -31,6 +31,13 @@ type InsertContractReminderRecipientNotificationInput = {
   documentNumbers: string[];
 };
 
+type InsertWalletSyncNotificationsInput = {
+  requestId: string;
+  matchedUserIds: string[];
+  matchedCount: number;
+  unmatchedCount: number;
+};
+
 function buildContractReminderAdminTitle(input: {
   sentCount: number;
   failedCount: number;
@@ -162,6 +169,55 @@ export async function insertContractReminderRecipientNotification(
       kind: 'contract.reminder_recipient'
     }
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function insertWalletSyncNotifications(
+  input: InsertWalletSyncNotificationsInput
+): Promise<void> {
+  if (input.matchedCount <= 0) {
+    return;
+  }
+
+  const adminUserIds = await listActiveAdminUserIds();
+  const adminUserIdSet = new Set(adminUserIds);
+  const recipientUserIds = [...new Set(input.matchedUserIds)].filter(
+    (userId) => !adminUserIdSet.has(userId)
+  );
+
+  if (adminUserIds.length === 0 && recipientUserIds.length === 0) {
+    return;
+  }
+
+  const adminRows = adminUserIds.map((recipientUserId) => ({
+    recipient_user_id: recipientUserId,
+    type: 'wallet.sync_admin' as const,
+    title: 'KB카드 지갑 동기화 완료',
+    body: `사용자 ${input.matchedCount}명 반영 · 미매칭 ${input.unmatchedCount}명`,
+    metadata: {
+      request_id: input.requestId,
+      matched_count: input.matchedCount,
+      unmatched_count: input.unmatchedCount,
+      kind: 'wallet.sync_admin'
+    }
+  }));
+
+  const recipientRows = recipientUserIds.map((recipientUserId) => ({
+    recipient_user_id: recipientUserId,
+    type: 'wallet.sync_recipient' as const,
+    title: 'KB카드 지갑이 업데이트되었습니다',
+    body: 'KB카드 이용 한도 정보가 갱신되었습니다.',
+    metadata: {
+      request_id: input.requestId,
+      kind: 'wallet.sync_recipient'
+    }
+  }));
+
+  const supabase = getServiceRoleClient();
+  const { error } = await supabase.from('notifications').insert([...adminRows, ...recipientRows]);
 
   if (error) {
     throw new Error(error.message);
