@@ -1,85 +1,71 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
-import {
-  MOCK_AUTO_RELOAD,
-  MOCK_INITIAL_BALANCE,
-  MOCK_PAYMENT_METHOD,
-  MOCK_TRANSACTIONS,
-  type WalletTransaction
-} from '../data/mock-data';
-import { WalletAddFunds } from './wallet-add-funds';
-import { WalletAutoReload } from './wallet-auto-reload';
-import { WalletBalanceCard } from './wallet-balance-card';
-import { WalletPaymentMethodCard } from './wallet-payment-method-card';
-import { WalletTransactionList } from './wallet-transaction-list';
+import { Suspense, useState } from 'react';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { parseAsString, useQueryStates } from 'nuqs';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
+import { walletSummaryQueryOptions, type WalletSyncsListFilters } from '../api/queries';
+import type { WalletSummaryFilters } from '../api/types';
+import { WalletLimitCard } from './wallet-limit-card';
+import { WalletSyncLog } from './wallet-sync-log';
+import { WalletUserCombobox } from './wallet-user-combobox';
 
-function createDepositTransaction(amount: number, balance: number): WalletTransaction {
-  return {
-    id: `tx-${crypto.randomUUID()}`,
-    type: 'deposit',
-    description: '지갑 충전',
-    amount,
-    balance,
-    createdAt: new Date().toISOString()
-  };
+interface WalletPageContentProps {
+  isAdmin: boolean;
 }
 
-export function WalletPageContent() {
-  const [balanceHidden, setBalanceHidden] = useState(false);
-  const [balance, setBalance] = useState(MOCK_INITIAL_BALANCE);
-  const [transactions, setTransactions] = useState(MOCK_TRANSACTIONS);
-  const [autoReloadEnabled, setAutoReloadEnabled] = useState(MOCK_AUTO_RELOAD.enabled);
-  const [autoReloadThreshold, setAutoReloadThreshold] = useState(MOCK_AUTO_RELOAD.threshold);
-  const [isPending, startTransition] = useTransition();
+interface WalletDataProps {
+  summaryFilters: WalletSummaryFilters;
+  syncsFilters: WalletSyncsListFilters;
+  amountHidden: boolean;
+  onToggleHidden: () => void;
+}
 
-  const sortedTransactions = useMemo(
-    () =>
-      [...transactions].sort(
-        (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-      ),
-    [transactions]
-  );
-
-  function handleAddFunds(amount: number) {
-    startTransition(() => {
-      setBalance((currentBalance) => {
-        const nextBalance = currentBalance + amount;
-
-        setTransactions((currentTransactions) => [
-          createDepositTransaction(amount, nextBalance),
-          ...currentTransactions
-        ]);
-
-        return nextBalance;
-      });
-    });
-  }
+function WalletData({ summaryFilters, syncsFilters, amountHidden, onToggleHidden }: WalletDataProps) {
+  const { data } = useSuspenseQuery(walletSummaryQueryOptions(summaryFilters));
 
   return (
-    <div className='mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6'>
-      <div className='grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]'>
-        <div className='flex flex-col gap-6'>
-          <WalletBalanceCard
-            balance={balance}
-            hidden={balanceHidden}
-            onToggleHidden={() => setBalanceHidden((current) => !current)}
-          />
-          <WalletTransactionList transactions={sortedTransactions} />
-        </div>
+    <>
+      <WalletLimitCard
+        snapshot={data.snapshot}
+        hidden={amountHidden}
+        onToggleHidden={onToggleHidden}
+      />
+      <WalletSyncLog filters={syncsFilters} />
+    </>
+  );
+}
 
-        <div className='flex flex-col gap-6'>
-          <WalletAddFunds onAddFunds={handleAddFunds} isPending={isPending} />
-          <WalletAutoReload
-            enabled={autoReloadEnabled}
-            threshold={autoReloadThreshold}
-            reloadAmount={MOCK_AUTO_RELOAD.reloadAmount}
-            onEnabledChange={setAutoReloadEnabled}
-            onThresholdChange={setAutoReloadThreshold}
+export function WalletPageContent({ isAdmin }: WalletPageContentProps) {
+  const [amountHidden, setAmountHidden] = useState(false);
+  const [{ wallet_user: walletUser }, setParams] = useQueryStates(
+    { wallet_user: parseAsString.withDefault('self') },
+    { shallow: true }
+  );
+
+  const summaryFilters: WalletSummaryFilters = isAdmin ? { user: walletUser } : {};
+  const syncsFilters: WalletSyncsListFilters = isAdmin ? { user: walletUser } : {};
+  const suspenseKey = isAdmin ? walletUser : 'self';
+
+  return (
+    <div className='mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6'>
+      {isAdmin ? (
+        <div className='flex justify-end'>
+          <WalletUserCombobox
+            value={walletUser}
+            onValueChange={(value) => setParams({ wallet_user: value })}
           />
-          <WalletPaymentMethodCard paymentMethod={MOCK_PAYMENT_METHOD} />
         </div>
-      </div>
+      ) : null}
+
+      <Suspense key={suspenseKey} fallback={<PageLoadingSpinner variant='fill' />}>
+        <WalletData
+          summaryFilters={summaryFilters}
+          syncsFilters={syncsFilters}
+          amountHidden={amountHidden}
+          onToggleHidden={() => setAmountHidden((current) => !current)}
+        />
+      </Suspense>
     </div>
   );
 }

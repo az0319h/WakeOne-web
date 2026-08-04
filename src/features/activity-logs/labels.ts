@@ -25,6 +25,8 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'contract.no_attachment_unset': '계약서 첨부 없음 해제',
   'contract.reminder_send': '계약서 독촉 메일 발송',
   'contract.reminder_failed': '계약서 독촉 메일 실패',
+  'wallet.sync_create': '지갑 동기화',
+  'wallet.sync_failed': '지갑 동기화 실패',
   'profile.update': '프로필 수정',
   'profile.password_change': '비밀번호 변경',
   'notification.read': '알림 읽음',

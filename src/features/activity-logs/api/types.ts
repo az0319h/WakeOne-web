@@ -23,12 +23,14 @@ export type ActivityAction =
   | 'contract.no_attachment_unset'
   | 'contract.reminder_send'
   | 'contract.reminder_failed'
+  | 'wallet.sync_create'
+  | 'wallet.sync_failed'
   | 'profile.update'
   | 'profile.password_change'
   | 'notification.read'
   | 'notification.read_all';
 
-export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'contract';
+export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'contract' | 'wallet';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
