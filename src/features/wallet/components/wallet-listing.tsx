@@ -7,9 +7,10 @@ import { searchParamsCache } from '@/lib/searchparams';
 import {
   WALLET_SYNCS_PAGE_SIZE,
   walletSummaryQueryOptions,
-  walletSyncsInfiniteQueryOptions
+  walletSyncsInfiniteQueryOptions,
+  type WalletSyncsListFilters
 } from '../api/queries';
-import type { WalletSummaryFilters, WalletSyncsListFilters } from '../api/types';
+import type { WalletSummaryFilters } from '../api/types';
 import { getWalletSummaryServer, listWalletSyncs } from '../api/service.server';
 import { WalletPageContent } from './wallet-page-content';
 
