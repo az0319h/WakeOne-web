@@ -78,7 +78,7 @@ export function UsersTable() {
 
   return (
     <>
-      <div className='flex flex-1 flex-col'>
+      <div className='flex min-w-0 flex-1 flex-col'>
         <DataTable table={table}>
           <DataTableToolbar table={table} />
         </DataTable>

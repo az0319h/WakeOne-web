@@ -53,15 +53,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <KBar>
           <SidebarProvider defaultOpen={defaultOpen}>
             <AppSidebar />
-            <SidebarInset>
+            <SidebarInset className='min-w-0'>
               <Header />
               <Suspense fallback={null}>
                 <AccessDeniedToast />
               </Suspense>
               <ProfileStatusRealtime profile={profile} />
               <NotificationsRealtime profile={profile} />
-              <InfobarProvider defaultOpen={false}>
-                {children}
+              <InfobarProvider defaultOpen={false} className='min-w-0'>
+                <div className='flex min-w-0 flex-1 flex-col'>{children}</div>
                 <InfoSidebar side='right' />
               </InfobarProvider>
             </SidebarInset>

@@ -5,8 +5,8 @@ const FIREWORK_COLORS = ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', 
 
 const CANNON_COLORS = ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'];
 
-export function getBirthdayConfettiStorageKey(year: number, month: number) {
-  return `wakeone:birthday-confetti:${year}-${month}`;
+export function getBirthdayConfettiStorageKey(referenceDate: string) {
+  return `wakeone:birthday-confetti:${referenceDate}`;
 }
 
 /**

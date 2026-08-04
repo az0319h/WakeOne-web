@@ -6,7 +6,7 @@ type BirthdayCelebrantsApiResponse = {
   data: BirthdayCelebrantsResponse;
 };
 
-export async function fetchBirthdayCelebrantsThisMonth(): Promise<BirthdayCelebrantsResponse> {
+export async function fetchBirthdayCelebrantsUpcoming(): Promise<BirthdayCelebrantsResponse> {
   const response = await apiClient<BirthdayCelebrantsApiResponse>('/birthdays/this-month');
   return response.data;
 }

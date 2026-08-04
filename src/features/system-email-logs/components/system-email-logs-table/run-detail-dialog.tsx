@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
+import { DataTableScrollContainer } from '@/components/ui/table/data-table-scroll-container';
 import {
   Table,
   TableBody,
@@ -104,8 +105,8 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
 
               <section>
                 <h3 className='mb-2 text-sm font-medium'>수신자 ({run.recipients.length})</h3>
-                <div className='rounded-lg border'>
-                  <Table data-testid='system-email-log-recipients-table'>
+                <DataTableScrollContainer>
+                  <Table className='w-max min-w-full' data-testid='system-email-log-recipients-table'>
                     <TableHeader>
                       <TableRow>
                         <TableHead>수신자</TableHead>
@@ -143,14 +144,14 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
                       )}
                     </TableBody>
                   </Table>
-                </div>
+                </DataTableScrollContainer>
               </section>
 
               {run.unmatched_targets.length > 0 ? (
                 <section>
                   <h3 className='mb-2 text-sm font-medium'>미매칭 ({run.unmatched_targets.length})</h3>
-                  <div className='rounded-lg border'>
-                    <Table data-testid='system-email-log-unmatched-table'>
+                  <DataTableScrollContainer>
+                    <Table className='w-max min-w-full' data-testid='system-email-log-unmatched-table'>
                       <TableHeader>
                         <TableRow>
                           <TableHead>작성자</TableHead>
@@ -172,7 +173,7 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
+                  </DataTableScrollContainer>
                 </section>
               ) : null}
             </div>

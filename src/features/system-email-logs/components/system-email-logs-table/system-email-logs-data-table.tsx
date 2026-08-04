@@ -4,7 +4,7 @@ import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
 import { type ComponentProps } from 'react';
 
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { DataTableScrollContainer } from '@/components/ui/table/data-table-scroll-container';
 import {
   Table,
   TableBody,
@@ -30,11 +30,10 @@ export function SystemEmailLogsDataTable({
   const columnCount = table.getVisibleLeafColumns().length;
 
   return (
-    <div className='flex flex-col space-y-4'>
+    <div className='flex min-w-0 flex-col space-y-4'>
       {children}
-      <div className='overflow-hidden rounded-lg border'>
-        <ScrollArea>
-          <Table data-testid='system-email-logs-table'>
+      <DataTableScrollContainer>
+          <Table className='w-max min-w-full' data-testid='system-email-logs-table'>
               <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -98,9 +97,7 @@ export function SystemEmailLogsDataTable({
                 )}
               </TableBody>
             </Table>
-          <ScrollBar orientation='horizontal' />
-        </ScrollArea>
-      </div>
+      </DataTableScrollContainer>
       <DataTablePagination table={table} />
     </div>
   );
