@@ -8,10 +8,6 @@ import { UserFormSheetTrigger } from '@/features/users/components/user-form-shee
 import { requireAdminPage } from '@/features/auth/api/session.server';
 import { Suspense } from 'react';
 
-export const metadata = {
-  title: 'Dashboard: 사용자 관리'
-};
-
 type PageProps = {
   searchParams: Promise<SearchParams>;
 };

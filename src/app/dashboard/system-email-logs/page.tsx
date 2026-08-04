@@ -6,10 +6,6 @@ import { searchParamsCache } from '@/lib/searchparams';
 import type { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
 
-export const metadata = {
-  title: 'Dashboard: 독촉 이메일 로그'
-};
-
 type PageProps = {
   searchParams: Promise<SearchParams>;
 };

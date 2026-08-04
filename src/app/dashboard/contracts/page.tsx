@@ -4,10 +4,6 @@ import { ContractListing } from '@/features/contracts/components/contract-listin
 import { searchParamsCache } from '@/lib/searchparams';
 import type { SearchParams } from 'nuqs/server';
 
-export const metadata = {
-  title: 'Dashboard: 계약서 관리'
-};
-
 type PageProps = {
   searchParams: Promise<SearchParams>;
 };

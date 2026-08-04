@@ -7,10 +7,6 @@ import { Suspense } from 'react';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { reactQueryInfoContent } from '@/features/react-query-demo/info-content';
 
-export const metadata = {
-  title: 'Dashboard: React Query'
-};
-
 export default function ReactQueryPage() {
   const queryClient = getQueryClient();
 

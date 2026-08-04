@@ -3,10 +3,6 @@ import { ProfilePageContent } from '@/features/auth/components/profile-page-cont
 import { getSessionProfile } from '@/features/auth/api/session.server';
 import { redirect } from 'next/navigation';
 
-export const metadata = {
-  title: 'Dashboard: Profile'
-};
-
 export default async function ProfilePage() {
   const profile = await getSessionProfile();
 

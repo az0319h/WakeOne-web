@@ -25,29 +25,42 @@ export function BirthdayCelebrationSlide({
   const birthdayLabel = formatBirthdayMonthDay(birthday);
 
   return (
-    <div className={cn('relative px-6 py-8 text-center sm:px-10 sm:py-10', className)}>
+    <div
+      className={cn(
+        'relative flex w-full flex-col items-center px-6 py-8 text-center sm:px-10 sm:py-10',
+        className
+      )}
+    >
       <Icons.sparkles
         aria-hidden
-        className='text-muted-foreground/20 pointer-events-none absolute top-5 left-5 size-4'
+        className='text-muted-foreground/15 pointer-events-none absolute top-5 left-5 size-3.5'
       />
       <Icons.sparkles
         aria-hidden
-        className='text-muted-foreground/15 pointer-events-none absolute right-5 bottom-5 size-3.5'
+        className='text-muted-foreground/15 pointer-events-none absolute top-5 right-5 size-3.5'
+      />
+      <Icons.sparkles
+        aria-hidden
+        className='text-muted-foreground/10 pointer-events-none absolute bottom-5 left-5 size-3'
+      />
+      <Icons.sparkles
+        aria-hidden
+        className='text-muted-foreground/10 pointer-events-none absolute right-5 bottom-5 size-3'
       />
 
-      <Badge variant='outline' className='mb-5'>
+      <Badge variant='outline' className='mx-auto mb-5'>
         <Icons.sparkles className='text-muted-foreground size-3.5' />
         다가오는 생일
       </Badge>
 
-      <div className='relative mx-auto mb-5 size-20 sm:size-24'>
+      <div className='relative mb-5 size-20 shrink-0 sm:size-24'>
         {!prefersReducedMotion ? (
           <motion.div
             aria-hidden
-            className='absolute inset-0 rounded-full opacity-80'
+            className='absolute inset-0 rounded-full opacity-70'
             style={{
               background:
-                'conic-gradient(from 0deg, transparent 0deg, color-mix(in oklch, var(--primary) 55%, transparent) 100deg, transparent 200deg, color-mix(in oklch, var(--muted-foreground) 40%, transparent) 300deg, transparent 360deg)'
+                'conic-gradient(from 0deg, color-mix(in oklch, var(--primary) 45%, transparent), transparent 25%, color-mix(in oklch, var(--muted-foreground) 35%, transparent), transparent 50%, color-mix(in oklch, var(--primary) 45%, transparent), transparent 75%, color-mix(in oklch, var(--muted-foreground) 35%, transparent), transparent)'
             }}
             animate={{ rotate: 360 }}
             transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
@@ -73,10 +86,10 @@ export function BirthdayCelebrationSlide({
         </div>
       </div>
 
-      <h3 className='text-foreground text-xl font-bold tracking-tight sm:text-2xl'>
+      <h3 className='text-foreground w-full text-xl font-bold tracking-tight sm:text-2xl'>
         {displayName}님, 생일을 축하해요!
       </h3>
-      <p className='text-muted-foreground mx-auto mt-2 max-w-md text-sm leading-relaxed sm:text-base'>
+      <p className='text-muted-foreground mt-2 w-full max-w-md text-sm leading-relaxed sm:text-base'>
         {birthdayLabel ? (
           <>
             <span className='text-foreground font-medium'>{birthdayLabel}</span>
