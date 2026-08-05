@@ -35,3 +35,5 @@ playwright-report/
 test-results/
 /blob-report/
 /playwright/.cache/
+.vercel
+.env*

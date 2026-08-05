@@ -17,6 +17,7 @@ import { formatAbsoluteDateKo } from '@/lib/format-date';
 import { contractsQueryOptions } from '../../api/queries';
 import type { ContractDocument, ContractFilters } from '../../api/types';
 import { createContractColumns, getContractExternalDocumentUrl } from './columns';
+import { ContractBulkDownloadButton } from '../contract-bulk-download-button';
 
 const SORTABLE_COLUMN_IDS = [
   'approved_at',
@@ -169,6 +170,7 @@ export function ContractsTable({ onView, onEdit }: ContractsTableProps) {
     <div className='flex min-w-0 flex-1 flex-col'>
       <div className='mb-3 flex flex-wrap items-center gap-2'>
         <ContractDateRangeFilter />
+        <ContractBulkDownloadButton from={params.from} to={params.to} />
       </div>
       <DataTable
         table={table}

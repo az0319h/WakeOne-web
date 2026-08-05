@@ -2,6 +2,7 @@ import { apiClientWithMessage } from '@/lib/api-client';
 import type {
   ContractAttachmentMutationResponse,
   ContractAttachmentSummary,
+  ContractBulkDownloadPreviewResponse,
   ContractDetailResponse,
   ContractFilters,
   ContractMutationResponse,
@@ -144,6 +145,44 @@ export async function setContractNoAttachment(
       body: JSON.stringify(payload)
     }
   );
+}
+
+export async function getContractBulkDownloadPreview(from: string, to: string) {
+  const params = new URLSearchParams({ from, to });
+  return apiClientWithMessage<ContractBulkDownloadPreviewResponse>(
+    `/contracts/attachments/bulk-download/preview?${params.toString()}`
+  );
+}
+
+export async function downloadContractAttachmentsBulk(from: string, to: string): Promise<{
+  blob: Blob;
+  fileName: string;
+}> {
+  const params = new URLSearchParams({ from, to });
+  const response = await fetch(`/api/contracts/attachments/bulk-download?${params.toString()}`);
+
+  if (!response.ok) {
+    let message = `API error: ${response.status}`;
+    try {
+      const data = (await response.json()) as { message?: string };
+      message = data.message ?? message;
+    } catch {
+      // ZIP endpoints may not return JSON on every failure.
+    }
+    throw new Error(message);
+  }
+
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const asciiMatch = disposition.match(/filename="([^"]+)"/i);
+  const fileName = utf8Match?.[1]
+    ? decodeURIComponent(utf8Match[1])
+    : asciiMatch?.[1] ?? `contracts-${from}_${to}.zip`;
+
+  return {
+    blob: await response.blob(),
+    fileName
+  };
 }
 
 export async function downloadContractAttachment(
