@@ -2,14 +2,10 @@ import type { Metadata } from 'next';
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://wakeone.site';
 
-export const SITE_NAME = 'WakeOne - 내부 통합 업무 대시보드';
+export const SITE_NAME = 'WakeOne | Wake Corp';
 
 export const SITE_DESCRIPTION =
-  'WakeOne은 Wake Corp 팀을 위한 내부 통합 업무 대시보드입니다. ' +
-  '계약서·첨부 관리, 사용자 및 권한(RBAC), 활동 감사 로그, 실시간 알림, ' +
-  '독촉 이메일 발송 이력, 지갑·생일 등 운영에 필요한 기능을 ' +
-  '하나의 웹에서 안전하게 이용할 수 있습니다. ' +
-  '관리자가 등록한 계정으로 로그인하여 조직 업무를 효율적으로 수행하세요.';
+  '웨이크(Wake Corp) 구성원을 위한 사내 업무 대시보드입니다.';
 
 export const SITE_KEYWORDS = [
   'WakeOne',
