@@ -52,7 +52,7 @@
 | 09 | [09_profile-phone-birthday-plan.md](./09_profile-phone-birthday-plan.md) | **Approved** · 연락처 11자리·생일 Calendar · SQL `11` |
 | 10 | [10_dashboard-birthday-profile-sheet-plan.md](./10_dashboard-birthday-profile-sheet-plan.md) | **Approved** · overview 생일 배너·컨페티·프로필 Sheet |
 | 11 | [11_password-policy-set-password-removal-plan.md](./11_password-policy-set-password-removal-plan.md) | **Approved** · 비밀번호 정책·set-password 제거 |
-| 13 | [13_office-snack-vote-plan.md](./13_office-snack-vote-plan.md) | **Approved** · 사무실 간식 투표 · wake/admin RBAC |
+| 13 | [13_office-snack-vote-plan.md](./13_office-snack-vote-plan.md) | **Cancelled** · 사무실 간식 — [35](./35_office-snack-removal-plan.md)로 폐기 |
 | 14 | [14_delete-confirm-dialog-plan.md](./14_delete-confirm-dialog-plan.md) | **Completed** · 삭제 확인 `AlertModal` 전역 규칙 |
 | 15 | [15_asset-ledger-plan.md](./15_asset-ledger-plan.md) | **Cancelled** · 비품 대장 — [23](./23_asset-ledger-removal-plan.md)로 폐기 |
 | 16 | [16_contract-management-plan.md](./16_contract-management-plan.md) | **Approved** · 계약서 관리 · admin-only 첨부/독촉 |
@@ -72,6 +72,7 @@
 | 32 | [32_wallet-kbcard-sync-plan.md](./32_wallet-kbcard-sync-plan.md) | **Approved** · KB카드 wallet sync active admin 요약·matched user 인앱 알림 · SQL `38` 예정 |
 | 33 | [33_contract-bulk-download-plan.md](./33_contract-bulk-download-plan.md) | **Approved** · 계약서 첨부 ZIP 일괄 다운로드 · admin · 100건/200MB 상한 |
 | 34 | [34_login-email-split-ux-plan.md](./34_login-email-split-ux-plan.md) | **Approved** · sign-in 이메일 로컬+도메인 Combobox · plan 01 UX 확장 · BE Out |
+| 35 | [35_office-snack-removal-plan.md](./35_office-snack-removal-plan.md) | **Completed** · 사무실 간식 완전 제거 · SQL `39` · plan 13 Cancelled |
 
 ## 에이전트 참조
 

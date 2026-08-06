@@ -5,11 +5,6 @@ import {
   isAdminDashboardPath
 } from '@/config/admin-routes';
 import { isDisabledDashboardPath } from '@/config/disabled-routes';
-import {
-  isOfficeSnacksDashboardPath,
-  OFFICE_SNACKS_ACCESS_DENIED_KEY
-} from '@/config/office-snacks-routes';
-import { canAccessOfficeSnacks } from '@/features/office-snacks/api/access';
 import { ACCESS_DENIED_FLASH_COOKIE } from '@/lib/auth/access-denied-flash';
 import { updateSession } from '@/lib/supabase/middleware';
 
@@ -195,14 +190,6 @@ export async function middleware(request: NextRequest) {
     if (isAdminDashboardPath(pathname) && profile?.system_role !== 'admin') {
       const accessDenied = getAdminAccessDeniedParam(pathname) ?? 'users';
       return redirectWithAccessDeniedFlash(request, response, accessDenied);
-    }
-
-    if (
-      isOfficeSnacksDashboardPath(pathname) &&
-      profile &&
-      !canAccessOfficeSnacks(profile)
-    ) {
-      return redirectWithAccessDeniedFlash(request, response, OFFICE_SNACKS_ACCESS_DENIED_KEY);
     }
   }
 
