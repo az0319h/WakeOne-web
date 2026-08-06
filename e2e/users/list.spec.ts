@@ -50,6 +50,22 @@ async function selectOption(page: Page, combobox: Locator, optionName: string) {
   await page.getByRole('option', { name: optionName, exact: true }).click();
 }
 
+async function fillSignInCredentials(page: Page, email: string, password: string) {
+  const atIndex = email.indexOf('@');
+  const localPart = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
+
+  await page.getByRole('textbox', { name: '아이디' }).fill(localPart);
+
+  if (domain !== 'wakecorp.com') {
+    await page.getByTestId('login-domain-combobox').click();
+    await page.getByPlaceholder('도메인 검색 또는 입력…').fill(domain);
+    await page.getByRole('option', { name: `「${domain}」 사용` }).click();
+  }
+
+  await page.getByPlaceholder('비밀번호를 입력하세요').fill(password);
+}
+
 async function fillRequiredCreateFields(
   page: Page,
   dialog: Locator,
@@ -166,8 +182,7 @@ test.describe('사용자 목록', () => {
 
     await page.goto(`${baseURL}/auth/sign-in`);
     await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
-    await page.getByPlaceholder('이메일을 입력하세요').fill(email);
-    await page.getByPlaceholder('비밀번호를 입력하세요').fill('12341234a');
+    await fillSignInCredentials(page, email, '12341234a');
     await page.getByRole('button', { name: '로그인' }).click();
 
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
