@@ -71,6 +71,7 @@
 | 31 | [31_global-kbar-search-plan.md](./31_global-kbar-search-plan.md) | **Revised** · kbar nav synonym + RBAC page search + theme (entity search Out) |
 | 32 | [32_wallet-kbcard-sync-plan.md](./32_wallet-kbcard-sync-plan.md) | **Approved** · KB카드 wallet sync active admin 요약·matched user 인앱 알림 · SQL `38` 예정 |
 | 33 | [33_contract-bulk-download-plan.md](./33_contract-bulk-download-plan.md) | **Approved** · 계약서 첨부 ZIP 일괄 다운로드 · admin · 100건/200MB 상한 |
+| 34 | [34_login-email-split-ux-plan.md](./34_login-email-split-ux-plan.md) | **Approved** · sign-in 이메일 로컬+도메인 Combobox · plan 01 UX 확장 · BE Out |
 
 ## 에이전트 참조
 
