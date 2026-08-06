@@ -47,9 +47,9 @@ export const siteMetadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: '/opengraph-image',
-        width: 1200,
-        height: 630,
+        url: '/assets/opengraph-image.png',
+        width: 1376,
+        height: 768,
         alt: `${SITE_NAME} — Wake Corp 내부 업무 대시보드`
       }
     ]
@@ -58,7 +58,7 @@ export const siteMetadata: Metadata = {
     card: 'summary_large_image',
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
-    images: ['/twitter-image']
+    images: ['/assets/opengraph-image.png']
   },
   robots: {
     index: false,
@@ -72,7 +72,8 @@ export const siteMetadata: Metadata = {
     canonical: SITE_URL
   },
   icons: {
-    icon: [{ url: '/icon', type: 'image/png' }],
-    apple: [{ url: '/apple-icon', type: 'image/png' }]
+    icon: [{ url: '/assets/favicon.ico', type: 'image/x-icon' }],
+    shortcut: [{ url: '/assets/favicon.ico', type: 'image/x-icon' }],
+    apple: [{ url: '/assets/favicon.ico', type: 'image/x-icon' }]
   }
 };
