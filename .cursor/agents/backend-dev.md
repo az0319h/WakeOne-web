@@ -22,7 +22,7 @@ Supabase DB 스키마 설계, SQL 작성, Route Handler, service 레이어 구�
 1. **planner 산출물 확인**: `docs/plans/{feature}-plan.md` 읽기 (있으면)
    - API/DB 요구사항 섹션 확인
 2. **기존 SQL 번호 확인**: `supabase/sql/` 에서 최신 번호 확인 (누적 번호 유지)
-3. **Supabase MCP 확인**: 작업 시작 전 `user-supabase-mcp`로 스키마 확인
+3. **Supabase MCP 확인**: 작업 시작 전 `user-WakeOne-Mcp`로 스키마 확인
 4. **Supabase MCP 배포 (필수)**: `supabase/sql/NN_*.sql` 추가·변경 시 **`apply_migration`으로 원격 적용** — repo 파일만 두고 완료 보고 금지
 
 ## 구현 규칙 (core-conventions.mdc 요약)
@@ -39,8 +39,12 @@ Supabase DB 스키마 설계, SQL 작성, Route Handler, service 레이어 구�
 
 | 순서 | Read 필수 | 실행 |
 |------|-----------|------|
-| 1 | `.cursor/skills/supabase-mcp-backend/SKILL.md` | **`user-supabase-mcp` MCP**로 스키마 확인 (`list_tables` 등) |
-| 2 | `.cursor/skills/nextbase-supabase-backend/SKILL.md` | SQL·Route Handler·service 패턴 |
+| 1 | `.cursor/skills/supabase-mcp-backend/SKILL.md` | **`user-WakeOne-Mcp` MCP**로 스키마 확인 (`list_tables` 등) |
+| 2 | `.cursor/skills/supabase/SKILL.md` | Supabase 공식 가이드 (changelog·Auth·SSR·Edge·MCP) |
+| 3 | `.cursor/skills/supabase-postgres-best-practices/SKILL.md` | SQL·스키마·RLS·인덱스 작성 **전** Postgres best practices |
+| 4 | `.cursor/skills/nextbase-supabase-backend/SKILL.md` | WakeOne SQL·Route Handler·service 패턴 |
+
+> 출처: [supabase/agent-skills](https://github.com/supabase/agent-skills) — `skills-lock.json` 등록됨
 
 채팅 첫 줄: `[backend-dev] MCP·스킬 Read 완료 · SQL 번호 {NN}`
 
