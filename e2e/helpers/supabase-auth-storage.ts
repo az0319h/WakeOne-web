@@ -28,7 +28,9 @@ export async function authenticateStorageState(
   outputPath: string
 ) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
     '127.0.0.1',
     'localhost'
@@ -36,7 +38,7 @@ export async function authenticateStorageState(
 
   if (!supabaseUrl || !publishableKey) {
     throw new Error(
-      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY must be set for E2E auth.'
+      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) must be set for E2E auth.'
     );
   }
 
