@@ -1,8 +1,9 @@
 # 사무실 간식 목록 페이지 Transfers 스타일 리디자인 기획서
 
 > Date: 2026-06-09
-> Status: Approved
+> Status: Cancelled
 > Author: planner
+> **폐기:** [35](./35_office-snack-removal-plan.md) — 사무실 간식 기능 완전 제거
 > 선행: `docs/plans/07_auth-route-guard-plan.md`, `docs/plans/08_activity-audit-log-plan.md`, `docs/plans/12_dashboard-skeleton-mobile-sheet-quality-plan.md`
 
 ## 한 줄 요약

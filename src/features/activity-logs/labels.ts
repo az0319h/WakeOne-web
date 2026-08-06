@@ -6,13 +6,6 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'user.update': '사용자 정보 수정',
   'user.reactivate': '사용자 재활성화',
   'user.deactivate': '사용자 비활성화',
-  'office_snack.session_create': '간식 투표 세션 생성',
-  'office_snack.session_update': '간식 투표 세션 수정',
-  'office_snack.session_delete': '간식 투표 세션 삭제',
-  'office_snack.candidate_create': '간식 후보 등록',
-  'office_snack.candidate_update': '간식 후보 수정',
-  'office_snack.candidate_delete': '간식 후보 삭제',
-  'office_snack.vote_submit': '간식 투표 제출',
   'contract.import_create': '계약서 가져오기(신규)',
   'contract.import_duplicate': '계약서 가져오기(중복)',
   'contract.import_backfill': '계약서 가져오기(보강)',
@@ -59,24 +52,7 @@ export const METADATA_LABELS: Record<string, string> = {
   safety_filter_result: '안전 필터 결과'
 };
 
-const SESSION_TARGET_PATTERN = /^session:(\d+)$/;
-const SESSION_CANDIDATE_TARGET_PATTERN = /^session:(\d+):candidate:(\d+)$/;
-
 export function formatTargetLabel(targetLabel: string): string {
-  if (targetLabel === 'office_snack') {
-    return '간식 투표';
-  }
-
-  const sessionMatch = targetLabel.match(SESSION_TARGET_PATTERN);
-  if (sessionMatch) {
-    return `간식 투표 세션 #${sessionMatch[1]}`;
-  }
-
-  const candidateMatch = targetLabel.match(SESSION_CANDIDATE_TARGET_PATTERN);
-  if (candidateMatch) {
-    return `간식 후보 #${candidateMatch[2]}`;
-  }
-
   return targetLabel;
 }
 

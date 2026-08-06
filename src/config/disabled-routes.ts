@@ -6,8 +6,7 @@ export const DISABLED_DASHBOARD_PATHS = [
   '/dashboard/billing',
   '/dashboard/exclusive',
   '/dashboard/react-query',
-  '/dashboard/elements',
-  '/dashboard/office-snacks'
+  '/dashboard/elements'
 ] as const;
 
 export function isDisabledDashboardPath(pathname: string): boolean {
