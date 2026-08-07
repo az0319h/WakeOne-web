@@ -20,10 +20,12 @@ export type ActivityAction =
   | 'wallet.sync_failed'
   | 'profile.update'
   | 'profile.password_change'
+  | 'auth.password_reset_request'
+  | 'auth.password_reset_complete'
   | 'notification.read'
   | 'notification.read_all';
 
-export type ActivityTargetType = 'user' | 'profile' | 'contract' | 'wallet';
+export type ActivityTargetType = 'user' | 'profile' | 'contract' | 'wallet' | 'auth';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -35,6 +37,7 @@ export type ActivityLogErrorCode =
   | 'inactive_user'
   | 'not_found'
   | 'wrong_password'
+  | 'invalid_otp'
   | 'profile_edit_disabled'
   | 'cron_paused'
   | 'safety_filter_blocked'

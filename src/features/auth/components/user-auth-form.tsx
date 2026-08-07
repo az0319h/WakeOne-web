@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -163,7 +164,15 @@ function UserAuthFormFields() {
           children={(field) => (
             <field.FieldSet>
               <field.Field>
-                <field.FieldLabel htmlFor={field.name}>비밀번호</field.FieldLabel>
+                <div className='flex items-center justify-between gap-2'>
+                  <field.FieldLabel htmlFor={field.name}>비밀번호</field.FieldLabel>
+                  <Link
+                    href='/auth/forgot-password'
+                    className='text-muted-foreground hover:text-primary shrink-0 text-xs underline-offset-4 hover:underline'
+                  >
+                    비밀번호 찾기
+                  </Link>
+                </div>
                 <Input
                   id={field.name}
                   name={field.name}

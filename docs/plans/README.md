@@ -73,6 +73,7 @@
 | 33 | [33_contract-bulk-download-plan.md](./33_contract-bulk-download-plan.md) | **Approved** · 계약서 첨부 ZIP 일괄 다운로드 · admin · 100건/200MB 상한 |
 | 34 | [34_login-email-split-ux-plan.md](./34_login-email-split-ux-plan.md) | **Approved** · sign-in 이메일 로컬+도메인 Combobox · plan 01 UX 확장 · BE Out |
 | 35 | [35_office-snack-removal-plan.md](./35_office-snack-removal-plan.md) | **Completed** · 사무실 간식 완전 제거 · SQL `39` · plan 13 Cancelled |
+| 36 | [36_password-reset-otp-plan.md](./36_password-reset-otp-plan.md) | **In Progress** · 비밀번호 찾기 OTP · 수동 QA 완료 · verifier Out |
 
 ## 에이전트 참조
 
