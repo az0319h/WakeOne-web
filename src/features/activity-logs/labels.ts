@@ -22,6 +22,8 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'wallet.sync_failed': '지갑 동기화 실패',
   'profile.update': '프로필 수정',
   'profile.password_change': '비밀번호 변경',
+  'auth.password_reset_request': '비밀번호 찾기 요청',
+  'auth.password_reset_complete': '비밀번호 찾기 완료',
   'notification.read': '알림 읽음',
   'notification.read_all': '알림 모두 읽음'
 };

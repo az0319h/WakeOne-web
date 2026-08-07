@@ -51,6 +51,17 @@ function isServiceTokenApiPath(pathname: string): boolean {
   );
 }
 
+function isPublicAuthApiPath(pathname: string, method: string): boolean {
+  if (method !== 'POST') {
+    return false;
+  }
+
+  return (
+    pathname === '/api/auth/forgot-password/request' ||
+    pathname === '/api/auth/forgot-password/verify'
+  );
+}
+
 function isDashboardPath(pathname: string): boolean {
   return pathname === '/dashboard' || pathname.startsWith('/dashboard/');
 }
@@ -115,6 +126,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isApiPath(pathname) && !isServiceTokenApiPath(pathname)) {
+    if (isPublicAuthApiPath(pathname, request.method)) {
+      return NextResponse.next();
+    }
+
     const { response, user, profile } = await updateSession(request);
 
     if (profile?.status === 'inactive') {
