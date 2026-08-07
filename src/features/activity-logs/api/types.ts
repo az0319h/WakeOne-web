@@ -4,13 +4,6 @@ export type ActivityAction =
   | 'user.update'
   | 'user.reactivate'
   | 'user.deactivate'
-  | 'office_snack.session_create'
-  | 'office_snack.session_update'
-  | 'office_snack.session_delete'
-  | 'office_snack.candidate_create'
-  | 'office_snack.candidate_update'
-  | 'office_snack.candidate_delete'
-  | 'office_snack.vote_submit'
   | 'contract.import_create'
   | 'contract.import_duplicate'
   | 'contract.import_backfill'
@@ -30,7 +23,7 @@ export type ActivityAction =
   | 'notification.read'
   | 'notification.read_all';
 
-export type ActivityTargetType = 'user' | 'profile' | 'office_snack' | 'contract' | 'wallet';
+export type ActivityTargetType = 'user' | 'profile' | 'contract' | 'wallet';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'

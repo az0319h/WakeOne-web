@@ -2,7 +2,6 @@
 
 import { createContext, use, useEffect, useState } from 'react';
 import type { AuthProfile } from '@/features/auth/api/types';
-import { canAccessOfficeSnacks } from '@/features/office-snacks/api/access';
 import type { PermissionCheck } from '@/types';
 
 interface NavAccessContextValue {
@@ -52,10 +51,6 @@ export function checkNavAccess(
 
   if (access.systemRole !== undefined) {
     return profile?.system_role === access.systemRole;
-  }
-
-  if (access.officeSnacks) {
-    return profile ? canAccessOfficeSnacks(profile) : false;
   }
 
   return true;

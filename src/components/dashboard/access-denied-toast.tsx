@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { OFFICE_SNACKS_ACCESS_DENIED_MESSAGE } from '@/features/office-snacks/api/access';
-import { OFFICE_SNACKS_ACCESS_DENIED_KEY } from '@/config/office-snacks-routes';
 import {
   clearAccessDeniedFlash,
   readAccessDeniedFlash
@@ -10,8 +8,7 @@ import {
 import { notifyError } from '@/lib/notify';
 
 const ACCESS_DENIED_MESSAGES: Record<string, string> = {
-  users: '이 페이지에 접근할 권한이 없습니다.',
-  [OFFICE_SNACKS_ACCESS_DENIED_KEY]: OFFICE_SNACKS_ACCESS_DENIED_MESSAGE
+  users: '이 페이지에 접근할 권한이 없습니다.'
 };
 
 function readLegacyAccessDeniedParam(): string | null {
