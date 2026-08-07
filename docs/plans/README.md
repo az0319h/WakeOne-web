@@ -74,6 +74,7 @@
 | 34 | [34_login-email-split-ux-plan.md](./34_login-email-split-ux-plan.md) | **Approved** · sign-in 이메일 로컬+도메인 Combobox · plan 01 UX 확장 · BE Out |
 | 35 | [35_office-snack-removal-plan.md](./35_office-snack-removal-plan.md) | **Completed** · 사무실 간식 완전 제거 · SQL `39` · plan 13 Cancelled |
 | 36 | [36_password-reset-otp-plan.md](./36_password-reset-otp-plan.md) | **In Progress** · 비밀번호 찾기 OTP · 수동 QA 완료 · verifier Out |
+| 37 | [37_notifications-read-optimistic-update-plan.md](./37_notifications-read-optimistic-update-plan.md) | **Completed** · 알림 read/read-all optimistic update · plan 27 FE cache 확장 · BE Out |
 
 ## 에이전트 참조
 

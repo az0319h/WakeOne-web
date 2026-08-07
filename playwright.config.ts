@@ -22,6 +22,10 @@ function loadEnvFile(filePath: string) {
 
 loadEnvFile(path.join(__dirname, '.env'));
 
+const isNotificationsE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/notifications')
+);
+
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
   '127.0.0.1',
   'localhost'
@@ -30,6 +34,7 @@ const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  workers: isNotificationsE2eRun ? 1 : undefined,
   reporter: 'html',
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
@@ -66,7 +71,7 @@ export default defineConfig({
         /\.api\.spec\.ts$/,
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
-        /notifications\/notifications-page\.spec\.ts$/,
+        /notifications\//,
         /profile-name-live-display\//,
         /kbar\/nav-user\.spec\.ts$/
       ]
@@ -79,13 +84,20 @@ export default defineConfig({
       },
       dependencies: ['setup-user'],
       testMatch: [
-        /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
         /system-email-logs-rbac\.spec\.ts$/,
-        /notifications\/notifications-page\.spec\.ts$/,
-        /notifications\/rbac\.spec\.ts$/,
         /kbar\/nav-user\.spec\.ts$/
       ]
+    },
+    {
+      name: 'chromium-notifications',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin.json'
+      },
+      dependencies: ['setup', 'setup-user'],
+      testMatch: [/notifications\/.*\.spec\.ts$/],
+      fullyParallel: false
     },
     {
       name: 'chromium-profile-name-live-display-user',
@@ -127,7 +139,7 @@ export default defineConfig({
       },
       dependencies: ['setup', 'setup-user'],
       testMatch: /\.api\.spec\.ts$/,
-      testIgnore: [/profile-name-live-display\//]
+      testIgnore: [/profile-name-live-display\//, /notifications\//]
     }
   ]
 });
