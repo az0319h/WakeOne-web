@@ -81,6 +81,16 @@ test.describe('알림 페이지 (user)', () => {
     await expect(unreadCard).toBeVisible();
     await page.getByRole('button', { name: '읽음 처리' }).first().click();
 
+    await expect(page.getByRole('button', { name: '읽음 처리' })).toHaveCount(0);
+    await expect(
+      page.getByRole('tab', { name: /읽지 않음 \(0\)/ })
+    ).toBeVisible();
+
+    await page.goto('/dashboard/overview');
+    await expect(
+      bellButton.locator('span').filter({ hasText: /^\d/ })
+    ).toHaveCount(0);
+
     await expect
       .poll(async () => {
         const response = await request.get('/api/notifications?limit=10');
@@ -116,6 +126,11 @@ test.describe('알림 페이지 (user)', () => {
     });
     await page.getByRole('button', { name: '모두 읽음' }).click();
 
+    await expect(page.getByRole('button', { name: '모두 읽음' })).not.toBeVisible();
+    await expect(
+      page.getByRole('tab', { name: /읽지 않음 \(0\)/ })
+    ).toBeVisible();
+
     await expect
       .poll(async () => {
         const response = await request.get('/api/notifications?limit=50');
@@ -131,9 +146,9 @@ test.describe('알림 페이지 (user)', () => {
 
     await page.goto('/dashboard/overview');
     const bellButton = notificationBellButton(page);
-    await expect
-      .poll(async () => bellButton.locator('span').filter({ hasText: /^\d/ }).count())
-      .toBe(0);
+    await expect(
+      bellButton.locator('span').filter({ hasText: /^\d/ })
+    ).toHaveCount(0);
   });
 
   test('AC-07: 알림 페이지 infinite scroll 10건씩 로드·중복 없음', async ({
