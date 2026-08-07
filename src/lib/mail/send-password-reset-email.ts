@@ -44,13 +44,13 @@ export async function sendPasswordResetEmail({
 
           <!-- 헤더 -->
           <tr>
-            <td style="padding:32px 32px 0;">
+            <td style="padding:24px 24px 0;">
               <table cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="width:32px;height:32px;background:#000;border-radius:8px;text-align:center;vertical-align:middle;">
-                    <span style="color:#fff;font-size:14px;font-weight:500;line-height:32px;">W</span>
+                  <td style="width:28px;height:28px;background:#000;border-radius:7px;text-align:center;vertical-align:middle;">
+                    <span style="color:#fff;font-size:13px;font-weight:500;line-height:28px;">W</span>
                   </td>
-                  <td style="padding-left:10px;font-size:15px;font-weight:500;color:#111;vertical-align:middle;">
+                  <td style="padding-left:8px;font-size:14px;font-weight:500;color:#111;vertical-align:middle;">
                     WakeOne
                   </td>
                 </tr>
@@ -60,11 +60,11 @@ export async function sendPasswordResetEmail({
 
           <!-- 타이틀 -->
           <tr>
-            <td style="padding:24px 32px 0;">
-              <p style="margin:0 0 8px;font-size:24px;font-weight:500;color:#111;line-height:1.2;letter-spacing:-0.02em;">
-                임시 비밀번호가 발급되었습니다.
+            <td style="padding:20px 24px 0;">
+              <p style="margin:0 0 6px;font-size:20px;font-weight:500;color:#111;letter-spacing:-0.02em;">
+                임시 비밀번호가 발급되었습니다
               </p>
-              <p style="margin:0 0 28px;font-size:14px;color:#666;">
+              <p style="margin:0 0 20px;font-size:13px;color:#666;line-height:1.6;">
                 비밀번호 찾기 요청에 따라 새 임시 비밀번호를 안내드립니다.
               </p>
             </td>
@@ -72,14 +72,11 @@ export async function sendPasswordResetEmail({
 
           <!-- 이메일 카드 -->
           <tr>
-            <td style="padding:0 32px 10px;">
+            <td style="padding:0 24px 8px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9f9f9;border-radius:8px;">
                 <tr>
-                  <td style="padding:14px 16px;width:28px;vertical-align:middle;">
-                    <span style="font-size:18px;">✉</span>
-                  </td>
-                  <td style="padding:14px 16px 14px 0;vertical-align:middle;">
-                    <p style="margin:0 0 2px;font-size:11px;color:#aaa;">로그인 이메일</p>
+                  <td style="padding:14px 16px;">
+                    <p style="margin:0 0 3px;font-size:11px;color:#aaa;">로그인 이메일</p>
                     <p style="margin:0;font-size:14px;font-weight:500;color:#111;">${to}</p>
                   </td>
                 </tr>
@@ -89,14 +86,11 @@ export async function sendPasswordResetEmail({
 
           <!-- 비밀번호 카드 -->
           <tr>
-            <td style="padding:0 32px 24px;">
+            <td style="padding:0 24px 16px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9f9f9;border-radius:8px;">
                 <tr>
-                  <td style="padding:14px 16px;width:28px;vertical-align:middle;">
-                    <span style="font-size:18px;">🔒</span>
-                  </td>
-                  <td style="padding:14px 16px 14px 0;vertical-align:middle;">
-                    <p style="margin:0 0 2px;font-size:11px;color:#aaa;">임시 비밀번호</p>
+                  <td style="padding:14px 16px;">
+                    <p style="margin:0 0 3px;font-size:11px;color:#aaa;">임시 비밀번호</p>
                     <p style="margin:0;font-size:14px;font-weight:500;color:#111;font-family:'Courier New',Courier,monospace;">${temporaryPassword}</p>
                   </td>
                 </tr>
@@ -106,7 +100,7 @@ export async function sendPasswordResetEmail({
 
           <!-- CTA 버튼 -->
           <tr>
-            <td style="padding:0 32px 14px;">
+            <td style="padding:0 24px 14px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="background:#000;border-radius:8px;">
@@ -122,8 +116,8 @@ export async function sendPasswordResetEmail({
 
           <!-- 푸터 -->
           <tr>
-            <td style="padding:0 32px 32px;">
-              <p style="margin:0;font-size:11px;color:#bbb;text-align:center;line-height:1.6;">
+            <td style="padding:0 24px 24px;">
+              <p style="margin:0;font-size:11px;color:#aaa;text-align:center;line-height:1.6;">
                 로그인 후 비밀번호 변경을 권장합니다 · 본인이 요청하지 않은 경우 관리자에게 문의해 주세요.
               </p>
             </td>
