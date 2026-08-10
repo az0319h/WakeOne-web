@@ -31,9 +31,11 @@ import {
   openContractAttachment
 } from '../api/service';
 import {
-  CONTRACT_ATTACHMENT_MAX_BYTES,
-  CONTRACT_ATTACHMENT_MAX_MB,
-  CONTRACT_ATTACHMENT_LIMIT_HINT,
+  CONTRACT_ATTACHMENT_DOCUMENT_LIMIT_HINT,
+  CONTRACT_ATTACHMENT_DOCUMENT_MAX_BYTES,
+  CONTRACT_ATTACHMENT_PER_FILE_LIMIT_HINT,
+  CONTRACT_ATTACHMENT_PER_FILE_MAX_BYTES,
+  CONTRACT_ATTACHMENT_PER_FILE_SIZE_ERROR,
   CONTRACT_ATTACHMENT_SELECTION_SIZE_ERROR,
   type ContractAttachmentSummary,
   type ContractDocument,
@@ -351,6 +353,17 @@ function ContractAttachmentManager({
       return;
     }
 
+    const oversizedFile = files.find(
+      (file) => file.size > CONTRACT_ATTACHMENT_PER_FILE_MAX_BYTES
+    );
+    if (oversizedFile) {
+      notifyError(
+        `"${oversizedFile.name}" (${formatBytes(oversizedFile.size)}): ${CONTRACT_ATTACHMENT_PER_FILE_SIZE_ERROR}`
+      );
+      event.target.value = '';
+      return;
+    }
+
     const nextFiles = [...selectedFiles, ...files];
     const selectedTotalSize = nextFiles.reduce(
       (total, file) => total + file.size,
@@ -358,19 +371,10 @@ function ContractAttachmentManager({
     );
     const nextActiveTotalSize =
       contract.active_attachment_total_size + selectedTotalSize;
-    if (nextActiveTotalSize > CONTRACT_ATTACHMENT_MAX_BYTES) {
-      if (
-        contract.active_attachment_total_size === 0 &&
-        selectedTotalSize > CONTRACT_ATTACHMENT_MAX_BYTES
-      ) {
-        notifyError(
-          `선택한 파일 크기가 ${formatBytes(selectedTotalSize)}입니다. 계약 문서당 첨부 총량은 ${CONTRACT_ATTACHMENT_MAX_MB}MB 이하여야 합니다.`
-        );
-      } else {
-        notifyError(
-          `${CONTRACT_ATTACHMENT_SELECTION_SIZE_ERROR} (현재 ${formatBytes(nextActiveTotalSize)})`
-        );
-      }
+    if (nextActiveTotalSize > CONTRACT_ATTACHMENT_DOCUMENT_MAX_BYTES) {
+      notifyError(
+        `${CONTRACT_ATTACHMENT_SELECTION_SIZE_ERROR} (현재 ${formatBytes(nextActiveTotalSize)})`
+      );
       event.target.value = '';
       return;
     }
@@ -425,9 +429,10 @@ function ContractAttachmentManager({
               {CONTRACT_ATTACHMENT_STATUS_LABELS[contract.attachment_status]}
             </Badge>
           </div>
-          <p className='text-muted-foreground mt-1 text-sm'>
-            {CONTRACT_ATTACHMENT_LIMIT_HINT}
-          </p>
+          <div className='text-muted-foreground mt-1 space-y-0.5 text-sm'>
+            <p>{CONTRACT_ATTACHMENT_PER_FILE_LIMIT_HINT}</p>
+            <p>{CONTRACT_ATTACHMENT_DOCUMENT_LIMIT_HINT}</p>
+          </div>
         </div>
         <div className='flex gap-2'>
           <input

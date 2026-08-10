@@ -21,7 +21,7 @@ disable-model-invocation: true
 | 항목 | 내용 |
 |------|------|
 | 스크립트 | `scripts/cleanup-e2e-mock-data.mjs` |
-| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/27_e2e_cleanup_rpc.sql` |
+| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/41_e2e_cleanup_att_orphan.sql` |
 | 수동 실행 | `npm run e2e:cleanup` |
 | 디버그 skip | `E2E_SKIP_CLEANUP=1` (완료 보고·CI에는 사용 금지) |
 | 사전 준비 | `globalSetup` → `scripts/e2e-plan03-prep.cjs` (E2E 계정 비밀번호·active 복구) |
@@ -51,10 +51,17 @@ disable-model-invocation: true
 
 ```sql
 select
-  (select count(*) from public.contract_documents where document_number ~ '^(AC|E2E|PV)') as contracts,
-  (select count(*) from public.contract_reminder_runs where run_key ~ '^(AC|E2E|PV)') as reminder_runs,
+  (select count(*) from public.contract_documents
+   where document_number ~ '^(AC|E2E|PV|P28|P29|ATT)'
+      or author_name = 'E2E 작성자'
+      or author_email = 'e2e@test.local'
+      or contract_target = 'E2E 계약대상') as contracts,
+  (select count(*) from public.contract_documents where document_number ~ '^ATT-') as att_contracts,
+  (select count(*) from public.contract_reminder_runs where run_key ~ '^(AC|E2E|PV|P28|P29|ATT)') as reminder_runs,
   (select count(*) from auth.users where email ilike '%@example.com' or email in ('e2e@test.local', 'prod-verify@test.local')) as users;
 ```
+
+`npm run e2e:cleanup`은 RPC `remaining` + ATT/E2E author 사후 count까지 검증한다 (exit 1 if orphan).
 
 4. **완료 보고** — 삭제 전·후 count 또는 「0건 확인」 명시
 
@@ -62,8 +69,8 @@ select
 
 | 대상 | 식별 규칙 | 근거 |
 |------|-----------|------|
-| 계약 | `document_number ~ '^(AC\|E2E\|PV)-'` | `e2e/helpers/contracts.ts`, import/list spec, 운영 PV-* 검증 |
-| 독촉 run | `run_key ~ '^(AC\|E2E\|PV)-'` | `e2e/helpers/reminders.ts`, contract-reminder API spec |
+| 계약 | `document_number ~ '^(AC\|E2E\|PV\|P28\|P29\|ATT)'` **또는** `author_name = 'E2E 작성자'` / `author_email = 'e2e@test.local'` / `contract_target = 'E2E 계약대상'` | `e2e/helpers/contracts.ts`, import/list/attachments spec |
+| 독촉 run | `run_key ~ '^(AC\|E2E\|PV\|P28\|P29\|ATT)'` | `e2e/helpers/reminders.ts`, contract-reminder API spec |
 | 사용자 | `email ilike '%@example.com'` | users E2E API/UI spec |
 | 사용자 | `e2e@test.local`, `prod-verify@test.local` | contract import / prod verify |
 | activity_logs | metadata `document_number` 또는 `email` 위 패턴 일치 | 검증 중 생성된 감사 로그 |
@@ -94,4 +101,4 @@ select
 
 - Step 2b~6 pass **이후에만** 실행
 - cleanup pass/fail을 verifier·root 완료 보고에 포함
-- 신규 E2E 접두·이메일 도메인 추가 시 **이 스크립트 + 스킬** 동시 갱신
+- 신규 E2E 접두·이메일 도메인 추가 시 **RPC(sql/41+) + cleanup-e2e-mock-data.mjs + 이 스킬** 동시 갱신
