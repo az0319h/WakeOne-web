@@ -3,7 +3,9 @@ import 'server-only';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   CONTRACT_ATTACHMENT_BUCKET,
-  CONTRACT_ATTACHMENT_MAX_BYTES,
+  CONTRACT_ATTACHMENT_DOCUMENT_MAX_BYTES,
+  CONTRACT_ATTACHMENT_PER_FILE_MAX_BYTES,
+  CONTRACT_ATTACHMENT_PER_FILE_SIZE_ERROR,
   CONTRACT_ATTACHMENT_TOTAL_SIZE_ERROR,
   type ContractAttachmentStatus,
   type ContractAttachmentSummary,
@@ -665,7 +667,14 @@ export async function uploadContractAttachment(input: {
     throw new Error('같은 계약 문서에 동일한 파일명을 다시 업로드할 수 없습니다.');
   }
 
-  if (contract.active_attachment_total_size + input.file.size > CONTRACT_ATTACHMENT_MAX_BYTES) {
+  if (input.file.size > CONTRACT_ATTACHMENT_PER_FILE_MAX_BYTES) {
+    throw new Error(CONTRACT_ATTACHMENT_PER_FILE_SIZE_ERROR);
+  }
+
+  if (
+    contract.active_attachment_total_size + input.file.size >
+    CONTRACT_ATTACHMENT_DOCUMENT_MAX_BYTES
+  ) {
     throw new Error(CONTRACT_ATTACHMENT_TOTAL_SIZE_ERROR);
   }
 
