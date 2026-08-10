@@ -25,7 +25,12 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'auth.password_reset_request': '비밀번호 찾기 요청',
   'auth.password_reset_complete': '비밀번호 찾기 완료',
   'notification.read': '알림 읽음',
-  'notification.read_all': '알림 모두 읽음'
+  'notification.read_all': '알림 모두 읽음',
+  'announcement.create': '공지 등록',
+  'announcement.update': '공지 수정',
+  'announcement.delete': '공지 삭제',
+  'announcement.attachment_upload': '공지 첨부 업로드',
+  'announcement.attachment_delete': '공지 첨부 삭제'
 };
 
 export const METADATA_LABELS: Record<string, string> = {
@@ -51,7 +56,8 @@ export const METADATA_LABELS: Record<string, string> = {
   matched_count: '매칭 건수',
   request_id: '요청 ID',
   verification_mode: '검증 모드',
-  safety_filter_result: '안전 필터 결과'
+  safety_filter_result: '안전 필터 결과',
+  announcement_id: '공지 ID'
 };
 
 export function formatTargetLabel(targetLabel: string): string {

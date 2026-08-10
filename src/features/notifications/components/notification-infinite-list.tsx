@@ -108,7 +108,16 @@ export function NotificationInfiniteList({
   }
 
   function handleAction(notifId: string, actionId: string) {
-    const route = NOTIFICATION_ACTION_ROUTES[actionId];
+    const notification = notifications.find((item) => String(item.id) === notifId);
+    let route = NOTIFICATION_ACTION_ROUTES[actionId];
+
+    if (
+      actionId === 'view-announcement' &&
+      typeof notification?.metadata.announcement_id === 'number'
+    ) {
+      route = `/dashboard/announcements?announcement=${notification.metadata.announcement_id}`;
+    }
+
     if (!route) return;
 
     if (!readOnly) {

@@ -4,6 +4,7 @@
  */
 export const KBAR_NAV_SYNONYMS: Record<string, string> = {
   대시보드: 'dashboard home overview 홈 메인',
+  공지사항: 'announcements announcement notice 공지 an',
   '사용자 관리': 'users user 멤버 팀 members',
   '계약서 관리': 'contracts contract 계약 계약서 ct',
   '독촉 이메일 로그': '독촉 이메일 email log reminder system-email-logs el',

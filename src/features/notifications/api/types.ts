@@ -3,7 +3,8 @@ export type NotificationType =
   | 'contract.reminder_admin'
   | 'contract.reminder_recipient'
   | 'wallet.sync_admin'
-  | 'wallet.sync_recipient';
+  | 'wallet.sync_recipient'
+  | 'announcement.published';
 
 export type NotificationStatus = 'unread' | 'read';
 
@@ -14,7 +15,9 @@ export type NotificationMetadata = {
     | 'contract.reminder_admin'
     | 'contract.reminder_recipient'
     | 'wallet.sync_admin'
-    | 'wallet.sync_recipient';
+    | 'wallet.sync_recipient'
+    | 'announcement.published';
+  announcement_id?: number;
   run_id?: number;
   run_key?: string;
   trigger_source?: 'admin' | 'cron';

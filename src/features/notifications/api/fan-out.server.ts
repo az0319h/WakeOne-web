@@ -71,6 +71,59 @@ function buildContractReminderAdminBody(input: {
   return `발송 성공 ${input.sentCount}건 · 실패 ${input.failedCount}건 · 미매칭 ${input.unmatchedCount}건`;
 }
 
+const FAN_OUT_BATCH_SIZE = 500;
+
+type InsertAnnouncementPublishedNotificationsInput = {
+  announcementId: number;
+  title: string;
+};
+
+export async function listActiveUserIds(): Promise<string[]> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('user_id')
+    .eq('status', 'active');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((row) => row.user_id as string);
+}
+
+export async function insertAnnouncementPublishedNotifications(
+  input: InsertAnnouncementPublishedNotificationsInput
+): Promise<void> {
+  const userIds = await listActiveUserIds();
+  if (userIds.length === 0) {
+    return;
+  }
+
+  const supabase = getServiceRoleClient();
+  const title = '새 공지가 등록되었습니다';
+  const body = input.title;
+
+  for (let offset = 0; offset < userIds.length; offset += FAN_OUT_BATCH_SIZE) {
+    const batch = userIds.slice(offset, offset + FAN_OUT_BATCH_SIZE);
+    const rows = batch.map((recipientUserId) => ({
+      recipient_user_id: recipientUserId,
+      type: 'announcement.published' as const,
+      title,
+      body,
+      metadata: {
+        kind: 'announcement.published',
+        announcement_id: input.announcementId
+      }
+    }));
+
+    const { error } = await supabase.from('notifications').insert(rows);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+}
+
 export async function listActiveAdminUserIds(): Promise<string[]> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
