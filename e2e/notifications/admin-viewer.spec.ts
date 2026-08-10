@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { resolveUserIdByEmail } from './helpers';
 
+test.use({ storageState: 'e2e/.auth/admin.json' });
+
 test.describe('알림 admin 뷰어', () => {
   test('AC-09: admin 기본 notif_user=self·본인 Combobox', async ({ page }) => {
     await page.goto('/dashboard/notifications');
