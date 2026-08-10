@@ -75,6 +75,7 @@
 | 35 | [35_office-snack-removal-plan.md](./35_office-snack-removal-plan.md) | **Completed** · 사무실 간식 완전 제거 · SQL `39` · plan 13 Cancelled |
 | 36 | [36_password-reset-otp-plan.md](./36_password-reset-otp-plan.md) | **In Progress** · 비밀번호 찾기 OTP · 수동 QA 완료 · verifier Out |
 | 37 | [37_notifications-read-optimistic-update-plan.md](./37_notifications-read-optimistic-update-plan.md) | **Completed** · 알림 read/read-all optimistic update · plan 27 FE cache 확장 · BE Out |
+| 38 | [38_contract-attachment-size-limit-plan.md](./38_contract-attachment-size-limit-plan.md) | **Completed** · 계약 첨부 파일 10MB·문서 총량 50MB · SQL `40` · plan 16 AC supersede |
 
 ## 에이전트 참조
 

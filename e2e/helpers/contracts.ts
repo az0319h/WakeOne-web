@@ -41,3 +41,49 @@ export function importAuthHeaders() {
     'Content-Type': 'application/json'
   };
 }
+
+export const E2E_ATTACHMENT_MB = 1024 * 1024;
+
+export function buildAttachmentUploadPayload(fileName: string, sizeBytes: number) {
+  return {
+    name: fileName,
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.alloc(sizeBytes, 0)
+  };
+}
+
+export async function importContractViaApi(
+  request: import('@playwright/test').APIRequestContext,
+  documentNumber: string,
+  approvedAt = '2026-07-02T09:00:00+09:00'
+) {
+  const headers = importAuthHeaders();
+  if (!headers) {
+    throw new Error('CONTRACT_IMPORT_TOKEN is required in .env');
+  }
+
+  const response = await request.post('/api/contracts/import', {
+    headers,
+    data: buildImportPayload(documentNumber, { approved_at: approvedAt })
+  });
+
+  if (response.status() !== 201) {
+    throw new Error(`import failed: ${response.status()} ${await response.text()}`);
+  }
+
+  const body = await response.json();
+  return body.contract as { id: number; document_number: string };
+}
+
+export async function uploadContractAttachmentViaApi(
+  request: import('@playwright/test').APIRequestContext,
+  contractId: number,
+  fileName: string,
+  sizeBytes: number
+) {
+  return request.post(`/api/contracts/${contractId}/attachments`, {
+    multipart: {
+      file: buildAttachmentUploadPayload(fileName, sizeBytes)
+    }
+  });
+}

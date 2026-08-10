@@ -50,9 +50,9 @@
 | AC-07 | Playwright/API | 기존 계약 문서 존재 | admin이 계약대상/계약 내용/금액 등을 수정 | 수정값이 목록·상세에 반영되고 `contract.update` 로그에 changed_fields가 기록된다 |
 | AC-08 | Playwright/API | 기존 계약 문서 존재 | admin이 계약 문서를 soft delete 처리 | 행은 목록에서 삭제/비활성 상태로 빨간 표시되고 `contract.soft_delete` 로그가 남는다 |
 | AC-09 | Playwright | 계약 문서 상세 진입 | admin이 상세를 확인 | 첨부 이미지 흐름을 참고해 문서번호, 작성일, 작성자, 계약대상, 계약 내용, 계약 시작/종료일(있으면), 비고, 금액, 첨부파일 목록/상태가 보인다 |
-| AC-10 | Playwright/API | 계약 행에 활성 첨부파일이 없음 | admin이 1MB 이하 파일을 업로드 | Supabase Storage에 저장되고 파일명이 목록에 표시되며 다운로드 가능하고 `contract.attachment_upload` 로그가 남는다 |
+| AC-10 | Playwright/API | 계약 행에 활성 첨부파일이 없음 | admin이 **10MB 이하** 파일을 업로드 | Supabase Storage에 저장되고 파일명이 목록에 표시되며 다운로드 가능하고 `contract.attachment_upload` 로그가 남는다 · **→ [plan 38](./38_contract-attachment-size-limit-plan.md) AC-01로 supersede (구 1MB)** |
 | AC-11 | API | 같은 계약 행에 `계약서.pdf` 활성/삭제 이력 중 동일 파일명 존재 | admin이 동일 파일명으로 재업로드 | HTTP **400**, 파일명 중복 오류가 반환되고 실패 로그가 남는다 |
-| AC-12 | API | 1MB 초과 파일 업로드 요청 | admin이 첨부 업로드 | HTTP **400**, 용량 제한 오류가 반환되고 Storage/DB에 활성 파일이 생성되지 않는다 |
+| AC-12 | API | **10MB 초과** 단일 파일 또는 **문서당 활성 총량 50MB** 초과 업로드 요청 | admin이 첨부 업로드 | HTTP **400**, 용량 제한 오류가 반환되고 Storage/DB에 활성 파일이 생성되지 않는다 · **→ [plan 38](./38_contract-attachment-size-limit-plan.md) AC-02·AC-03으로 supersede (구 1MB)** |
 | AC-13 | Playwright/API | 활성 첨부파일 존재 | admin이 첨부파일 다운로드 | 원 파일명으로 다운로드되고 READ 동작이므로 activity log는 생성하지 않는다 |
 | AC-14 | Playwright/API | 활성 첨부파일 존재 | admin이 첨부파일 soft delete | 첨부파일은 빨간 삭제/비활성 상태로 표시되고 독촉 제외 계산에서 제외되며 `contract.attachment_soft_delete` 로그가 남는다 |
 | AC-15 | Playwright/API | 활성 첨부파일이 없는 계약 문서 | admin이 `첨부파일 없음` 지정 | 행 상태가 `첨부파일 없음`으로 표시되고 독촉 제외 대상이 되며 `contract.no_attachment_set` 로그가 남는다 |
@@ -87,7 +87,7 @@
 - Supabase Storage 첨부 업로드/다운로드
 - 첨부파일 정책:
   - 파일 종류 제한 없음
-  - 계약 행당 파일 크기 합계 또는 단일 파일 기준 **1MB 이하**로 제한. 구현 시 더 안전한 정책으로 **행당 활성 첨부 총량 1MB**를 기본값으로 적용
+  - **파일 1개당 10MB · 계약 문서당 활성 첨부 총량 50MB** — [plan 38](./38_contract-attachment-size-limit-plan.md) **Completed** (구 1MB 정책 supersede)
   - 같은 계약 행 내 파일명 중복 금지
   - 삭제는 soft delete, UI에 삭제/비활성 상태 표시
 - `첨부파일 없음` 관리자 지정/해제
@@ -494,3 +494,4 @@ Mutation 규칙:
 |------|----------|--------|
 | 2026-07-02 | 최초 작성 · `/root` planner Phase 3+4 · Status Approved | planner |
 | 2026-07-03 | Flex 공식 계약 API 부재 확인 후 OpenClaw/Gmail 기반 자동 Import API 구조로 변경 | GPT-5.5 |
+| 2026-08-10 | [plan 38](./38_contract-attachment-size-limit-plan.md) Completed — AC-10·AC-12·첨부파일 정책 1MB → 10MB/50MB supersede | verifier |
