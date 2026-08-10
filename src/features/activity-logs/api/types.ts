@@ -23,9 +23,14 @@ export type ActivityAction =
   | 'auth.password_reset_request'
   | 'auth.password_reset_complete'
   | 'notification.read'
-  | 'notification.read_all';
+  | 'notification.read_all'
+  | 'announcement.create'
+  | 'announcement.update'
+  | 'announcement.delete'
+  | 'announcement.attachment_upload'
+  | 'announcement.attachment_delete';
 
-export type ActivityTargetType = 'user' | 'profile' | 'contract' | 'wallet' | 'auth';
+export type ActivityTargetType = 'user' | 'profile' | 'contract' | 'wallet' | 'auth' | 'announcement';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -68,6 +73,7 @@ export type ActivityLogMetadata = {
   notification_id?: number;
   count?: number;
   duplicate_run?: boolean;
+  announcement_id?: number;
 };
 
 export type ActivityLog = {

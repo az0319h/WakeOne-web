@@ -1,6 +1,10 @@
+import dns from 'node:dns';
 import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+
+// Windows: `localhost` may resolve to ::1 while Next dev binds IPv4 only — prefer IPv4 without breaking cookie domain.
+dns.setDefaultResultOrder('ipv4first');
 
 function loadEnvFile(filePath: string) {
   if (!fs.existsSync(filePath)) {
@@ -26,6 +30,10 @@ const isNotificationsE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/notifications')
 );
 
+const isAnnouncementsE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/announcements')
+);
+
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
   '127.0.0.1',
   'localhost'
@@ -34,7 +42,7 @@ const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  workers: isNotificationsE2eRun ? 1 : undefined,
+  workers: isNotificationsE2eRun || isAnnouncementsE2eRun ? 1 : undefined,
   reporter: 'html',
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
@@ -72,6 +80,7 @@ export default defineConfig({
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
         /notifications\//,
+        /announcements\//,
         /profile-name-live-display\//,
         /kbar\/nav-user\.spec\.ts$/
       ]
@@ -88,6 +97,38 @@ export default defineConfig({
         /system-email-logs-rbac\.spec\.ts$/,
         /kbar\/nav-user\.spec\.ts$/
       ]
+    },
+    {
+      name: 'chromium-announcements-user',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup-user', 'setup', 'chromium-announcements'],
+      testMatch: [
+        /announcements\/rbac\.spec\.ts$/,
+        /announcements\/list-detail-dialog\.spec\.ts$/,
+        /announcements\/list-infinite-scroll\.spec\.ts$/,
+        /announcements\/notify-fanout\.spec\.ts$/
+      ],
+      fullyParallel: false
+    },
+    {
+      name: 'chromium-announcements',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin.json'
+      },
+      dependencies: ['setup'],
+      testMatch: [/announcements\/.*\.spec\.ts$/],
+      testIgnore: [
+        /\.api\.spec\.ts$/,
+        /announcements\/rbac\.spec\.ts$/,
+        /announcements\/list-detail-dialog\.spec\.ts$/,
+        /announcements\/list-infinite-scroll\.spec\.ts$/,
+        /announcements\/notify-fanout\.spec\.ts$/
+      ],
+      fullyParallel: false
     },
     {
       name: 'chromium-notifications',
@@ -137,7 +178,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
-      dependencies: ['setup', 'setup-user'],
+      dependencies: ['setup'],
       testMatch: /\.api\.spec\.ts$/,
       testIgnore: [/profile-name-live-display\//, /notifications\//]
     }

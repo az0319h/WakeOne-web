@@ -25,7 +25,10 @@ export const searchParams = {
   status: parseAsString,
   from: parseAsString,
   to: parseAsString,
-  attachment_status: parseAsString
+  attachment_status: parseAsString,
+  announcement: parseAsString,
+  priority: parseAsString,
+  pinned: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')
