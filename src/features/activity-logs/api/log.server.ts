@@ -30,7 +30,8 @@ const METADATA_ALLOWLIST = new Set([
   'unmatched_author_names',
   'notification_id',
   'count',
-  'duplicate_run'
+  'duplicate_run',
+  'announcement_id'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -180,6 +181,11 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === 'duplicate_run' && typeof value === 'boolean') {
       sanitized.duplicate_run = value;
+      continue;
+    }
+
+    if (key === 'announcement_id' && typeof value === 'number') {
+      sanitized.announcement_id = value;
       continue;
     }
 

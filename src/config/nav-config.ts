@@ -24,6 +24,14 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         shortcut: ['d', 'd'],
         items: []
+      },
+      {
+        title: '공지사항',
+        url: '/dashboard/announcements',
+        icon: 'post',
+        shortcut: ['a', 'n'],
+        isActive: false,
+        items: []
       }
     ]
   },

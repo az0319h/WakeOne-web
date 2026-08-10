@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import PageContainer from '@/components/layout/page-container';
 import { BirthdayCelebrantsSection } from '@/features/birthday-celebrants/components/birthday-celebrants-section';
 import { BirthdayCelebrantsBannerSkeleton } from '@/features/birthday-celebrants/components/birthday-celebrants-banner-skeleton';
+import { AnnouncementsOverviewSection } from '@/features/announcements/components/announcements-overview-section';
+import { AnnouncementsOverviewSkeleton } from '@/features/announcements/components/announcements-overview-skeleton';
 import { WalletSummaryOverviewCardSkeleton } from '@/features/wallet/components/wallet-summary-overview-card-skeleton';
 import { WalletSummaryOverviewSection } from '@/features/wallet/components/wallet-summary-overview-section';
 import { Badge } from '@/components/ui/badge';
@@ -120,6 +122,9 @@ export default function OverViewLayout({
           <div className='col-span-4 flex flex-col gap-4 md:col-span-3'>
             <Suspense fallback={<BirthdayCelebrantsBannerSkeleton />}>
               <BirthdayCelebrantsSection />
+            </Suspense>
+            <Suspense fallback={<AnnouncementsOverviewSkeleton />}>
+              <AnnouncementsOverviewSection />
             </Suspense>
             <Suspense fallback={<WalletSummaryOverviewCardSkeleton />}>
               <WalletSummaryOverviewSection />

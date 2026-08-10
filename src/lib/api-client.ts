@@ -6,7 +6,10 @@ function resolveApiUrl(endpoint: string): string {
 
 function createRequestInit(options?: RequestInit): RequestInit {
   const headers = new Headers(options?.headers);
-  if (!headers.has('Content-Type')) {
+  const isFormData =
+    typeof FormData !== 'undefined' && options?.body instanceof FormData;
+
+  if (!isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
