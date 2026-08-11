@@ -123,6 +123,8 @@ export function NotificationInfiniteList({
     if (!readOnly) {
       markReadMutation.mutate(Number(notifId));
     }
+
+    router.prefetch(route);
     router.push(route);
   }
 
