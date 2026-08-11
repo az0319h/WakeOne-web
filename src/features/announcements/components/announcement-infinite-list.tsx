@@ -99,7 +99,7 @@ export function AnnouncementInfiniteList({
 
   return (
     <div className={className} data-testid='announcements-infinite-list'>
-      <div className='flex flex-col gap-2'>
+      <div className='flex flex-col'>
         {announcements.map((announcement) => (
           <AnnouncementListRow
             key={announcement.id}
