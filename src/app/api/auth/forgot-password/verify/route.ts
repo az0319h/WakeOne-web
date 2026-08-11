@@ -16,7 +16,8 @@ import { getServiceRoleClient } from '@/lib/supabase/service-role';
 
 const httpPath = '/api/auth/forgot-password/verify';
 
-const SUCCESS_MESSAGE = '임시 비밀번호를 이메일로 보냈습니다. 로그인해 주세요.';
+const SUCCESS_MESSAGE =
+  '임시 비밀번호를 이메일로 보냈습니다. 받은편지함과 스팸함을 확인한 뒤 로그인해 주세요.';
 const GENERIC_ERROR = '요청 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.';
 const OTP_ERROR_MESSAGE = '인증번호가 올바르지 않거나 만료되었습니다.';
 
