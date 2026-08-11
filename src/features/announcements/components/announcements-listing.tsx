@@ -22,7 +22,12 @@ export default async function AnnouncementsListing() {
       pinned: searchParamsCache.get('pinned')
     });
 
-    await queryClient.prefetchInfiniteQuery({
+    const announcementParam = searchParamsCache.get('announcement');
+    const announcementId = announcementParam ? Number(announcementParam) : NaN;
+    const hasDeepLink =
+      Number.isFinite(announcementId) && announcementId > 0;
+
+    const listPrefetch = queryClient.prefetchInfiniteQuery({
       ...announcementsInfiniteQueryOptions(listFilters),
       queryFn: ({ pageParam }) =>
         listAnnouncements({
@@ -32,22 +37,26 @@ export default async function AnnouncementsListing() {
         })
     });
 
-    const announcementParam = searchParamsCache.get('announcement');
-    const announcementId = announcementParam ? Number(announcementParam) : NaN;
-
-    if (Number.isFinite(announcementId) && announcementId > 0) {
-      await queryClient
-        .prefetchQuery({
-          queryKey: announcementDetailQueryOptions(announcementId).queryKey,
-          queryFn: async () => {
-            const announcement = await getAnnouncementById(announcementId);
-            if (!announcement) {
-              throw new Error('공지를 찾을 수 없습니다.');
+    const detailPrefetch = hasDeepLink
+      ? queryClient
+          .prefetchQuery({
+            queryKey: announcementDetailQueryOptions(announcementId).queryKey,
+            queryFn: async () => {
+              const announcement = await getAnnouncementById(announcementId);
+              if (!announcement) {
+                throw new Error('공지를 찾을 수 없습니다.');
+              }
+              return announcement;
             }
-            return announcement;
-          }
-        })
-        .catch(() => undefined);
+          })
+          .catch(() => undefined)
+      : Promise.resolve();
+
+    if (hasDeepLink) {
+      await detailPrefetch;
+      void listPrefetch;
+    } else {
+      await listPrefetch;
     }
   }
 
