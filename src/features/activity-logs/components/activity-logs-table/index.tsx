@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { useNavAccess } from '@/contexts/nav-access';
 import { useDataTable } from '@/hooks/use-data-table';
 import { getSortingStateParser } from '@/lib/parsers';
@@ -9,9 +10,40 @@ import { cn } from '@/lib/utils';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { activityLogsQueryOptions } from '../../api/queries';
+import type { ActivityLog } from '../../api/types';
 import { LogUserCombobox } from '../log-user-combobox';
 import { ActivityLogsDataTable } from './activity-logs-data-table';
 import { createColumns } from './columns';
+
+interface ActivityLogsTableBodyProps {
+  columns: ReturnType<typeof createColumns>;
+  filters: {
+    page: number;
+    limit: number;
+    sort?: string;
+    log_user?: string;
+    action?: string;
+    search?: string;
+  };
+}
+
+function ActivityLogsTableBody({ columns, filters }: ActivityLogsTableBodyProps) {
+  const { data } = useSuspenseQuery(activityLogsQueryOptions(filters));
+  const pageCount = Math.ceil(data.total / filters.limit);
+
+  const { table } = useDataTable({
+    data: data.logs,
+    columns,
+    pageCount,
+    shallow: true,
+    debounceMs: 500,
+    initialState: {
+      sorting: [{ id: 'created_at', desc: true }]
+    }
+  });
+
+  return <ActivityLogsDataTable table={table} />;
+}
 
 export function ActivityLogsTable() {
   const profile = useNavAccess();
@@ -40,14 +72,12 @@ export function ActivityLogsTable() {
     ...(isAdmin && params.search && { search: params.search })
   };
 
-  const { data } = useSuspenseQuery(activityLogsQueryOptions(filters));
+  const querySignature = JSON.stringify(filters);
 
-  const pageCount = Math.ceil(data.total / params.perPage);
-
-  const { table } = useDataTable({
-    data: data.logs,
+  const { table: shellTable } = useDataTable({
+    data: [] as ActivityLog[],
     columns,
-    pageCount,
+    pageCount: 1,
     shallow: true,
     debounceMs: 500,
     initialState: {
@@ -61,14 +91,15 @@ export function ActivityLogsTable() {
 
   return (
     <div data-testid='activity-logs-page' className='flex min-w-0 flex-1 flex-col'>
-      <ActivityLogsDataTable table={table}>
-        <div className='flex w-full flex-wrap items-start gap-2 p-1'>
-          {isAdmin ? (
-            <LogUserCombobox value={logUser ?? 'self'} onValueChange={handleLogUserChange} />
-          ) : null}
-          <DataTableToolbar table={table} className={cn('min-w-0 flex-1 p-0')} />
-        </div>
-      </ActivityLogsDataTable>
+      <div className='flex w-full flex-wrap items-start gap-2 p-1'>
+        {isAdmin ? (
+          <LogUserCombobox value={logUser ?? 'self'} onValueChange={handleLogUserChange} />
+        ) : null}
+        <DataTableToolbar table={shellTable} className={cn('min-w-0 flex-1 p-0')} />
+      </div>
+      <Suspense key={querySignature} fallback={<PageLoadingSpinner variant='fill' />}>
+        <ActivityLogsTableBody columns={columns} filters={filters} />
+      </Suspense>
     </div>
   );
 }

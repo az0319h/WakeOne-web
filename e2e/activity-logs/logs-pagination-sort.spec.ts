@@ -3,6 +3,19 @@ import { expect, test, type Page } from '@playwright/test';
 async function gotoAllLogs(page: Page) {
   await page.goto('/dashboard/logs?log_user=all&perPage=5');
   await expect(page.getByTestId('activity-logs-page')).toBeVisible();
+  await expect(page.getByTestId('activity-logs-table')).toBeVisible();
+  await expect(page.getByTestId('activity-log-row').first()).toBeVisible({
+    timeout: 15_000
+  });
+}
+
+async function selectCreatedAtSort(page: Page, direction: 'Asc' | 'Desc') {
+  const headerButton = page.getByRole('columnheader', { name: '시간' }).getByRole('button');
+  await expect(headerButton).toBeVisible();
+  await headerButton.click();
+  const menu = page.locator('[data-slot="dropdown-menu-content"]');
+  await expect(menu).toBeVisible({ timeout: 5_000 });
+  await menu.getByText(direction, { exact: true }).click();
 }
 
 test.describe('활동 로그 pagination and sort', () => {
@@ -22,17 +35,16 @@ test.describe('활동 로그 pagination and sort', () => {
   });
 
   test('AC-09: admin can toggle created_at sort order', async ({ page }) => {
+    test.setTimeout(60_000);
     await gotoAllLogs(page);
 
-    const timeHeader = page.getByRole('columnheader', { name: '시간' });
-    await timeHeader.getByRole('button').click();
-    await page.getByText('Asc', { exact: true }).click();
-
+    await selectCreatedAtSort(page, 'Asc');
     await expect(page).toHaveURL(/sort=/, { timeout: 10_000 });
+    await expect(page.getByTestId('activity-log-row').first()).toBeVisible({
+      timeout: 15_000
+    });
 
-    await timeHeader.getByRole('button').click();
-    await page.getByText('Desc', { exact: true }).click();
-
+    await selectCreatedAtSort(page, 'Desc');
     await expect(page).toHaveURL(/sort=/, { timeout: 10_000 });
     await expect(page.getByTestId('activity-logs-table')).toBeVisible();
   });
