@@ -1,10 +1,8 @@
 import { getSessionProfile } from '@/features/auth/api/session.server';
-import { overviewDataDelay } from '@/lib/delay';
 import { getWalletSummaryServer } from '../api/service.server';
 import { WalletSummaryOverviewCard } from './wallet-summary-overview-card';
 
 export async function WalletSummaryOverviewSection() {
-  await overviewDataDelay();
   const profile = await getSessionProfile();
 
   if (!profile) {
