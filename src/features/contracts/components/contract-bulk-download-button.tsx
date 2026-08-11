@@ -133,7 +133,6 @@ function ContractBulkDownloadDialog({
   }, [from, onOpenChange, preview, to]);
 
   const blockMessage = preview ? getBlockMessage(preview) : null;
-  const canConfirm = Boolean(preview?.can_download) && !isPreviewLoading && !isDownloading;
 
   return (
     <Modal
@@ -196,18 +195,14 @@ function ContractBulkDownloadDialog({
           >
             취소
           </Button>
-          <Button type='button' disabled={!canConfirm} onClick={() => void handleDownload()}>
-            {isDownloading ? (
-              <>
-                <Icons.spinner className='h-4 w-4 animate-spin' />
-                다운로드 중…
-              </>
-            ) : (
-              <>
-                <Icons.download className='h-4 w-4' />
-                다운로드
-              </>
-            )}
+          <Button
+            type='button'
+            isLoading={isDownloading}
+            disabled={!Boolean(preview?.can_download) || isPreviewLoading}
+            onClick={() => void handleDownload()}
+          >
+            <Icons.download className='h-4 w-4' />
+            다운로드
           </Button>
         </div>
       </div>

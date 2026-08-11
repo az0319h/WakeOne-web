@@ -2,6 +2,7 @@
 
 import type { FC } from 'react';
 import { Icons } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 
@@ -122,35 +123,31 @@ export const NotificationCard: FC<NotificationCardProps> = ({
                 const showLoading = isLoading && action.type !== 'modal';
 
                 return (
-                  <button
+                  <Button
                     key={action.id}
                     type='button'
-                    disabled={isLoading || isExecuted}
+                    variant='ghost'
+                    size='sm'
+                    isLoading={showLoading}
+                    disabled={isExecuted}
                     onClick={() => onAction?.(id, action.id, action.type)}
                     className={cn(
-                      'flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-normal transition',
+                      'h-auto gap-1.5 rounded-lg px-4 py-1.5 text-xs font-normal',
                       action.style === 'primary'
                         ? 'bg-primary/10 text-primary hover:bg-primary/20'
                         : action.style === 'danger'
                           ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
                           : 'bg-accent text-muted-foreground hover:bg-accent hover:text-foreground',
-                      showLoading && 'opacity-50',
                       isExecuted && 'cursor-not-allowed opacity-60'
                     )}
                   >
-                    {showLoading ? (
-                      <Icons.spinner size={12} className='animate-spin' />
+                    <span>{action.label}</span>
+                    {isExecuted ? (
+                      <Icons.check size={12} strokeWidth={2.5} />
                     ) : (
-                      <>
-                        <span>{action.label}</span>
-                        {isExecuted ? (
-                          <Icons.check size={12} strokeWidth={2.5} />
-                        ) : (
-                          getActionIcon(action.type)
-                        )}
-                      </>
+                      getActionIcon(action.type)
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

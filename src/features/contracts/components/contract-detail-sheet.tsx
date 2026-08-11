@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { Badge } from '@/components/ui/badge';
@@ -76,10 +76,16 @@ function AttachmentRow({
   contractId: number;
   attachment: ContractAttachmentSummary;
 }) {
+  const [isDownloading, setIsDownloading] = useState(false);
   const isActive = attachment.status === 'active';
   const canOpen = canOpenContractAttachment(attachment);
 
   async function handleDownload() {
+    if (isDownloading) {
+      return;
+    }
+
+    setIsDownloading(true);
     try {
       const blob = await downloadContractAttachment(contractId, attachment.id);
       const url = URL.createObjectURL(blob);
@@ -94,6 +100,8 @@ function AttachmentRow({
           ? error.message
           : '첨부파일 다운로드에 실패했습니다.';
       notifyError(message);
+    } finally {
+      setIsDownloading(false);
     }
   }
 
@@ -146,10 +154,11 @@ function AttachmentRow({
           type='button'
           variant='outline'
           size='icon'
+          isLoading={isDownloading}
           disabled={!isActive}
           aria-label={`${attachment.file_name} 다운로드`}
           title='다운로드'
-          onClick={handleDownload}
+          onClick={() => void handleDownload()}
         >
           <Icons.download className='h-4 w-4' />
           <span className='sr-only'>다운로드</span>

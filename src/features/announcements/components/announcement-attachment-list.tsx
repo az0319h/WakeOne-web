@@ -35,6 +35,7 @@ function AnnouncementAttachmentRow({
   onDeleted?: () => void;
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const canOpen = canOpenAnnouncementAttachment(attachment);
 
   const deleteMutation = useMutation({
@@ -51,6 +52,11 @@ function AnnouncementAttachmentRow({
   });
 
   async function handleDownload() {
+    if (isDownloading) {
+      return;
+    }
+
+    setIsDownloading(true);
     try {
       const blob = await downloadAnnouncementAttachment(announcementId, attachment.id);
       const url = URL.createObjectURL(blob);
@@ -65,6 +71,8 @@ function AnnouncementAttachmentRow({
           ? error.message
           : '첨부파일 다운로드에 실패했습니다.';
       notifyError(message);
+    } finally {
+      setIsDownloading(false);
     }
   }
 
@@ -123,8 +131,9 @@ function AnnouncementAttachmentRow({
             type='button'
             variant='outline'
             size='sm'
+            isLoading={isDownloading}
             aria-label={`${attachment.file_name} 다운로드`}
-            onClick={handleDownload}
+            onClick={() => void handleDownload()}
           >
             <Icons.download className='h-4 w-4' />
             다운로드

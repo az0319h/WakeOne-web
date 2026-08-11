@@ -35,12 +35,25 @@ export function AlertModal({
   }
 
   return (
-    <Modal title={title} description={description} isOpen={isOpen} onClose={onClose}>
+    <Modal
+      title={title}
+      description={description}
+      isOpen={isOpen}
+      onClose={() => {
+        if (!loading) {
+          onClose();
+        }
+      }}
+    >
       <div className='flex w-full items-center justify-end space-x-2 pt-6'>
         <Button disabled={loading} variant='outline' onClick={onClose}>
           {cancelLabel}
         </Button>
-        <Button disabled={loading} variant='destructive' onClick={onConfirm}>
+        <Button
+          isLoading={loading}
+          variant='destructive'
+          onClick={onConfirm}
+        >
           {confirmLabel}
         </Button>
       </div>
