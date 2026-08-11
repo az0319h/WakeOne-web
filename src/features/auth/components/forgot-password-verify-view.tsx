@@ -49,6 +49,9 @@ export function ForgotPasswordVerifyView({ email }: ForgotPasswordVerifyViewProp
             <p className='text-muted-foreground text-sm'>
               {email}로 보낸 6자리 인증번호를 입력해 주세요.
             </p>
+            <p className='text-muted-foreground text-xs'>
+              메일이 보이지 않으면 스팸함(정크 메일)도 확인해 주세요.
+            </p>
           </div>
           <ForgotPasswordVerifyForm email={email} />
           <p className='text-center text-sm'>
