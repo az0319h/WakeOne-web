@@ -157,6 +157,7 @@ function ContractAttachmentRow({
   onContractChange: (contract: ContractDocument) => void;
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const isActive = attachment.status === 'active';
   const canOpen = canOpenContractAttachment(attachment);
 
@@ -177,6 +178,11 @@ function ContractAttachmentRow({
   });
 
   async function handleDownload() {
+    if (isDownloading) {
+      return;
+    }
+
+    setIsDownloading(true);
     try {
       const blob = await downloadContractAttachment(contractId, attachment.id);
       const url = URL.createObjectURL(blob);
@@ -191,6 +197,8 @@ function ContractAttachmentRow({
           ? error.message
           : '첨부파일 다운로드에 실패했습니다.';
       notifyError(message);
+    } finally {
+      setIsDownloading(false);
     }
   }
 
@@ -255,10 +263,11 @@ function ContractAttachmentRow({
           type='button'
           variant='outline'
           size='icon'
+          isLoading={isDownloading}
           disabled={!isActive}
           aria-label={`${attachment.file_name} 다운로드`}
           title='다운로드'
-          onClick={handleDownload}
+          onClick={() => void handleDownload()}
         >
           <Icons.download className='h-4 w-4' />
           <span className='sr-only'>다운로드</span>
