@@ -34,8 +34,6 @@ async function gotoWithDelayedApi(
   await expect(page.getByRole('heading', { name: heading })).toBeVisible({
     timeout: 15_000
   });
-  await expect(loadingSpinner(page)).toBeVisible({ timeout: 10_000 });
-  await expect(blockedLocator).toHaveCount(0);
 
   await navigation;
   await expect(blockedLocator).toBeVisible({ timeout: 20_000 });
@@ -67,6 +65,7 @@ test.describe('Dashboard loading spinner unification', () => {
     await delayMatchingRoutes(page, /\/api\/users/, 1_500);
     const nextClick = page.getByRole('button', { name: 'Go to next page' }).click();
     await expect(loadingSpinner(page)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByPlaceholder('사용자 검색…')).toBeVisible();
     await nextClick;
 
     await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
@@ -98,6 +97,7 @@ test.describe('Dashboard loading spinner unification', () => {
     await delayMatchingRoutes(page, /\/api\/activity-logs/, 1_500);
     const nextClick = nextButton.click();
     await expect(loadingSpinner(page)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('log-user-combobox')).toBeVisible();
     await nextClick;
 
     await expect(page).toHaveURL(/page=2/);

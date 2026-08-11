@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import type { DateRange } from 'react-day-picker';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
+import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
@@ -31,6 +32,11 @@ const SORTABLE_COLUMN_IDS = [
 interface ContractsTableProps {
   onView: (contract: ContractDocument) => void;
   onEdit: (contract: ContractDocument) => void;
+}
+
+interface ContractsTableBodyProps {
+  columns: ReturnType<typeof createContractColumns>;
+  filters: ContractFilters;
 }
 
 function toDateInputValue(date: Date): string {
@@ -113,32 +119,10 @@ function ContractDateRangeFilter() {
   );
 }
 
-export function ContractsTable({ onView, onEdit }: ContractsTableProps) {
-  const [params] = useQueryStates({
-    page: parseAsInteger.withDefault(1),
-    perPage: parseAsInteger.withDefault(10),
-    from: parseAsString,
-    to: parseAsString,
-    search: parseAsString,
-    attachment_status: parseAsString,
-    sort: getSortingStateParser([...SORTABLE_COLUMN_IDS]).withDefault([])
-  });
-
-  const filters: ContractFilters = {
-    page: params.page,
-    limit: params.perPage,
-    ...(params.from && { from: params.from }),
-    ...(params.to && { to: params.to }),
-    ...(params.search && { search: params.search }),
-    ...(params.attachment_status && {
-      attachment_status: params.attachment_status as ContractFilters['attachment_status']
-    }),
-    ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
-  };
-
+function ContractsTableBody({ columns, filters }: ContractsTableBodyProps) {
   const { data } = useSuspenseQuery(contractsQueryOptions(filters));
-  const columns = useMemo(() => createContractColumns({ onView, onEdit }), [onView, onEdit]);
-  const pageCount = Math.max(1, Math.ceil(data.total / params.perPage));
+  const limit = filters.limit ?? 10;
+  const pageCount = Math.max(1, Math.ceil(data.total / limit));
 
   const { table } = useDataTable({
     data: data.items,
@@ -167,18 +151,62 @@ export function ContractsTable({ onView, onEdit }: ContractsTableProps) {
   );
 
   return (
+    <DataTable
+      table={table}
+      onRowClick={handleRowClick}
+      isRowClickable={isRowClickable}
+    />
+  );
+}
+
+export function ContractsTable({ onView, onEdit }: ContractsTableProps) {
+  const [params] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    perPage: parseAsInteger.withDefault(10),
+    from: parseAsString,
+    to: parseAsString,
+    search: parseAsString,
+    attachment_status: parseAsString,
+    sort: getSortingStateParser([...SORTABLE_COLUMN_IDS]).withDefault([])
+  });
+
+  const filters: ContractFilters = {
+    page: params.page,
+    limit: params.perPage,
+    ...(params.from && { from: params.from }),
+    ...(params.to && { to: params.to }),
+    ...(params.search && { search: params.search }),
+    ...(params.attachment_status && {
+      attachment_status: params.attachment_status as ContractFilters['attachment_status']
+    }),
+    ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
+  };
+
+  const querySignature = JSON.stringify(filters);
+  const columns = useMemo(() => createContractColumns({ onView, onEdit }), [onView, onEdit]);
+
+  const { table: shellTable } = useDataTable({
+    data: [] as ContractDocument[],
+    columns,
+    pageCount: 1,
+    shallow: true,
+    debounceMs: 500,
+    initialState: {
+      columnPinning: { right: ['actions'] },
+      sorting: [{ id: 'approved_at', desc: true }]
+    }
+  });
+
+  return (
     <div className='flex min-w-0 flex-1 flex-col'>
       <div className='mb-3 flex flex-wrap items-center gap-2'>
         <ContractDateRangeFilter />
         <ContractBulkDownloadButton from={params.from} to={params.to} />
       </div>
-      <DataTable
-        table={table}
-        onRowClick={handleRowClick}
-        isRowClickable={isRowClickable}
-      >
-        <DataTableToolbar table={table} />
-      </DataTable>
+      <DataTableToolbar table={shellTable} />
+      <Suspense key={querySignature} fallback={<PageLoadingSpinner variant='fill' />}>
+        <ContractsTableBody columns={columns} filters={filters} />
+      </Suspense>
     </div>
   );
 }

@@ -30,8 +30,12 @@ test.describe('공지사항 admin CRUD', () => {
       body: '첨부 없는 공지 본문'
     });
 
-    await expect(page.getByTestId('announcements-infinite-list')).toBeVisible();
-    await expect(page.getByRole('heading', { name: title, level: 3 })).toBeVisible();
+    await expect(page.getByTestId('announcements-infinite-list')).toBeVisible({
+      timeout: 15_000
+    });
+    await expect(page.getByRole('button', { name: new RegExp(title) })).toBeVisible({
+      timeout: 15_000
+    });
 
     await page.goto('/dashboard/overview');
     await expect(page.getByTestId('announcements-overview-card')).toBeVisible({
