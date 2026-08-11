@@ -236,6 +236,8 @@ const createMutation = useMutation({
 - App Router 화면은 `loading.tsx` 또는 `Suspense fallback` 중 **최소 1개** 필수.
 - `PageLoadingSpinner` variants: `default` (route·page), `fill` (listing 내부·pagination), `compact` (Sheet·Dialog·Popover).
 - 페이지 헤더(`PageContainer` title/description)는 fallback 밖(shell)에 두어 로딩 중에도 표시한다.
+- **Filter Shell / Data Body:** dashboard listing에서 query refetch 시 **fetch와 무관한 UI**(필터·툴바·combobox·tabs·admin CTA)는 Suspense **밖**. **데이터 body만** `<Suspense key={querySignature} fallback={<PageLoadingSpinner variant="fill" />}>` 안에 둔다. 참조: `wallet-page-content.tsx`.
+- **infinite scroll next page:** filter/queryKey 변경 ≠ `isFetchingNextPage` — 후자는 body 내부 **`variant="compact"`** (plan 39).
 
 ## 삭제 확인 Dialog (필수)
 

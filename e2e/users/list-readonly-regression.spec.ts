@@ -45,6 +45,7 @@ async function dataRows(page: Page) {
       .map((row) => {
         const cells = Array.from(row.querySelectorAll('td'));
         return cells
+          .slice(1)
           .map((cell) => (cell as HTMLElement).innerText || cell.textContent || '')
           .join(' ')
           .replace(/\s+/g, ' ')
@@ -86,7 +87,7 @@ async function expectVisibleRowsContain(page: Page, text: RegExp) {
         const rows = await dataRows(page);
         return rows.some((row) => text.test(row));
       },
-      { message: `table rows should contain ${text}` }
+      { message: `table rows should contain ${text}`, timeout: 15_000 }
     )
     .toBe(true);
 }

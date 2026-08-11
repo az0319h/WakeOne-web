@@ -48,7 +48,10 @@ export function WalletPageContent({ isAdmin }: WalletPageContentProps) {
   const suspenseKey = isAdmin ? walletUser : 'self';
 
   return (
-    <div className='mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6'>
+    <div
+      data-testid='wallet-page-content'
+      className='mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6'
+    >
       {isAdmin ? (
         <div className='flex justify-end'>
           <WalletUserCombobox

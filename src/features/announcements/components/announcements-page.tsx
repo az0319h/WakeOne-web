@@ -10,7 +10,7 @@ import type { AnnouncementListItem } from '../api/types';
 import { AnnouncementDetailDialog } from './announcement-detail-dialog';
 import { AnnouncementFormDialog } from './announcement-form-dialog';
 import { AnnouncementInfiniteList } from './announcement-infinite-list';
-import { AnnouncementsListFilters } from './announcements-list-filters';
+import { AnnouncementsListFilters, useAnnouncementListFilterParams } from './announcements-list-filters';
 
 function parseAnnouncementId(value: string | null): number | null {
   if (!value) {
@@ -21,50 +21,34 @@ function parseAnnouncementId(value: string | null): number | null {
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
-interface AnnouncementsListSectionProps {
+interface AnnouncementsListBodyProps {
   isAdmin: boolean;
   onRowClick: (announcement: AnnouncementListItem) => void;
   onEdit: (announcementId: number) => void;
-  onCreateClick: () => void;
   onDeleted: () => void;
 }
 
-function AnnouncementsListSection({
+function AnnouncementsListBody({
   isAdmin,
   onRowClick,
   onEdit,
-  onCreateClick,
   onDeleted
-}: AnnouncementsListSectionProps) {
+}: AnnouncementsListBodyProps) {
   return (
-    <div data-testid='announcements-page' className='flex flex-1 flex-col gap-4'>
-      <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-        <AnnouncementsListFilters />
-        {isAdmin ? (
-          <Button
-            onClick={onCreateClick}
-            data-testid='announcement-create-button'
-            className='shrink-0 self-end sm:self-auto'
-          >
-            <Icons.add className='mr-2 h-4 w-4' />
-            공지 작성
-          </Button>
-        ) : null}
-      </div>
-
-      <AnnouncementInfiniteList
-        onRowClick={onRowClick}
-        isAdmin={isAdmin}
-        onEdit={onEdit}
-        onDeleted={onDeleted}
-      />
-    </div>
+    <AnnouncementInfiniteList
+      onRowClick={onRowClick}
+      isAdmin={isAdmin}
+      onEdit={onEdit}
+      onDeleted={onDeleted}
+    />
   );
 }
 
 function AnnouncementsPageShell() {
   const profile = useNavAccess();
   const isAdmin = profile?.system_role === 'admin';
+  const { filters } = useAnnouncementListFilterParams();
+  const querySignature = JSON.stringify(filters);
 
   const [params, setParams] = useQueryStates({
     announcement: parseAsString
@@ -123,15 +107,30 @@ function AnnouncementsPageShell() {
 
   return (
     <>
-      <Suspense fallback={<PageLoadingSpinner variant='fill' />}>
-        <AnnouncementsListSection
-          isAdmin={isAdmin}
-          onRowClick={handleRowClick}
-          onEdit={handleEditClick}
-          onCreateClick={handleCreateClick}
-          onDeleted={clearAnnouncementParam}
-        />
-      </Suspense>
+      <div data-testid='announcements-page' className='flex flex-1 flex-col gap-4'>
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+          <AnnouncementsListFilters />
+          {isAdmin ? (
+            <Button
+              onClick={handleCreateClick}
+              data-testid='announcement-create-button'
+              className='shrink-0 self-end sm:self-auto'
+            >
+              <Icons.add className='mr-2 h-4 w-4' />
+              공지 작성
+            </Button>
+          ) : null}
+        </div>
+
+        <Suspense key={querySignature} fallback={<PageLoadingSpinner variant='fill' />}>
+          <AnnouncementsListBody
+            isAdmin={isAdmin}
+            onRowClick={handleRowClick}
+            onEdit={handleEditClick}
+            onDeleted={clearAnnouncementParam}
+          />
+        </Suspense>
+      </div>
 
       <AnnouncementDetailDialog
         announcementId={activeAnnouncementId}
