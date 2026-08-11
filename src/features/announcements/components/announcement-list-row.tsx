@@ -1,13 +1,27 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Icons } from '@/components/icons';
+import {
+  formatAbsoluteDateKo,
+  formatBirthdayDisplay
+} from '@/lib/format-date';
 import { cn } from '@/lib/utils';
-import type { AnnouncementListItem } from '../api/types';
+import type { AnnouncementListItem, AnnouncementPriority } from '../api/types';
 import { AnnouncementPinBadge } from './announcement-pin-badge';
 import { AnnouncementPriorityBadge } from './announcement-priority-badge';
 import { AnnouncementRowAction } from './announcement-row-action';
-import { AnnouncementTimestamps } from './announcement-timestamps';
-import { getAnnouncementBodyExcerpt } from './announcement-utils';
+
+const LIST_PRIORITY_BADGE_CLASS: Record<AnnouncementPriority, string> = {
+  normal:
+    'border-transparent bg-black/[0.03] text-muted-foreground hover:bg-black/[0.03] rounded-full px-2 py-0.5 text-xs font-normal shadow-none dark:bg-white/[0.06]',
+  important:
+    'border-transparent bg-amber-500/10 text-amber-600 hover:bg-amber-500/10 rounded-full px-2 py-0.5 text-xs font-normal shadow-none dark:text-amber-400',
+  urgent:
+    'border-transparent bg-destructive/10 text-destructive hover:bg-destructive/10 rounded-full px-2 py-0.5 text-xs font-normal shadow-none'
+};
+
+const LIST_PIN_BADGE_CLASS =
+  'border-transparent bg-black/[0.03] text-muted-foreground hover:bg-black/[0.03] rounded-full px-2 py-0.5 text-xs font-normal shadow-none dark:bg-white/[0.06]';
 
 interface AnnouncementListRowProps {
   announcement: AnnouncementListItem;
@@ -16,6 +30,10 @@ interface AnnouncementListRowProps {
   onEdit?: (announcementId: number) => void;
   onDeleted?: () => void;
   className?: string;
+}
+
+function formatListDate(value: string): string {
+  return formatBirthdayDisplay(value) ?? formatAbsoluteDateKo(value);
 }
 
 export function AnnouncementListRow({
@@ -27,44 +45,59 @@ export function AnnouncementListRow({
   className
 }: AnnouncementListRowProps) {
   return (
-    <Card
-      className={cn('hover:bg-accent/50 transition-colors', className)}
+    <div
+      className={cn('border-border/80 flex items-center border-b', className)}
       data-testid={`announcement-row-${announcement.id}`}
     >
-      <CardContent className='flex items-start gap-2 p-4'>
-        <button
-          type='button'
-          className='min-w-0 flex-1 cursor-pointer text-left'
-          onClick={() => onClick(announcement)}
+      <button
+        type='button'
+        className={cn(
+          'flex min-w-0 flex-1 items-center gap-3 py-4 text-left transition-colors',
+          'hover:bg-black/[0.03] dark:hover:bg-white/[0.03]',
+          'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
+          isAdmin ? 'pr-1' : 'pr-0'
+        )}
+        onClick={() => onClick(announcement)}
+      >
+        <div className='flex shrink-0 items-center gap-2'>
+          <AnnouncementPriorityBadge
+            priority={announcement.priority}
+            className={LIST_PRIORITY_BADGE_CLASS[announcement.priority]}
+          />
+          {announcement.is_pinned ? (
+            <AnnouncementPinBadge className={LIST_PIN_BADGE_CLASS} />
+          ) : null}
+        </div>
+
+        <span className='min-w-0 flex-1 truncate text-sm'>
+          {announcement.title}
+        </span>
+
+        <time
+          dateTime={announcement.created_at}
+          className='text-muted-foreground shrink-0 text-sm whitespace-nowrap'
         >
-          <div className='space-y-2'>
-            <div className='flex flex-wrap items-start gap-2'>
-              <div className='min-w-0 flex-1 space-y-1'>
-                <div className='flex flex-wrap items-center gap-2'>
-                  <h3 className='truncate text-sm font-semibold'>{announcement.title}</h3>
-                  {announcement.is_pinned ? <AnnouncementPinBadge /> : null}
-                  <AnnouncementPriorityBadge priority={announcement.priority} />
-                </div>
-                <p className='text-muted-foreground line-clamp-1 text-sm'>
-                  {getAnnouncementBodyExcerpt(announcement.body)}
-                </p>
-              </div>
-            </div>
-            <AnnouncementTimestamps
-              createdAt={announcement.created_at}
-              updatedAt={announcement.updated_at}
-            />
-          </div>
-        </button>
-        {isAdmin && onEdit ? (
+          {formatListDate(announcement.created_at)}
+        </time>
+
+        {!isAdmin ? (
+          <Icons.chevronRight
+            aria-hidden
+            className='text-muted-foreground/40 size-5 shrink-0'
+          />
+        ) : null}
+      </button>
+
+      {isAdmin && onEdit ? (
+        <div className='shrink-0'>
           <AnnouncementRowAction
             announcement={announcement}
             onView={onClick}
             onEdit={onEdit}
             onDeleted={onDeleted}
           />
-        ) : null}
-      </CardContent>
-    </Card>
+        </div>
+      ) : null}
+    </div>
   );
 }
