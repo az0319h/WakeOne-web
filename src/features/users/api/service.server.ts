@@ -94,15 +94,19 @@ function resolveSort(sortRaw: string | undefined) {
   return { sortColumn, sortDesc };
 }
 
-function applyUserListFilters<T extends { in: Function; or: Function }>(
+function applyUserListFilters<T extends { in: Function; or: Function; eq: Function }>(
   query: T,
-  filters: Pick<UserFilters, 'search' | 'systemRoles'>
+  filters: Pick<UserFilters, 'search' | 'systemRoles' | 'userId'>
 ) {
   let next = query;
   const systemRoles = parseCsvParam(filters.systemRoles);
 
   if (systemRoles.length > 0) {
     next = next.in('system_role', systemRoles) as T;
+  }
+
+  if (filters.userId) {
+    next = next.eq('user_id', filters.userId) as T;
   }
 
   if (filters.search) {

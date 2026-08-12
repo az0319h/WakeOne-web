@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,7 @@ import { Icons } from '@/components/icons';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { cn } from '@/lib/utils';
 import { usersQueryOptions } from '@/features/users/api/queries';
+import { useUserComboboxLabel } from '@/features/users/hooks/use-user-combobox-label';
 
 const STATIC_OPTIONS = [{ value: 'self', label: '본인' }] as const;
 
@@ -30,7 +31,7 @@ interface NotifUserComboboxProps {
 interface NotifUserComboboxUserListProps {
   search: string;
   value: string;
-  onSelect: (value: string, userLabel: string) => void;
+  onSelect: (value: string) => void;
 }
 
 function NotifUserComboboxUserList({
@@ -55,7 +56,7 @@ function NotifUserComboboxUserList({
         <CommandItem
           key={user.id}
           value={`${user.full_name} ${user.email}`}
-          onSelect={() => onSelect(user.id, user.full_name)}
+          onSelect={() => onSelect(user.id)}
         >
           <Icons.check
             className={cn('mr-2 size-4', value === user.id ? 'opacity-100' : 'opacity-0')}
@@ -74,36 +75,13 @@ export function NotifUserCombobox({ value, onValueChange }: NotifUserComboboxPro
   const [open, setOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const [debouncedUserSearch, setDebouncedUserSearch] = useState('');
-  const [selectedUserLabel, setSelectedUserLabel] = useState<string | null>(null);
+  const selectedLabel = useUserComboboxLabel(value, STATIC_OPTIONS);
 
   const debouncedSetUserSearch = useDebouncedCallback((next: string) => {
     setDebouncedUserSearch(next);
   }, 300);
 
-  const selectedLabel = useMemo(() => {
-    const staticOption = STATIC_OPTIONS.find((option) => option.value === value);
-    if (staticOption) {
-      return staticOption.label;
-    }
-
-    if (selectedUserLabel) {
-      return selectedUserLabel;
-    }
-
-    if (value !== 'self') {
-      return '선택한 사용자';
-    }
-
-    return '본인';
-  }, [value, selectedUserLabel]);
-
-  function handleSelect(nextValue: string, userLabel?: string) {
-    if (nextValue === 'self') {
-      setSelectedUserLabel(null);
-    } else if (userLabel) {
-      setSelectedUserLabel(userLabel);
-    }
-
+  function handleSelect(nextValue: string) {
     onValueChange(nextValue);
     setOpen(false);
     setUserSearch('');
