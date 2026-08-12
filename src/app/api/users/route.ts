@@ -87,7 +87,8 @@ export async function GET(request: NextRequest) {
       ...(searchParams.get('sort') && { sort: searchParams.get('sort')! }),
       ...(searchParams.get('systemRoles') && {
         systemRoles: searchParams.get('systemRoles')!
-      })
+      }),
+      ...(searchParams.get('userId') && { userId: searchParams.get('userId')! })
     };
 
     const result = await listUsersForAdmin(supabase, filters);

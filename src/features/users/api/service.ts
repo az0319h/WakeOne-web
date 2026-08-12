@@ -15,6 +15,7 @@ export async function getUsers(filters: UserFilters): Promise<UsersResponse> {
   if (filters.systemRoles) searchParams.set('systemRoles', filters.systemRoles);
   if (filters.search) searchParams.set('search', filters.search);
   if (filters.sort) searchParams.set('sort', filters.sort);
+  if (filters.userId) searchParams.set('userId', filters.userId);
 
   const queryString = searchParams.toString();
   return apiClient<UsersResponse>(`/users${queryString ? `?${queryString}` : ''}`);
