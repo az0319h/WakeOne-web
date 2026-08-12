@@ -42,7 +42,9 @@ export function ProfilePasswordSheet({
     ...changePasswordMutation,
     onError: (error) => {
       notifyError(
-        error instanceof Error ? error.message : '비밀번호 변경에 실패했습니다.'
+        error instanceof Error
+          ? error.message
+          : '비밀번호 변경 조건을 충족하지 못했습니다. 현재 비밀번호 확인과 새 비밀번호 설정을 다시 시도해 주세요.'
       );
     }
   });
