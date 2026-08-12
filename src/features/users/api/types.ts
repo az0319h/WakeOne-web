@@ -6,6 +6,7 @@ export type UserFilters = {
   systemRoles?: string;
   search?: string;
   sort?: string;
+  userId?: string;
 };
 
 export type UsersResponse = {
