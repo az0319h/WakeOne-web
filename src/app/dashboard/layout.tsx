@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import KBar from '@/components/kbar';
 import AppSidebar from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
@@ -18,6 +19,17 @@ import {
 } from '@/features/notifications/api/queries';
 import { listNotifications } from '@/features/notifications/api/service.server';
 import { getQueryClient } from '@/lib/query-client';
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false
+    }
+  }
+};
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireDashboardSession();

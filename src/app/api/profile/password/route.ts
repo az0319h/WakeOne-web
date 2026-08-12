@@ -14,7 +14,8 @@ import {
 import { requireSession } from '@/features/auth/api/session.server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 
-const GENERIC_ERROR = '비밀번호 변경에 실패했습니다.';
+const GENERIC_ERROR =
+  '비밀번호 변경 조건을 충족하지 못했습니다. 현재 비밀번호 확인과 새 비밀번호 설정을 다시 시도해 주세요.';
 
 function profileTargetLabel(profile: {
   email: string;
