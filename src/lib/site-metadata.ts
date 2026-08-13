@@ -5,7 +5,7 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://wakeone.sit
 export const SITE_NAME = 'WakeOne | Wake Corp';
 
 export const SITE_DESCRIPTION =
-  '웨이크 임직원을 위한 내부 시스템. 본인의 식대 잔액과 동료 생일을 빠르게 확인하세요.';
+  '(주)웨이크 임직원을 위한 내부 시스템. 본인의 식대 잔액과 동료 생일을 빠르게 확인하세요.';
 
 export const SITE_KEYWORDS = [
   'WakeOne',
