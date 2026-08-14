@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { normalizePersonName } from '@/lib/normalize-person-name';
 import { WALLET_SYNCS_PAGE_SIZE } from './keys';
 import type {
   WalletLimitSnapshot,
@@ -118,11 +119,6 @@ export async function listWalletSyncs(
     nextCursor: hasMore && last ? String(last.id) : null,
     hasMore
   };
-}
-
-/** 계약 독촉 매칭과 동일 규칙: trim + 연속 공백 1칸 + 소문자. */
-function normalizePersonName(value: string): string {
-  return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 interface ProfileNameIndex {

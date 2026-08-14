@@ -176,3 +176,39 @@ export async function requireAdminSession(): Promise<SessionResult> {
 
   return session;
 }
+
+const USER_ONLY_MESSAGE = '일반 사용자 권한이 필요합니다.';
+
+export async function requireUserSession(): Promise<SessionResult> {
+  const session = await requireSession();
+
+  if (!session.ok) {
+    return session;
+  }
+
+  if (session.profile.system_role !== 'user') {
+    return {
+      ok: false,
+      response: NextResponse.json({ success: false, message: USER_ONLY_MESSAGE }, { status: 403 })
+    };
+  }
+
+  return session;
+}
+
+export async function requireMyContractsPage(): Promise<AuthProfile> {
+  const profile = await requireDashboardSession();
+
+  if (profile.system_role !== 'user') {
+    redirect('/dashboard/overview');
+  }
+
+  const { countMyContracts } = await import('@/features/contracts/api/service.server');
+  const matchCount = await countMyContracts(profile.full_name ?? '');
+
+  if (matchCount < 1) {
+    redirect('/dashboard/overview');
+  }
+
+  return profile;
+}
