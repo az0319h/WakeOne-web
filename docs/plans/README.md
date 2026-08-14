@@ -78,6 +78,7 @@
 | 38 | [38_contract-attachment-size-limit-plan.md](./38_contract-attachment-size-limit-plan.md) | **Completed** · 계약 첨부 파일 10MB·문서 총량 50MB · SQL `40` · plan 16 AC supersede |
 | 39 | [39_announcements-plan.md](./39_announcements-plan.md) | **Approved** · 공지사항 Overview nav·Dialog UX·첨부·create 1회 fan-out · SQL `41`·`42` |
 | 40 | [40_filter-shell-loading-ux-plan.md](./40_filter-shell-loading-ux-plan.md) | **Approved** · listing filter shell 유지·data body만 Spinner · plan 26 TBD 후속 · BE Out |
+| 41 | [41_user-my-contracts-plan.md](./41_user-my-contracts-plan.md) | **Approved** · user 내 계약서 READ-only · `/dashboard/my-contracts` · 이름 매칭 |
 
 ## 에이전트 참조
 

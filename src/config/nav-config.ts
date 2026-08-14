@@ -77,6 +77,15 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: '내 계약서',
+        url: '/dashboard/my-contracts',
+        icon: 'page',
+        shortcut: ['m', 'c'],
+        isActive: false,
+        access: { hasMyContracts: true },
+        items: []
+      },
+      {
         title: '지갑',
         url: '/dashboard/wallet',
         icon: 'wallet',
