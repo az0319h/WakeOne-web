@@ -121,6 +121,9 @@ export type ContractDetailResponse = {
   contract: ContractDocument;
 };
 
+export type MyContractsListResponse = ContractsListResponse;
+export type MyContractDetailResponse = ContractDetailResponse;
+
 export type ContractMutationResponse = ContractDetailResponse;
 
 export type ContractAttachmentMutationResponse = {

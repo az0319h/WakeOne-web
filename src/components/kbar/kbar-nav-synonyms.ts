@@ -9,6 +9,7 @@ export const KBAR_NAV_SYNONYMS: Record<string, string> = {
   '계약서 관리': 'contracts contract 계약 계약서 ct',
   '독촉 이메일 로그': '독촉 이메일 email log reminder system-email-logs el',
   프로필: 'profile account 내 정보 settings',
+  '내 계약서': 'my contracts contract 계약서 mc my-contracts',
   지갑: 'wallet money 잔액 wl',
   알림: 'notifications notification 알림함 nt',
   '활동 로그': 'logs activity audit 감사 log lg'

@@ -8,7 +8,9 @@ import type {
   ContractMutationResponse,
   ContractNoAttachmentPayload,
   ContractsListResponse,
-  ContractUpdatePayload
+  ContractUpdatePayload,
+  MyContractDetailResponse,
+  MyContractsListResponse
 } from './types';
 
 const INLINE_ATTACHMENT_EXTENSIONS = new Set([
@@ -34,7 +36,10 @@ function getFileExtension(fileName: string): string {
   return extension ? extension.toLowerCase() : '';
 }
 
-function buildContractsQuery(filters: ContractFilters): string {
+function buildContractsQueryPath(
+  filters: ContractFilters,
+  basePath: '/contracts' | '/my-contracts'
+): string {
   const params = new URLSearchParams();
   if (filters.page) {
     params.set('page', String(filters.page));
@@ -59,7 +64,15 @@ function buildContractsQuery(filters: ContractFilters): string {
   }
 
   const query = params.toString();
-  return query ? `/contracts?${query}` : '/contracts';
+  return query ? `${basePath}?${query}` : basePath;
+}
+
+function buildContractsQuery(filters: ContractFilters): string {
+  return buildContractsQueryPath(filters, '/contracts');
+}
+
+function buildMyContractsQuery(filters: ContractFilters): string {
+  return buildContractsQueryPath(filters, '/my-contracts');
 }
 
 async function apiFormData<T>(
@@ -90,9 +103,24 @@ export async function listContracts(
   );
 }
 
+export async function listMyContracts(
+  filters: ContractFilters
+): Promise<MyContractsListResponse> {
+  return apiClientWithMessage<MyContractsListResponse>(
+    buildMyContractsQuery(filters)
+  );
+}
+
 export async function getContractById(id: number) {
   const response = await apiClientWithMessage<ContractDetailResponse>(
     `/contracts/${id}`
+  );
+  return response.contract;
+}
+
+export async function getMyContractById(id: number) {
+  const response = await apiClientWithMessage<MyContractDetailResponse>(
+    `/my-contracts/${id}`
   );
   return response.contract;
 }
@@ -205,12 +233,41 @@ export async function downloadContractAttachment(
   return response.blob();
 }
 
+export async function downloadMyContractAttachment(
+  id: number,
+  attachmentId: number
+): Promise<Blob> {
+  const response = await fetch(
+    getMyContractAttachmentDownloadUrl(id, attachmentId)
+  );
+  if (!response.ok) {
+    let message = `API error: ${response.status}`;
+    try {
+      const data = (await response.json()) as { message?: string };
+      message = data.message ?? message;
+    } catch {
+      // Binary endpoints may not return JSON on every failure.
+    }
+    throw new Error(message);
+  }
+  return response.blob();
+}
+
 export function getContractAttachmentDownloadUrl(
   id: number,
   attachmentId: number,
   options?: { inline?: boolean }
 ): string {
   const endpoint = `/api/contracts/${id}/attachments/${attachmentId}/download`;
+  return options?.inline ? `${endpoint}?disposition=inline` : endpoint;
+}
+
+export function getMyContractAttachmentDownloadUrl(
+  id: number,
+  attachmentId: number,
+  options?: { inline?: boolean }
+): string {
+  const endpoint = `/api/my-contracts/${id}/attachments/${attachmentId}/download`;
   return options?.inline ? `${endpoint}?disposition=inline` : endpoint;
 }
 
@@ -243,6 +300,25 @@ export function openContractAttachment(
   }
 
   const url = getContractAttachmentDownloadUrl(id, attachmentId, {
+    inline: true
+  });
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.click();
+  return true;
+}
+
+export function openMyContractAttachment(
+  id: number,
+  attachmentId: number
+): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const url = getMyContractAttachmentDownloadUrl(id, attachmentId, {
     inline: true
   });
   const link = document.createElement('a');

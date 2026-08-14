@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { normalizePersonName } from '@/lib/normalize-person-name';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   CONTRACT_ATTACHMENT_BUCKET,
@@ -316,10 +317,6 @@ function getSafeFileExtension(fileName: string): string {
 
 function buildContractAttachmentStoragePath(contractId: number, fileName: string): string {
   return `contracts/${contractId}/${crypto.randomUUID()}${getSafeFileExtension(fileName)}`;
-}
-
-function normalizePersonName(value: string): string {
-  return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function parseUnmatchedTargets(value: unknown): ContractReminderUnmatchedTarget[] {
@@ -1036,4 +1033,116 @@ export async function recordContractReminderRecipient(input: {
   if (error) {
     throw new Error(error.message);
   }
+}
+
+const MY_CONTRACTS_SCOPE_FETCH_CAP = 5000;
+
+export type MyContractAccessResult =
+  | { ok: true; contract: ContractDocument }
+  | { ok: false; reason: 'not_found' | 'forbidden' };
+
+function filterByAuthorScope(contracts: ContractDocument[], normalizedAuthorName: string): ContractDocument[] {
+  if (!normalizedAuthorName) {
+    return [];
+  }
+
+  return contracts.filter(
+    (contract) => normalizePersonName(contract.author_name) === normalizedAuthorName
+  );
+}
+
+export async function countMyContracts(fullName: string): Promise<number> {
+  const normalizedAuthorName = normalizePersonName(fullName);
+  if (!normalizedAuthorName) {
+    return 0;
+  }
+
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('contract_documents')
+    .select('author_name')
+    .eq('status', 'active')
+    .limit(MY_CONTRACTS_SCOPE_FETCH_CAP);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).filter((row) => normalizePersonName(row.author_name) === normalizedAuthorName).length;
+}
+
+export async function listMyContracts(
+  fullName: string,
+  filters: ContractFilters
+): Promise<{ items: ContractDocument[]; total: number; page: number; limit: number }> {
+  const normalizedAuthorName = normalizePersonName(fullName);
+  const page = Math.max(Number(filters.page ?? 1), 1);
+  const limit = Math.min(Math.max(Number(filters.limit ?? 10), 1), 100);
+
+  if (!normalizedAuthorName) {
+    return { items: [], total: 0, page, limit };
+  }
+
+  const supabase = getServiceRoleClient();
+  const sort = parseSort(filters.sort);
+  const search = filters.search?.trim();
+
+  let query = supabase.from('contract_documents').select(CONTRACT_SELECT);
+
+  if (filters.from) {
+    query = query.gte('approved_at', toKstDayStart(filters.from));
+  }
+
+  if (filters.to) {
+    query = query.lt('approved_at', toKstNextDayStart(filters.to));
+  }
+
+  if (search) {
+    const escaped = search.replaceAll(',', ' ');
+    query = query.or(
+      `document_number.ilike.%${escaped}%,author_name.ilike.%${escaped}%,contract_target.ilike.%${escaped}%`
+    );
+  }
+
+  query = query.order(sort.column, { ascending: sort.ascending, nullsFirst: false }).limit(MY_CONTRACTS_SCOPE_FETCH_CAP);
+
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = (data ?? []) as unknown as ContractDocumentRow[];
+  const attachmentsByContractId = await listAttachmentsByContractIds(rows.map((row) => row.id));
+  const mapped = rows.map((row) => mapContract(row, attachmentsByContractId.get(row.id) ?? []));
+  const authorScoped = filterByAuthorScope(mapped, normalizedAuthorName);
+  const filtered = filterByAttachmentStatus(authorScoped, filters.attachment_status);
+  const items = filtered.slice((page - 1) * limit, page * limit);
+
+  return {
+    items,
+    total: filtered.length,
+    page,
+    limit
+  };
+}
+
+export async function getMyContractById(id: number, fullName: string): Promise<MyContractAccessResult> {
+  const contract = await getContractById(id);
+  if (!contract) {
+    return { ok: false, reason: 'not_found' };
+  }
+
+  const normalizedAuthorName = normalizePersonName(fullName);
+  if (!normalizedAuthorName || normalizePersonName(contract.author_name) !== normalizedAuthorName) {
+    return { ok: false, reason: 'forbidden' };
+  }
+
+  return { ok: true, contract };
+}
+
+export async function assertMyContractAccess(
+  contractId: number,
+  fullName: string
+): Promise<MyContractAccessResult> {
+  return getMyContractById(contractId, fullName);
 }

@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { requireDashboardSession } from '@/features/auth/api/session.server';
+import { countMyContracts } from '@/features/contracts/api/service.server';
 import { NavAccessProvider } from '@/contexts/nav-access';
 import { AccessDeniedToast } from '@/components/dashboard/access-denied-toast';
 import { ProfileStatusRealtime } from '@/features/auth/components/profile-status-realtime';
@@ -34,6 +35,8 @@ export const metadata: Metadata = {
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireDashboardSession();
   const isAdmin = profile.system_role === 'admin';
+  const hasMyContracts =
+    !isAdmin && profile.full_name ? (await countMyContracts(profile.full_name)) >= 1 : false;
 
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
@@ -50,7 +53,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   return (
-    <NavAccessProvider profile={profile}>
+    <NavAccessProvider profile={profile} hasMyContracts={hasMyContracts}>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <KBar>
           <SidebarProvider defaultOpen={defaultOpen}>
