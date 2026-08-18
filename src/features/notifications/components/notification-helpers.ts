@@ -41,7 +41,7 @@ export function getNotificationActions(
     return [
       {
         id: 'view-wallet',
-        label: '지갑 보기',
+        label: '식대 카드 보기',
         type: 'redirect',
         style: 'primary'
       }
