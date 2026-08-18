@@ -24,16 +24,16 @@ export function WalletLimitCard({ snapshot, hidden, onToggleHidden }: WalletLimi
     return (
       <Card>
         <CardHeader className='space-y-1'>
-          <CardTitle className='text-base font-medium'>체크카드 한도</CardTitle>
+          <CardTitle className='text-base font-medium'>이번 달 식대 잔액</CardTitle>
           <p className='text-muted-foreground text-sm'>
-            KB국민카드 포털에서 동기화된 월간 한도입니다.
+            KB국민 식대 체크카드 기준 · 매일 자동 반영
           </p>
         </CardHeader>
         <CardContent>
           <div className='text-muted-foreground flex flex-col items-center justify-center gap-2 py-10 text-center text-sm'>
             <Icons.wallet className='size-6 opacity-60' />
-            <p>아직 동기화된 한도가 없습니다.</p>
-            <p className='text-xs'>kbcard 실행이 완료되면 이곳에 한도가 표시됩니다.</p>
+            <p>아직 식대 잔액 정보가 없습니다.</p>
+            <p className='text-xs'>카드 연동 후 이곳에 표시됩니다.</p>
           </div>
         </CardContent>
       </Card>
@@ -50,9 +50,9 @@ export function WalletLimitCard({ snapshot, hidden, onToggleHidden }: WalletLimi
     <Card>
       <CardHeader className='flex flex-row items-start justify-between gap-4'>
         <div className='space-y-1'>
-          <CardTitle className='text-base font-medium'>체크카드 한도</CardTitle>
+          <CardTitle className='text-base font-medium'>이번 달 식대 잔액</CardTitle>
           <p className='text-muted-foreground text-sm'>
-            KB국민카드 포털에서 동기화된 월간 한도입니다.
+            KB국민 식대 체크카드 기준 · 매일 자동 반영
           </p>
         </div>
         <Button
@@ -75,7 +75,7 @@ export function WalletLimitCard({ snapshot, hidden, onToggleHidden }: WalletLimi
           className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'
         >
           <div className='space-y-2'>
-            <p className='text-muted-foreground text-sm'>월간 잔여한도</p>
+            <p className='text-muted-foreground text-sm'>남은 식대</p>
             <p
               className={cn(
                 'text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl',
@@ -86,11 +86,11 @@ export function WalletLimitCard({ snapshot, hidden, onToggleHidden }: WalletLimi
               {hidden ? '₩••••••' : formatWalletAmount(snapshot.monthly_remaining)}
             </p>
             <span className='sr-only'>
-              월간 잔여한도 {formatWalletAmount(snapshot.monthly_remaining)}
+              남은 식대 {formatWalletAmount(snapshot.monthly_remaining)}
             </span>
           </div>
           <div className='space-y-1 sm:text-right'>
-            <p className='text-muted-foreground text-xs'>월간 부여한도</p>
+            <p className='text-muted-foreground text-xs'>이번 달 지급액</p>
             <p
               className={cn(
                 'text-lg font-medium tabular-nums',
@@ -101,27 +101,27 @@ export function WalletLimitCard({ snapshot, hidden, onToggleHidden }: WalletLimi
               {hidden ? '₩••••••' : formatWalletAmount(snapshot.monthly_limit)}
             </p>
             <p className='text-muted-foreground text-xs tabular-nums'>
-              사용 {hidden ? '••••' : formatWalletAmount(used)} ({usagePercent}%)
+              사용한 금액 {hidden ? '••••' : formatWalletAmount(used)} ({usagePercent}%)
             </p>
           </div>
         </motion.div>
 
         <div className='space-y-2'>
-          <Progress value={usagePercent} aria-label={`한도 사용률 ${usagePercent}%`} />
+          <Progress value={usagePercent} aria-label={`식대 사용률 ${usagePercent}%`} />
           <div className='text-muted-foreground flex items-center justify-between text-xs tabular-nums'>
             <span>{usagePercent}% 사용</span>
-            <span>잔여 {hidden ? '••••' : formatWalletAmount(snapshot.monthly_remaining)}</span>
+            <span>남은 식대 {hidden ? '••••' : formatWalletAmount(snapshot.monthly_remaining)}</span>
           </div>
         </div>
 
         <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs'>
           <Icons.clock className='size-3.5 shrink-0' />
-          <span>마지막 동기화</span>
+          <span>마지막 업데이트</span>
           <span className='font-mono whitespace-nowrap'>
             {formatAbsoluteDateTimeKo(snapshot.synced_at)}
           </span>
           <Badge variant='secondary' className='ml-auto font-normal'>
-            {snapshot.source}
+            {snapshot.source === 'kbcard' ? 'KB국민 식대 체크카드' : snapshot.source}
           </Badge>
         </div>
       </CardContent>

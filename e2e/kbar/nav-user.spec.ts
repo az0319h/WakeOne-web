@@ -16,7 +16,7 @@ test.describe('KBar Phase A — user nav & RBAC', () => {
 
   test('AC A-1: user navigates to wallet via kbar', async ({ page }) => {
     await openKbar(page);
-    await fillKbarSearch(page, '지갑');
+    await fillKbarSearch(page, '식대');
     await waitForKbarDebounce(page);
     await submitKbarSelection(page);
 

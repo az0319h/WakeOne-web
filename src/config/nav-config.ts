@@ -86,7 +86,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: '지갑',
+        title: '식대 카드',
         url: '/dashboard/wallet',
         icon: 'wallet',
         shortcut: ['w', 'l'],

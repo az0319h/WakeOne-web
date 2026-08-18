@@ -19,7 +19,7 @@ interface WalletSummaryOverviewCardProps {
 
 function formatWalletSource(source: string): string {
   if (source === 'kbcard') {
-    return 'KB카드 연동';
+    return 'KB국민 식대 체크카드';
   }
 
   return source;
@@ -31,18 +31,18 @@ export function WalletSummaryOverviewCard({ snapshot }: WalletSummaryOverviewCar
 
   if (!snapshot) {
     return (
-      <Card aria-label='이번 달 카드 한도'>
+      <Card aria-label='이번 달 식대 잔액'>
         <CardHeader className='space-y-1 pb-2'>
-          <CardTitle className='text-base font-medium'>이번 달 카드 한도</CardTitle>
+          <CardTitle className='text-base font-medium'>이번 달 식대 잔액</CardTitle>
           <p className='text-muted-foreground text-sm'>
-            KB카드에서 확인한 월 한도를 한눈에 볼 수 있습니다.
+            식대 카드에 남은 금액을 한눈에 확인합니다.
           </p>
         </CardHeader>
         <CardContent>
           <div className='text-muted-foreground flex flex-col items-center justify-center gap-2 py-6 text-center text-sm'>
             <Icons.wallet className='size-6 opacity-60' />
-            <p>아직 한도 정보가 없습니다.</p>
-            <p className='text-xs'>KB카드 연동 후 이곳에 표시됩니다.</p>
+            <p>아직 식대 잔액 정보가 없습니다.</p>
+            <p className='text-xs'>카드 연동 후 이곳에 표시됩니다.</p>
           </div>
         </CardContent>
       </Card>
@@ -56,12 +56,12 @@ export function WalletSummaryOverviewCard({ snapshot }: WalletSummaryOverviewCar
   );
 
   return (
-    <Card aria-label='이번 달 카드 한도'>
+    <Card aria-label='이번 달 식대 잔액'>
       <CardHeader className='flex flex-row items-start justify-between gap-4 pb-2'>
         <div className='space-y-1'>
-          <CardTitle className='text-base font-medium'>이번 달 카드 한도</CardTitle>
+          <CardTitle className='text-base font-medium'>이번 달 식대 잔액</CardTitle>
           <p className='text-muted-foreground text-sm'>
-            KB카드에서 확인한 월 한도를 한눈에 볼 수 있습니다.
+            식대 카드에 남은 금액을 한눈에 확인합니다.
           </p>
         </div>
         <Button
@@ -84,7 +84,7 @@ export function WalletSummaryOverviewCard({ snapshot }: WalletSummaryOverviewCar
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className='space-y-1'
         >
-          <p className='text-muted-foreground text-sm'>월간 잔여한도</p>
+          <p className='text-muted-foreground text-sm'>남은 식대</p>
           <p
             className={cn(
               'text-3xl font-semibold tracking-tight tabular-nums',
@@ -95,23 +95,23 @@ export function WalletSummaryOverviewCard({ snapshot }: WalletSummaryOverviewCar
             {hidden ? '₩••••••' : formatWalletAmount(snapshot.monthly_remaining)}
           </p>
           <span className='sr-only'>
-            월간 잔여한도 {formatWalletAmount(snapshot.monthly_remaining)}
+            남은 식대 {formatWalletAmount(snapshot.monthly_remaining)}
           </span>
           <p className='text-muted-foreground text-sm tabular-nums'>
-            월 한도{' '}
+            이번 달 지급액{' '}
             <span className={cn(hidden && 'select-none blur-sm')} aria-hidden={hidden}>
               {hidden ? '₩••••••' : formatWalletAmount(snapshot.monthly_limit)}
             </span>
             {' · '}
-            사용 {hidden ? '••••' : formatWalletAmount(used)} ({usagePercent}%)
+            사용한 금액 {hidden ? '••••' : formatWalletAmount(used)} ({usagePercent}%)
           </p>
         </motion.div>
 
         <div className='space-y-1.5'>
-          <Progress value={usagePercent} aria-label={`한도 사용률 ${usagePercent}%`} />
+          <Progress value={usagePercent} aria-label={`식대 사용률 ${usagePercent}%`} />
           <div className='text-muted-foreground flex items-center justify-between text-xs tabular-nums'>
             <span>{usagePercent}% 사용</span>
-            <span>잔여 {hidden ? '••••' : formatWalletAmount(snapshot.monthly_remaining)}</span>
+            <span>남은 식대 {hidden ? '••••' : formatWalletAmount(snapshot.monthly_remaining)}</span>
           </div>
         </div>
 
@@ -132,7 +132,7 @@ export function WalletSummaryOverviewCard({ snapshot }: WalletSummaryOverviewCar
           href='/dashboard/wallet'
           className='text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline'
         >
-          자세히
+          식대 카드 자세히
           <Icons.chevronRight className='size-4' />
         </Link>
       </CardContent>
