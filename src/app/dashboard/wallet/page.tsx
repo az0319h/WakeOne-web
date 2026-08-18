@@ -27,8 +27,8 @@ export default async function WalletPage(props: PageProps) {
 
   return (
     <PageContainer
-      pageTitle='지갑'
-      pageDescription='KB국민카드에서 동기화된 월간 한도를 본인 및 선택한 사용자 기준으로 확인합니다.'
+      pageTitle='식대 카드'
+      pageDescription='회사에서 제공하는 식대 체크카드의 이번 달 사용 가능 금액을 확인합니다.'
     >
       <Suspense fallback={<PageLoadingSpinner variant='fill' />}>
         <WalletListing />

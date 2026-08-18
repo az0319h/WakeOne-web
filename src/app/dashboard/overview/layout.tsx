@@ -16,6 +16,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
+import { MockDataOverlay } from '@/features/overview/components/mock-data-overlay';
 import React from 'react';
 
 export default function OverViewLayout({
@@ -36,8 +37,9 @@ export default function OverViewLayout({
           <h2 className='text-2xl font-bold tracking-tight'>안녕하세요, 다시 오셨군요 👋</h2>
         </div>
 
-        <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
-          <Card className='@container/card'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 [&_[data-slot=card]]:bg-gradient-to-t [&_[data-slot=card]]:from-primary/5 [&_[data-slot=card]]:to-card [&_[data-slot=card]]:shadow-xs dark:[&_[data-slot=card]]:bg-card'>
+          <MockDataOverlay>
+            <Card className='@container/card'>
             <CardHeader>
               <CardDescription>총 매출</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
@@ -56,8 +58,10 @@ export default function OverViewLayout({
               </div>
               <div className='text-muted-foreground'>최근 6개월 방문자 현황</div>
             </CardFooter>
-          </Card>
-          <Card className='@container/card'>
+            </Card>
+          </MockDataOverlay>
+          <MockDataOverlay>
+            <Card className='@container/card'>
             <CardHeader>
               <CardDescription>신규 고객</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
@@ -76,8 +80,10 @@ export default function OverViewLayout({
               </div>
               <div className='text-muted-foreground'>고객 획득 현황 주의 필요</div>
             </CardFooter>
-          </Card>
-          <Card className='@container/card'>
+            </Card>
+          </MockDataOverlay>
+          <MockDataOverlay>
+            <Card className='@container/card'>
             <CardHeader>
               <CardDescription>활성 계정</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
@@ -96,8 +102,10 @@ export default function OverViewLayout({
               </div>
               <div className='text-muted-foreground'>목표 참여율 초과 달성</div>
             </CardFooter>
-          </Card>
-          <Card className='@container/card'>
+            </Card>
+          </MockDataOverlay>
+          <MockDataOverlay>
+            <Card className='@container/card'>
             <CardHeader>
               <CardDescription>성장률</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
@@ -116,7 +124,8 @@ export default function OverViewLayout({
               </div>
               <div className='text-muted-foreground'>성장 예측치 달성 중</div>
             </CardFooter>
-          </Card>
+            </Card>
+          </MockDataOverlay>
         </div>
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7'>
           <div className='col-span-4 flex flex-col gap-4 md:col-span-3'>
@@ -130,13 +139,24 @@ export default function OverViewLayout({
               <WalletSummaryOverviewSection />
             </Suspense>
           </div>
-          <div className='col-span-4'>{bar_stats}</div>
-          <div className='col-span-4 md:col-span-3'>
-            {/* sales arallel routes */}
-            {sales}
+          <div className='col-span-4'>
+            <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>
+              {bar_stats}
+            </MockDataOverlay>
           </div>
-          <div className='col-span-4'>{area_stats}</div>
-          <div className='col-span-4 min-h-0 md:col-span-3'>{pie_stats}</div>
+          <div className='col-span-4 md:col-span-3'>
+            <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>{sales}</MockDataOverlay>
+          </div>
+          <div className='col-span-4'>
+            <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>
+              {area_stats}
+            </MockDataOverlay>
+          </div>
+          <div className='col-span-4 min-h-0 md:col-span-3'>
+            <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>
+              {pie_stats}
+            </MockDataOverlay>
+          </div>
         </div>
       </div>
     </PageContainer>

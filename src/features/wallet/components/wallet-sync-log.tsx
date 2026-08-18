@@ -52,13 +52,13 @@ function RemainingDelta({
   previousRemaining: number | null;
 }) {
   if (previousRemaining == null) {
-    return <span className='text-muted-foreground text-xs'>최초 동기화</span>;
+    return <span className='text-muted-foreground text-xs'>최초 반영</span>;
   }
 
   const delta = remaining - previousRemaining;
 
   if (delta === 0) {
-    return <span className='text-muted-foreground text-xs'>잔여 변동 없음</span>;
+    return <span className='text-muted-foreground text-xs'>잔액 변동 없음</span>;
   }
 
   return (
@@ -68,7 +68,7 @@ function RemainingDelta({
         delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
       )}
     >
-      잔여 {formatSignedWalletAmount(delta)}
+      남은 식대 {formatSignedWalletAmount(delta)}
     </span>
   );
 }
@@ -106,19 +106,19 @@ export function WalletSyncLog({ filters = {} }: WalletSyncLogProps) {
     <Card className='flex max-h-[70vh] flex-1 flex-col overflow-hidden md:max-h-[680px]'>
       <CardHeader className='flex flex-row items-start justify-between gap-4'>
         <div className='space-y-1'>
-          <CardTitle className='text-base font-medium'>한도 업데이트 내역</CardTitle>
+          <CardTitle className='text-base font-medium'>식대 잔액 업데이트 내역</CardTitle>
           <p className='text-muted-foreground text-sm'>
-            KB카드에서 확인한 월 한도가 WakeOne에 반영된 기록입니다.
+            식대 체크카드 잔액이 WakeOne에 반영된 기록입니다.
           </p>
         </div>
         <Badge variant='outline' className='shrink-0 font-normal'>
-          KB카드 연동
+          KB국민 식대 체크카드
         </Badge>
       </CardHeader>
       <CardContent className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         {entries.length === 0 ? (
           <div className='text-muted-foreground flex flex-1 items-center justify-center py-10 text-sm'>
-            한도 업데이트 내역이 없습니다.
+            식대 잔액 업데이트 내역이 없습니다.
           </div>
         ) : (
           <div ref={scrollRootRef} className='min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2'>
@@ -136,7 +136,7 @@ export function WalletSyncLog({ filters = {} }: WalletSyncLogProps) {
                   </div>
                   <div className='min-w-0 flex-1 space-y-1.5 pt-0.5'>
                     <div className='flex flex-wrap items-center gap-2'>
-                      <p className='text-sm font-medium'>KB카드 한도 동기화</p>
+                      <p className='text-sm font-medium'>식대 잔액 업데이트</p>
                       <Badge variant={SYNC_STATUS_VARIANTS[entry.status]}>
                         {SYNC_STATUS_LABELS[entry.status]}
                       </Badge>
@@ -146,10 +146,10 @@ export function WalletSyncLog({ filters = {} }: WalletSyncLogProps) {
                     </p>
                     <div className='flex flex-wrap items-center gap-x-4 gap-y-1'>
                       <span className='text-muted-foreground text-xs tabular-nums'>
-                        한도 {formatWalletAmount(entry.monthly_limit)}
+                        이번 달 지급액 {formatWalletAmount(entry.monthly_limit)}
                       </span>
                       <span className='text-xs font-medium tabular-nums'>
-                        잔여 {formatWalletAmount(entry.monthly_remaining)}
+                        남은 식대 {formatWalletAmount(entry.monthly_remaining)}
                       </span>
                       <RemainingDelta
                         remaining={entry.monthly_remaining}
