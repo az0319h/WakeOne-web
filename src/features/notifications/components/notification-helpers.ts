@@ -5,7 +5,8 @@ export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-profile': '/dashboard/profile',
   'view-system-email-logs': '/dashboard/system-email-logs',
   'view-wallet': '/dashboard/wallet',
-  'view-announcement': '/dashboard/announcements'
+  'view-announcement': '/dashboard/announcements',
+  'view-support': '/dashboard/support'
 };
 
 export function getNotificationActions(
@@ -53,6 +54,17 @@ export function getNotificationActions(
       {
         id: 'view-announcement',
         label: '공지 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (notification.type.startsWith('support.')) {
+    return [
+      {
+        id: 'view-support',
+        label: '문의 보기',
         type: 'redirect',
         style: 'primary'
       }

@@ -9,8 +9,8 @@ import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import type { Column, ColumnDef } from '@tanstack/react-table';
 import type { ActivityLog } from '../../api/types';
 import {
-  ACTION_LABELS,
   formatTargetLabel,
+  getActivityActionLabel,
   getResultBadgeClass,
   getResultLabel
 } from '../../labels';
@@ -108,7 +108,7 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
           }
         : undefined,
       cell: ({ row }) => (
-        <span className='text-sm'>{ACTION_LABELS[row.original.action]}</span>
+        <span className='text-sm'>{getActivityActionLabel(row.original)}</span>
       )
     },
     {

@@ -31,7 +31,17 @@ const METADATA_ALLOWLIST = new Set([
   'notification_id',
   'count',
   'duplicate_run',
-  'announcement_id'
+  'announcement_id',
+  'support_request_id',
+  'comment_id',
+  'parent_id',
+  'root_comment_id',
+  'depth',
+  'deleted_by_admin',
+  'body_length',
+  'previous_status',
+  'new_status',
+  'title'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -186,6 +196,56 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === 'announcement_id' && typeof value === 'number') {
       sanitized.announcement_id = value;
+      continue;
+    }
+
+    if (key === 'support_request_id' && typeof value === 'number') {
+      sanitized.support_request_id = value;
+      continue;
+    }
+
+    if (key === 'comment_id' && typeof value === 'number') {
+      sanitized.comment_id = value;
+      continue;
+    }
+
+    if (key === 'parent_id' && (typeof value === 'number' || value === null)) {
+      sanitized.parent_id = value;
+      continue;
+    }
+
+    if (key === 'root_comment_id' && (typeof value === 'number' || value === null)) {
+      sanitized.root_comment_id = value;
+      continue;
+    }
+
+    if (key === 'depth' && typeof value === 'number') {
+      sanitized.depth = value;
+      continue;
+    }
+
+    if (key === 'deleted_by_admin' && typeof value === 'boolean') {
+      sanitized.deleted_by_admin = value;
+      continue;
+    }
+
+    if (key === 'body_length' && typeof value === 'number') {
+      sanitized.body_length = value;
+      continue;
+    }
+
+    if (key === 'previous_status' && typeof value === 'string') {
+      sanitized.previous_status = value;
+      continue;
+    }
+
+    if (key === 'new_status' && typeof value === 'string') {
+      sanitized.new_status = value;
+      continue;
+    }
+
+    if (key === 'title' && typeof value === 'string') {
+      sanitized.title = value.length > 100 ? `${value.slice(0, 100)}…` : value;
       continue;
     }
 

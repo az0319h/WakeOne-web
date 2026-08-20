@@ -62,6 +62,15 @@ export const navGroups: NavGroup[] = [
             shortcut: ['e', 'l']
           }
         ]
+      },
+      {
+        title: 'CS 문의',
+        url: '/dashboard/support',
+        icon: 'help',
+        shortcut: ['c', 's'],
+        isActive: false,
+        access: { systemRole: 'admin' },
+        items: []
       }
     ]
   },
@@ -99,6 +108,15 @@ export const navGroups: NavGroup[] = [
         icon: 'notification',
         shortcut: ['n', 't'],
         isActive: false,
+        items: []
+      },
+      {
+        title: 'CS 문의',
+        url: '/dashboard/support',
+        icon: 'help',
+        shortcut: ['c', 's'],
+        isActive: false,
+        access: { systemRole: 'user' },
         items: []
       },
       {
