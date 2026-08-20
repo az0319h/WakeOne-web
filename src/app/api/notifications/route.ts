@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listNotifications } from '@/features/notifications/api/service.server';
 import { requireSession } from '@/features/auth/api/session.server';
+import { getMustChangeApiBlockResponse } from '@/lib/auth/must-change-api-guard.server';
 
 export async function GET(request: NextRequest) {
+  const mustChangeBlock = getMustChangeApiBlockResponse(request);
+  if (mustChangeBlock) {
+    return mustChangeBlock;
+  }
+
   const session = await requireSession();
   if (!session.ok) {
     return session.response;

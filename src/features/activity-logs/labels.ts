@@ -30,6 +30,7 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'profile.password_change': '비밀번호 변경',
   'auth.password_reset_request': '비밀번호 찾기 요청',
   'auth.password_reset_complete': '비밀번호 찾기 완료',
+  'auth.force_password_change': '초기 비밀번호 강제 변경',
   'notification.read': '알림 읽음',
   'notification.read_all': '알림 모두 읽음',
   'announcement.create': '공지 등록',

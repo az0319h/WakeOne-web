@@ -1,23 +1,16 @@
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthProfile, SignInPayload } from './types';
+import type {
+  AuthProfile,
+  ForcePasswordChangePayload,
+  ForcePasswordChangeResponse,
+  SignInPayload,
+  SignInResult
+} from './types';
 import { AUTH_ERROR_MESSAGES } from './types';
 
 const PROFILE_COLUMNS =
   'user_id, email, full_name, phone, system_role, password_set_at, status';
-const SESSION_REFRESH_ERROR_KEYWORDS = [
-  'Invalid Refresh Token',
-  'Session Expired',
-  'Refresh Token'
-] as const;
-
-function isSessionRefreshError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  return SESSION_REFRESH_ERROR_KEYWORDS.some((keyword) => error.message.includes(keyword));
-}
 
 async function fetchProfile(userId: string): Promise<AuthProfile | null> {
   const supabase = createClient();
@@ -57,94 +50,56 @@ async function ensureProfileForSession(): Promise<AuthProfile | null> {
   return fetchProfile(user.id);
 }
 
-function mapAuthClientError(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return AUTH_ERROR_MESSAGES.UNKNOWN;
-  }
-
-  if (
-    error.message.includes('Missing Supabase') ||
-    error.message.includes('NEXT_PUBLIC_SUPABASE')
-  ) {
-    return 'Supabase 설정이 누락되었습니다. .env의 API 키를 확인한 뒤 `npm run dev`를 다시 실행해 주세요.';
-  }
-
-  return AUTH_ERROR_MESSAGES.UNKNOWN;
-}
-
-export async function signInWithEmail(payload: SignInPayload) {
-  let supabase;
-
-  try {
-    supabase = createClient();
-  } catch (error) {
-    return { ok: false as const, message: mapAuthClientError(error) };
-  }
-
+export async function signInWithEmail(payload: SignInPayload): Promise<SignInResult> {
   const email = normalizeEmail(payload.email);
 
-  const readProfileStatus = () =>
-    supabase.rpc('profile_status_for_email', {
-      p_email: email
+  try {
+    const res = await fetch('/api/auth/sign-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: payload.password }),
+      credentials: 'same-origin'
     });
 
-  let { data: profileStatus, error: statusError } = await readProfileStatus();
+    const data = (await res.json()) as {
+      success: boolean;
+      mustChange?: boolean;
+      message?: string;
+    };
 
-  if (statusError && isSessionRefreshError(statusError)) {
-    await supabase.auth.signOut();
-    const retried = await readProfileStatus();
-    profileStatus = retried.data;
-    statusError = retried.error;
-  }
-
-  if (statusError) {
-    return { ok: false as const, message: AUTH_ERROR_MESSAGES.UNKNOWN };
-  }
-
-  if (profileStatus === 'inactive') {
-    return { ok: false as const, message: AUTH_ERROR_MESSAGES.ACCOUNT_DISABLED };
-  }
-
-  const requestSignIn = () =>
-    supabase.auth.signInWithPassword({
-      email,
-      password: payload.password
-    });
-
-  let { error } = await requestSignIn();
-
-  // Stale local refresh tokens can survive dashboard inactivity resets.
-  // Clear local auth state and retry once so users can sign in immediately.
-  if (error && isSessionRefreshError(error)) {
-    await supabase.auth.signOut();
-    const retried = await requestSignIn();
-    error = retried.error;
-  }
-
-  if (error) {
-    if (error.message.includes('No API key found')) {
+    if (!res.ok || !data.success) {
       return {
-        ok: false as const,
-        message:
-          'Supabase API 키가 요청에 포함되지 않았습니다. .env의 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY를 확인하고 개발 서버를 재시작해 주세요.'
+        ok: false,
+        message: data.message ?? AUTH_ERROR_MESSAGES.UNKNOWN
       };
     }
 
-    const message =
-      error.message === 'Invalid login credentials'
-        ? AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS
-        : AUTH_ERROR_MESSAGES.UNKNOWN;
-    return { ok: false as const, message };
+    return { ok: true, mustChange: data.mustChange ?? false };
+  } catch {
+    return { ok: false, message: AUTH_ERROR_MESSAGES.UNKNOWN };
+  }
+}
+
+export async function forcePasswordChange(
+  payload: ForcePasswordChangePayload
+): Promise<ForcePasswordChangeResponse> {
+  const res = await fetch('/api/auth/force-password-change', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    credentials: 'same-origin'
+  });
+
+  const data = (await res.json()) as ForcePasswordChangeResponse;
+
+  if (!res.ok || !data.success) {
+    throw new Error(
+      data.message ??
+        '비밀번호 변경에 실패했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.'
+    );
   }
 
-  const profile = await ensureProfileForSession();
-
-  if (profile?.status === 'inactive') {
-    await supabase.auth.signOut();
-    return { ok: false as const, message: AUTH_ERROR_MESSAGES.ACCOUNT_DISABLED };
-  }
-
-  return { ok: true as const };
+  return data;
 }
 
 export async function signOut() {

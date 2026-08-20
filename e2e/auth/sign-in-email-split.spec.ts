@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { resolveE2EPassword } from '../helpers/e2e-credentials';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -12,7 +13,7 @@ function parseE2EUserEmail() {
   return {
     localPart: email!.slice(0, atIndex),
     domain: email!.slice(atIndex + 1),
-    password: process.env.E2E_USER_PASSWORD ?? ''
+    password: resolveE2EPassword(process.env.E2E_USER_PASSWORD)
   };
 }
 
@@ -61,7 +62,6 @@ test.describe('로그인 이메일 분리 입력', () => {
 
   test('AC-4: 올바른 자격 증명으로 로그인에 성공한다', async ({ page }) => {
     const { localPart, domain, password } = parseE2EUserEmail();
-    test.skip(!password, 'E2E_USER_PASSWORD required');
 
     await gotoSignIn(page);
 
@@ -120,7 +120,6 @@ test.describe('로그인 이메일 분리 입력', () => {
 
   test('AC-9: 로그인 성공 직후 폼 입력값이 초기화된다', async ({ page }) => {
     const { localPart, domain, password } = parseE2EUserEmail();
-    test.skip(!password, 'E2E_USER_PASSWORD required');
 
     await gotoSignIn(page);
 

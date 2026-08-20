@@ -167,7 +167,7 @@ test.describe('사용자 목록', () => {
     });
   });
 
-  test('AC-05: 신규 계정은 초기 비밀번호로 대시보드에 진입한다', async ({
+  test('AC-05: 신규 계정은 초기 비밀번호 로그인 시 force-change로 이동한다', async ({
     browser,
     request
   }) => {
@@ -185,7 +185,10 @@ test.describe('사용자 목록', () => {
     await fillSignInCredentials(page, email, '12341234a');
     await page.getByRole('button', { name: '로그인' }).click();
 
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/\/auth\/force-password-change/, { timeout: 30_000 });
+    await expect(
+      page.getByText('12341234a 비밀번호는 사용할 수 없습니다. 비밀번호를 변경해 주세요')
+    ).toBeVisible();
     await context.close();
   });
 
