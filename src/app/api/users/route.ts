@@ -15,13 +15,13 @@ import {
 } from '@/features/users/constants/organization';
 import { refineBirthday } from '@/lib/birthday';
 import { PHONE_REGEX } from '@/lib/phone';
+import { INITIAL_USER_PASSWORD } from '@/lib/auth/initial-password';
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import { listUsersForAdmin } from '@/features/users/api/service.server';
 import type { UserFilters } from '@/features/users/api/types';
 
-const INITIAL_USER_PASSWORD = '12341234a';
 const DUPLICATE_EMAIL_MESSAGE = '이미 등록된 이메일입니다.';
 
 const REMOVED_USER_FIELDS = ['department', 'job_title', 'food_restrictions'] as const;

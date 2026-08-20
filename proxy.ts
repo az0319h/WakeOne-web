@@ -6,6 +6,10 @@ import {
 } from '@/config/admin-routes';
 import { isDisabledDashboardPath } from '@/config/disabled-routes';
 import { ACCESS_DENIED_FLASH_COOKIE } from '@/lib/auth/access-denied-flash';
+import {
+  isMustChangeAllowedApiPath,
+  MUST_CHANGE_API_JSON
+} from '@/lib/auth/must-change-api-guard.server';
 import { hasMustChangeInitialPasswordCookieFromRequest } from '@/lib/auth/must-change-cookie';
 import { updateSession } from '@/lib/supabase/middleware';
 
@@ -19,11 +23,6 @@ const UNAUTHORIZED_JSON = {
 const INACTIVE_JSON = {
   success: false,
   message: '비활성화된 계정입니다.'
-} as const;
-
-const MUST_CHANGE_JSON = {
-  success: false,
-  message: '초기 비밀번호를 변경해야 합니다.'
 } as const;
 
 const FORCE_PASSWORD_CHANGE_PATH = '/auth/force-password-change';
@@ -76,18 +75,6 @@ function isForcePasswordChangePage(pathname: string): boolean {
     pathname === FORCE_PASSWORD_CHANGE_PATH ||
     pathname.startsWith(`${FORCE_PASSWORD_CHANGE_PATH}/`)
   );
-}
-
-function isMustChangeAllowedApiPath(pathname: string, method: string): boolean {
-  if (pathname === '/api/auth/sign-in' && method === 'POST') {
-    return true;
-  }
-
-  if (pathname === '/api/auth/force-password-change' && method === 'PATCH') {
-    return true;
-  }
-
-  return false;
 }
 
 function redirectToForcePasswordChange(
@@ -149,7 +136,7 @@ function redirectWithAccessDeniedFlash(
   return redirectResponse;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const allowedOrigins = getAllowedOrigins();
   const requestOrigin = normalizeOrigin(request.nextUrl.origin);
   const pathname = request.nextUrl.pathname;
@@ -189,7 +176,7 @@ export async function middleware(request: NextRequest) {
     }
 
     if (mustChange && !isMustChangeAllowedApiPath(pathname, request.method)) {
-      return jsonWithCookies(response, MUST_CHANGE_JSON, 403);
+      return jsonWithCookies(response, MUST_CHANGE_API_JSON, 403);
     }
 
     return response;
@@ -297,6 +284,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)'
+    '/api/:path*',
+    '/trpc/:path*'
   ]
 };

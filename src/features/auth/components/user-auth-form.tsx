@@ -94,8 +94,15 @@ function UserAuthFormFields() {
           return;
         }
 
-        notifySuccess('로그인되었습니다.');
         form.reset(signInFormDefaultValues);
+
+        if (result.mustChange) {
+          router.push('/auth/force-password-change');
+          router.refresh();
+          return;
+        }
+
+        notifySuccess('로그인되었습니다.');
         router.push(redirectTo);
         router.refresh();
       });

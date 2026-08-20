@@ -19,6 +19,17 @@ const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 const E2E_USER_ID = 'f908749c-601d-4f53-8921-6b503783dc8b';
 
+const INITIAL_USER_PASSWORD = '12341234a';
+const E2E_FIXTURE_PASSWORD = env.E2E_FIXTURE_PASSWORD ?? 'E2eFixt9!';
+
+function resolveFixturePassword(password) {
+  if (!password || password === INITIAL_USER_PASSWORD) {
+    return E2E_FIXTURE_PASSWORD;
+  }
+
+  return password;
+}
+
 const FIXTURE_FULL_NAMES = {
   [env.E2E_ADMIN_EMAIL]: env.E2E_ADMIN_FULL_NAME ?? '관리자',
   [env.E2E_USER_EMAIL]: env.E2E_USER_FULL_NAME ?? '테스트 계정1',
@@ -51,8 +62,9 @@ async function main() {
       console.warn(`skip: ${t.email} not found`);
       continue;
     }
+    const password = resolveFixturePassword(t.password);
     const { error: authErr } = await admin.auth.admin.updateUserById(user.id, {
-      password: t.password,
+      password,
       ban_duration: 'none'
     });
     if (authErr) {

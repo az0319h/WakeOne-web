@@ -23,6 +23,20 @@ export type SignInPayload = {
   password: string;
 };
 
+export type SignInResult =
+  | { ok: true; mustChange: boolean }
+  | { ok: false; message: string };
+
+export type ForcePasswordChangePayload = {
+  new_password: string;
+  confirm_password: string;
+};
+
+export type ForcePasswordChangeResponse = {
+  success: boolean;
+  message?: string;
+};
+
 export const AUTH_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: '이메일 또는 비밀번호가 올바르지 않습니다.',
   ACCOUNT_DISABLED: '비활성화된 계정입니다.',

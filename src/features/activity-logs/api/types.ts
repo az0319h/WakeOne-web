@@ -22,6 +22,7 @@ export type ActivityAction =
   | 'profile.password_change'
   | 'auth.password_reset_request'
   | 'auth.password_reset_complete'
+  | 'auth.force_password_change'
   | 'notification.read'
   | 'notification.read_all'
   | 'announcement.create'

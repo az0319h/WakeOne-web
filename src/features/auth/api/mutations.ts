@@ -1,5 +1,7 @@
 import { mutationOptions } from '@tanstack/react-query';
+import { forcePasswordChange } from './service';
 import { changePassword } from './profile.client';
+import type { ForcePasswordChangePayload } from './types';
 
 type ChangePasswordPayload = {
   current_password: string;
@@ -9,4 +11,8 @@ type ChangePasswordPayload = {
 
 export const changePasswordMutation = mutationOptions({
   mutationFn: (payload: ChangePasswordPayload) => changePassword(payload)
+});
+
+export const forcePasswordChangeMutation = mutationOptions({
+  mutationFn: (payload: ForcePasswordChangePayload) => forcePasswordChange(payload)
 });
