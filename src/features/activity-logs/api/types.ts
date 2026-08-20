@@ -28,9 +28,23 @@ export type ActivityAction =
   | 'announcement.update'
   | 'announcement.delete'
   | 'announcement.attachment_upload'
-  | 'announcement.attachment_delete';
+  | 'announcement.attachment_delete'
+  | 'support.create'
+  | 'support.update'
+  | 'support.status_update'
+  | 'support.comment_create'
+  | 'support.comment_update'
+  | 'support.comment_delete';
 
-export type ActivityTargetType = 'user' | 'profile' | 'contract' | 'wallet' | 'auth' | 'announcement';
+export type ActivityTargetType =
+  | 'user'
+  | 'profile'
+  | 'contract'
+  | 'wallet'
+  | 'auth'
+  | 'announcement'
+  | 'support_request'
+  | 'support_comment';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -74,6 +88,16 @@ export type ActivityLogMetadata = {
   count?: number;
   duplicate_run?: boolean;
   announcement_id?: number;
+  support_request_id?: number;
+  comment_id?: number;
+  parent_id?: number | null;
+  root_comment_id?: number | null;
+  depth?: number;
+  deleted_by_admin?: boolean;
+  body_length?: number;
+  previous_status?: string;
+  new_status?: string;
+  title?: string;
 };
 
 export type ActivityLog = {
