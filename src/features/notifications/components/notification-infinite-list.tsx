@@ -118,6 +118,13 @@ export function NotificationInfiniteList({
       route = `/dashboard/announcements?announcement=${notification.metadata.announcement_id}`;
     }
 
+    if (
+      actionId === 'view-support' &&
+      typeof notification?.metadata.support_request_id === 'number'
+    ) {
+      route = `/dashboard/support?support=${notification.metadata.support_request_id}`;
+    }
+
     if (!route) return;
 
     if (!readOnly) {

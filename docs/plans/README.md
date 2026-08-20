@@ -79,6 +79,9 @@
 | 39 | [39_announcements-plan.md](./39_announcements-plan.md) | **Approved** · 공지사항 Overview nav·Dialog UX·첨부·create 1회 fan-out · SQL `41`·`42` |
 | 40 | [40_filter-shell-loading-ux-plan.md](./40_filter-shell-loading-ux-plan.md) | **Approved** · listing filter shell 유지·data body만 Spinner · plan 26 TBD 후속 · BE Out |
 | 41 | [41_user-my-contracts-plan.md](./41_user-my-contracts-plan.md) | **Approved** · user 내 계약서 READ-only · `/dashboard/my-contracts` · 이름 매칭 |
+| 42 | [42_cs-support-plan.md](./42_cs-support-plan.md) | **Approved** · CS 문의 listing+Sheet · status 워크플로 · user pending 수정 · SQL `45` · dev-checklist |
+| 43 | [43_cs-support-comments-notifications-plan.md](./43_cs-support-comments-notifications-plan.md) | **Approved** · CS 문의 임의 깊이 댓글/대댓글 · Realtime · soft delete · 알림 fan-out · dev-checklist · verifier Out |
+| 44 | [44_force-initial-password-change-plan.md](./44_force-initial-password-change-plan.md) | **Approved** · 초기 PW 12341234a 강제 변경 · HttpOnly 쿠키 · middleware+layout 이중 · plan 17 supersede |
 
 ## 에이전트 참조
 

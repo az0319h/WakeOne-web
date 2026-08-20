@@ -4,7 +4,12 @@ import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ActivityLog, ActivityLogMetadata } from '../../api/types';
-import { getMetadataEntries, getMetadataLabel } from '../../labels';
+import {
+  getMetadataEntries,
+  getMetadataLabel,
+  getSupportCommentTypeLabel,
+  isSupportCommentAction
+} from '../../labels';
 
 interface ExpandPanelProps {
   log: ActivityLog;
@@ -35,15 +40,27 @@ function renderMetadataValue(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
-function MetadataList({ metadata }: { metadata: ActivityLogMetadata }) {
-  const entries = getMetadataEntries(metadata);
+function SupportCommentTypeEntry({ log }: { log: ActivityLog }) {
+  const commentType = getSupportCommentTypeLabel(log.metadata, log.http_path);
 
-  if (entries.length === 0) {
+  if (!commentType) {
+    return null;
+  }
+
+  return <MetadataEntry label='댓글 유형' value={commentType} />;
+}
+
+function MetadataList({ log, metadata }: { log: ActivityLog; metadata: ActivityLogMetadata }) {
+  const entries = getMetadataEntries(metadata);
+  const showCommentType = isSupportCommentAction(log.action);
+
+  if (entries.length === 0 && !showCommentType) {
     return <p className='text-muted-foreground text-xs'>표시할 상세 정보가 없습니다.</p>;
   }
 
   return (
     <dl className='flex flex-col gap-2'>
+      {showCommentType ? <SupportCommentTypeEntry log={log} /> : null}
       {entries.map(([key, value]) => (
         <MetadataEntry
           key={key}
@@ -88,8 +105,9 @@ export function ExpandPanel({ log }: ExpandPanelProps) {
           {log.metadata.message ? (
             <p className='text-sm'>{log.metadata.message}</p>
           ) : null}
-          {hasMetadataContent ? (
+          {hasMetadataContent || isSupportCommentAction(log.action) ? (
             <MetadataList
+              log={log}
               metadata={
                 log.metadata.message
                   ? Object.fromEntries(
@@ -104,7 +122,9 @@ export function ExpandPanel({ log }: ExpandPanelProps) {
       ) : (
         <>
           <p className='text-sm font-medium'>상세 정보</p>
-          {hasMetadataContent ? <MetadataList metadata={log.metadata} /> : null}
+          {hasMetadataContent || isSupportCommentAction(log.action) ? (
+            <MetadataList log={log} metadata={log.metadata} />
+          ) : null}
           <TechnicalDetails log={log} />
         </>
       )}

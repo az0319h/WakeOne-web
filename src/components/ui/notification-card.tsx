@@ -89,7 +89,7 @@ export const NotificationCard: FC<NotificationCardProps> = ({
             {/* Description */}
             <p
               className={cn(
-                'mb-0 text-[13px]',
+                'mb-0 line-clamp-1 text-[13px]',
                 isUnread ? 'text-muted-foreground' : 'text-muted-foreground/60'
               )}
             >

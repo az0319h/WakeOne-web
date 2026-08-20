@@ -1,4 +1,10 @@
-import type { ActivityAction, ActivityLogMetadata } from './api/types';
+import type { ActivityAction, ActivityLog, ActivityLogMetadata } from './api/types';
+
+const SUPPORT_COMMENT_ACTIONS: ActivityAction[] = [
+  'support.comment_create',
+  'support.comment_update',
+  'support.comment_delete'
+];
 
 export const ACTION_LABELS: Record<ActivityAction, string> = {
   'user.create': '사용자 생성',
@@ -30,7 +36,13 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'announcement.update': '공지 수정',
   'announcement.delete': '공지 삭제',
   'announcement.attachment_upload': '공지 첨부 업로드',
-  'announcement.attachment_delete': '공지 첨부 삭제'
+  'announcement.attachment_delete': '공지 첨부 삭제',
+  'support.create': 'CS 문의 등록',
+  'support.update': 'CS 문의 수정',
+  'support.status_update': 'CS 문의 상태 변경',
+  'support.comment_create': 'CS 댓글 등록',
+  'support.comment_update': 'CS 댓글 수정',
+  'support.comment_delete': 'CS 댓글 삭제'
 };
 
 export const METADATA_LABELS: Record<string, string> = {
@@ -57,8 +69,68 @@ export const METADATA_LABELS: Record<string, string> = {
   request_id: '요청 ID',
   verification_mode: '검증 모드',
   safety_filter_result: '안전 필터 결과',
-  announcement_id: '공지 ID'
+  announcement_id: '공지 ID',
+  support_request_id: 'CS 문의 ID',
+  comment_id: '댓글 ID',
+  parent_id: '부모 댓글 ID',
+  root_comment_id: '최상위 댓글 ID',
+  depth: '댓글 깊이',
+  deleted_by_admin: '관리자 삭제',
+  body_length: '본문 길이',
+  previous_status: '이전 상태',
+  new_status: '변경 상태',
+  title: '제목'
 };
+
+export function isSupportCommentAction(action: ActivityAction): boolean {
+  return SUPPORT_COMMENT_ACTIONS.includes(action);
+}
+
+export function isSupportCommentReply(
+  metadata: ActivityLogMetadata,
+  httpPath?: string
+): boolean {
+  if (httpPath?.includes('/replies')) {
+    return true;
+  }
+
+  if (metadata.parent_id != null) {
+    return true;
+  }
+
+  if (typeof metadata.depth === 'number' && metadata.depth > 0) {
+    return true;
+  }
+
+  return false;
+}
+
+export function getSupportCommentTypeLabel(
+  metadata: ActivityLogMetadata,
+  httpPath?: string
+): '원댓글' | '답글' | null {
+  const hasParentId = metadata.parent_id !== undefined;
+  const hasDepth = metadata.depth !== undefined;
+  const hasRepliesPath = httpPath?.includes('/replies') ?? false;
+
+  if (!hasParentId && !hasDepth && !hasRepliesPath) {
+    return null;
+  }
+
+  return isSupportCommentReply(metadata, httpPath) ? '답글' : '원댓글';
+}
+
+export function getActivityActionLabel(
+  log: Pick<ActivityLog, 'action' | 'metadata' | 'http_path'>
+): string {
+  const base = ACTION_LABELS[log.action];
+
+  if (isSupportCommentAction(log.action) && isSupportCommentReply(log.metadata, log.http_path)) {
+    return base.replace('CS 댓글', 'CS 답글');
+  }
+
+  return base;
+}
 
 export function formatTargetLabel(targetLabel: string): string {
   return targetLabel;
