@@ -1,5 +1,6 @@
 'use client';
 
+import AutoHeight from 'embla-carousel-auto-height';
 import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import {
@@ -11,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
+import { getDaysUntilBirthday } from '@/lib/birthday';
 import { cn } from '@/lib/utils';
 import type { BirthdayCelebrantsResponse } from '../api/types';
 import {
@@ -28,6 +30,7 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
   const showCarousel = celebrants.length > 1;
   const prefersReducedMotion = useReducedMotion();
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
+  const autoHeightPlugin = useRef(AutoHeight());
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(1);
   const [slideCount, setSlideCount] = useState(celebrants.length);
@@ -72,10 +75,16 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
   }, [carouselApi]);
 
   const slideProps = (celebrant: (typeof celebrants)[number]) => ({
+    referenceDate,
     fullName: celebrant.full_name,
     avatarUrl: celebrant.avatar_url,
     birthday: celebrant.birthday
   });
+
+  const activeCelebrant = showCarousel ? celebrants[currentSlide - 1] : celebrants[0];
+  const isActiveBirthdayToday =
+    activeCelebrant != null &&
+    getDaysUntilBirthday(activeCelebrant.birthday, referenceDate) === 0;
 
   return (
     <motion.div
@@ -83,7 +92,13 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      <Card className='relative overflow-hidden' aria-label='다가오는 생일 축하'>
+      <Card
+        className={cn(
+          'relative overflow-hidden transition-[height] duration-300 ease-out',
+          isActiveBirthdayToday && 'border-primary/30 bg-primary/5'
+        )}
+        aria-label={isActiveBirthdayToday ? '오늘 생일 축하' : '다가오는 생일 축하'}
+      >
         <canvas
           ref={confettiCanvasRef}
           aria-hidden
@@ -95,9 +110,10 @@ export function BirthdayCelebrantsBanner({ data }: BirthdayCelebrantsBannerProps
               <Carousel
                 setApi={setCarouselApi}
                 opts={{ align: 'start', loop: true, containScroll: 'trimSnaps' }}
+                plugins={[autoHeightPlugin.current]}
                 className='w-full'
               >
-                <CarouselContent className='-ml-0'>
+                <CarouselContent className='-ml-0 items-start transition-[height] duration-300 ease-out'>
                   {celebrants.map((celebrant) => (
                     <CarouselItem key={celebrant.user_id} className='basis-full pl-0'>
                       <BirthdayCelebrationSlide {...slideProps(celebrant)} />

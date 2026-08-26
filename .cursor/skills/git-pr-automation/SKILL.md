@@ -65,7 +65,7 @@ PR 본문 요약: <섹션 요약>
 - git add .
 - git commit ...
 - git push -u origin <branch>
-- gh pr create ...
+- gh pr create --base dev ...
 ```
 
 ### 4) 승인 후 실행
@@ -75,7 +75,7 @@ PR 본문 요약: <섹션 요약>
   2. `git add .`
   3. 커밋
   4. `git push -u origin <branch>`
-  5. `gh pr create`
+  5. `gh pr create --base dev --head <branch> --title ... --body-file ...`
 
 커밋은 HEREDOC으로 수행한다.
 
@@ -91,9 +91,10 @@ EOF
 
 ### 5) PR 생성
 
+- **base 브랜치:** `dev` (기본). `main`으로 직접 PR **금지** — 운영 반영은 `release-pr` 에이전트 사용.
+- **템플릿:** `.github/PULL_REQUEST_TEMPLATE/feature-to-dev.md` 구조로 본문 작성
 - 제목: 커밋 제목과 동일
-- 본문: `.github/pull_request_template.md`의 **모든 섹션을 실제 텍스트로 채운다**
-- `gh pr create --title ... --body ...`
+- `gh pr create --base dev --head <branch> --title ... --body-file ...`
 - PR 유형 체크 항목도 아래 7종으로만 매핑한다:
   - Feature → `feat`
   - Bugfix → `fix`
@@ -118,11 +119,12 @@ EOF
 
 ### 6) 템플릿 파일 검증 (필수)
 
-- PR 생성 전 `.github/pull_request_template.md` 존재 여부를 확인한다.
-- 파일이 없으면 아래를 수행한다:
-  1. 사용자에게 템플릿 부재를 즉시 보고
-  2. PR 생성 단계 중단
-  3. 템플릿 생성/복구 후 재시도 안내
+- PR 생성 전 `.github/PULL_REQUEST_TEMPLATE/feature-to-dev.md` 존재 여부 확인
+- 레거시 `.github/pull_request_template.md`는 fallback 참고용
+
+### 7) dev → main 운영 반영
+
+- **commit-pr 범위 아님** → `@.cursor/agents/release-pr.md` 사용
 
 ## 실패 처리
 
