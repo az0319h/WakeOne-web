@@ -115,10 +115,10 @@ export function WalletSummaryOverviewCard({ snapshot }: WalletSummaryOverviewCar
           </div>
         </div>
 
-        <div className='flex flex-wrap items-center gap-2 border-t pt-4'>
-          <div className='text-muted-foreground flex min-w-0 flex-1 items-center gap-1.5 text-xs'>
+        <div className='flex flex-col items-start gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='text-muted-foreground flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs'>
             <Icons.clock className='size-3.5 shrink-0' />
-            <span className='shrink-0'>마지막 업데이트</span>
+            <span>마지막 업데이트</span>
             <span className='font-mono whitespace-nowrap'>
               {formatAbsoluteDateTimeKo(snapshot.synced_at)}
             </span>

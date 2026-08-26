@@ -198,7 +198,7 @@ function ContractBulkDownloadDialog({
           <Button
             type='button'
             isLoading={isDownloading}
-            disabled={!Boolean(preview?.can_download) || isPreviewLoading}
+            disabled={!preview?.can_download || isPreviewLoading}
             onClick={() => void handleDownload()}
           >
             <Icons.download className='h-4 w-4' />
