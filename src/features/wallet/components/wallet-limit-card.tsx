@@ -114,13 +114,15 @@ export function WalletLimitCard({ snapshot, hidden, onToggleHidden }: WalletLimi
           </div>
         </div>
 
-        <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs'>
-          <Icons.clock className='size-3.5 shrink-0' />
-          <span>마지막 업데이트</span>
-          <span className='font-mono whitespace-nowrap'>
-            {formatAbsoluteDateTimeKo(snapshot.synced_at)}
-          </span>
-          <Badge variant='secondary' className='ml-auto font-normal'>
+        <div className='flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='text-muted-foreground flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs'>
+            <Icons.clock className='size-3.5 shrink-0' />
+            <span>마지막 업데이트</span>
+            <span className='font-mono whitespace-nowrap'>
+              {formatAbsoluteDateTimeKo(snapshot.synced_at)}
+            </span>
+          </div>
+          <Badge variant='secondary' className='shrink-0 font-normal'>
             {snapshot.source === 'kbcard' ? 'KB국민 식대 체크카드' : snapshot.source}
           </Badge>
         </div>

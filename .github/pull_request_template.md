@@ -1,8 +1,9 @@
 <!--
 Thanks for submitting a pull request.
-Please provide enough context for fast and high-quality review.
-This template follows high-star OSS patterns (React / Angular / Kubernetes)
-and is adapted to WakeOne conventions.
+
+템플릿 선택:
+- feat/* → dev: `.github/PULL_REQUEST_TEMPLATE/feature-to-dev.md` (commit-pr 기본)
+- dev → main: `.github/PULL_REQUEST_TEMPLATE/release-dev-to-main.md` (release-pr 에이전트)
 -->
 
 ## PR 유형

@@ -29,10 +29,11 @@ model: inherit
 
 1. 변경사항 분석 및 브랜치명 제안
 2. 한국어 Conventional Commit 메시지 초안 생성
-3. PR 제목/본문 초안 생성 (`.github/pull_request_template.md` 반영)
+3. PR 제목/본문 초안 생성 (`.github/PULL_REQUEST_TEMPLATE/feature-to-dev.md` 반영)
 4. 사용자에게 아래 형식으로 보고:
    - 제안 브랜치명
    - 제안 커밋 메시지
+   - PR base: **`dev`**
    - PR 제목/본문 요약
    - 실행 대기 상태
 
@@ -44,9 +45,14 @@ model: inherit
 1. 브랜치 생성/전환
 2. `git add .` 후 커밋
 3. `git push -u origin <branch>`
-4. `gh pr create`
+4. `gh pr create --base dev --head <branch>`
+
+## dev → main 운영 반영
+
+- **`release-pr` 에이전트** 사용 (`@.cursor/agents/release-pr.md`)
+- merge는 GitHub에서 수동
 
 ## 호출 예시
 
-- `@.cursor/agents/commit-pr.md 현재 변경사항 미리보기 먼저 보여주고 승인받은 뒤 push/PR 해줘`
+- `@.cursor/agents/commit-pr.md `현재 변경사항 미리보기 먼저 보여주고 승인받은 뒤 push/PR 해줘``
 - `@.cursor/agents/commit-pr.md fix 타입으로 제안 브랜치/커밋 메시지 먼저 보여줘`
