@@ -41,7 +41,8 @@ const METADATA_ALLOWLIST = new Set([
   'body_length',
   'previous_status',
   'new_status',
-  'title'
+  'title',
+  'must_change'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -191,6 +192,11 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === 'duplicate_run' && typeof value === 'boolean') {
       sanitized.duplicate_run = value;
+      continue;
+    }
+
+    if (key === 'must_change' && typeof value === 'boolean') {
+      sanitized.must_change = value;
       continue;
     }
 

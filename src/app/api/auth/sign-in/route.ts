@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import {
+  createRequestId,
+  fetchUserTargetLabel,
+  finishWithActivityLog
+} from '@/features/activity-logs/api/log.server';
 import { AUTH_ERROR_MESSAGES } from '@/features/auth/api/types';
 import { isInitialUserPassword } from '@/lib/auth/initial-password';
 import {
@@ -9,6 +14,8 @@ import {
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/server';
 
+const httpPath = '/api/auth/sign-in';
+
 const signInSchema = z.object({
   email: z
     .string()
@@ -16,6 +23,24 @@ const signInSchema = z.object({
     .email('올바른 이메일 주소를 입력해 주세요.'),
   password: z.string().min(1, '비밀번호를 입력해 주세요.')
 });
+
+function authenticatedLogInput(
+  userId: string,
+  userEmail: string,
+  targetLabel: string
+) {
+  return {
+    actorUserId: userId,
+    actorEmail: userEmail,
+    actorDisplayName: null,
+    action: 'auth.sign_in' as const,
+    targetType: 'auth' as const,
+    targetUserId: userId,
+    targetLabel,
+    httpMethod: 'POST',
+    httpPath
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,6 +100,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userEmail = user.email ?? email;
+    const targetLabel = await fetchUserTargetLabel(user.id);
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('status')
@@ -106,7 +134,15 @@ export async function POST(request: NextRequest) {
       clearMustChangeInitialPasswordCookieOnResponse(response);
     }
 
-    return response;
+    const requestId = createRequestId();
+    return finishWithActivityLog(
+      requestId,
+      {
+        ...authenticatedLogInput(user.id, userEmail, targetLabel),
+        metadata: mustChange ? { must_change: true } : {}
+      },
+      response
+    );
   } catch {
     return NextResponse.json(
       { success: false, message: AUTH_ERROR_MESSAGES.UNKNOWN },

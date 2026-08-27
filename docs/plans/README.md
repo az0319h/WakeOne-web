@@ -82,6 +82,7 @@
 | 42 | [42_cs-support-plan.md](./42_cs-support-plan.md) | **Approved** · CS 문의 listing+Sheet · status 워크플로 · user pending 수정 · SQL `45` · dev-checklist |
 | 43 | [43_cs-support-comments-notifications-plan.md](./43_cs-support-comments-notifications-plan.md) | **Approved** · CS 문의 임의 깊이 댓글/대댓글 · Realtime · soft delete · 알림 fan-out · dev-checklist · verifier Out |
 | 44 | [44_force-initial-password-change-plan.md](./44_force-initial-password-change-plan.md) | **Approved** · 초기 PW 12341234a 강제 변경 · HttpOnly 쿠키 · middleware+layout 이중 · plan 17 supersede |
+| 45 | [45_auth-session-audit-log-plan.md](./45_auth-session-audit-log-plan.md) | **Approved** · sign-in `auth.sign_in` activity log · plan 08 정책 확장 · 로그아웃 Out |
 
 ## 에이전트 참조
 
