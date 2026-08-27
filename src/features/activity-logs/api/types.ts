@@ -20,6 +20,7 @@ export type ActivityAction =
   | 'wallet.sync_failed'
   | 'profile.update'
   | 'profile.password_change'
+  | 'auth.sign_in'
   | 'auth.password_reset_request'
   | 'auth.password_reset_complete'
   | 'auth.force_password_change'
@@ -99,6 +100,7 @@ export type ActivityLogMetadata = {
   previous_status?: string;
   new_status?: string;
   title?: string;
+  must_change?: boolean;
 };
 
 export type ActivityLog = {
