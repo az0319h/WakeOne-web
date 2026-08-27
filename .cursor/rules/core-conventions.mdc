@@ -107,7 +107,7 @@ const updateMutation = useMutation({
 | **UPDATE** | ✅ | PUT/PATCH 등 수정 |
 | **DELETE** | ✅ | DELETE·비활성화 등 |
 | **READ** | ❌ | GET·RSC·prefetch·페이지 조회·React Query fetch **전부 Out** |
-| **로그인** | ❌ | `signInWithPassword`·Supabase Auth 세션 생성 **Out** |
+| **로그인** | ✅ | `POST /api/auth/sign-in` **성공(200)만** ([plan 45](../../docs/plans/45_auth-session-audit-log-plan.md)) |
 | **로그아웃** | ❌ | `signOut`·세션 종료 **Out** |
 
 ### HTTP 결과
