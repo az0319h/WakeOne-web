@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { motion, useReducedMotion } from 'motion/react';
 import { walletSyncsInfiniteQueryOptions, type WalletSyncsListFilters } from '../api/queries';
 import type { WalletSyncItemStatus, WalletSyncLogEntry } from '../api/types';
-import { formatSignedWalletAmount, formatWalletAmount } from '../utils/format';
+import { formatWalletAmount } from '../utils/format';
 
 interface WalletSyncLogProps {
   filters?: WalletSyncsListFilters;
@@ -61,6 +61,8 @@ function RemainingDelta({
     return <span className='text-muted-foreground text-xs'>잔액 변동 없음</span>;
   }
 
+  const label = delta < 0 ? '사용 금액' : '환급 금액';
+
   return (
     <span
       className={cn(
@@ -68,7 +70,7 @@ function RemainingDelta({
         delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
       )}
     >
-      남은 식대 {formatSignedWalletAmount(delta)}
+      {label} {formatWalletAmount(Math.abs(delta))}
     </span>
   );
 }
