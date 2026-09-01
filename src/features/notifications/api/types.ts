@@ -2,6 +2,8 @@ export type NotificationType =
   | 'user.update'
   | 'contract.reminder_admin'
   | 'contract.reminder_recipient'
+  | 'contract.import_admin'
+  | 'contract.import_author'
   | 'wallet.sync_admin'
   | 'wallet.sync_recipient'
   | 'announcement.published'
@@ -19,6 +21,8 @@ export type NotificationMetadata = {
     | 'user.update'
     | 'contract.reminder_admin'
     | 'contract.reminder_recipient'
+    | 'contract.import_admin'
+    | 'contract.import_author'
     | 'wallet.sync_admin'
     | 'wallet.sync_recipient'
     | 'announcement.published'
@@ -27,6 +31,9 @@ export type NotificationMetadata = {
     | 'support.status_changed'
     | 'support.comment_created'
     | 'support.reply_created';
+  contract_id?: number;
+  document_number?: string;
+  import_status?: 'created' | 'backfill';
   announcement_id?: number;
   support_request_id?: number;
   comment_id?: number;

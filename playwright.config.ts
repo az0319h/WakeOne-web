@@ -34,6 +34,10 @@ const isAnnouncementsE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/announcements')
 );
 
+const isContractImportNotificationsE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/contract-import-notifications')
+);
+
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
   '127.0.0.1',
   'localhost'
@@ -42,7 +46,7 @@ const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  workers: isNotificationsE2eRun || isAnnouncementsE2eRun ? 1 : undefined,
+  workers: isNotificationsE2eRun || isAnnouncementsE2eRun || isContractImportNotificationsE2eRun ? 1 : undefined,
   reporter: 'html',
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
@@ -79,7 +83,8 @@ export default defineConfig({
         /\.api\.spec\.ts$/,
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
-        /notifications\//,
+        /^notifications\//,
+        /contract-import-notifications[\\/]/,
         /announcements\//,
         /profile-name-live-display\//,
         /kbar\/nav-user\.spec\.ts$/
@@ -131,13 +136,24 @@ export default defineConfig({
       fullyParallel: false
     },
     {
+      name: 'chromium-contract-import-notifications',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin.json'
+      },
+      dependencies: ['setup', 'setup-user'],
+      testMatch: [/contract-import-notifications[\\/].*\.spec\.ts$/],
+      testIgnore: [/\.api\.spec\.ts$/],
+      fullyParallel: false
+    },
+    {
       name: 'chromium-notifications',
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
       dependencies: ['setup', 'setup-user'],
-      testMatch: [/notifications\/.*\.spec\.ts$/],
+      testMatch: [/^notifications\/.*\.spec\.ts$/],
       fullyParallel: false
     },
     {
@@ -180,7 +196,7 @@ export default defineConfig({
       },
       dependencies: ['setup'],
       testMatch: /\.api\.spec\.ts$/,
-      testIgnore: [/profile-name-live-display\//, /notifications\//]
+      testIgnore: [/profile-name-live-display\//, /^notifications\//]
     }
   ]
 });
