@@ -67,18 +67,19 @@ test.describe('sign-in visible copy', () => {
     await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
   });
 
-  test('AC-9~11: mobile intro + main landmark', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
-    await gotoSignIn(page);
+  test('AC-9~11: mobile·tablet login shell without intro copy', async ({ page }) => {
+    for (const viewport of [
+      { width: 375, height: 667 },
+      { width: 768, height: 1024 }
+    ]) {
+      await page.setViewportSize(viewport);
+      await gotoSignIn(page);
 
-    const mobileIntro = page.getByRole('region', { name: 'WakeOne 소개' }).filter({ visible: true });
-
-    await expect(mobileIntro.getByRole('heading', { name: 'WakeOne · 웨이크원' })).toBeVisible();
-    await expect(mobileIntro.getByText(/주식회사 웨이크|Wake Corp/i)).toBeVisible();
-    await expect(mobileIntro.getByText(/wakecorp/i)).toBeVisible();
-
-    await expect(page.locator('main')).toBeVisible();
-    await expect(page.getByRole('region', { name: 'WakeOne 소개' }).filter({ visible: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
+      await expect(page.locator('main')).toBeVisible();
+      await expect(page.getByRole('region', { name: 'WakeOne 소개' })).toBeHidden();
+      await expect(page.getByText(/관리자 지정 계정으로 로그인해/)).toBeHidden();
+    }
   });
 });
 
