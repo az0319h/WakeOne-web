@@ -5,6 +5,10 @@ import {
   recordContractImportEvent
 } from '@/features/contracts/api/service.server';
 import { contractImportSchema, normalizeDocumentNumber } from '@/features/contracts/api/validators';
+import {
+  insertContractImportAdminNotifications,
+  insertContractImportAuthorNotifications
+} from '@/features/notifications/api/fan-out.server';
 import { getImportToken, isMockContractDocumentNumber, isValidImportToken, newContractRequestId } from '../_utils';
 
 function asPayloadRecord(value: unknown): Record<string, unknown> | null {
@@ -95,6 +99,30 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await importContractDocument(payload, requestId);
+
+    if (result.status === 'created' || result.status === 'backfill') {
+      try {
+        if (
+          process.env.NODE_ENV !== 'production' &&
+          result.contract.author_name.startsWith('E2E-FANOUT-FAIL-')
+        ) {
+          throw new Error('E2E simulated notification fan-out failure');
+        }
+
+        const fanOutInput = {
+          contractId: result.contract.id,
+          documentNumber: result.contract.document_number,
+          authorName: result.contract.author_name,
+          importStatus: result.status
+        };
+        await insertContractImportAdminNotifications(fanOutInput);
+        await insertContractImportAuthorNotifications(fanOutInput);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[contracts/import] notification fan-out failed', message);
+      }
+    }
+
     const status = result.status === 'created' ? 201 : 200;
     const message =
       result.status === 'created'

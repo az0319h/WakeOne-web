@@ -84,6 +84,7 @@
 | 44 | [44_force-initial-password-change-plan.md](./44_force-initial-password-change-plan.md) | **Approved** · 초기 PW 12341234a 강제 변경 · HttpOnly 쿠키 · middleware+layout 이중 · plan 17 supersede |
 | 45 | [45_auth-session-audit-log-plan.md](./45_auth-session-audit-log-plan.md) | **Approved** · sign-in `auth.sign_in` activity log · plan 08 정책 확장 · 로그아웃 Out |
 | 46 | [46_sign-in-seo-plan.md](./46_sign-in-seo-plan.md) | **Approved** · `/auth/sign-in` SEO · metadata·JSON-LD·모바일 intro · BE Out |
+| 47 | [47_contract-import-notifications-plan.md](./47_contract-import-notifications-plan.md) | **Approved** · OpenClaw import 성공 시 admin·작성자 in-app 알림 · SQL `47` |
 
 ## 에이전트 참조
 
