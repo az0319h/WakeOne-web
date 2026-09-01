@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { Icons } from '@/components/icons';
 import {
   SIGN_IN_DESKTOP_PANEL_FOOTER,
-  SIGN_IN_INTRO_HEADING,
-  SIGN_IN_INTRO_PARAGRAPHS
+  SIGN_IN_INTRO_DESCRIPTION
 } from '@/features/auth/constants/sign-in-intro-copy';
 import { cn } from '@/lib/utils';
 import { InteractiveGridPattern } from './interactive-grid';
@@ -11,14 +10,14 @@ import UserAuthForm from './user-auth-form';
 
 function SignInIntroCopy({ className }: { className?: string }) {
   return (
-    <div className={cn('space-y-2', className)}>
-      <h2 className='text-base font-semibold tracking-tight lg:text-lg'>{SIGN_IN_INTRO_HEADING}</h2>
-      {SIGN_IN_INTRO_PARAGRAPHS.map((paragraph) => (
-        <p key={paragraph} className='text-muted-foreground text-sm leading-relaxed lg:text-base'>
-          {paragraph}
-        </p>
-      ))}
-    </div>
+    <p
+      className={cn(
+        'text-muted-foreground text-sm leading-relaxed lg:text-sidebar-foreground/85 lg:text-base',
+        className
+      )}
+    >
+      {SIGN_IN_INTRO_DESCRIPTION}
+    </p>
   );
 }
 
@@ -41,7 +40,7 @@ export default function SignInViewPage() {
           )}
         />
         <div className='text-sidebar-foreground relative z-20 mt-auto space-y-3'>
-          <SignInIntroCopy className='[&_p]:text-sidebar-foreground/90 [&_h2]:text-sidebar-foreground' />
+          <SignInIntroCopy />
           <footer className='text-sidebar-foreground/70 text-sm'>
             {SIGN_IN_DESKTOP_PANEL_FOOTER}
           </footer>
@@ -49,9 +48,6 @@ export default function SignInViewPage() {
       </section>
       <div className='flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
         <div className='flex w-full max-w-sm flex-col items-center justify-center space-y-6 sm:max-w-md'>
-          <section aria-label='WakeOne 소개' className='w-full lg:hidden'>
-            <SignInIntroCopy />
-          </section>
           <section aria-label='로그인 폼' className='flex w-full flex-col items-center space-y-6'>
             <div className='w-full space-y-2 text-center'>
               <h1 className='text-2xl font-semibold tracking-tight'>로그인</h1>
