@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { normalizePersonName } from '@/lib/normalize-person-name';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   filterMonitoredFields,
@@ -63,6 +64,13 @@ type InsertSupportCommentNotificationInput = {
   parentId: number | null;
   actorRole: 'admin' | 'user';
   preview: string;
+};
+
+type InsertContractImportNotificationsInput = {
+  contractId: number;
+  documentNumber: string;
+  authorName: string;
+  importStatus: 'created' | 'backfill';
 };
 
 function buildContractReminderAdminTitle(input: {
@@ -173,6 +181,98 @@ export async function listActiveAdminUserIds(): Promise<string[]> {
   }
 
   return (data ?? []).map((row) => row.user_id as string);
+}
+
+export async function listMatchedAuthorUserIds(authorName: string): Promise<string[]> {
+  const normalizedAuthorName = normalizePersonName(authorName);
+  if (!normalizedAuthorName) {
+    return [];
+  }
+
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('user_id, full_name')
+    .eq('system_role', 'user')
+    .eq('status', 'active')
+    .not('full_name', 'is', null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? [])
+    .filter((row) => {
+      const fullName = row.full_name?.trim();
+      return fullName && normalizePersonName(fullName) === normalizedAuthorName;
+    })
+    .map((row) => row.user_id as string);
+}
+
+export async function insertContractImportAdminNotifications(
+  input: InsertContractImportNotificationsInput
+): Promise<void> {
+  const adminUserIds = await listActiveAdminUserIds();
+  if (adminUserIds.length === 0) {
+    return;
+  }
+
+  const title = '계약서가 import되었습니다';
+  const body = `문서번호 ${input.documentNumber} · 작성자 ${input.authorName}`;
+  const supabase = getServiceRoleClient();
+
+  for (let offset = 0; offset < adminUserIds.length; offset += FAN_OUT_BATCH_SIZE) {
+    const batch = adminUserIds.slice(offset, offset + FAN_OUT_BATCH_SIZE);
+    const rows = batch.map((recipientUserId) => ({
+      recipient_user_id: recipientUserId,
+      type: 'contract.import_admin' as const,
+      title,
+      body,
+      metadata: {
+        kind: 'contract.import_admin',
+        contract_id: input.contractId,
+        document_number: input.documentNumber,
+        author_name: input.authorName,
+        import_status: input.importStatus
+      }
+    }));
+
+    const { error } = await supabase.from('notifications').insert(rows);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+}
+
+export async function insertContractImportAuthorNotifications(
+  input: InsertContractImportNotificationsInput
+): Promise<void> {
+  const authorUserIds = await listMatchedAuthorUserIds(input.authorName);
+  if (authorUserIds.length === 0) {
+    return;
+  }
+
+  const title = '계약서가 등록되었습니다';
+  const body = `문서번호 ${input.documentNumber}가 등록되었습니다. 내 계약서에서 확인하세요.`;
+  const supabase = getServiceRoleClient();
+  const rows = authorUserIds.map((recipientUserId) => ({
+    recipient_user_id: recipientUserId,
+    type: 'contract.import_author' as const,
+    title,
+    body,
+    metadata: {
+      kind: 'contract.import_author',
+      contract_id: input.contractId,
+      document_number: input.documentNumber,
+      author_name: input.authorName,
+      import_status: input.importStatus
+    }
+  }));
+
+  const { error } = await supabase.from('notifications').insert(rows);
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function insertUserUpdateNotification(

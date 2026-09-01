@@ -6,7 +6,9 @@ export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-system-email-logs': '/dashboard/system-email-logs',
   'view-wallet': '/dashboard/wallet',
   'view-announcement': '/dashboard/announcements',
-  'view-support': '/dashboard/support'
+  'view-support': '/dashboard/support',
+  'view-contracts': '/dashboard/contracts',
+  'view-my-contracts': '/dashboard/my-contracts'
 };
 
 export function getNotificationActions(
@@ -36,6 +38,28 @@ export function getNotificationActions(
 
   if (notification.type === 'contract.reminder_recipient') {
     return [];
+  }
+
+  if (notification.type === 'contract.import_admin') {
+    return [
+      {
+        id: 'view-contracts',
+        label: '계약서 관리',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (notification.type === 'contract.import_author') {
+    return [
+      {
+        id: 'view-my-contracts',
+        label: '내 계약서에서 확인',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
   }
 
   if (notification.type === 'wallet.sync_admin' || notification.type === 'wallet.sync_recipient') {
