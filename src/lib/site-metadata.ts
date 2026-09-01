@@ -18,6 +18,27 @@ export const SITE_KEYWORDS = [
   '잔액조회',
 ];
 
+export const SIGN_IN_PAGE_TITLE =
+  'WakeOne 로그인 | 웨이크원 · 주식회사 웨이크 임직원 포털';
+
+export const SIGN_IN_DESCRIPTION =
+  'WakeOne(웨이크원)은 주식회사 웨이크(Wake Corp) 임직원을 위한 내부 업무 포털입니다. wakecorp.com 계정으로 wakeone 로그인·웨이크원 로그인·wakecorp 로그인을 통해 대시보드에 접속하세요.';
+
+export const SIGN_IN_KEYWORDS = [
+  'WakeOne',
+  '웨이크원',
+  'wakeone 로그인',
+  '웨이크원 로그인',
+  'wakecorp 로그인',
+  '웨이크 임직원',
+  '주식회사 웨이크',
+  '(주)웨이크',
+  'Wake Corp',
+  'wakecorp.com',
+  '웨이크원 포털',
+  'WakeOne 로그인',
+];
+
 export const siteMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
