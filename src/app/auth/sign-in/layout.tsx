@@ -3,15 +3,24 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSessionProfile } from '@/features/auth/api/session.server';
 import { hasMustChangeInitialPasswordCookie } from '@/lib/auth/must-change-cookie';
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site-metadata';
+import { buildSignInJsonLd } from '@/lib/sign-in-json-ld';
+import {
+  SIGN_IN_DESCRIPTION,
+  SIGN_IN_KEYWORDS,
+  SIGN_IN_PAGE_TITLE,
+  SITE_URL
+} from '@/lib/site-metadata';
+
+const signInUrl = `${SITE_URL}/auth/sign-in`;
 
 export const metadata: Metadata = {
   title: {
-    absolute: `${SITE_NAME} — 로그인`
+    absolute: SIGN_IN_PAGE_TITLE
   },
-  description: SITE_DESCRIPTION,
+  description: SIGN_IN_DESCRIPTION,
+  keywords: SIGN_IN_KEYWORDS,
   alternates: {
-    canonical: `${SITE_URL}/auth/sign-in`
+    canonical: signInUrl
   },
   robots: {
     index: true,
@@ -22,9 +31,23 @@ export const metadata: Metadata = {
     }
   },
   openGraph: {
-    url: `${SITE_URL}/auth/sign-in`,
-    title: `${SITE_NAME} — 로그인`,
-    description: SITE_DESCRIPTION
+    url: signInUrl,
+    title: SIGN_IN_PAGE_TITLE,
+    description: SIGN_IN_DESCRIPTION,
+    images: [
+      {
+        url: '/assets/opengraph-image.png',
+        width: 1376,
+        height: 768,
+        alt: 'WakeOne 로그인 — 주식회사 웨이크 임직원 포털'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SIGN_IN_PAGE_TITLE,
+    description: SIGN_IN_DESCRIPTION,
+    images: ['/assets/opengraph-image.png']
   }
 };
 
@@ -41,5 +64,15 @@ export default async function SignInLayout({ children }: { children: React.React
     redirect('/dashboard/overview');
   }
 
-  return children;
+  const jsonLd = buildSignInJsonLd();
+
+  return (
+    <>
+      <script
+        type='application/ld+json'
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {children}
+    </>
+  );
 }
