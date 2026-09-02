@@ -52,6 +52,14 @@ export function buildAttachmentUploadPayload(fileName: string, sizeBytes: number
   };
 }
 
+export function buildPdfUploadPayload(fileName: string, sizeBytes = 1024) {
+  return {
+    name: fileName,
+    mimeType: 'application/pdf',
+    buffer: Buffer.alloc(Math.max(sizeBytes, 8), 0)
+  };
+}
+
 export async function importContractViaApi(
   request: import('@playwright/test').APIRequestContext,
   documentNumber: string,
@@ -84,6 +92,19 @@ export async function uploadContractAttachmentViaApi(
   return request.post(`/api/contracts/${contractId}/attachments`, {
     multipart: {
       file: buildAttachmentUploadPayload(fileName, sizeBytes)
+    }
+  });
+}
+
+export async function uploadContractPdfViaApi(
+  request: import('@playwright/test').APIRequestContext,
+  contractId: number,
+  fileName: string,
+  sizeBytes = 1024
+) {
+  return request.post(`/api/contracts/${contractId}/attachments`, {
+    multipart: {
+      file: buildPdfUploadPayload(fileName, sizeBytes)
     }
   });
 }

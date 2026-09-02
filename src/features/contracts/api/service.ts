@@ -271,6 +271,20 @@ export function getMyContractAttachmentDownloadUrl(
   return options?.inline ? `${endpoint}?disposition=inline` : endpoint;
 }
 
+export function getContractAttachmentViewerUrl(
+  contractId: number,
+  attachmentId: number
+): string {
+  return `/dashboard/contracts/${contractId}/attachments/${attachmentId}/view`;
+}
+
+export function getMyContractAttachmentViewerUrl(
+  contractId: number,
+  attachmentId: number
+): string {
+  return `/dashboard/my-contracts/${contractId}/attachments/${attachmentId}/view`;
+}
+
 export function canOpenContractAttachment(
   attachment: Pick<ContractAttachmentSummary, 'content_type' | 'file_name'>
 ): boolean {
@@ -299,9 +313,7 @@ export function openContractAttachment(
     return false;
   }
 
-  const url = getContractAttachmentDownloadUrl(id, attachmentId, {
-    inline: true
-  });
+  const url = getContractAttachmentViewerUrl(id, attachmentId);
   const link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
@@ -318,9 +330,7 @@ export function openMyContractAttachment(
     return false;
   }
 
-  const url = getMyContractAttachmentDownloadUrl(id, attachmentId, {
-    inline: true
-  });
+  const url = getMyContractAttachmentViewerUrl(id, attachmentId);
   const link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
