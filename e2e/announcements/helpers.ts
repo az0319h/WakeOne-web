@@ -16,6 +16,14 @@ export function buildAnnouncementUploadPayload(fileName: string, sizeBytes: numb
   };
 }
 
+export function buildAnnouncementPdfUploadPayload(fileName: string, sizeBytes = 1024) {
+  return {
+    name: fileName,
+    mimeType: 'application/pdf',
+    buffer: Buffer.alloc(Math.max(sizeBytes, 8), 0)
+  };
+}
+
 type AnnouncementSummary = {
   id: number;
   title: string;
@@ -81,6 +89,19 @@ export async function uploadAnnouncementAttachmentViaApi(
   return request.post(`/api/announcements/${announcementId}/attachments`, {
     multipart: {
       file: buildAnnouncementUploadPayload(fileName, sizeBytes)
+    }
+  });
+}
+
+export async function uploadAnnouncementPdfViaApi(
+  request: APIRequestContext,
+  announcementId: number,
+  fileName: string,
+  sizeBytes = 1024
+) {
+  return request.post(`/api/announcements/${announcementId}/attachments`, {
+    multipart: {
+      file: buildAnnouncementPdfUploadPayload(fileName, sizeBytes)
     }
   });
 }

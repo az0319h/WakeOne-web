@@ -76,7 +76,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
-      dependencies: ['setup'],
+      dependencies: ['setup', 'setup-user'],
       testIgnore: [
         /auth\.setup\.ts/,
         /auth\.user\.setup\.ts/,
@@ -87,7 +87,8 @@ export default defineConfig({
         /contract-import-notifications[\\/]/,
         /announcements\//,
         /profile-name-live-display\//,
-        /kbar\/nav-user\.spec\.ts$/
+        /kbar\/nav-user\.spec\.ts$/,
+        /contracts\/my-contracts-viewer\.spec\.ts$/
       ]
     },
     {
@@ -100,7 +101,8 @@ export default defineConfig({
       testMatch: [
         /profile\.spec\.ts$/,
         /system-email-logs-rbac\.spec\.ts$/,
-        /kbar\/nav-user\.spec\.ts$/
+        /kbar\/nav-user\.spec\.ts$/,
+        /contracts\/my-contracts-viewer\.spec\.ts$/
       ]
     },
     {
@@ -194,7 +196,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
-      dependencies: ['setup'],
+      dependencies: ['setup', 'setup-user'],
       testMatch: /\.api\.spec\.ts$/,
       testIgnore: [/profile-name-live-display\//, /^notifications\//]
     }

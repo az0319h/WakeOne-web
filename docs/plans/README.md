@@ -85,6 +85,7 @@
 | 45 | [45_auth-session-audit-log-plan.md](./45_auth-session-audit-log-plan.md) | **Approved** · sign-in `auth.sign_in` activity log · plan 08 정책 확장 · 로그아웃 Out |
 | 46 | [46_sign-in-seo-plan.md](./46_sign-in-seo-plan.md) | **Approved** · `/auth/sign-in` SEO · metadata·JSON-LD·모바일 intro · BE Out |
 | 47 | [47_contract-import-notifications-plan.md](./47_contract-import-notifications-plan.md) | **Approved** · OpenClaw import 성공 시 admin·작성자 in-app 알림 · SQL `47` |
+| 48 | [48_contract-attachment-viewer-tab-title-plan.md](./48_contract-attachment-viewer-tab-title-plan.md) | **Approved** · 계약·공지 첨부 viewer 탭 title=fileName · iframe inline · plan 41 AC-07 supersede |
 
 ## 에이전트 참조
 
