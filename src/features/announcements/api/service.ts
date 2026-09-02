@@ -126,6 +126,13 @@ export function getAnnouncementAttachmentDownloadUrl(
   return options?.inline ? `${endpoint}?disposition=inline` : endpoint;
 }
 
+export function getAnnouncementAttachmentViewerUrl(
+  announcementId: number,
+  attachmentId: number
+): string {
+  return `/dashboard/announcements/${announcementId}/attachments/${attachmentId}/view`;
+}
+
 export async function downloadAnnouncementAttachment(
   announcementId: number,
   attachmentId: number
@@ -172,9 +179,7 @@ export function openAnnouncementAttachment(
     return false;
   }
 
-  const url = getAnnouncementAttachmentDownloadUrl(announcementId, attachmentId, {
-    inline: true
-  });
+  const url = getAnnouncementAttachmentViewerUrl(announcementId, attachmentId);
   const link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
