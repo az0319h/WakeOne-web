@@ -1,73 +1,172 @@
-import { createClient, type Session } from '@supabase/supabase-js';
-import { expect, type BrowserContext } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  request as playwrightRequest,
+  type APIRequestContext,
+  type BrowserContext
+} from '@playwright/test';
+import { e2eBaseURL } from './auth-request';
 
-const BASE64_PREFIX = 'base64-';
+const REUSE_BUFFER_SECONDS = 120;
+const REUSE_MAX_AGE_MS = 20 * 60 * 1000;
+const DEFAULT_AUTH_PROBE_PATH = '/api/notifications?limit=1';
 
-function getAuthCookieName(supabaseUrl: string) {
-  const projectRef = new URL(supabaseUrl).hostname.split('.')[0];
-  return `sb-${projectRef}-auth-token`;
+function readAuthCookieExpires(outputPath: string): number | null {
+  if (!fs.existsSync(outputPath)) {
+    return null;
+  }
+
+  try {
+    const state = JSON.parse(fs.readFileSync(outputPath, 'utf8')) as {
+      cookies?: Array<{ name: string; expires?: number }>;
+    };
+    const authCookie = state.cookies?.find(
+      (cookie) =>
+        cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')
+    );
+    return authCookie?.expires ?? null;
+  } catch {
+    return null;
+  }
 }
 
-function encodeSessionCookie(session: Session) {
-  const payload = JSON.stringify({
-    access_token: session.access_token,
-    token_type: session.token_type,
-    expires_in: session.expires_in,
-    expires_at: session.expires_at,
-    refresh_token: session.refresh_token,
-    user: session.user
+function isStorageStateFresh(outputPath: string) {
+  if (!fs.existsSync(outputPath)) {
+    return false;
+  }
+
+  const expires = readAuthCookieExpires(outputPath);
+  if (!expires) {
+    return false;
+  }
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (expires <= nowSec + REUSE_BUFFER_SECONDS) {
+    return false;
+  }
+
+  const { mtimeMs } = fs.statSync(outputPath);
+  return Date.now() - mtimeMs < REUSE_MAX_AGE_MS;
+}
+
+async function probeAuthenticatedStorageState(
+  outputPath: string,
+  baseURL: string,
+  probePath: string
+) {
+  const probe = await playwrightRequest.newContext({
+    baseURL,
+    storageState: outputPath
   });
 
-  return BASE64_PREFIX + Buffer.from(payload).toString('base64url');
+  try {
+    const response = await probe.get(probePath);
+    return response.status() === 200;
+  } finally {
+    await probe.dispose();
+  }
+}
+
+async function canReuseStorageState(
+  outputPath: string,
+  baseURL: string,
+  probePath: string
+) {
+  if (!isStorageStateFresh(outputPath)) {
+    return false;
+  }
+
+  return probeAuthenticatedStorageState(outputPath, baseURL, probePath);
+}
+
+function writeStorageState(
+  outputPath: string,
+  storageState: { cookies: Array<Record<string, unknown>>; origins: unknown[] },
+  baseURL: string
+) {
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(
+    outputPath,
+    JSON.stringify(
+      {
+        cookies: storageState.cookies.map((cookie) => ({
+          ...cookie,
+          url: cookie.url ?? baseURL
+        })),
+        origins: storageState.origins
+      },
+      null,
+      2
+    )
+  );
+}
+
+export async function persistRequestStorageState(
+  apiContext: APIRequestContext,
+  outputPath: string
+) {
+  const storageState = await apiContext.storageState();
+  writeStorageState(outputPath, storageState, e2eBaseURL);
 }
 
 export async function authenticateStorageState(
-  context: BrowserContext,
+  _context: BrowserContext,
   email: string,
   password: string,
-  outputPath: string
+  outputPath: string,
+  probePath = DEFAULT_AUTH_PROBE_PATH
 ) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
-    '127.0.0.1',
-    'localhost'
-  );
+  const baseURL = e2eBaseURL;
 
-  if (!supabaseUrl || !publishableKey) {
-    throw new Error(
-      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) must be set for E2E auth.'
-    );
+  if (await canReuseStorageState(outputPath, baseURL, probePath)) {
+    return;
   }
 
-  const supabase = createClient(supabaseUrl, publishableKey, {
-    auth: { persistSession: false, autoRefreshToken: false }
+  const apiContext = await playwrightRequest.newContext({
+    baseURL,
+    storageState: { cookies: [], origins: [] }
   });
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  try {
+    let signedIn = false;
 
-  if (error || !data.session) {
-    throw error ?? new Error(`Failed to sign in as ${email}`);
-  }
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const signInResponse = await apiContext.post('/api/auth/sign-in', {
+        data: { email, password }
+      });
 
-  const domain = new URL(baseURL).hostname;
+      if (signInResponse.status() === 200) {
+        const body = (await signInResponse.json()) as { mustChange?: boolean };
+        if (body.mustChange) {
+          throw new Error(`E2E account ${email} must change password before setup`);
+        }
+        signedIn = true;
+        break;
+      }
 
-  await context.addCookies([
-    {
-      name: getAuthCookieName(supabaseUrl),
-      value: encodeSessionCookie(data.session),
-      domain,
-      path: '/',
-      sameSite: 'Lax',
-      expires: data.session.expires_at ?? undefined
+      const bodyText = await signInResponse.text();
+      const retryable =
+        signInResponse.status() === 429 ||
+        /rate limit|too many|잠시 후 다시 시도/i.test(bodyText);
+
+      if (!retryable || attempt === 7) {
+        throw new Error(`sign-in failed (${signInResponse.status()}): ${bodyText}`);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 3_000 * (attempt + 1)));
     }
-  ]);
 
-  const page = await context.newPage();
-  await page.goto(`${baseURL}/dashboard/overview`, { waitUntil: 'domcontentloaded' });
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
-  await context.storageState({ path: outputPath });
-  await page.close();
+    if (!signedIn) {
+      throw new Error(`Failed to sign in as ${email}`);
+    }
+
+    const storageState = await apiContext.storageState();
+    writeStorageState(outputPath, storageState, baseURL);
+
+    if (!(await probeAuthenticatedStorageState(outputPath, baseURL, probePath))) {
+      throw new Error(`auth storage probe failed for ${email}`);
+    }
+  } finally {
+    await apiContext.dispose();
+  }
 }

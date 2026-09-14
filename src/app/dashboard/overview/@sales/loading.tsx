@@ -1,6 +1,5 @@
-import { RecentSalesSkeleton } from '@/features/overview/components/recent-sales-skeleton';
-import React from 'react';
+import { LiveUsersCardSkeleton } from '@/features/live-users/components/live-users-card-skeleton';
 
 export default function Loading() {
-  return <RecentSalesSkeleton />;
+  return <LiveUsersCardSkeleton />;
 }

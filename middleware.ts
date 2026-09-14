@@ -9,7 +9,10 @@ import { ACCESS_DENIED_FLASH_COOKIE } from '@/lib/auth/access-denied-flash';
 import { hasMustChangeInitialPasswordCookieFromRequest } from '@/lib/auth/must-change-cookie';
 import { updateSession } from '@/lib/supabase/middleware';
 
-const LOCAL_ALLOWED_ORIGIN = 'http://localhost:3000';
+const LOCAL_ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+] as const;
 
 const UNAUTHORIZED_JSON = {
   success: false,
@@ -36,7 +39,7 @@ function getAllowedOrigins(): string[] {
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (!isProduction) {
-    return [LOCAL_ALLOWED_ORIGIN];
+    return [...LOCAL_ALLOWED_ORIGINS];
   }
 
   const productionOrigin = process.env.NEXT_PUBLIC_APP_URL;

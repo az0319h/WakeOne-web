@@ -128,6 +128,7 @@ planner 내부: Phase 2 battle-plan 종료 시 사용자 **`go`** (또는 `진�
 
 ### planner · plan AC 작성 규칙
 
+- 신규 `/dashboard/*` 페이지 plan AC에 「`dashboard/layout` 하위 여부 · **`DashboardPresenceTrack` 상속 확인**」1줄 포함 (plan 49).
 - AC는 반드시 **테스트 가능한 형태(Given-When-Then)** 로 작성한다.
 - 「잘 동작해야 한다」 등 **모호한 자연어 서술 금지**.
 - 예시: Given 로그인한 admin이 자산 목록에 있을 때 / When 필수값을 비우고 제출하면 / Then "필수 항목입니다" 에러가 보이고 목록은 변하지 않는다
