@@ -263,6 +263,16 @@ const createMutation = useMutation({
 - `SheetFooter`를 `form` 내부 끝에 두는 패턴은 금지한다. (모바일에서 버튼 유실 위험)
 - 참조 구현: `src/features/users/components/user-form-sheet.tsx`
 
+## Dashboard Live Presence (필수)
+
+- Live 접속자 track은 **`dashboard/layout.tsx`의 `DashboardPresenceTrack` 단일 컴포넌트**에서 수행한다.
+- **`/dashboard/*` 하위 신규 페이지**는 별도 track 코드 **불필요** — layout 상속으로 자동 참여.
+- **예외:** `dashboard/layout` **바깥** 라우트(`force-password-change` 등)는 track **금지**.
+- 신규 **`/dashboard/*` 전용 layout** 추가 시 `DashboardPresenceTrack` **포함** 또는 **`dashboard/layout` 상속** 필수.
+- Presence UI는 React Query **불사용** — `useDashboardPresence` context(local state)만.
+- Page Visibility API로 hidden 탭 untrack **금지** — 백그라운드 탭 = 접속 중.
+- 참조: [plan 49](../../docs/plans/49_live-users-presence-plan.md) · `src/features/live-users/`
+
 ## Supabase 보안 (필수)
 
 - `SUPABASE_SERVICE_ROLE_KEY` → 서버 전용, `NEXT_PUBLIC_` 접두사 **절대 금지**

@@ -14,5 +14,5 @@ setup('authenticate as admin', async ({ context }) => {
     );
   }
 
-  await authenticateStorageState(context, email, password, adminAuthFile);
+  await authenticateStorageState(context, email, password, adminAuthFile, '/api/users?limit=1');
 });
