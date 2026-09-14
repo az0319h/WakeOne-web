@@ -38,6 +38,10 @@ const isContractImportNotificationsE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/contract-import-notifications')
 );
 
+const isLiveUsersE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/live-users')
+);
+
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
   '127.0.0.1',
   'localhost'
@@ -46,7 +50,13 @@ const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  workers: isNotificationsE2eRun || isAnnouncementsE2eRun || isContractImportNotificationsE2eRun ? 1 : undefined,
+  workers:
+    isNotificationsE2eRun ||
+    isAnnouncementsE2eRun ||
+    isContractImportNotificationsE2eRun ||
+    isLiveUsersE2eRun
+      ? 1
+      : undefined,
   reporter: 'html',
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
@@ -55,20 +65,31 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },
-  webServer: {
-    command: 'npm run dev',
-    url: baseURL,
-    reuseExistingServer: true,
-    timeout: 120_000
-  },
+  ...(process.env.PLAYWRIGHT_SKIP_WEBSERVER
+    ? {}
+    : {
+        webServer: {
+          command: 'npm run dev',
+          url: baseURL,
+          reuseExistingServer: true,
+          timeout: 120_000
+        }
+      }),
   projects: [
     {
       name: 'setup',
-      testMatch: /auth\.setup\.ts/
+      testMatch: /auth\.setup\.ts/,
+      timeout: 90_000
     },
     {
       name: 'setup-user',
-      testMatch: /auth\.user\.setup\.ts/
+      testMatch: /auth\.user\.setup\.ts/,
+      timeout: 90_000
+    },
+    {
+      name: 'setup-user2',
+      testMatch: /auth\.user2\.setup\.ts/,
+      timeout: 90_000
     },
     {
       name: 'chromium',
@@ -76,10 +97,11 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
-      dependencies: ['setup', 'setup-user'],
+      dependencies: ['setup', 'setup-user', 'setup-user2'],
       testIgnore: [
         /auth\.setup\.ts/,
         /auth\.user\.setup\.ts/,
+        /auth\.user2\.setup\.ts/,
         /\.api\.spec\.ts$/,
         /rbac\.spec\.ts$/,
         /profile\.spec\.ts$/,
@@ -88,8 +110,22 @@ export default defineConfig({
         /announcements\//,
         /profile-name-live-display\//,
         /kbar\/nav-user\.spec\.ts$/,
-        /contracts\/my-contracts-viewer\.spec\.ts$/
+        /contracts\/my-contracts-viewer\.spec\.ts$/,
+        /live-users\//
       ]
+    },
+    {
+      name: 'chromium-live-users',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
+          '127.0.0.1',
+          'localhost'
+        )
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2'],
+      testMatch: [/live-users\/.*\.spec\.ts$/],
+      fullyParallel: false
     },
     {
       name: 'chromium-user',

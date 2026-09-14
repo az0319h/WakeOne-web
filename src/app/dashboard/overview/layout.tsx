@@ -144,9 +144,7 @@ export default function OverViewLayout({
               {bar_stats}
             </MockDataOverlay>
           </div>
-          <div className='col-span-4 md:col-span-3'>
-            <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>{sales}</MockDataOverlay>
-          </div>
+          <div className='col-span-4 md:col-span-3'>{sales}</div>
           <div className='col-span-4'>
             <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>
               {area_stats}
