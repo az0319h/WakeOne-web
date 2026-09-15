@@ -2,6 +2,11 @@ import 'server-only';
 
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import { normalizePersonName } from '@/lib/normalize-person-name';
+import {
+  getWalletBalanceEmailPreferences,
+  isWalletBalanceEmailEligible
+} from './balance-email.service.server';
+import type { WalletBalanceEmailPreferencesResponse } from './balance-email.types';
 import { WALLET_SYNCS_PAGE_SIZE } from './keys';
 import type {
   WalletLimitSnapshot,
@@ -262,4 +267,20 @@ export async function syncWalletLimits(
     unmatched,
     results
   };
+}
+
+export async function getWalletBalanceEmailPreferencesServer(
+  viewerUserId: string,
+  isAdmin: boolean,
+  requestedUserId: string | null
+): Promise<WalletBalanceEmailPreferencesResponse> {
+  const targetUserId = resolveWalletTargetUserId(viewerUserId, isAdmin, requestedUserId);
+  const eligible = await isWalletBalanceEmailEligible(targetUserId);
+
+  if (!eligible) {
+    throw new Error('식대 잔액 업데이트 내역이 없어 알림 설정을 사용할 수 없습니다.');
+  }
+
+  const preferences = await getWalletBalanceEmailPreferences(targetUserId);
+  return { preferences, eligible: true };
 }

@@ -5,7 +5,8 @@ import {
   type APIRequestContext,
   type BrowserContext
 } from '@playwright/test';
-import { e2eBaseURL } from './auth-request';
+import { e2eBaseURL, normalizePlaywrightStorageState } from './auth-request';
+
 
 const REUSE_BUFFER_SECONDS = 120;
 const REUSE_MAX_AGE_MS = 20 * 60 * 1000;
@@ -81,24 +82,12 @@ async function canReuseStorageState(
 
 function writeStorageState(
   outputPath: string,
-  storageState: { cookies: Array<Record<string, unknown>>; origins: unknown[] },
+  storageState: Awaited<ReturnType<APIRequestContext['storageState']>>,
   baseURL: string
 ) {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(
-    outputPath,
-    JSON.stringify(
-      {
-        cookies: storageState.cookies.map((cookie) => ({
-          ...cookie,
-          url: cookie.url ?? baseURL
-        })),
-        origins: storageState.origins
-      },
-      null,
-      2
-    )
-  );
+  const normalized = normalizePlaywrightStorageState(storageState, baseURL);
+  fs.writeFileSync(outputPath, JSON.stringify(normalized, null, 2));
 }
 
 export async function persistRequestStorageState(

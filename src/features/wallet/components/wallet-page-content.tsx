@@ -6,6 +6,7 @@ import { parseAsString, useQueryStates } from 'nuqs';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { walletSummaryQueryOptions, type WalletSyncsListFilters } from '../api/queries';
 import type { WalletSummaryFilters } from '../api/types';
+import { WalletBalanceEmailSettingsSection } from './wallet-balance-email-settings-section';
 import { WalletLimitCard } from './wallet-limit-card';
 import { WalletSyncLog } from './wallet-sync-log';
 import { WalletUserCombobox } from './wallet-user-combobox';
@@ -23,6 +24,7 @@ interface WalletDataProps {
 
 function WalletData({ summaryFilters, syncsFilters, amountHidden, onToggleHidden }: WalletDataProps) {
   const { data } = useSuspenseQuery(walletSummaryQueryOptions(summaryFilters));
+  const targetUser = summaryFilters.user ?? 'self';
 
   return (
     <>
@@ -31,6 +33,9 @@ function WalletData({ summaryFilters, syncsFilters, amountHidden, onToggleHidden
         hidden={amountHidden}
         onToggleHidden={onToggleHidden}
       />
+      {data.snapshot ? (
+        <WalletBalanceEmailSettingsSection targetUser={targetUser} />
+      ) : null}
       <WalletSyncLog filters={syncsFilters} />
     </>
   );

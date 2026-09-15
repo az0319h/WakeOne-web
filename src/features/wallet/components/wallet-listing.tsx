@@ -6,12 +6,17 @@ import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import {
   WALLET_SYNCS_PAGE_SIZE,
+  walletBalanceEmailPreferencesQueryOptions,
   walletSummaryQueryOptions,
   walletSyncsInfiniteQueryOptions,
   type WalletSyncsListFilters
 } from '../api/queries';
 import type { WalletSummaryFilters } from '../api/types';
-import { getWalletSummaryServer, listWalletSyncs } from '../api/service.server';
+import {
+  getWalletBalanceEmailPreferencesServer,
+  getWalletSummaryServer,
+  listWalletSyncs
+} from '../api/service.server';
 import { WalletPageContent } from './wallet-page-content';
 
 export async function WalletListing() {
@@ -27,21 +32,32 @@ export async function WalletListing() {
 
   if (profile) {
     // await: dehydrate 전에 settle 시켜 SSR 에서 클라이언트 queryFn(상대경로 fetch)이 실행되는 것을 방지
-    await Promise.all([
-      queryClient.prefetchQuery({
-        ...walletSummaryQueryOptions(summaryFilters),
-        queryFn: () => getWalletSummaryServer(profile.user_id, isAdmin, requestedUser)
-      }),
-      queryClient.prefetchInfiniteQuery({
-        ...walletSyncsInfiniteQueryOptions(syncsFilters),
-        queryFn: ({ pageParam }) =>
-          listWalletSyncs(profile.user_id, isAdmin, {
-            user: walletUser,
-            limit: WALLET_SYNCS_PAGE_SIZE,
-            ...(pageParam ? { cursor: pageParam as string } : {})
-          })
-      })
-    ]);
+    const summary = await queryClient.fetchQuery({
+      ...walletSummaryQueryOptions(summaryFilters),
+      queryFn: () => getWalletSummaryServer(profile.user_id, isAdmin, requestedUser)
+    });
+
+    await queryClient.prefetchInfiniteQuery({
+      ...walletSyncsInfiniteQueryOptions(syncsFilters),
+      queryFn: ({ pageParam }) =>
+        listWalletSyncs(profile.user_id, isAdmin, {
+          user: walletUser,
+          limit: WALLET_SYNCS_PAGE_SIZE,
+          ...(pageParam ? { cursor: pageParam as string } : {})
+        })
+    });
+
+    if (summary.snapshot) {
+      await queryClient.prefetchQuery({
+        ...walletBalanceEmailPreferencesQueryOptions(summaryFilters),
+        queryFn: () =>
+          getWalletBalanceEmailPreferencesServer(
+            profile.user_id,
+            isAdmin,
+            requestedUser
+          )
+      });
+    }
 
     if (isAdmin) {
       void queryClient.prefetchQuery({

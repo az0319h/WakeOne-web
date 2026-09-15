@@ -18,6 +18,11 @@ export type ActivityAction =
   | 'contract.reminder_failed'
   | 'wallet.sync_create'
   | 'wallet.sync_failed'
+  | 'wallet.balance_email_pref_update'
+  | 'wallet.balance_email_send'
+  | 'wallet.balance_email_failed'
+  | 'wallet.balance_email_blocked'
+  | 'wallet.balance_email_dispatch'
   | 'profile.update'
   | 'profile.password_change'
   | 'auth.sign_in'
@@ -89,6 +94,8 @@ export type ActivityLogMetadata = {
   notification_id?: number;
   count?: number;
   duplicate_run?: boolean;
+  catch_up_run?: boolean;
+  pending_count?: number;
   announcement_id?: number;
   support_request_id?: number;
   comment_id?: number;
@@ -101,6 +108,18 @@ export type ActivityLogMetadata = {
   new_status?: string;
   title?: string;
   must_change?: boolean;
+  target_user_id?: string;
+  enabled?: boolean;
+  hour?: number;
+  minute?: number;
+  exclude_weekends?: boolean;
+  run_id?: number;
+  recipient_status?: string;
+  due_count?: number;
+  sent_count?: number;
+  failed_count?: number;
+  blocked_count?: number;
+  skipped_count?: number;
 };
 
 export type ActivityLog = {

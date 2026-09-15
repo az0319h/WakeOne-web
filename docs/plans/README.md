@@ -88,6 +88,7 @@
 | 48 | [48_contract-attachment-viewer-tab-title-plan.md](./48_contract-attachment-viewer-tab-title-plan.md) | **Approved** · 계약·공지 첨부 viewer 탭 title=fileName · iframe inline · plan 41 AC-07 supersede |
 | 49 | [49_live-users-presence-plan.md](./49_live-users-presence-plan.md) | **Approved** · overview Live 접속자 · Realtime Presence · SQL `49` · dashboard layout track |
 | 50 | [50_live-users-admin-hide-live-dot-plan.md](./50_live-users-admin-hide-live-dot-plan.md) | **Approved** · Live 접속자 admin 목록 제외 · Live dot · plan 49 FE 확장 · BE Out |
+| 51 | [51_wallet-balance-email-plan.md](./51_wallet-balance-email-plan.md) | **Approved** · 식대 잔액 확인 이메일·알림 설정·admin 로그 · allowlist BLOCKER · SQL `50` |
 
 ## 에이전트 참조
 

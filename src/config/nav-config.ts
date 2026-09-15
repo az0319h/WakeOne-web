@@ -100,7 +100,14 @@ export const navGroups: NavGroup[] = [
         icon: 'wallet',
         shortcut: ['w', 'l'],
         isActive: false,
-        items: []
+        items: [
+          {
+            title: '잔액 확인 이메일 로그',
+            url: '/dashboard/wallet/balance-email-logs',
+            icon: 'send',
+            access: { systemRole: 'admin' }
+          }
+        ]
       },
       {
         title: '알림',
