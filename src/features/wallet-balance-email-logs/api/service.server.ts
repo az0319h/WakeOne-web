@@ -39,18 +39,49 @@ function mapRun(row: RunRow): WalletBalanceEmailLogRun {
   };
 }
 
-function mapRecipient(row: RecipientRow): WalletBalanceEmailLogRecipient {
+function mapRecipient(
+  row: RecipientRow,
+  recipientFullName: string | null
+): WalletBalanceEmailLogRecipient {
   return {
     id: row.id,
     run_id: row.run_id,
     user_id: row.user_id,
     recipient_email: row.recipient_email,
+    recipient_full_name: recipientFullName,
     status: row.status,
     error_message: row.error_message,
     notification_id: row.notification_id,
     sent_at: row.sent_at,
     created_at: row.created_at
   };
+}
+
+async function fetchProfileNamesByUserIds(
+  supabase: ReturnType<typeof getServiceRoleClient>,
+  userIds: string[]
+): Promise<Map<string, string | null>> {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('user_id, full_name')
+    .in('user_id', userIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const names = new Map<string, string | null>();
+  for (const row of data ?? []) {
+    const userId = row.user_id as string;
+    const fullName = (row.full_name as string | null)?.trim() ?? null;
+    names.set(userId, fullName || null);
+  }
+
+  return names;
 }
 
 function escapeIlikePattern(value: string): string {
@@ -186,8 +217,14 @@ export async function getWalletBalanceEmailLogRunDetail(
     throw new Error(recipientError.message);
   }
 
+  const recipientRows = (recipientData ?? []) as unknown as RecipientRow[];
+  const userIds = [...new Set(recipientRows.map((row) => row.user_id))];
+  const profileNames = await fetchProfileNamesByUserIds(supabase, userIds);
+
   return {
     ...mapRun(runData as unknown as RunRow),
-    recipients: ((recipientData ?? []) as unknown as RecipientRow[]).map(mapRecipient)
+    recipients: recipientRows.map((row) =>
+      mapRecipient(row, profileNames.get(row.user_id) ?? null)
+    )
   };
 }
