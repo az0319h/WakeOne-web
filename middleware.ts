@@ -58,7 +58,8 @@ function isServiceTokenApiPath(pathname: string): boolean {
   return (
     pathname === '/api/contracts/import' ||
     pathname === '/api/contracts/reminders' ||
-    pathname === '/api/wallet/sync'
+    pathname === '/api/wallet/sync' ||
+    pathname === '/api/wallet/balance-email/dispatch'
   );
 }
 

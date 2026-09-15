@@ -42,7 +42,19 @@ const METADATA_ALLOWLIST = new Set([
   'previous_status',
   'new_status',
   'title',
-  'must_change'
+  'must_change',
+  'target_user_id',
+  'enabled',
+  'hour',
+  'minute',
+  'exclude_weekends',
+  'run_id',
+  'recipient_status',
+  'due_count',
+  'sent_count',
+  'failed_count',
+  'blocked_count',
+  'skipped_count'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -257,6 +269,53 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === 'notification_id' && typeof value === 'number') {
       sanitized.notification_id = value;
+      continue;
+    }
+
+    if (key === 'run_id' && typeof value === 'number') {
+      sanitized.run_id = value;
+      continue;
+    }
+
+    if (key === 'hour' && typeof value === 'number') {
+      sanitized.hour = value;
+      continue;
+    }
+
+    if (key === 'minute' && typeof value === 'number') {
+      sanitized.minute = value;
+      continue;
+    }
+
+    if (
+      (key === 'due_count' ||
+        key === 'sent_count' ||
+        key === 'failed_count' ||
+        key === 'blocked_count' ||
+        key === 'skipped_count') &&
+      typeof value === 'number'
+    ) {
+      (sanitized as Record<string, unknown>)[key] = value;
+      continue;
+    }
+
+    if (key === 'enabled' && typeof value === 'boolean') {
+      sanitized.enabled = value;
+      continue;
+    }
+
+    if (key === 'exclude_weekends' && typeof value === 'boolean') {
+      sanitized.exclude_weekends = value;
+      continue;
+    }
+
+    if (key === 'target_user_id' && typeof value === 'string') {
+      sanitized.target_user_id = value;
+      continue;
+    }
+
+    if (key === 'recipient_status' && typeof value === 'string') {
+      sanitized.recipient_status = value;
       continue;
     }
 

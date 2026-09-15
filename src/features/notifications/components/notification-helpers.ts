@@ -62,7 +62,11 @@ export function getNotificationActions(
     ];
   }
 
-  if (notification.type === 'wallet.sync_admin' || notification.type === 'wallet.sync_recipient') {
+  if (
+    notification.type === 'wallet.sync_admin' ||
+    notification.type === 'wallet.sync_recipient' ||
+    notification.type === 'wallet.balance_email'
+  ) {
     return [
       {
         id: 'view-wallet',

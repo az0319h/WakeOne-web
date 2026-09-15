@@ -42,6 +42,10 @@ const isLiveUsersE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/live-users')
 );
 
+const isWalletBalanceEmailE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/wallet-balance-email')
+);
+
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
   '127.0.0.1',
   'localhost'
@@ -54,7 +58,8 @@ export default defineConfig({
     isNotificationsE2eRun ||
     isAnnouncementsE2eRun ||
     isContractImportNotificationsE2eRun ||
-    isLiveUsersE2eRun
+    isLiveUsersE2eRun ||
+    isWalletBalanceEmailE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -92,12 +97,38 @@ export default defineConfig({
       timeout: 90_000
     },
     {
+      name: 'wallet-balance-email-notifications',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user'],
+      testMatch: isWalletBalanceEmailE2eRun
+        ? [/wallet-balance-email\/notifications\.spec\.ts$/]
+        : [/^\b$/],
+      fullyParallel: false
+    },
+    {
+      name: 'wallet-balance-email-api',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin.json'
+      },
+      dependencies: ['setup', 'setup-user', 'wallet-balance-email-notifications'],
+      testMatch: isWalletBalanceEmailE2eRun
+        ? [/wallet-balance-email\/dispatch\.api\.spec\.ts$/]
+        : [/^\b$/],
+      fullyParallel: false
+    },
+    {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
-      dependencies: ['setup', 'setup-user', 'setup-user2'],
+      dependencies: isWalletBalanceEmailE2eRun
+        ? ['setup', 'setup-user', 'setup-user2', 'wallet-balance-email-api']
+        : ['setup', 'setup-user', 'setup-user2'],
       testIgnore: [
         /auth\.setup\.ts/,
         /auth\.user\.setup\.ts/,
@@ -111,7 +142,10 @@ export default defineConfig({
         /profile-name-live-display\//,
         /kbar\/nav-user\.spec\.ts$/,
         /contracts\/my-contracts-viewer\.spec\.ts$/,
-        /live-users\//
+        /live-users\//,
+        /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
+        /wallet-balance-email\/notifications\.spec\.ts$/,
+        /wallet-balance-email\/balance-email-logs-rbac\.spec\.ts$/
       ]
     },
     {
@@ -133,12 +167,17 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json'
       },
-      dependencies: ['setup-user'],
+      dependencies: isWalletBalanceEmailE2eRun
+        ? ['setup-user', 'wallet-balance-email-api']
+        : ['setup-user'],
       testMatch: [
         /profile\.spec\.ts$/,
         /system-email-logs-rbac\.spec\.ts$/,
+        /balance-email-logs-rbac\.spec\.ts$/,
         /kbar\/nav-user\.spec\.ts$/,
-        /contracts\/my-contracts-viewer\.spec\.ts$/
+        /contracts\/my-contracts-viewer\.spec\.ts$/,
+        /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
+        ...(isWalletBalanceEmailE2eRun ? [] : [/wallet-balance-email\/notifications\.spec\.ts$/])
       ]
     },
     {
@@ -234,7 +273,11 @@ export default defineConfig({
       },
       dependencies: ['setup', 'setup-user'],
       testMatch: /\.api\.spec\.ts$/,
-      testIgnore: [/profile-name-live-display\//, /^notifications\//]
+      testIgnore: [
+        /profile-name-live-display\//,
+        /^notifications\//,
+        ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : [])
+      ]
     }
   ]
 });

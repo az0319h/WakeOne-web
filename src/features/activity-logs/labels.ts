@@ -26,6 +26,11 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'contract.reminder_failed': '계약서 독촉 메일 실패',
   'wallet.sync_create': '지갑 동기화',
   'wallet.sync_failed': '지갑 동기화 실패',
+  'wallet.balance_email_pref_update': '식대 잔액 이메일 설정 변경',
+  'wallet.balance_email_send': '식대 잔액 이메일 발송',
+  'wallet.balance_email_failed': '식대 잔액 이메일 발송 실패',
+  'wallet.balance_email_blocked': '식대 잔액 이메일 발송 차단',
+  'wallet.balance_email_dispatch': '식대 잔액 이메일 dispatch',
   'profile.update': '프로필 수정',
   'profile.password_change': '비밀번호 변경',
   'auth.sign_in': '로그인',
@@ -81,7 +86,19 @@ export const METADATA_LABELS: Record<string, string> = {
   body_length: '본문 길이',
   previous_status: '이전 상태',
   new_status: '변경 상태',
-  title: '제목'
+  title: '제목',
+  target_user_id: '대상 사용자 ID',
+  enabled: '알림 사용',
+  hour: '발송 시',
+  minute: '발송 분',
+  exclude_weekends: '주말 제외',
+  run_id: 'Run ID',
+  recipient_status: '수신 상태',
+  due_count: 'due 건수',
+  sent_count: '발송 성공',
+  failed_count: '발송 실패',
+  blocked_count: '차단 건수',
+  skipped_count: 'skip 건수'
 };
 
 export function isSupportCommentAction(action: ActivityAction): boolean {
