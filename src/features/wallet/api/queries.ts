@@ -1,5 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { fetchWalletSummary, fetchWalletSyncs } from './service';
+import type { WalletBalanceEmailPreferencesFilters } from './balance-email.types';
+import { fetchWalletBalanceEmailPreferences, fetchWalletSummary, fetchWalletSyncs } from './service';
 import {
   WALLET_SYNCS_PAGE_SIZE,
   walletKeys,
@@ -13,6 +14,14 @@ export const walletSummaryQueryOptions = (filters: WalletSummaryFilters) =>
   queryOptions({
     queryKey: walletKeys.summary(filters),
     queryFn: () => fetchWalletSummary(filters)
+  });
+
+export const walletBalanceEmailPreferencesQueryOptions = (
+  filters: WalletBalanceEmailPreferencesFilters = {}
+) =>
+  queryOptions({
+    queryKey: walletKeys.balanceEmailPreferences(filters),
+    queryFn: () => fetchWalletBalanceEmailPreferences(filters)
   });
 
 export const walletSyncsInfiniteQueryOptions = (filters: WalletSyncsListFilters = {}) => {

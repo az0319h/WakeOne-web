@@ -1,4 +1,9 @@
-import { apiClient } from '@/lib/api-client';
+import { apiClient, apiClientWithMessage } from '@/lib/api-client';
+import type {
+  UpdateWalletBalanceEmailPreferencesInput,
+  WalletBalanceEmailPreferencesFilters,
+  WalletBalanceEmailPreferencesResponse
+} from './balance-email.types';
 import type {
   WalletSummary,
   WalletSummaryFilters,
@@ -43,6 +48,47 @@ export async function fetchWalletSyncs(
   const queryString = searchParams.toString();
   const response = await apiClient<WalletSyncsApiResponse>(
     `/wallet/syncs${queryString ? `?${queryString}` : ''}`
+  );
+
+  return response.data;
+}
+
+type WalletBalanceEmailPreferencesApiResponse = {
+  success: boolean;
+  data: WalletBalanceEmailPreferencesResponse;
+};
+
+export async function fetchWalletBalanceEmailPreferences(
+  filters: WalletBalanceEmailPreferencesFilters = {}
+): Promise<WalletBalanceEmailPreferencesResponse> {
+  const searchParams = new URLSearchParams();
+  if (filters.user) {
+    searchParams.set('user', filters.user);
+  }
+
+  const queryString = searchParams.toString();
+  const response = await apiClient<WalletBalanceEmailPreferencesApiResponse>(
+    `/wallet/balance-email/preferences${queryString ? `?${queryString}` : ''}`
+  );
+
+  return response.data;
+}
+
+export async function updateWalletBalanceEmailPreferences(
+  input: UpdateWalletBalanceEmailPreferencesInput
+): Promise<WalletBalanceEmailPreferencesResponse> {
+  const searchParams = new URLSearchParams();
+  if (input.user) {
+    searchParams.set('user', input.user);
+  }
+
+  const queryString = searchParams.toString();
+  const response = await apiClientWithMessage<WalletBalanceEmailPreferencesApiResponse>(
+    `/wallet/balance-email/preferences${queryString ? `?${queryString}` : ''}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input.patch)
+    }
   );
 
   return response.data;

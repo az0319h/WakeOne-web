@@ -39,6 +39,11 @@ type InsertWalletSyncNotificationsInput = {
   unmatchedCount: number;
 };
 
+type InsertWalletBalanceEmailNotificationInput = {
+  recipientUserId: string;
+  runId: number;
+};
+
 type InsertSupportAdminNotificationsInput = {
   actorUserId: string;
   supportRequestId: number;
@@ -362,6 +367,32 @@ export async function insertContractReminderRecipientNotification(
   if (error) {
     throw new Error(error.message);
   }
+}
+
+export async function insertWalletBalanceEmailNotification(
+  input: InsertWalletBalanceEmailNotificationInput
+): Promise<number | null> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('notifications')
+    .insert({
+      recipient_user_id: input.recipientUserId,
+      type: 'wallet.balance_email',
+      title: '식대 잔액 안내',
+      body: '오늘의 식대 잔액 안내 메일을 확인해 주세요.',
+      metadata: {
+        kind: 'wallet.balance_email',
+        run_id: input.runId
+      }
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return typeof data?.id === 'number' ? data.id : null;
 }
 
 export async function insertWalletSyncNotifications(
