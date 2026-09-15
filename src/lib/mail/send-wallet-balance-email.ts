@@ -1,14 +1,28 @@
 import { formatWalletAmount } from '@/features/wallet/utils/format';
 import { isDryRun } from '@/features/wallet/api/balance-email-mail.server';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { getDefaultMailFrom, getMailTransporter } from './smtp';
 
 type SendWalletBalanceEmailParams = {
   to: string;
   monthlyLimit: number;
   monthlyRemaining: number;
+  syncedAt: string;
   walletUrl: string;
   settingsUrl: string;
 };
+
+function buildWalletBalanceSyncDisclaimer(syncedAt: string): {
+  line1: string;
+  line2: string;
+} {
+  const syncedAtLabel = formatAbsoluteDateTimeKo(syncedAt);
+
+  return {
+    line1: `${syncedAtLabel}에 잔액이 반영되었습니다.`,
+    line2: '이후 사용한 금액은 아직 반영되지 않았을 수 있습니다.'
+  };
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -27,6 +41,7 @@ export async function sendWalletBalanceEmail({
   to,
   monthlyLimit,
   monthlyRemaining,
+  syncedAt,
   walletUrl,
   settingsUrl
 }: SendWalletBalanceEmailParams): Promise<void> {
@@ -43,12 +58,16 @@ export async function sendWalletBalanceEmail({
   const subject = '[WakeOne] 식대 잔액 안내';
   const limitLabel = formatWalletAmount(monthlyLimit);
   const remainingLabel = formatWalletAmount(monthlyRemaining);
+  const disclaimer = buildWalletBalanceSyncDisclaimer(syncedAt);
 
   const text = [
     '오늘의 식대 잔액 안내입니다.',
     '',
     `이번 달 지급액: ${limitLabel}`,
     `남은 식대: ${remainingLabel}`,
+    '',
+    disclaimer.line1,
+    disclaimer.line2,
     '',
     `식대 카드 보기: ${walletUrl}`,
     `알림 설정 변경: ${settingsUrl}`,
@@ -122,6 +141,18 @@ export async function sendWalletBalanceEmail({
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
+
+          <!-- 잔액 반영 시각 안내 -->
+          <tr>
+            <td style="padding:0 24px 16px;">
+              <p style="margin:0 0 4px;font-size:12px;color:#888;line-height:1.6;">
+                ${escapeHtml(disclaimer.line1)}
+              </p>
+              <p style="margin:0;font-size:12px;color:#888;line-height:1.6;">
+                ${escapeHtml(disclaimer.line2)}
+              </p>
             </td>
           </tr>
 

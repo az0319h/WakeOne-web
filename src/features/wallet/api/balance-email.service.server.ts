@@ -263,7 +263,8 @@ export async function listDueWalletBalanceEmailUsers(
       minute: Number(pref.minute),
       exclude_weekends: Boolean(pref.exclude_weekends),
       monthly_limit: snapshot.monthly_limit,
-      monthly_remaining: snapshot.monthly_remaining
+      monthly_remaining: snapshot.monthly_remaining,
+      synced_at: snapshot.synced_at
     });
   }
 

@@ -69,6 +69,7 @@ export type WalletBalanceEmailDueUser = {
   exclude_weekends: boolean;
   monthly_limit: number;
   monthly_remaining: number;
+  synced_at: string;
 };
 
 export const WALLET_BALANCE_EMAIL_DEFAULTS = {
