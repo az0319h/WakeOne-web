@@ -12,7 +12,9 @@ export type WalletBalanceEmailLogsFilters = {
 
 export type WalletBalanceEmailLogRun = WalletBalanceEmailRun;
 
-export type WalletBalanceEmailLogRecipient = WalletBalanceEmailRecipient;
+export type WalletBalanceEmailLogRecipient = WalletBalanceEmailRecipient & {
+  recipient_full_name: string | null;
+};
 
 export type WalletBalanceEmailLogRunDetail = WalletBalanceEmailLogRun & {
   recipients: WalletBalanceEmailLogRecipient[];
