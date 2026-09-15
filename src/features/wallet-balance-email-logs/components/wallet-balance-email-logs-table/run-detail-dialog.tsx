@@ -113,8 +113,15 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
                       {run.recipients.length > 0 ? (
                         run.recipients.map((recipient) => (
                           <TableRow key={recipient.id}>
-                            <TableCell className='max-w-[160px] truncate text-xs'>
-                              {recipient.recipient_email}
+                            <TableCell className='max-w-[220px]'>
+                              <div className='flex min-w-0 flex-col'>
+                                <span className='truncate text-sm font-medium'>
+                                  {recipient.recipient_full_name ?? '—'}
+                                </span>
+                                <span className='text-muted-foreground truncate text-xs'>
+                                  {recipient.recipient_email}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell className='max-w-[120px] truncate font-mono text-xs'>
                               {recipient.user_id}
