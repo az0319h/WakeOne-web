@@ -164,6 +164,7 @@ async function processWalletBalanceEmailDueUsers(input: {
         to: user.email,
         monthlyLimit: user.monthly_limit,
         monthlyRemaining: user.monthly_remaining,
+        syncedAt: user.synced_at,
         walletUrl: input.walletUrl,
         settingsUrl: input.settingsUrl
       });
