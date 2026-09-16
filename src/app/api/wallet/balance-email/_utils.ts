@@ -34,7 +34,7 @@ export function isValidWalletBalanceEmailCronToken(token: string | null): boolea
 export function walletBalanceEmailCronActor() {
   return {
     actorUserId: null,
-    actorEmail: 'system@wakeone',
+    actorEmail: 'wakeone.ops@gmail.com',
     actorDisplayName: '식대 잔액 이메일 (자동 발송)'
   };
 }

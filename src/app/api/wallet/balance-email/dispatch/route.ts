@@ -279,6 +279,19 @@ export async function POST(request: NextRequest) {
     const walletUrl = `${baseUrl}/dashboard/wallet`;
     const settingsUrl = `${baseUrl}/dashboard/wallet#wallet-balance-email-settings`;
     const dueUsers = await listDueWalletBalanceEmailUsers(kstParts.hour, kstParts.minute);
+
+    if (dueUsers.length === 0) {
+      return withRequestId(
+        NextResponse.json({
+          success: true,
+          message: '발송 대상 사용자가 없습니다.',
+          run: null,
+          recipients: []
+        }),
+        requestId
+      );
+    }
+
     const existingRun = await getWalletBalanceEmailRunByKey(runKey);
 
     if (existingRun) {
@@ -287,19 +300,6 @@ export async function POST(request: NextRequest) {
       const pendingUsers = dueUsers.filter((user) => !processedUserIds.has(user.user_id));
 
       if (pendingUsers.length === 0) {
-        await recordActivityLog({
-          requestId,
-          ...actor,
-          action: 'wallet.balance_email_dispatch',
-          targetType: 'wallet',
-          targetUserId: null,
-          targetLabel: runTargetLabel(runKey),
-          httpMethod: HTTP_METHOD,
-          httpPath: HTTP_PATH,
-          httpStatus: 200,
-          metadata: { duplicate_run: true, run_id: existingRun.id }
-        });
-
         return withRequestId(
           NextResponse.json({
             success: true,
@@ -429,11 +429,9 @@ export async function POST(request: NextRequest) {
       NextResponse.json({
         success: counts.failedCount === 0,
         message:
-          dueUsers.length === 0
-            ? '발송 대상 사용자가 없습니다.'
-            : counts.failedCount === 0
-              ? '식대 잔액 안내 이메일 dispatch를 완료했습니다.'
-              : '식대 잔액 안내 이메일 일부 발송에 실패했습니다.',
+          counts.failedCount === 0
+            ? '식대 잔액 안내 이메일 dispatch를 완료했습니다.'
+            : '식대 잔액 안내 이메일 일부 발송에 실패했습니다.',
         run: finishedRun,
         recipients: await listWalletBalanceEmailRecipientsByRunId(finishedRun.id)
       }),

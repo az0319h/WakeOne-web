@@ -65,6 +65,7 @@ type ActivityLogItem = {
   request_id?: string;
   action?: string;
   http_status?: number;
+  actor_email?: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -193,6 +194,29 @@ export async function resolveE2EUserFullName(adminRequest: APIRequestContext) {
   const user = body.users?.find((item) => item.email === email);
   expect(user?.full_name).toBeTruthy();
   return user!.full_name!;
+}
+
+export async function createDisposableUserWithEmail(
+  adminRequest: APIRequestContext,
+  email: string,
+  prefix: string
+) {
+  const fullName = `E2E-WBE-${prefix}-${Date.now()}`;
+  const response = await adminRequest.post('/api/users', {
+    data: {
+      email,
+      full_name: fullName,
+      affiliation: 'wake',
+      rank: '경영진',
+      system_role: 'user',
+      birthday: '1990-01-01',
+      phone: '01012345678'
+    }
+  });
+  expect(response.status()).toBe(201);
+  const body = (await response.json()) as { user_id?: string };
+  expect(body.user_id).toBeTruthy();
+  return { email, fullName, userId: body.user_id! };
 }
 
 export async function createDisposableUser(

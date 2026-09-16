@@ -1,6 +1,6 @@
 # 식대 잔액 확인 이메일·알림 설정 기획서
 
-> Date: 2026-09-15
+> Date: 2026-09-16 (Revision)
 > Status: Approved
 > Author: planner
 > **신규 SQL:** `50` · `supabase/sql/50_wallet_balance_email.sql` (구현 시 최대 번호+1 재확인)
@@ -68,6 +68,31 @@ allowlist env 예: `WALLET_BALANCE_EMAIL_ALLOWLIST=shhong@wakecorp.com` (쉼표 
 | **Admin 로그 nav** | Account > **식대 카드** > 「잔액 확인 이메일 로그」 (`systemRole: admin`) |
 | **OFF 유도 UI** | eligible + OFF → 설정 Card + **한 줄 배너** 「식대 잔액을 매일 이메일로 받아보세요」 |
 | **로깅** | preferences CUD · dispatch run · recipient sent/failed/blocked · **activity_logs 전부** |
+| **Cron tick** | pg_cron **매분** (`* * * * *`, SQL `53`) — dispatch Route는 KST `HH:mm` 정확 매칭 |
+| **Admin run 생성** | 해당 KST 분 **due 사용자 ≥ 1**일 때만 `wallet_balance_email_runs` + Admin 로그 UI |
+| **due=0 tick** | run 행 **없음** · `wallet.balance_email_dispatch` **없음** · HTTP 200 `run: null` |
+| **due≥1 tick** | run + recipients(sent/failed/blocked/skipped **전부**) — Admin이 스케줄 시각 실패·차단 확인 가능 |
+| **Cron activity actor** | `actorEmail: wakeone.ops@gmail.com` · `actorDisplayName: 식대 잔액 이메일 (자동 발송)` |
+
+---
+
+## Revision 2026-09-16 — dispatch run logging policy
+
+**배경:** 매분 cron + `run_key`=현재 KST 분 조합으로 due=0 tick마다 empty run·dispatch activity log가 누적됨.
+
+**확정 정책 (deep-interview 2026-09-16):**
+
+| 항목 | 결정 |
+|------|------|
+| pg_cron | **매분 유지** (`* * * * *`, SQL `53` 변경 없음) |
+| Admin run (`wallet_balance_email_runs` + UI) | **due ≥ 1** at that KST minute일 때만 생성 |
+| due = 0 | HTTP 200 · `run: null` · run INSERT **0** · `wallet.balance_email_dispatch` **0** |
+| due ≥ 1 | run 생성 · recipient 전 outcome 기록 (sent/failed/blocked/skipped) |
+| Per-recipient activity log | blocked/failed/skipped **유지** (run_id 포함) — `/dashboard/logs` audit |
+| Cron actor | `wakeone.ops@gmail.com` (기존 `system@wakeone` **폐기**) |
+| SQL migration | **불필요** — BE dispatch Route + `_utils.ts` + E2E만 |
+
+**구현 범위 (본 revision):** `dispatch/route.ts` early-return(due=0) · actor email · E2E AC 보강. FE·cron Edge·SQL **Out**.
 
 ---
 
@@ -78,21 +103,24 @@ allowlist env 예: `WALLET_BALANCE_EMAIL_ALLOWLIST=shhong@wakecorp.com` (쉼표 
 | AC-01 | Playwright | `system_role=user`, matched sync **0건** | `/dashboard/wallet` | 「식대 잔액 업데이트 내역이 없습니다」·알림 설정 Card·배너 **미표시** |
 | AC-02 | Playwright | matched ≥ 1, preferences 없음 또는 enabled=false | `/dashboard/wallet` | 알림 설정 Card 표시·토글 **OFF**·배너 표시·**발송 없음** |
 | AC-03 | API | eligible user, enabled=true, 12:15, exclude_weekends=false, allowlist email, 최신 snapshot 존재 | KST 12:15 dispatch tick | SMTP 1건(allowlist)·`wallet.balance_email` 인앱 1건·recipient `sent`·run `completed` 또는 `partial_failed` |
-| AC-04 | API | enabled=true, exclude_weekends=**true** | KST 토·일 dispatch | 해당 사용자 **skip**·recipient `skipped` 또는 run metadata `skipped_weekend` · SMTP **0건** |
+| AC-04 | API | enabled=true, exclude_weekends=**true**, due 1명 | KST 토·일 dispatch tick | SMTP **0건** · **run 1건** · recipient `skipped` · `skipped_count ≥ 1` |
 | AC-05 | API | enabled=false → PATCH enabled=true 12:20, 현재 12:25 | dispatch | **즉시 발송 없음** · 다음날 12:20 슬롯부터 due |
 | AC-06 | API | 잔액 전일과 동일 | due dispatch | **그래도** SMTP+인앱 발송 (AC-03과 동일) |
 | AC-07 | API | `system_role=user` | `PATCH` 타인 user_id preferences | HTTP **403** · activity log 실패 분기 1건 |
 | AC-08 | API | `system_role=admin` | `PATCH` 타인 preferences (enabled·hour·minute·exclude_weekends) | HTTP 200 · DB 반영 · `wallet.balance_email_pref_update` log · metadata `target_user_id`·변경 필드 allowlist |
-| AC-09 | API | allowlist 외 실사용자 email, mode≠production | dispatch | SMTP **미호출** · recipient `blocked` · activity `wallet.balance_email_blocked` 또는 send route skip log |
+| AC-09 | API | allowlist 외 email, mode≠production, due 1명 | dispatch | SMTP **미호출** · **run 1건** · recipient `blocked` · `wallet.balance_email_blocked` activity log 1건 |
 | AC-10 | API | `E2E_WALLET_BALANCE_EMAIL_DRY_RUN=1` | dispatch | SMTP **0건** · run/recipient 행은 기록 가능 |
 | AC-11 | Playwright | admin | nav **식대 카드** expand | 「잔액 확인 이메일 로그」 표시 |
 | AC-12 | Playwright | admin | `/dashboard/wallet/balance-email-logs` | PageContainer·run 테이블·row Dialog — **독촉 로그 UI와 동일 패턴** (columns·Dialog 구조) |
 | AC-13 | Playwright | `system_role=user` | `/dashboard/wallet/balance-email-logs` 직접 접근 | `/dashboard/overview` 리다이렉트 또는 403 |
 | AC-14 | Playwright | user, enabled=true, dispatch 성공 | `/dashboard/notifications` | `wallet.balance_email` 1건 · body에 금액 **없음** · CTA 「식대 카드 보기」 |
 | AC-15 | API | preferences PATCH (self ON) | activity logs | `wallet.balance_email_pref_update` · enabled·schedule 필드 metadata |
-| AC-16 | API | SMTP 실패 (E2E simulate) | dispatch | recipient `failed` · `wallet.balance_email_failed` · run `partial_failed` |
+| AC-16 | API | SMTP 실패 (E2E simulate), due 1명 | dispatch | **run 1건** · recipient `failed` · `wallet.balance_email_failed` · run `partial_failed` 또는 `failed` |
 | AC-17 | grep | `src/app/dashboard/wallet/balance-email-logs` | layout | `dashboard/layout` 상속 · 별도 layout 없으면 `DashboardPresenceTrack` 자동 |
 | AC-18 | CLI | 구현 완료 | `bunx playwright test e2e/wallet-balance-email/` · tsc · lint · build | green · **allowlist 외 sent 0건** cleanup pass |
+| AC-NEW-01 | API | due 사용자 **0명** · valid cron secret | dispatch | HTTP 200 · `run: null` · `wallet_balance_email_runs` **INSERT 0** · `wallet.balance_email_dispatch` activity log **0건** |
+| AC-NEW-02 | API | dispatch (due≥1 sent 또는 401 cron) | `GET /api/activity-logs` | `actorEmail` = `wakeone.ops@gmail.com` · `actorDisplayName` = `식대 잔액 이메일 (자동 발송)` |
+| AC-NEW-03 | API | due 2명 · 1 sent + 1 blocked | dispatch | run 1건 · recipients 2행(sent+blocked) · admin logs UI run Dialog에 **양쪽 outcome** 표시 |
 
 ---
 
@@ -108,7 +136,8 @@ allowlist env 예: `WALLET_BALANCE_EMAIL_ALLOWLIST=shhong@wakecorp.com` (쉼표 
 | D | **API** | `GET/PATCH /api/wallet/balance-email/preferences` (self + admin target query) |
 | E | **API** | `POST /api/wallet/balance-email/dispatch` — Cron secret · due fan-out |
 | F | **API** | `GET /api/wallet/balance-email/logs` · `GET .../logs/[runId]` — admin-only (plan 20 패턴) |
-| G | **Cron** | Edge Function 또는 기존 cron trigger 패턴 — **15분 tick** (due = KST HH:mm 일치, ±0분 또는 tick 윈도우 문서화) |
+| G | **Cron** | pg_cron **매분** tick (SQL `53`) → Edge `wallet-balance-email-cron-trigger` → dispatch (due = KST HH:mm **정확 매칭**) |
+| P | **Revision 2026-09-16** | dispatch due=0 no-run · cron actor email · E2E AC-NEW-* (BE only, SQL Out) |
 | H | **FE** | wallet 페이지 `WalletBalanceEmailSettingsCard` + OFF 배너 + `#wallet-balance-email-settings` anchor |
 | I | **FE** | admin `wallet_user` combobox 연동 — 타인 preferences 수정 |
 | J | **FE** | `/dashboard/wallet/balance-email-logs` — system-email-logs 컴포넌트 **복제·도메인 치환** |
@@ -128,6 +157,8 @@ allowlist env 예: `WALLET_BALANCE_EMAIL_ALLOWLIST=shhong@wakecorp.com` (쉼표 
 - `/dashboard/system-email-logs` 탭 통합 (별도 wallet 하위 로그)
 - 인앱·이메일 본문에 **금액** (이메일 본문 snapshot 숫자는 **In** — plan 32는 **인앱** 금액 금지)
 - Production `MODE=production` 전환 작업 (별도 배포 승인)
+- 기존 DB empty run **일괄 삭제** (운영 cleanup 별도)
+- pg_cron 스케줄 변경 (매분 **유지**)
 
 ---
 
@@ -198,15 +229,19 @@ allowlist env 예: `WALLET_BALANCE_EMAIL_ALLOWLIST=shhong@wakecorp.com` (쉼표 
 ### `POST /api/wallet/balance-email/dispatch`
 
 - Auth: `CRON_SECRET` / `WALLET_BALANCE_EMAIL_CRON_SECRET` (plan 20 패턴)
+- Cron actor (`walletBalanceEmailCronActor`): `actorEmail: wakeone.ops@gmail.com` · `actorDisplayName: 식대 잔액 이메일 (자동 발송)` · `actorUserId: null`
 - Flow:
-  1. KST now → due preferences 조회 (enabled + HH:mm + weekday)
-  2. run row 생성 (`run_key` idempotency — 동일 tick 중복 skip)
-  3. 각 user: latest `wallet_syncs` matched snapshot
-  4. `profiles.email` resolve → **allowlist gate**
-  5. dry-run → skip SMTP, log sent or simulated
-  6. SMTP success → `sendWalletBalanceEmail` + notification INSERT
-  7. recipient row + activity log per outcome
+  1. KST now → due preferences 조회 (enabled + HH:mm 일치)
+  2. **`dueUsers.length === 0` → early return** HTTP 200 `{ run: null, recipients: [] }` — run INSERT **없음** · `wallet.balance_email_dispatch` **없음**
+  3. **`dueUsers.length ≥ 1` → run row 생성** (`run_key` = KST tick idempotency — 동일 tick 중복 catch-up)
+  4. 각 user: latest `wallet_syncs` matched snapshot
+  5. `profiles.email` resolve → **allowlist gate**
+  6. dry-run → skip SMTP, recipient `sent` (simulated)
+  7. SMTP success → `sendWalletBalanceEmail` + notification INSERT
+  8. recipient row + per-recipient activity log (send/failed/blocked/skipped)
+  9. run finish + **`wallet.balance_email_dispatch` 1건** (due≥1만)
 - **Admin 인앱 알림 Out**
+- **duplicate_run** (동일 run_key, pending=0): 기존 run 반환 · dispatch activity log **생략** (no-op)
 
 ### Read logs (admin)
 
@@ -241,17 +276,39 @@ allowlist env 예: `WALLET_BALANCE_EMAIL_ALLOWLIST=shhong@wakecorp.com` (쉼표 
 
 > [plan 08](./08_activity-audit-log-plan.md)
 
+### Cron dispatch actor (Revision 2026-09-16)
+
+| 필드 | 값 |
+|------|-----|
+| `actorUserId` | `null` |
+| `actorEmail` | `wakeone.ops@gmail.com` |
+| `actorDisplayName` | `식대 잔액 이메일 (자동 발송)` |
+
+401/500·per-recipient log·dispatch summary **동일 actor**.
+
+### action 트리거
+
 | action | 트리거 |
 |--------|--------|
 | `wallet.balance_email_pref_update` | preferences PATCH 전 분기 |
-| `wallet.balance_email_send` | SMTP success per recipient |
+| `wallet.balance_email_send` | SMTP success 또는 dry-run simulated sent per recipient |
 | `wallet.balance_email_failed` | SMTP error per recipient |
-| `wallet.balance_email_blocked` | allowlist 차단 (또는 send skip을 failed metadata로 통합 — 구현 시 1종 선택, AC grep 가능하게) |
-| `wallet.balance_email_dispatch` | dispatch run 종료 요약 1건 (optional — run 테이블과 중복 최소화 시 send/failed만) |
+| `wallet.balance_email_blocked` | allowlist 차단 per recipient |
+| `wallet.balance_email_dispatch` | dispatch run 종료 요약 — **due ≥ 1일 때만** |
 
-**권장:** run 요약 1건 `wallet.balance_email_dispatch` + recipient별 send/failed/blocked.
+### 기록 연동 — `POST /api/wallet/balance-email/dispatch`
 
-metadata allowlist: `target_user_id`, `enabled`, `hour`, `minute`, `exclude_weekends`, `run_id`, `recipient_status` — password·token 금지.
+| HTTP | 시나리오 | `wallet.balance_email_dispatch` | `send` | `blocked` | `failed` |
+|------|----------|--------------------------------|--------|-----------|----------|
+| 401 | cron secret 없/invalid | ✅ | ❌ | ❌ | ❌ |
+| 200 | **due = 0** | **❌** | ❌ | ❌ | ❌ |
+| 200 | due ≥ 1, run 완료 | ✅ | ✅×sent | ✅×blocked | ✅×failed |
+| 200 | duplicate_run, pending=0 | ❌ | ❌ | ❌ | ❌ |
+| 500 | exception | ✅ | ❌ | ❌ | ❌ |
+
+**skipped** recipient: DB recipient row만 — 별도 activity action **없음** (기존).
+
+metadata allowlist: `target_user_id`, `enabled`, `hour`, `minute`, `exclude_weekends`, `run_id`, `recipient_status`, `due_count`, `sent_count`, `failed_count`, `blocked_count`, `skipped_count`, `status` — password·token 금지.
 
 ---
 
@@ -291,8 +348,9 @@ metadata allowlist: `target_user_id`, `enabled`, `hour`, `minute`, `exclude_week
 
 ## Cron
 
-- **15분 tick** — KST `HH:mm`이 `[hour, minute]`와 일치하는 tick에서 dispatch
-- Edge Function `wallet-balance-email-cron-trigger` (plan 24 contract 패턴) 또는 pg_cron
+- **매분 tick** — pg_cron `* * * * *` (SQL `53` · `wallet-balance-email-every-minute`)
+- Edge Function `wallet-balance-email-cron-trigger` → `POST /api/wallet/balance-email/dispatch`
+- dispatch Route가 KST `hour`/`minute` **정확 매칭** — due 없는 분은 early return (run·log 없음)
 - Secret: `WALLET_BALANCE_EMAIL_CRON_SECRET` (fallback `CRON_SECRET`)
 
 ---
@@ -302,7 +360,7 @@ metadata allowlist: `target_user_id`, `enabled`, `hour`, `minute`, `exclude_week
 | spec | 흐름 |
 |------|------|
 | `preferences-ui.spec.ts` | AC-01·02·배너·admin 타인 수정 |
-| `dispatch.api.spec.ts` | dry-run·allowlist·blocked·weekend skip |
+| `dispatch.api.spec.ts` | dry-run·allowlist·blocked·weekend skip · AC-NEW-01/02/03 |
 | `balance-email-logs.spec.ts` | AC-11·12·13 |
 | `notifications.spec.ts` | AC-14 |
 
@@ -341,10 +399,19 @@ E2E_WALLET_BALANCE_EMAIL_DRY_RUN=
 
 ---
 
-## 변경 파일 (예상)
+## 변경 파일 (Revision 2026-09-16)
+
+```
+src/app/api/wallet/balance-email/dispatch/route.ts   — due=0 early return · dispatch log 조건
+src/app/api/wallet/balance-email/_utils.ts           — actorEmail wakeone.ops@gmail.com
+e2e/wallet-balance-email/dispatch.api.spec.ts        — AC-NEW-01/02/03 · AC-04/09/16 기대값
+```
+
+## 변경 파일 (초기 구현 · 예상)
 
 ```
 supabase/sql/50_wallet_balance_email.sql
+supabase/sql/53_wallet_balance_email_cron.sql
 src/lib/mail/send-wallet-balance-email.ts
 src/lib/mail/wakeone-email-shell.ts (optional extract)
 src/features/wallet/api/types.ts · service.server.ts · queries.ts · mutations.ts
@@ -358,3 +425,12 @@ src/config/nav-config.ts
 e2e/wallet-balance-email/**
 env.example.txt
 ```
+
+---
+
+## 수정 이력
+
+| 날짜 | 변경 내용 | 작성자 |
+|------|----------|--------|
+| 2026-09-15 | 최초 작성 (Approved) | planner |
+| 2026-09-16 | Revision: due=0 no-run/no-dispatch-log · due≥1 run+recipients · cron actor `wakeone.ops@gmail.com` · AC-NEW-01~03 · AC-04/09/16 개정 · Cron 매분 명시 | planner |
