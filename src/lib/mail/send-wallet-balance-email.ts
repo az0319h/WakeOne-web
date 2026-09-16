@@ -34,7 +34,7 @@ function escapeHtml(value: string): string {
 }
 
 function shouldSimulateSmtpFailure(email: string): boolean {
-  return email.trim().startsWith('E2E-SMTP-FAIL-');
+  return email.trim().toLowerCase().startsWith('e2e-smtp-fail-');
 }
 
 export async function sendWalletBalanceEmail({
