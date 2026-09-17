@@ -11,20 +11,11 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
-import { DataTableScrollContainer } from '@/components/ui/table/data-table-scroll-container';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { walletBalanceEmailLogDetailQueryOptions } from '../../api/queries';
-import { RecipientStatusBadge, RunStatusBadge, TriggerSourceBadge } from './status-badges';
+import { RecipientsInfiniteTable } from './recipients-infinite-table';
+import { RunStatusBadge, TriggerSourceBadge } from './status-badges';
 
 type RunDetailDialogProps = {
   runId: number | null;
@@ -61,14 +52,14 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
           ) : null}
         </DialogHeader>
 
-        <ScrollArea className='min-h-0 flex-1 pr-3'>
+        <div className='flex min-h-0 flex-1 flex-col gap-4 pr-1'>
           {isLoading ? <PageLoadingSpinner variant='compact' /> : null}
           {isError ? (
             <p className='text-destructive text-sm'>상세 정보를 불러오지 못했습니다.</p>
           ) : null}
           {run ? (
-            <div className='space-y-6 pb-2'>
-              <dl className='grid grid-cols-2 gap-3 text-sm sm:grid-cols-3'>
+            <>
+              <dl className='grid shrink-0 grid-cols-2 gap-3 text-sm sm:grid-cols-3'>
                 <div>
                   <dt className='text-muted-foreground'>due</dt>
                   <dd className='font-medium tabular-nums'>{run.due_count}</dd>
@@ -93,70 +84,15 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
                 </div>
               </dl>
 
-              <section>
-                <h3 className='mb-2 text-sm font-medium'>수신자 ({run.recipients.length})</h3>
-                <DataTableScrollContainer>
-                  <Table
-                    className='w-max min-w-full'
-                    data-testid='wallet-balance-email-log-recipients-table'
-                  >
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>수신자</TableHead>
-                        <TableHead>user_id</TableHead>
-                        <TableHead>상태</TableHead>
-                        <TableHead>발송 시각</TableHead>
-                        <TableHead>오류</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {run.recipients.length > 0 ? (
-                        run.recipients.map((recipient) => (
-                          <TableRow key={recipient.id}>
-                            <TableCell className='max-w-[220px]'>
-                              <div className='flex min-w-0 flex-col'>
-                                <span className='truncate text-sm font-medium'>
-                                  {recipient.recipient_full_name ?? '—'}
-                                </span>
-                                <span className='text-muted-foreground truncate text-xs'>
-                                  {recipient.recipient_email}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className='max-w-[120px] truncate font-mono text-xs'>
-                              {recipient.user_id}
-                            </TableCell>
-                            <TableCell>
-                              <RecipientStatusBadge status={recipient.status} />
-                            </TableCell>
-                            <TableCell className='font-mono text-xs whitespace-nowrap'>
-                              {recipient.sent_at
-                                ? formatAbsoluteDateTimeKo(recipient.sent_at)
-                                : '—'}
-                            </TableCell>
-                            <TableCell className='text-destructive max-w-[180px] truncate text-xs'>
-                              {recipient.error_message ?? '—'}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={5}
-                            className='text-muted-foreground h-16 text-center text-sm'
-                          >
-                            발송된 수신자가 없습니다.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </DataTableScrollContainer>
+              <section className='flex min-h-0 flex-1 flex-col'>
+                <h3 className='mb-2 shrink-0 text-sm font-medium'>
+                  수신자 ({run.recipients.length})
+                </h3>
+                <RecipientsInfiniteTable recipients={run.recipients} runId={run.id} />
               </section>
-            </div>
+            </>
           ) : null}
-          <ScrollBar orientation='vertical' />
-        </ScrollArea>
+        </div>
 
         <DialogFooter>
           <Button
