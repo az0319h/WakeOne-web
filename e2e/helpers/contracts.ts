@@ -83,17 +83,72 @@ export async function importContractViaApi(
   return body.contract as { id: number; document_number: string };
 }
 
+async function uploadContractAttachmentBufferViaApi(
+  request: import('@playwright/test').APIRequestContext,
+  contractId: number,
+  fileName: string,
+  buffer: Buffer,
+  contentType: string
+) {
+  const prepareResponse = await request.post(
+    `/api/contracts/${contractId}/attachments/prepare`,
+    {
+      data: {
+        fileName,
+        fileSize: buffer.byteLength,
+        contentType
+      }
+    }
+  );
+
+  if (prepareResponse.status() !== 200) {
+    return prepareResponse;
+  }
+
+  const prepare = (await prepareResponse.json()) as {
+    signedUrl: string;
+    storagePath: string;
+    contentType: string | null;
+  };
+
+  const putResponse = await request.fetch(prepare.signedUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': prepare.contentType ?? contentType
+    },
+    data: buffer
+  });
+
+  if (!putResponse.ok()) {
+    throw new Error(
+      `Storage PUT failed: ${putResponse.status()} ${await putResponse.text()}`
+    );
+  }
+
+  return request.post(`/api/contracts/${contractId}/attachments/complete`, {
+    data: {
+      storagePath: prepare.storagePath,
+      fileName,
+      fileSize: buffer.byteLength,
+      contentType
+    }
+  });
+}
+
 export async function uploadContractAttachmentViaApi(
   request: import('@playwright/test').APIRequestContext,
   contractId: number,
   fileName: string,
   sizeBytes: number
 ) {
-  return request.post(`/api/contracts/${contractId}/attachments`, {
-    multipart: {
-      file: buildAttachmentUploadPayload(fileName, sizeBytes)
-    }
-  });
+  const buffer = Buffer.alloc(sizeBytes, 0);
+  return uploadContractAttachmentBufferViaApi(
+    request,
+    contractId,
+    fileName,
+    buffer,
+    'application/octet-stream'
+  );
 }
 
 export async function uploadContractPdfViaApi(
@@ -102,9 +157,12 @@ export async function uploadContractPdfViaApi(
   fileName: string,
   sizeBytes = 1024
 ) {
-  return request.post(`/api/contracts/${contractId}/attachments`, {
-    multipart: {
-      file: buildPdfUploadPayload(fileName, sizeBytes)
-    }
-  });
+  const buffer = Buffer.alloc(Math.max(sizeBytes, 8), 0);
+  return uploadContractAttachmentBufferViaApi(
+    request,
+    contractId,
+    fileName,
+    buffer,
+    'application/pdf'
+  );
 }

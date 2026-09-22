@@ -1,6 +1,8 @@
 import { apiClientWithMessage } from '@/lib/api-client';
 import type {
+  ContractAttachmentCompleteResponse,
   ContractAttachmentMutationResponse,
+  ContractAttachmentPrepareResponse,
   ContractAttachmentSummary,
   ContractBulkDownloadPreviewResponse,
   ContractDetailResponse,
@@ -75,26 +77,6 @@ function buildMyContractsQuery(filters: ContractFilters): string {
   return buildContractsQueryPath(filters, '/my-contracts');
 }
 
-async function apiFormData<T>(
-  endpoint: string,
-  formData: FormData
-): Promise<T> {
-  const response = await fetch(
-    endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`,
-    {
-      method: 'POST',
-      body: formData
-    }
-  );
-  const data = (await response.json()) as T & { message?: string };
-
-  if (!response.ok) {
-    throw new Error(data.message ?? `API error: ${response.status}`);
-  }
-
-  return data;
-}
-
 export async function listContracts(
   filters: ContractFilters
 ): Promise<ContractsListResponse> {
@@ -142,11 +124,41 @@ export async function softDeleteContract(id: number) {
 }
 
 export async function uploadContractAttachment(id: number, file: File) {
-  const formData = new FormData();
-  formData.set('file', file);
-  return apiFormData<ContractAttachmentMutationResponse>(
-    `/contracts/${id}/attachments`,
-    formData
+  const contentType = file.type || undefined;
+
+  const prepare = await apiClientWithMessage<ContractAttachmentPrepareResponse>(
+    `/contracts/${id}/attachments/prepare`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        fileName: file.name,
+        fileSize: file.size,
+        contentType
+      })
+    }
+  );
+
+  const putResponse = await fetch(prepare.signedUrl, {
+    method: 'PUT',
+    body: file,
+    headers: contentType ? { 'Content-Type': contentType } : undefined
+  });
+
+  if (!putResponse.ok) {
+    throw new Error(`Storage 업로드에 실패했습니다. (${putResponse.status})`);
+  }
+
+  return apiClientWithMessage<ContractAttachmentCompleteResponse>(
+    `/contracts/${id}/attachments/complete`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        storagePath: prepare.storagePath,
+        fileName: file.name,
+        fileSize: file.size,
+        contentType
+      })
+    }
   );
 }
 

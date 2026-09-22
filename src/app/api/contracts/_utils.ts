@@ -158,3 +158,28 @@ export function attachmentContentDisposition(
   const encoded = encodeURIComponent(fileName);
   return `${disposition}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
 }
+
+export function resolveContractAttachmentUploadHttpStatus(
+  message: string,
+  options?: { contractNotFoundAs404?: boolean }
+): 400 | 404 | 500 {
+  if (options?.contractNotFoundAs404 && message === '계약서를 찾을 수 없습니다.') {
+    return 404;
+  }
+
+  if (
+    message.includes('동일한 파일명') ||
+    message.includes('파일당') ||
+    message.includes('총량') ||
+    message.includes('파일명') ||
+    message.includes('저장 경로') ||
+    message.includes('Storage') ||
+    message.includes('크기가 일치') ||
+    message.includes('업로드할') ||
+    message.includes('JSON')
+  ) {
+    return 400;
+  }
+
+  return 500;
+}
