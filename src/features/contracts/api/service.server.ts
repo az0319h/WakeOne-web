@@ -319,6 +319,82 @@ function buildContractAttachmentStoragePath(contractId: number, fileName: string
   return `contracts/${contractId}/${crypto.randomUUID()}${getSafeFileExtension(fileName)}`;
 }
 
+class ContractAttachmentUploadNotFoundError extends Error {
+  constructor() {
+    super('계약서를 찾을 수 없습니다.');
+    this.name = 'ContractAttachmentUploadNotFoundError';
+  }
+}
+
+function assertContractAttachmentStoragePath(contractId: number, storagePath: string): void {
+  const expectedPrefix = `contracts/${contractId}/`;
+  if (!storagePath.startsWith(expectedPrefix)) {
+    throw new Error('저장 경로가 올바르지 않습니다.');
+  }
+}
+
+async function validateContractAttachmentUploadInput(input: {
+  contractId: number;
+  fileName: string;
+  fileSize: number;
+}): Promise<{ contract: ContractDocument; fileName: string }> {
+  const contract = await getContractById(input.contractId);
+  if (!contract || contract.status === 'soft_deleted') {
+    throw new ContractAttachmentUploadNotFoundError();
+  }
+
+  const fileName = input.fileName.trim();
+  if (!fileName) {
+    throw new Error('파일명이 올바르지 않습니다.');
+  }
+
+  if (contract.attachments.some((attachment) => attachment.file_name === fileName)) {
+    throw new Error('같은 계약 문서에 동일한 파일명을 다시 업로드할 수 없습니다.');
+  }
+
+  if (input.fileSize > CONTRACT_ATTACHMENT_PER_FILE_MAX_BYTES) {
+    throw new Error(CONTRACT_ATTACHMENT_PER_FILE_SIZE_ERROR);
+  }
+
+  if (
+    contract.active_attachment_total_size + input.fileSize >
+    CONTRACT_ATTACHMENT_DOCUMENT_MAX_BYTES
+  ) {
+    throw new Error(CONTRACT_ATTACHMENT_TOTAL_SIZE_ERROR);
+  }
+
+  return { contract, fileName };
+}
+
+async function getContractAttachmentStorageObjectSize(storagePath: string): Promise<number | null> {
+  const supabase = getServiceRoleClient();
+  const slashIndex = storagePath.lastIndexOf('/');
+  const folder = slashIndex >= 0 ? storagePath.slice(0, slashIndex) : '';
+  const fileName = slashIndex >= 0 ? storagePath.slice(slashIndex + 1) : storagePath;
+
+  const { data, error } = await supabase.storage
+    .from(CONTRACT_ATTACHMENT_BUCKET)
+    .list(folder, { limit: 1, search: fileName });
+
+  if (!error && data?.length) {
+    const object = data.find((item) => item.name === fileName);
+    const metadata = object?.metadata as { size?: number } | null | undefined;
+    if (typeof metadata?.size === 'number') {
+      return metadata.size;
+    }
+  }
+
+  const { data: blob, error: downloadError } = await supabase.storage
+    .from(CONTRACT_ATTACHMENT_BUCKET)
+    .download(storagePath);
+
+  if (downloadError || !blob) {
+    return null;
+  }
+
+  return blob.size;
+}
+
 function parseUnmatchedTargets(value: unknown): ContractReminderUnmatchedTarget[] {
   if (!Array.isArray(value)) {
     return [];
@@ -645,37 +721,134 @@ export async function softDeleteContractDocument(id: number, actorUserId: string
   return mapContract(row, attachmentsByContractId.get(row.id) ?? []);
 }
 
+export async function prepareContractAttachmentUpload(input: {
+  contractId: number;
+  fileName: string;
+  fileSize: number;
+  contentType?: string | null;
+}): Promise<{
+  signedUrl: string;
+  token: string;
+  storagePath: string;
+  path: string;
+  contentType: string | null;
+} | null> {
+  let validated: { contract: ContractDocument; fileName: string };
+  try {
+    validated = await validateContractAttachmentUploadInput(input);
+  } catch (error) {
+    if (error instanceof ContractAttachmentUploadNotFoundError) {
+      return null;
+    }
+    throw error;
+  }
+
+  const storagePath = buildContractAttachmentStoragePath(input.contractId, validated.fileName);
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase.storage
+    .from(CONTRACT_ATTACHMENT_BUCKET)
+    .createSignedUploadUrl(storagePath, { upsert: false });
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Signed upload URL 생성에 실패했습니다.');
+  }
+
+  return {
+    signedUrl: data.signedUrl,
+    token: data.token,
+    storagePath,
+    path: data.path,
+    contentType: input.contentType?.trim() || null
+  };
+}
+
+export async function completeContractAttachmentUpload(input: {
+  contractId: number;
+  storagePath: string;
+  fileName: string;
+  fileSize: number;
+  contentType?: string | null;
+  actorUserId: string;
+}): Promise<{ contract: ContractDocument; attachment: ContractAttachmentSummary } | null> {
+  assertContractAttachmentStoragePath(input.contractId, input.storagePath);
+
+  let validated: { contract: ContractDocument; fileName: string };
+  try {
+    validated = await validateContractAttachmentUploadInput({
+      contractId: input.contractId,
+      fileName: input.fileName,
+      fileSize: input.fileSize
+    });
+  } catch (error) {
+    if (error instanceof ContractAttachmentUploadNotFoundError) {
+      return null;
+    }
+    throw error;
+  }
+
+  const objectSize = await getContractAttachmentStorageObjectSize(input.storagePath);
+  if (objectSize == null) {
+    throw new Error('Storage에 업로드된 파일을 찾을 수 없습니다.');
+  }
+
+  if (objectSize !== input.fileSize) {
+    throw new Error('업로드된 파일 크기가 일치하지 않습니다.');
+  }
+
+  const supabase = getServiceRoleClient();
+  const contentType = input.contentType?.trim() || null;
+
+  const { data, error } = await supabase
+    .from('contract_attachments')
+    .insert({
+      contract_id: input.contractId,
+      file_name: validated.fileName,
+      storage_bucket: CONTRACT_ATTACHMENT_BUCKET,
+      storage_path: input.storagePath,
+      content_type: contentType,
+      file_size: input.fileSize,
+      uploaded_by_id: input.actorUserId
+    })
+    .select(ATTACHMENT_SELECT)
+    .single();
+
+  if (error) {
+    await supabase.storage.from(CONTRACT_ATTACHMENT_BUCKET).remove([input.storagePath]);
+    throw new Error(error.message);
+  }
+
+  const updatedContract = await getContractById(input.contractId);
+  if (!updatedContract) {
+    await supabase.storage.from(CONTRACT_ATTACHMENT_BUCKET).remove([input.storagePath]);
+    throw new Error('계약 문서를 찾을 수 없습니다.');
+  }
+
+  return {
+    contract: updatedContract,
+    attachment: toAttachmentSummary(data as unknown as ContractAttachmentRow)
+  };
+}
+
 export async function uploadContractAttachment(input: {
   contractId: number;
   file: File;
   actorUserId: string;
 }): Promise<{ contract: ContractDocument; attachment: ContractAttachmentSummary } | null> {
-  const contract = await getContractById(input.contractId);
-  if (!contract || contract.status === 'soft_deleted') {
-    return null;
+  let validated: { contract: ContractDocument; fileName: string };
+  try {
+    validated = await validateContractAttachmentUploadInput({
+      contractId: input.contractId,
+      fileName: input.file.name,
+      fileSize: input.file.size
+    });
+  } catch (error) {
+    if (error instanceof ContractAttachmentUploadNotFoundError) {
+      return null;
+    }
+    throw error;
   }
 
-  const fileName = input.file.name.trim();
-  if (!fileName) {
-    throw new Error('파일명이 올바르지 않습니다.');
-  }
-
-  if (contract.attachments.some((attachment) => attachment.file_name === fileName)) {
-    throw new Error('같은 계약 문서에 동일한 파일명을 다시 업로드할 수 없습니다.');
-  }
-
-  if (input.file.size > CONTRACT_ATTACHMENT_PER_FILE_MAX_BYTES) {
-    throw new Error(CONTRACT_ATTACHMENT_PER_FILE_SIZE_ERROR);
-  }
-
-  if (
-    contract.active_attachment_total_size + input.file.size >
-    CONTRACT_ATTACHMENT_DOCUMENT_MAX_BYTES
-  ) {
-    throw new Error(CONTRACT_ATTACHMENT_TOTAL_SIZE_ERROR);
-  }
-
-  const storagePath = buildContractAttachmentStoragePath(input.contractId, fileName);
+  const storagePath = buildContractAttachmentStoragePath(input.contractId, validated.fileName);
   const supabase = getServiceRoleClient();
 
   const { error: uploadError } = await supabase.storage
@@ -693,7 +866,7 @@ export async function uploadContractAttachment(input: {
     .from('contract_attachments')
     .insert({
       contract_id: input.contractId,
-      file_name: fileName,
+      file_name: validated.fileName,
       storage_bucket: CONTRACT_ATTACHMENT_BUCKET,
       storage_path: storagePath,
       content_type: input.file.type || null,
