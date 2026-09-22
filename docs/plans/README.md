@@ -89,6 +89,8 @@
 | 49 | [49_live-users-presence-plan.md](./49_live-users-presence-plan.md) | **Approved** · overview Live 접속자 · Realtime Presence · SQL `49` · dashboard layout track |
 | 50 | [50_live-users-admin-hide-live-dot-plan.md](./50_live-users-admin-hide-live-dot-plan.md) | **Approved** · Live 접속자 admin 목록 제외 · Live dot · plan 49 FE 확장 · BE Out |
 | 51 | [51_wallet-balance-email-plan.md](./51_wallet-balance-email-plan.md) | **Approved** · 식대 잔액 확인 이메일·알림 설정·admin 로그 · allowlist BLOCKER · SQL `50`/`53` · **Rev 2026-09-16** due=0 no-run |
+| 52 | [52_google-tasks-plan.md](./52_google-tasks-plan.md) | **Approved** · Google Tasks Read-only · Tasks 전용 OAuth · admin `tasks_user` proxy · SQL `54` |
+| 53 | [53_contract-attachment-direct-upload-plan.md](./53_contract-attachment-direct-upload-plan.md) | **Approved** · 계약 첨부 signed URL 2단계 direct Storage · Vercel body 한도 우회 · plan 38 transport supersede |
 
 ## 에이전트 참조
 

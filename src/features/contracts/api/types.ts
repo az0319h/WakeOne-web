@@ -61,6 +61,36 @@ export type ContractAttachmentSummary = {
   deleted_at: string | null;
 };
 
+export const CONTRACT_ATTACHMENT_SIGNED_UPLOAD_TTL_SECONDS = 120;
+
+export type ContractAttachmentPreparePayload = {
+  fileName: string;
+  fileSize: number;
+  contentType?: string;
+};
+
+export type ContractAttachmentPrepareResponse = {
+  signedUrl: string;
+  token: string;
+  storagePath: string;
+  path: string;
+  contentType: string | null;
+};
+
+export type ContractAttachmentCompletePayload = {
+  storagePath: string;
+  fileName: string;
+  fileSize: number;
+  contentType?: string;
+};
+
+export type ContractAttachmentCompleteResponse = {
+  success: true;
+  message: string;
+  contract: ContractDocument;
+  attachment: ContractAttachmentSummary;
+};
+
 export type ContractDocument = {
   id: number;
   document_number: string;
