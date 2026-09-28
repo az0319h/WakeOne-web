@@ -181,6 +181,17 @@ export async function resolveE2EUserId(adminRequest: APIRequestContext) {
   return resolveUserIdByEmail(adminRequest, email!);
 }
 
+/** 현재 KST tick due 오염 방지 — E2E user preferences OFF */
+export async function ensureE2EUserNotDue(adminRequest: APIRequestContext) {
+  const userId = await resolveE2EUserId(adminRequest);
+  const response = await patchWalletBalanceEmailPreferences(
+    adminRequest,
+    { enabled: false, slot2_enabled: false },
+    userId
+  );
+  expect([200, 404]).toContain(response.status());
+}
+
 export async function resolveE2EUserFullName(adminRequest: APIRequestContext) {
   const email = process.env.E2E_USER_EMAIL;
   expect(email, 'E2E_USER_EMAIL is required').toBeTruthy();
@@ -246,4 +257,109 @@ export async function createAdminRequestContext(
   playwright: { request: { newContext: (options: Record<string, unknown>) => Promise<APIRequestContext> } }
 ) {
   return createAdminRequest(playwright);
+}
+
+export type WalletBalanceEmailNotification = {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  metadata?: Record<string, unknown>;
+};
+
+export async function listNotifications(
+  request: APIRequestContext,
+  userId?: string
+): Promise<WalletBalanceEmailNotification[]> {
+  const query = userId ? `&notif_user=${encodeURIComponent(userId)}` : '';
+  const response = await request.get(`/api/notifications?limit=50${query}`);
+  expect(response.status()).toBe(200);
+  const body = (await response.json()) as {
+    data?: { notifications?: WalletBalanceEmailNotification[] };
+  };
+  return body.data?.notifications ?? [];
+}
+
+export async function listActiveAdminUserIds(
+  request: APIRequestContext
+): Promise<string[]> {
+  const response = await request.get('/api/users?systemRoles=admin&limit=50');
+  expect(response.status()).toBe(200);
+  const body = (await response.json()) as {
+    users?: Array<{ id: string; status: string; system_role: string }>;
+  };
+  return (body.users ?? [])
+    .filter((user) => user.status === 'active' && user.system_role === 'admin')
+    .map((user) => user.id);
+}
+
+export async function countBalanceEmailAdminNotifications(
+  request: APIRequestContext,
+  adminId: string,
+  runId?: number
+) {
+  const notifications = await listNotifications(request, adminId);
+  return notifications.filter(
+    (item) =>
+      item.type === 'wallet.balance_email_admin' &&
+      (runId === undefined || Number(item.metadata?.run_id) === runId)
+  ).length;
+}
+
+export async function getWalletBalanceEmailPreferences(
+  request: APIRequestContext,
+  userId: string
+) {
+  const response = await request.get(
+    `/api/wallet/balance-email/preferences?user=${encodeURIComponent(userId)}`
+  );
+  expect(response.status()).toBe(200);
+  const body = (await response.json()) as {
+    data?: { preferences?: Record<string, unknown> };
+  };
+  return body.data?.preferences ?? {};
+}
+
+/** slot1 at tick; slot2 disabled */
+export async function enableSlot1OnlyPreferences(
+  request: APIRequestContext,
+  userId: string,
+  hour: number,
+  minute: number
+) {
+  const response = await patchWalletBalanceEmailPreferences(
+    request,
+    {
+      enabled: true,
+      hour,
+      minute,
+      slot2_enabled: false,
+      exclude_weekends: false
+    },
+    userId
+  );
+  expect(response.status()).toBe(200);
+}
+
+/** slot1 fixed; slot2 at tick */
+export async function enableSlot2DuePreferences(
+  request: APIRequestContext,
+  userId: string,
+  slot1: { hour: number; minute: number },
+  slot2: { hour: number; minute: number }
+) {
+  const response = await patchWalletBalanceEmailPreferences(
+    request,
+    {
+      enabled: true,
+      hour: slot1.hour,
+      minute: slot1.minute,
+      slot2_enabled: true,
+      hour2: slot2.hour,
+      minute2: slot2.minute,
+      exclude_weekends: false
+    },
+    userId
+  );
+  expect(response.status()).toBe(200);
 }

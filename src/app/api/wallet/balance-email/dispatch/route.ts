@@ -5,7 +5,10 @@ import {
   recordActivityLog,
   withRequestId
 } from '@/features/activity-logs/api/log.server';
-import { insertWalletBalanceEmailNotification } from '@/features/notifications/api/fan-out.server';
+import {
+  insertWalletBalanceEmailAdminNotifications,
+  insertWalletBalanceEmailNotification
+} from '@/features/notifications/api/fan-out.server';
 import { shouldSendToEmail } from '@/features/wallet/api/balance-email-mail.server';
 import type { WalletBalanceEmailDueUser } from '@/features/wallet/api/balance-email.types';
 import {
@@ -403,6 +406,26 @@ export async function POST(request: NextRequest) {
       blockedCount: counts.blockedCount,
       skippedCount: counts.skippedCount
     });
+
+    try {
+      await insertWalletBalanceEmailAdminNotifications({
+        runId: finishedRun.id,
+        runKey,
+        triggerSource: 'cron',
+        dueCount: dueUsers.length,
+        sentCount: counts.sentCount,
+        failedCount: counts.failedCount,
+        blockedCount: counts.blockedCount,
+        skippedCount: counts.skippedCount,
+        runStatus
+      });
+    } catch (adminNotificationError) {
+      const message =
+        adminNotificationError instanceof Error
+          ? adminNotificationError.message
+          : 'Admin 인앱 알림 생성에 실패했습니다.';
+      console.error('[wallet-balance-email] admin notification fan-out failed:', message);
+    }
 
     await recordActivityLog({
       requestId,

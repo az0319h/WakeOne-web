@@ -7,6 +7,7 @@ export type NotificationType =
   | 'wallet.sync_admin'
   | 'wallet.sync_recipient'
   | 'wallet.balance_email'
+  | 'wallet.balance_email_admin'
   | 'announcement.published'
   | 'support.created'
   | 'support.updated'
@@ -27,6 +28,7 @@ export type NotificationMetadata = {
     | 'wallet.sync_admin'
     | 'wallet.sync_recipient'
     | 'wallet.balance_email'
+    | 'wallet.balance_email_admin'
     | 'announcement.published'
     | 'support.created'
     | 'support.updated'
@@ -45,8 +47,11 @@ export type NotificationMetadata = {
   run_id?: number;
   run_key?: string;
   trigger_source?: 'admin' | 'cron';
+  due_count?: number;
   sent_count?: number;
   failed_count?: number;
+  blocked_count?: number;
+  skipped_count?: number;
   unmatched_count?: number;
   run_status?: 'completed' | 'partial_failed' | 'failed';
   author_name?: string;

@@ -18,6 +18,9 @@ export type WalletBalanceEmailPreferences = {
   enabled: boolean;
   hour: number;
   minute: number;
+  slot2_enabled: boolean;
+  hour2: number;
+  minute2: number;
   exclude_weekends: boolean;
   updated_at: string | null;
   updated_by_user_id: string | null;
@@ -27,6 +30,9 @@ export type WalletBalanceEmailPreferencesPatch = {
   enabled?: boolean;
   hour?: number;
   minute?: number;
+  slot2_enabled?: boolean;
+  hour2?: number;
+  minute2?: number;
   exclude_weekends?: boolean;
 };
 
@@ -76,5 +82,8 @@ export const WALLET_BALANCE_EMAIL_DEFAULTS = {
   enabled: false,
   hour: 12,
   minute: 15,
+  slot2_enabled: false,
+  hour2: 12,
+  minute2: 15,
   exclude_weekends: false
 } as const;

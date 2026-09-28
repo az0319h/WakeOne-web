@@ -33,7 +33,12 @@ function WalletBalanceEmailSettingsEntry({
   const scheduleSummary = formatBalanceEmailScheduleSummary(
     preferences.hour,
     preferences.minute,
-    preferences.exclude_weekends
+    preferences.exclude_weekends,
+    {
+      slot2Enabled: preferences.slot2_enabled,
+      hour2: preferences.hour2,
+      minute2: preferences.minute2
+    }
   );
 
   return (

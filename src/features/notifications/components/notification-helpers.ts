@@ -4,6 +4,7 @@ import type { Notification } from '../api/types';
 export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-profile': '/dashboard/profile',
   'view-system-email-logs': '/dashboard/system-email-logs',
+  'view-balance-email-logs': '/dashboard/wallet/balance-email-logs',
   'view-wallet': '/dashboard/wallet',
   'view-announcement': '/dashboard/announcements',
   'view-support': '/dashboard/support',
@@ -29,6 +30,17 @@ export function getNotificationActions(
     return [
       {
         id: 'view-system-email-logs',
+        label: '발송 이력 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (notification.type === 'wallet.balance_email_admin') {
+    return [
+      {
+        id: 'view-balance-email-logs',
         label: '발송 이력 보기',
         type: 'redirect',
         style: 'primary'
