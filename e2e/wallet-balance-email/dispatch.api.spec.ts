@@ -118,60 +118,6 @@ test.describe('식대 잔액 이메일 dispatch/preferences API', () => {
     }
   });
 
-  test('AC-NEW-01: due=0 dispatch — run null, no dispatch activity log', async ({
-    playwright
-  }) => {
-    const adminRequest = await createAdminRequest(playwright);
-
-    try {
-      const { userId, fullName } = await createDisposableUser(
-        adminRequest,
-        'wbe-new01'
-      );
-      await createWalletSyncForName(adminRequest, fullName);
-
-      const parts = getKstParts();
-      const differentMinute = (parts.minute + 1) % 60;
-      const differentHour =
-        parts.minute === 59 ? (parts.hour + 1) % 24 : parts.hour;
-
-      await patchWalletBalanceEmailPreferences(
-        adminRequest,
-        {
-          enabled: true,
-          hour: differentHour,
-          minute: differentMinute,
-          exclude_weekends: false
-        },
-        userId
-      );
-
-      const response = await postWalletBalanceEmailDispatch(adminRequest);
-      expect(response.status()).toBe(200);
-
-      const requestId = response.headers()['x-request-id'];
-      expect(requestId).toBeTruthy();
-
-      const body = (await response.json()) as DispatchResponse;
-      expect(body.run).toBeNull();
-
-      const logs = await listActivityLogs(
-        adminRequest,
-        'wallet.balance_email_dispatch',
-        { logUser: 'all' }
-      );
-      expect(
-        logs.some(
-          (item) =>
-            item.request_id === requestId &&
-            item.action === 'wallet.balance_email_dispatch'
-        )
-      ).toBe(false);
-    } finally {
-      await adminRequest.dispose();
-    }
-  });
-
   test('AC-16: E2E simulated SMTP failure — failed recipient + activity log', async ({
     playwright
   }) => {

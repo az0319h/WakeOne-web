@@ -44,6 +44,18 @@ type InsertWalletBalanceEmailNotificationInput = {
   runId: number;
 };
 
+type InsertWalletBalanceEmailAdminNotificationsInput = {
+  runId: number;
+  runKey: string;
+  triggerSource: 'admin' | 'cron';
+  dueCount: number;
+  sentCount: number;
+  failedCount: number;
+  blockedCount: number;
+  skippedCount: number;
+  runStatus: 'completed' | 'partial_failed' | 'failed';
+};
+
 type InsertSupportAdminNotificationsInput = {
   actorUserId: string;
   supportRequestId: number;
@@ -363,6 +375,73 @@ export async function insertContractReminderRecipientNotification(
       kind: 'contract.reminder_recipient'
     }
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+function buildWalletBalanceEmailAdminTitle(input: {
+  dueCount: number;
+  sentCount: number;
+  failedCount: number;
+}): string {
+  if (input.sentCount > 0 && input.failedCount === 0) {
+    return '식대 잔액 이메일 전송 완료';
+  }
+
+  if (input.sentCount > 0 && input.failedCount > 0) {
+    return '식대 잔액 이메일 일부 전송 실패';
+  }
+
+  if (input.sentCount === 0 && input.dueCount > 0) {
+    return '식대 잔액 이메일 run 완료 (발송 0건)';
+  }
+
+  return '식대 잔액 이메일 run 완료 (발송 0건)';
+}
+
+function buildWalletBalanceEmailAdminBody(input: {
+  dueCount: number;
+  sentCount: number;
+  failedCount: number;
+  blockedCount: number;
+  skippedCount: number;
+}): string {
+  return `대상 ${input.dueCount}명 · 발송 ${input.sentCount} · 실패 ${input.failedCount} · 차단 ${input.blockedCount} · 건너뜀 ${input.skippedCount}`;
+}
+
+export async function insertWalletBalanceEmailAdminNotifications(
+  input: InsertWalletBalanceEmailAdminNotificationsInput
+): Promise<void> {
+  const adminUserIds = await listActiveAdminUserIds();
+  if (adminUserIds.length === 0) {
+    return;
+  }
+
+  const title = buildWalletBalanceEmailAdminTitle(input);
+  const body = buildWalletBalanceEmailAdminBody(input);
+  const supabase = getServiceRoleClient();
+  const rows = adminUserIds.map((recipientUserId) => ({
+    recipient_user_id: recipientUserId,
+    type: 'wallet.balance_email_admin' as const,
+    title,
+    body,
+    metadata: {
+      kind: 'wallet.balance_email_admin',
+      run_id: input.runId,
+      run_key: input.runKey,
+      trigger_source: input.triggerSource,
+      due_count: input.dueCount,
+      sent_count: input.sentCount,
+      failed_count: input.failedCount,
+      blocked_count: input.blockedCount,
+      skipped_count: input.skippedCount,
+      run_status: input.runStatus
+    }
+  }));
+
+  const { error } = await supabase.from('notifications').insert(rows);
 
   if (error) {
     throw new Error(error.message);

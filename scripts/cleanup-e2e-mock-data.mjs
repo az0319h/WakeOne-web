@@ -85,6 +85,19 @@ async function verifyNoOrphanContracts() {
   }
 }
 
+const E2E_GOOGLE_TASKS_MOCK_EMAIL = 'e2e-mock@gmail.com';
+
+async function cleanupGoogleTasksMockConnections() {
+  const { error } = await admin
+    .from('google_tasks_connections')
+    .delete()
+    .eq('google_email', E2E_GOOGLE_TASKS_MOCK_EMAIL);
+
+  if (error) {
+    throw new Error(`Google Tasks mock connection cleanup failed: ${error.message}`);
+  }
+}
+
 async function main() {
   const beforeAtt = await countAttContracts();
   const beforeE2eAuthor = await countE2eAuthorContracts();
@@ -92,6 +105,8 @@ async function main() {
     att_contracts: beforeAtt,
     e2e_author_contracts: beforeE2eAuthor
   });
+
+  await cleanupGoogleTasksMockConnections();
 
   const { data, error } = await admin.rpc('cleanup_e2e_mock_data');
 

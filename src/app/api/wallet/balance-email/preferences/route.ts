@@ -17,6 +17,10 @@ import {
   isWalletBalanceEmailEligible,
   upsertWalletBalanceEmailPreferences
 } from '@/features/wallet/api/balance-email.service.server';
+import {
+  DUPLICATE_BALANCE_EMAIL_SCHEDULE_MESSAGE,
+  hasDuplicateBalanceEmailSchedule
+} from '@/features/wallet/utils/balance-email-schedule';
 
 const HTTP_PATH = '/api/wallet/balance-email/preferences';
 
@@ -85,6 +89,32 @@ function parsePreferencesPatch(body: unknown):
     }
     patch.exclude_weekends = record.exclude_weekends;
     changedFields.push('exclude_weekends');
+  }
+
+  if ('slot2_enabled' in record) {
+    if (typeof record.slot2_enabled !== 'boolean') {
+      return { ok: false, message: 'slot2_enabled 값은 boolean 이어야 합니다.' };
+    }
+    patch.slot2_enabled = record.slot2_enabled;
+    changedFields.push('slot2_enabled');
+  }
+
+  if ('hour2' in record) {
+    const hour2 = Number(record.hour2);
+    if (!Number.isInteger(hour2) || hour2 < 0 || hour2 > 23) {
+      return { ok: false, message: 'hour2 값은 0~23 정수여야 합니다.' };
+    }
+    patch.hour2 = hour2;
+    changedFields.push('hour2');
+  }
+
+  if ('minute2' in record) {
+    const minute2 = Number(record.minute2);
+    if (!Number.isInteger(minute2) || minute2 < 0 || minute2 > 59) {
+      return { ok: false, message: 'minute2 값은 0~59 정수여야 합니다.' };
+    }
+    patch.minute2 = minute2;
+    changedFields.push('minute2');
   }
 
   if (changedFields.length === 0) {
@@ -224,6 +254,37 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
+    const existing = await getWalletBalanceEmailPreferences(resolved.targetUserId);
+    const merged = {
+      hour: parsed.patch.hour ?? existing.hour,
+      minute: parsed.patch.minute ?? existing.minute,
+      slot2_enabled: parsed.patch.slot2_enabled ?? existing.slot2_enabled,
+      hour2: parsed.patch.hour2 ?? existing.hour2,
+      minute2: parsed.patch.minute2 ?? existing.minute2
+    };
+
+    if (hasDuplicateBalanceEmailSchedule(merged)) {
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'wallet.balance_email_pref_update',
+          targetType: 'wallet',
+          targetUserId: resolved.targetUserId,
+          targetLabel: await fetchUserTargetLabel(resolved.targetUserId),
+          httpMethod: 'PATCH',
+          httpPath: HTTP_PATH,
+          metadata: buildErrorMetadata('validation', DUPLICATE_BALANCE_EMAIL_SCHEDULE_MESSAGE)
+        },
+        {
+          success: false,
+          message: DUPLICATE_BALANCE_EMAIL_SCHEDULE_MESSAGE,
+          error_code: 'duplicate_schedule'
+        },
+        400
+      );
+    }
+
     const preferences = await upsertWalletBalanceEmailPreferences({
       userId: resolved.targetUserId,
       patch: parsed.patch,
@@ -246,6 +307,15 @@ export async function PATCH(request: NextRequest) {
     }
     if (parsed.patch.exclude_weekends !== undefined) {
       metadata.exclude_weekends = parsed.patch.exclude_weekends;
+    }
+    if (parsed.patch.slot2_enabled !== undefined) {
+      metadata.slot2_enabled = parsed.patch.slot2_enabled;
+    }
+    if (parsed.patch.hour2 !== undefined) {
+      metadata.hour2 = parsed.patch.hour2;
+    }
+    if (parsed.patch.minute2 !== undefined) {
+      metadata.minute2 = parsed.patch.minute2;
     }
 
     await recordActivityLog({
