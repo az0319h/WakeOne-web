@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { WALLET_BALANCE_EMAIL_SLOT_COPY } from '@/features/wallet/constants/wallet-balance-email-slot-copy';
 import { normalizePersonName } from '@/lib/normalize-person-name';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
@@ -42,6 +43,7 @@ type InsertWalletSyncNotificationsInput = {
 type InsertWalletBalanceEmailNotificationInput = {
   recipientUserId: string;
   runId: number;
+  slot: 1 | 2;
 };
 
 type InsertWalletBalanceEmailAdminNotificationsInput = {
@@ -452,16 +454,18 @@ export async function insertWalletBalanceEmailNotification(
   input: InsertWalletBalanceEmailNotificationInput
 ): Promise<number | null> {
   const supabase = getServiceRoleClient();
+  const copy = WALLET_BALANCE_EMAIL_SLOT_COPY[input.slot];
   const { data, error } = await supabase
     .from('notifications')
     .insert({
       recipient_user_id: input.recipientUserId,
       type: 'wallet.balance_email',
-      title: '식대 잔액 안내',
-      body: '오늘의 식대 잔액 안내 메일을 확인해 주세요.',
+      title: copy.inAppTitle,
+      body: copy.inAppBody,
       metadata: {
         kind: 'wallet.balance_email',
-        run_id: input.runId
+        run_id: input.runId,
+        slot: input.slot
       }
     })
     .select('id')

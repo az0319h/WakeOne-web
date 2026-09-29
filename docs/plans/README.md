@@ -93,6 +93,7 @@
 | 53 | [53_contract-attachment-direct-upload-plan.md](./53_contract-attachment-direct-upload-plan.md) | **Approved** · 계약 첨부 signed URL 2단계 direct Storage · Vercel body 한도 우회 · plan 38 transport supersede |
 | 54 | [54_google-tasks-cud-plan.md](./54_google-tasks-cud-plan.md) | **Approved** · Google Tasks CUD · 완료/정렬/move · write scope · task activity log |
 | 55 | [55_wallet-balance-email-admin-dual-slot-plan.md](./55_wallet-balance-email-admin-dual-slot-plan.md) | **Approved** · 식대 잔액 이메일 admin run 요약 알림 · 2회 KST 슬롯 · plan 51 확장 · SQL `55` |
+| 56 | [56_wallet-balance-email-slot-copy-plan.md](./56_wallet-balance-email-slot-copy-plan.md) | **Approved** · 슬롯별 이메일·인앱 고정 카피 · metadata.slot · plan 51/55 확장 · SQL 없음 |
 
 ## 에이전트 참조
 
