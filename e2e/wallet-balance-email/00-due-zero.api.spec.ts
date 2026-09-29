@@ -5,7 +5,7 @@ import {
   createDisposableUser,
   createWalletSyncForName,
   ensureE2EUserNotDue,
-  getKstParts,
+  getNonDueKstSchedule,
   listActiveAdminUserIds,
   listActivityLogs,
   patchWalletBalanceEmailPreferences,
@@ -39,17 +39,14 @@ test.describe('식대 잔액 이메일 due=0 dispatch', () => {
       const { userId, fullName } = await createDisposableUser(adminRequest, 'wbe-p55-ac04');
       await createWalletSyncForName(adminRequest, fullName);
 
-      const parts = getKstParts();
-      const differentMinute = (parts.minute + 1) % 60;
-      const differentHour =
-        parts.minute === 59 ? (parts.hour + 1) % 24 : parts.hour;
+      const nonDue = getNonDueKstSchedule();
 
       await patchWalletBalanceEmailPreferences(
         adminRequest,
         {
           enabled: true,
-          hour: differentHour,
-          minute: differentMinute,
+          hour: nonDue.hour,
+          minute: nonDue.minute,
           exclude_weekends: false
         },
         userId
@@ -65,12 +62,18 @@ test.describe('식대 잔액 이메일 due=0 dispatch', () => {
         const after = await countBalanceEmailAdminNotifications(adminRequest, adminId);
         expect(after).toBe(baselines.get(adminId));
       }
+
+      await patchWalletBalanceEmailPreferences(
+        adminRequest,
+        { enabled: false, slot2_enabled: false },
+        userId
+      );
     } finally {
       await adminRequest.dispose();
     }
   });
 
-  test('AC-NEW-01: due=0 dispatch — run null, no dispatch activity log', async ({
+  test('AC-09 (plan 56) / AC-NEW-01: due=0 dispatch — run null, no dispatch activity log', async ({
     playwright
   }) => {
     const adminRequest = await createAdminRequest(playwright);
@@ -84,17 +87,14 @@ test.describe('식대 잔액 이메일 due=0 dispatch', () => {
       );
       await createWalletSyncForName(adminRequest, fullName);
 
-      const parts = getKstParts();
-      const differentMinute = (parts.minute + 1) % 60;
-      const differentHour =
-        parts.minute === 59 ? (parts.hour + 1) % 24 : parts.hour;
+      const nonDue = getNonDueKstSchedule();
 
       await patchWalletBalanceEmailPreferences(
         adminRequest,
         {
           enabled: true,
-          hour: differentHour,
-          minute: differentMinute,
+          hour: nonDue.hour,
+          minute: nonDue.minute,
           exclude_weekends: false
         },
         userId

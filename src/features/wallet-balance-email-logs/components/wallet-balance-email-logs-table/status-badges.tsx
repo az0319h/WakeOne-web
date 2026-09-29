@@ -4,6 +4,7 @@ import type {
   WalletBalanceEmailRecipientStatus,
   WalletBalanceEmailRunStatus
 } from '@/features/wallet/api/balance-email.types';
+import type { WalletBalanceEmailSlot } from '@/features/wallet/constants/wallet-balance-email-slot-copy';
 
 export function TriggerSourceBadge({ source }: { source: 'cron' | 'admin' }) {
   return (
@@ -27,6 +28,18 @@ export function RunStatusBadge({ status }: { status: WalletBalanceEmailRunStatus
   return (
     <Badge variant='outline' className={cn('font-normal', className)}>
       {label}
+    </Badge>
+  );
+}
+
+export function WalletBalanceEmailSlotBadge({ slot }: { slot: WalletBalanceEmailSlot | null }) {
+  if (slot === null) {
+    return <span className='text-muted-foreground text-xs'>—</span>;
+  }
+
+  return (
+    <Badge variant='outline' className='font-normal'>
+      알림 {slot}
     </Badge>
   );
 }

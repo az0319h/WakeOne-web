@@ -1,5 +1,9 @@
 import 'server-only';
 
+import {
+  parseWalletBalanceEmailRunKeyTick,
+  resolveWalletBalanceEmailMatchedSlot
+} from '@/features/wallet/api/balance-email.service.server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import type {
   WalletBalanceEmailLogRecipient,
@@ -39,9 +43,55 @@ function mapRun(row: RunRow): WalletBalanceEmailLogRun {
   };
 }
 
+type WalletBalanceEmailPreferencesForSlot = {
+  hour: number;
+  minute: number;
+  slot2_enabled: boolean;
+  hour2: number;
+  minute2: number;
+};
+
+function parseNotificationSlot(metadata: unknown): 1 | 2 | null {
+  if (!metadata || typeof metadata !== 'object') {
+    return null;
+  }
+
+  const slot = (metadata as { slot?: unknown }).slot;
+  return slot === 1 || slot === 2 ? slot : null;
+}
+
+function resolveRecipientSlot(input: {
+  notificationId: number | null;
+  slotsByNotificationId: Map<number, 1 | 2>;
+  preferences: WalletBalanceEmailPreferencesForSlot | null;
+  tick: { hour: number; minute: number } | null;
+}): 1 | 2 | null {
+  if (input.notificationId != null) {
+    const slotFromNotification = input.slotsByNotificationId.get(input.notificationId);
+    if (slotFromNotification != null) {
+      return slotFromNotification;
+    }
+  }
+
+  if (!input.preferences || !input.tick) {
+    return null;
+  }
+
+  return resolveWalletBalanceEmailMatchedSlot({
+    tickHour: input.tick.hour,
+    tickMinute: input.tick.minute,
+    hour: input.preferences.hour,
+    minute: input.preferences.minute,
+    slot2_enabled: input.preferences.slot2_enabled,
+    hour2: input.preferences.hour2,
+    minute2: input.preferences.minute2
+  });
+}
+
 function mapRecipient(
   row: RecipientRow,
-  recipientFullName: string | null
+  recipientFullName: string | null,
+  slot: 1 | 2 | null
 ): WalletBalanceEmailLogRecipient {
   return {
     id: row.id,
@@ -53,7 +103,8 @@ function mapRecipient(
     error_message: row.error_message,
     notification_id: row.notification_id,
     sent_at: row.sent_at,
-    created_at: row.created_at
+    created_at: row.created_at,
+    slot
   };
 }
 
@@ -82,6 +133,66 @@ async function fetchProfileNamesByUserIds(
   }
 
   return names;
+}
+
+async function fetchNotificationSlotsByIds(
+  supabase: ReturnType<typeof getServiceRoleClient>,
+  notificationIds: number[]
+): Promise<Map<number, 1 | 2>> {
+  if (notificationIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, metadata')
+    .in('id', notificationIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const slots = new Map<number, 1 | 2>();
+  for (const row of data ?? []) {
+    const id = row.id as number;
+    const slot = parseNotificationSlot(row.metadata);
+    if (slot != null) {
+      slots.set(id, slot);
+    }
+  }
+
+  return slots;
+}
+
+async function fetchPreferencesByUserIds(
+  supabase: ReturnType<typeof getServiceRoleClient>,
+  userIds: string[]
+): Promise<Map<string, WalletBalanceEmailPreferencesForSlot>> {
+  if (userIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from('wallet_balance_email_preferences')
+    .select('user_id, hour, minute, slot2_enabled, hour2, minute2')
+    .in('user_id', userIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const preferences = new Map<string, WalletBalanceEmailPreferencesForSlot>();
+  for (const row of data ?? []) {
+    preferences.set(row.user_id as string, {
+      hour: Number(row.hour),
+      minute: Number(row.minute),
+      slot2_enabled: Boolean(row.slot2_enabled),
+      hour2: Number(row.hour2),
+      minute2: Number(row.minute2)
+    });
+  }
+
+  return preferences;
 }
 
 function escapeIlikePattern(value: string): string {
@@ -217,14 +328,32 @@ export async function getWalletBalanceEmailLogRunDetail(
     throw new Error(recipientError.message);
   }
 
+  const run = mapRun(runData as unknown as RunRow);
   const recipientRows = (recipientData ?? []) as unknown as RecipientRow[];
   const userIds = [...new Set(recipientRows.map((row) => row.user_id))];
-  const profileNames = await fetchProfileNamesByUserIds(supabase, userIds);
+  const notificationIds = recipientRows
+    .map((row) => row.notification_id)
+    .filter((id): id is number => id != null);
+  const [profileNames, slotsByNotificationId, preferencesByUserId] = await Promise.all([
+    fetchProfileNamesByUserIds(supabase, userIds),
+    fetchNotificationSlotsByIds(supabase, notificationIds),
+    fetchPreferencesByUserIds(supabase, userIds)
+  ]);
+  const tick = parseWalletBalanceEmailRunKeyTick(run.run_key);
 
   return {
-    ...mapRun(runData as unknown as RunRow),
+    ...run,
     recipients: recipientRows.map((row) =>
-      mapRecipient(row, profileNames.get(row.user_id) ?? null)
+      mapRecipient(
+        row,
+        profileNames.get(row.user_id) ?? null,
+        resolveRecipientSlot({
+          notificationId: row.notification_id,
+          slotsByNotificationId,
+          preferences: preferencesByUserId.get(row.user_id) ?? null,
+          tick
+        })
+      )
     )
   };
 }

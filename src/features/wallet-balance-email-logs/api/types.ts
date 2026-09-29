@@ -14,6 +14,7 @@ export type WalletBalanceEmailLogRun = WalletBalanceEmailRun;
 
 export type WalletBalanceEmailLogRecipient = WalletBalanceEmailRecipient & {
   recipient_full_name: string | null;
+  slot: 1 | 2 | null;
 };
 
 export type WalletBalanceEmailLogRunDetail = WalletBalanceEmailLogRun & {

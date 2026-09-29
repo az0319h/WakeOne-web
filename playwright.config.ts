@@ -118,6 +118,7 @@ export default defineConfig({
       dependencies: ['setup', 'setup-user'],
       testMatch: isWalletBalanceEmailE2eRun
         ? [
+            /wallet-balance-email\/56-slot-copy\.api\.spec\.ts$/,
             /wallet-balance-email\/00-due-zero\.api\.spec\.ts$/,
             /wallet-balance-email\/00-plan55\.api\.spec\.ts$/,
             /wallet-balance-email\/dispatch\.api\.spec\.ts$/

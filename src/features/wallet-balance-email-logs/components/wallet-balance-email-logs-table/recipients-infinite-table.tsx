@@ -15,7 +15,7 @@ import {
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 
 import type { WalletBalanceEmailLogRecipient } from '../../api/types';
-import { RecipientStatusBadge } from './status-badges';
+import { RecipientStatusBadge, WalletBalanceEmailSlotBadge } from './status-badges';
 
 export const RECIPIENTS_PAGE_SIZE = 10;
 
@@ -106,6 +106,7 @@ export function RecipientsInfiniteTable({ recipients, runId }: RecipientsInfinit
             <TableRow>
               <TableHead>수신자</TableHead>
               <TableHead>user_id</TableHead>
+              <TableHead>슬롯</TableHead>
               <TableHead>상태</TableHead>
               <TableHead>발송 시각</TableHead>
               <TableHead>오류</TableHead>
@@ -129,6 +130,9 @@ export function RecipientsInfiniteTable({ recipients, runId }: RecipientsInfinit
                     {recipient.user_id}
                   </TableCell>
                   <TableCell>
+                    <WalletBalanceEmailSlotBadge slot={recipient.slot} />
+                  </TableCell>
+                  <TableCell>
                     <RecipientStatusBadge status={recipient.status} />
                   </TableCell>
                   <TableCell className='font-mono text-xs whitespace-nowrap'>
@@ -142,7 +146,7 @@ export function RecipientsInfiniteTable({ recipients, runId }: RecipientsInfinit
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className='text-muted-foreground h-16 text-center text-sm'
                 >
                   발송된 수신자가 없습니다.

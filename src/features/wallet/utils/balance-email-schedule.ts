@@ -1,3 +1,8 @@
+import {
+  formatWalletBalanceEmailSlotSettingsLabel,
+  type WalletBalanceEmailSlot
+} from '../constants/wallet-balance-email-slot-copy';
+
 export const DUPLICATE_BALANCE_EMAIL_SCHEDULE_MESSAGE =
   '알림 1과 알림 2는 같은 시각으로 설정할 수 없습니다.';
 
@@ -48,6 +53,26 @@ function getActiveScheduleSlots(
   }
 
   return slots;
+}
+
+/** Entry card · 슬롯별 `알림 N · {label} HH:mm` 줄 */
+export function formatBalanceEmailEntrySlotLines(
+  hour: number,
+  minute: number,
+  slot2?: BalanceEmailScheduleSlot2Options
+) {
+  const slots: Array<{ slot: WalletBalanceEmailSlot; hour: number; minute: number }> = [
+    { slot: 1, hour, minute }
+  ];
+
+  if (slot2?.slot2Enabled) {
+    slots.push({ slot: 2, hour: slot2.hour2, minute: slot2.minute2 });
+  }
+
+  return slots.map(
+    ({ slot, hour: slotHour, minute: slotMinute }) =>
+      `${formatWalletBalanceEmailSlotSettingsLabel(slot)} ${formatBalanceEmailTime(slotHour, slotMinute)}`
+  );
 }
 
 /** Entry card · 한 줄 요약 */
