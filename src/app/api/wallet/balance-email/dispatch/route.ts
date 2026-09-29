@@ -164,6 +164,7 @@ async function processWalletBalanceEmailDueUsers(input: {
 
     try {
       await sendWalletBalanceEmail({
+        slot: user.matched_slot,
         to: user.email,
         monthlyLimit: user.monthly_limit,
         monthlyRemaining: user.monthly_remaining,
@@ -176,7 +177,8 @@ async function processWalletBalanceEmailDueUsers(input: {
       try {
         notificationId = await insertWalletBalanceEmailNotification({
           recipientUserId: user.user_id,
-          runId: input.runId
+          runId: input.runId,
+          slot: user.matched_slot
         });
       } catch (notificationError) {
         const message =

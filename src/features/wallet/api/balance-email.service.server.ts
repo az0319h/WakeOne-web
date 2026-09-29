@@ -102,6 +102,37 @@ export function buildWalletBalanceEmailRunKey(parts = getKstDateParts()): string
   return `${parts.year}-${month}-${day}T${hour}:${minute}+09:00`;
 }
 
+export function parseWalletBalanceEmailRunKeyTick(
+  runKey: string
+): { hour: number; minute: number } | null {
+  const match = runKey.match(/T(\d{2}):(\d{2})\+09:00$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    hour: Number(match[1]),
+    minute: Number(match[2])
+  };
+}
+
+export function resolveWalletBalanceEmailMatchedSlot(input: {
+  tickHour: number;
+  tickMinute: number;
+  hour: number;
+  minute: number;
+  slot2_enabled: boolean;
+  hour2: number;
+  minute2: number;
+}): 1 | 2 {
+  const slot2Match =
+    input.slot2_enabled &&
+    input.hour2 === input.tickHour &&
+    input.minute2 === input.tickMinute;
+
+  return slot2Match ? 2 : 1;
+}
+
 export function isKstWeekend(weekday: number): boolean {
   return weekday === 0 || weekday === 6;
 }
@@ -273,6 +304,15 @@ export async function listDueWalletBalanceEmailUsers(
       email,
       hour: Number(pref.hour),
       minute: Number(pref.minute),
+      matched_slot: resolveWalletBalanceEmailMatchedSlot({
+        tickHour: hour,
+        tickMinute: minute,
+        hour: Number(pref.hour),
+        minute: Number(pref.minute),
+        slot2_enabled: Boolean(pref.slot2_enabled),
+        hour2: Number(pref.hour2),
+        minute2: Number(pref.minute2)
+      }),
       exclude_weekends: Boolean(pref.exclude_weekends),
       monthly_limit: snapshot.monthly_limit,
       monthly_remaining: snapshot.monthly_remaining,

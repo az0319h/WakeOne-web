@@ -1,8 +1,13 @@
 import { expect, type APIRequestContext } from '@playwright/test';
+import {
+  formatWalletBalanceEmailSlotSettingsLabel,
+  WALLET_BALANCE_EMAIL_SLOT_COPY,
+  type WalletBalanceEmailSlot
+} from '@/features/wallet/constants/wallet-balance-email-slot-copy';
 import { createAdminRequest } from '../helpers/auth-request';
 import { resolveUserIdByEmail, uniqueEmail } from '../notifications/helpers';
 
-export { uniqueEmail };
+export { uniqueEmail, WALLET_BALANCE_EMAIL_SLOT_COPY, formatWalletBalanceEmailSlotSettingsLabel };
 
 export type KstParts = {
   hour: number;
@@ -18,6 +23,17 @@ export function getKstParts(date = new Date()): KstParts {
     hour: kstDate.getUTCHours(),
     minute: kstDate.getUTCMinutes(),
     weekday: kstDate.getUTCDay()
+  };
+}
+
+/** Serial due=0 tests — +30min avoids next-minute due bleed */
+export function getNonDueKstSchedule(parts = getKstParts()) {
+  const totalMinutes = parts.hour * 60 + parts.minute;
+  const offset = (totalMinutes + 30) % (24 * 60);
+
+  return {
+    hour: Math.floor(offset / 60),
+    minute: offset % 60
   };
 }
 
@@ -362,4 +378,67 @@ export async function enableSlot2DuePreferences(
     userId
   );
   expect(response.status()).toBe(200);
+}
+
+export async function findWalletBalanceEmailNotificationForRun(
+  request: APIRequestContext,
+  userId: string,
+  runId: number
+) {
+  const notifications = await listNotifications(request, userId);
+  return notifications.find(
+    (item) =>
+      item.type === 'wallet.balance_email' &&
+      Number(item.metadata?.run_id) === runId
+  );
+}
+
+export function expectWalletBalanceEmailNotificationSlot(
+  notification: WalletBalanceEmailNotification | undefined,
+  slot: WalletBalanceEmailSlot
+) {
+  const copy = WALLET_BALANCE_EMAIL_SLOT_COPY[slot];
+  expect(notification).toBeTruthy();
+  expect(notification!.title).toBe(copy.inAppTitle);
+  expect(notification!.body).toBe(copy.inAppBody);
+  expect(notification!.metadata?.slot).toBe(slot);
+}
+
+type DispatchRecipient = { status: string; user_id: string };
+
+export async function expectDispatchSentRecipient(
+  adminRequest: APIRequestContext,
+  dispatchBody: {
+    run?: { id: number } | null;
+    recipients?: DispatchRecipient[];
+  },
+  userId: string
+) {
+  let recipient = dispatchBody.recipients?.find(
+    (item) => item.user_id === userId && item.status === 'sent'
+  );
+
+  if (!recipient && dispatchBody.run?.id) {
+    await expect
+      .poll(async () => {
+        const detailResponse = await adminRequest.get(
+          `/api/wallet/balance-email/logs/${dispatchBody.run!.id}`
+        );
+        if (detailResponse.status() !== 200) {
+          return false;
+        }
+        const detailBody = (await detailResponse.json()) as {
+          data?: { recipients?: DispatchRecipient[] };
+        };
+        recipient = detailBody.data?.recipients?.find(
+          (item) => item.user_id === userId && item.status === 'sent'
+        );
+        return recipient != null;
+      })
+      .toBe(true);
+  } else {
+    expect(recipient, `Expected sent recipient for user ${userId}`).toBeTruthy();
+  }
+
+  return recipient!;
 }

@@ -26,6 +26,7 @@ import type { WalletBalanceEmailPreferences } from '../api/balance-email.types';
 import { WALLET_BALANCE_EMAIL_DEFAULTS } from '../api/balance-email.types';
 import { updateWalletBalanceEmailPreferencesMutation } from '../api/mutations';
 import { walletBalanceEmailPreferencesQueryOptions } from '../api/queries';
+import { formatWalletBalanceEmailSlotSettingsLabel } from '../constants/wallet-balance-email-slot-copy';
 import {
   DUPLICATE_BALANCE_EMAIL_SCHEDULE_MESSAGE,
   formatBalanceEmailScheduleDelivery,
@@ -247,7 +248,9 @@ function WalletBalanceEmailSettingsForm({
 
         <div className='space-y-3'>
           {formState.slot2_enabled ? (
-            <p className='text-sm font-medium'>알림 1</p>
+            <p className='text-sm font-medium'>
+              {formatWalletBalanceEmailSlotSettingsLabel(1)}
+            </p>
           ) : null}
           <BalanceEmailTimeSelects
             hour={formState.hour}
@@ -268,7 +271,9 @@ function WalletBalanceEmailSettingsForm({
             data-testid='wallet-balance-email-slot2-row'
           >
             <div className='flex items-center justify-between gap-3'>
-              <p className='text-sm font-medium'>알림 2</p>
+              <p className='text-sm font-medium'>
+                {formatWalletBalanceEmailSlotSettingsLabel(2)}
+              </p>
               <Button
                 type='button'
                 variant='ghost'

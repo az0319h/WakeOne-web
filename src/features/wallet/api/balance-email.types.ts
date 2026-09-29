@@ -72,6 +72,7 @@ export type WalletBalanceEmailDueUser = {
   email: string;
   hour: number;
   minute: number;
+  matched_slot: 1 | 2;
   exclude_weekends: boolean;
   monthly_limit: number;
   monthly_remaining: number;

@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { cn } from '@/lib/utils';
 import { walletBalanceEmailPreferencesQueryOptions } from '../api/queries';
-import { formatBalanceEmailScheduleSummary } from '../utils/balance-email-schedule';
+import { formatBalanceEmailEntrySlotLines } from '../utils/balance-email-schedule';
 import { WalletBalanceEmailSettingsSheet } from './wallet-balance-email-settings-sheet';
 
 interface WalletBalanceEmailSettingsSectionProps {
@@ -30,10 +30,9 @@ function WalletBalanceEmailSettingsEntry({
   const { data } = useSuspenseQuery(walletBalanceEmailPreferencesQueryOptions(filters));
   const { preferences } = data;
 
-  const scheduleSummary = formatBalanceEmailScheduleSummary(
+  const entrySlotLines = formatBalanceEmailEntrySlotLines(
     preferences.hour,
     preferences.minute,
-    preferences.exclude_weekends,
     {
       slot2Enabled: preferences.slot2_enabled,
       hour2: preferences.hour2,
@@ -66,12 +65,26 @@ function WalletBalanceEmailSettingsEntry({
               </Badge>
               {preferences.enabled ? (
                 <>
-                  <span
-                    className='text-muted-foreground text-xs'
+                  <div
+                    className='flex flex-wrap items-center gap-x-2 gap-y-1'
                     data-testid='wallet-balance-email-settings-entry-schedule'
                   >
-                    {scheduleSummary}
-                  </span>
+                    {entrySlotLines.map((line) => (
+                      <span key={line} className='text-muted-foreground text-xs'>
+                        {line}
+                      </span>
+                    ))}
+                  </div>
+                  {!preferences.slot2_enabled && !preferences.exclude_weekends ? (
+                    <Badge variant='outline' className='font-normal'>
+                      매일
+                    </Badge>
+                  ) : null}
+                  {!preferences.slot2_enabled && preferences.exclude_weekends ? (
+                    <Badge variant='outline' className='font-normal'>
+                      평일
+                    </Badge>
+                  ) : null}
                   {preferences.exclude_weekends ? (
                     <Badge
                       variant='outline'
