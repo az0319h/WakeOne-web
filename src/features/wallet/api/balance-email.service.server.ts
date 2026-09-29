@@ -13,7 +13,7 @@ import {
 } from './balance-email.types';
 
 const PREFERENCES_SELECT =
-  'user_id, enabled, hour, minute, exclude_weekends, updated_at, updated_by_user_id';
+  'user_id, enabled, hour, minute, slot2_enabled, hour2, minute2, exclude_weekends, updated_at, updated_by_user_id';
 
 const RUN_SELECT =
   'id, run_key, request_id, trigger_source, status, due_count, sent_count, failed_count, blocked_count, skipped_count, created_at, finished_at';
@@ -33,6 +33,9 @@ function mapPreferences(row: PreferencesRow): WalletBalanceEmailPreferences {
     enabled: row.enabled,
     hour: Number(row.hour),
     minute: Number(row.minute),
+    slot2_enabled: row.slot2_enabled,
+    hour2: Number(row.hour2),
+    minute2: Number(row.minute2),
     exclude_weekends: row.exclude_weekends,
     updated_at: row.updated_at,
     updated_by_user_id: row.updated_by_user_id
@@ -157,6 +160,9 @@ export async function upsertWalletBalanceEmailPreferences(input: {
     enabled: input.patch.enabled ?? existing.enabled,
     hour: input.patch.hour ?? existing.hour,
     minute: input.patch.minute ?? existing.minute,
+    slot2_enabled: input.patch.slot2_enabled ?? existing.slot2_enabled,
+    hour2: input.patch.hour2 ?? existing.hour2,
+    minute2: input.patch.minute2 ?? existing.minute2,
     exclude_weekends: input.patch.exclude_weekends ?? existing.exclude_weekends,
     updated_at: new Date().toISOString(),
     updated_by_user_id: input.updatedByUserId
@@ -213,10 +219,11 @@ export async function listDueWalletBalanceEmailUsers(
 
   const { data: preferences, error: prefError } = await supabase
     .from('wallet_balance_email_preferences')
-    .select('user_id, hour, minute, exclude_weekends')
+    .select('user_id, hour, minute, slot2_enabled, hour2, minute2, exclude_weekends')
     .eq('enabled', true)
-    .eq('hour', hour)
-    .eq('minute', minute);
+    .or(
+      `and(hour.eq.${hour},minute.eq.${minute}),and(slot2_enabled.eq.true,hour2.eq.${hour},minute2.eq.${minute})`
+    );
 
   if (prefError) {
     throw new Error(prefError.message);
@@ -227,9 +234,14 @@ export async function listDueWalletBalanceEmailUsers(
   }
 
   const dueUsers: WalletBalanceEmailDueUser[] = [];
+  const seenUserIds = new Set<string>();
 
   for (const pref of preferences) {
     const userId = pref.user_id as string;
+    if (seenUserIds.has(userId)) {
+      continue;
+    }
+    seenUserIds.add(userId);
     const eligible = await isWalletBalanceEmailEligible(userId);
     if (!eligible) {
       continue;

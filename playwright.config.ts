@@ -46,6 +46,14 @@ const isWalletBalanceEmailE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/wallet-balance-email')
 );
 
+const isGoogleTasksE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/google-tasks')
+);
+
+if (isGoogleTasksE2eRun) {
+  process.env.E2E_GOOGLE_TASKS_MOCK = '1';
+}
+
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
   '127.0.0.1',
   'localhost'
@@ -59,7 +67,8 @@ export default defineConfig({
     isAnnouncementsE2eRun ||
     isContractImportNotificationsE2eRun ||
     isLiveUsersE2eRun ||
-    isWalletBalanceEmailE2eRun
+    isWalletBalanceEmailE2eRun ||
+    isGoogleTasksE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -76,8 +85,12 @@ export default defineConfig({
         webServer: {
           command: 'npm run dev',
           url: baseURL,
-          reuseExistingServer: true,
-          timeout: 120_000
+          reuseExistingServer: !isGoogleTasksE2eRun,
+          timeout: 120_000,
+          env: {
+            ...process.env,
+            ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {})
+          }
         }
       }),
   projects: [
@@ -97,26 +110,30 @@ export default defineConfig({
       timeout: 90_000
     },
     {
-      name: 'wallet-balance-email-notifications',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: 'e2e/.auth/user.json'
-      },
-      dependencies: ['setup', 'setup-user'],
-      testMatch: isWalletBalanceEmailE2eRun
-        ? [/wallet-balance-email\/notifications\.spec\.ts$/]
-        : [/^\b$/],
-      fullyParallel: false
-    },
-    {
       name: 'wallet-balance-email-api',
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
-      dependencies: ['setup', 'setup-user', 'wallet-balance-email-notifications'],
+      dependencies: ['setup', 'setup-user'],
       testMatch: isWalletBalanceEmailE2eRun
-        ? [/wallet-balance-email\/dispatch\.api\.spec\.ts$/]
+        ? [
+            /wallet-balance-email\/00-due-zero\.api\.spec\.ts$/,
+            /wallet-balance-email\/00-plan55\.api\.spec\.ts$/,
+            /wallet-balance-email\/dispatch\.api\.spec\.ts$/
+          ]
+        : [/^\b$/],
+      fullyParallel: false
+    },
+    {
+      name: 'wallet-balance-email-notifications',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'wallet-balance-email-api'],
+      testMatch: isWalletBalanceEmailE2eRun
+        ? [/wallet-balance-email\/notifications\.spec\.ts$/]
         : [/^\b$/],
       fullyParallel: false
     },
@@ -168,7 +185,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/user.json'
       },
       dependencies: isWalletBalanceEmailE2eRun
-        ? ['setup-user', 'wallet-balance-email-api']
+        ? ['setup-user', 'wallet-balance-email-api', 'wallet-balance-email-notifications']
         : ['setup-user'],
       testMatch: [
         /profile\.spec\.ts$/,
@@ -177,6 +194,7 @@ export default defineConfig({
         /kbar\/nav-user\.spec\.ts$/,
         /contracts\/my-contracts-viewer\.spec\.ts$/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
+        /google-tasks\/rbac\.spec\.ts$/,
         ...(isWalletBalanceEmailE2eRun ? [] : [/wallet-balance-email\/notifications\.spec\.ts$/])
       ]
     },
