@@ -68,6 +68,48 @@ export const createUserSchema = z
 
 export type CreateUserFormValues = z.infer<typeof createUserSchema>;
 
+export const approveUserSchema = z
+  .object({
+    email: z.string().email('올바른 이메일 주소를 입력해 주세요.'),
+    full_name: z.string().trim().min(1, '이름을 입력해 주세요.').max(100),
+    affiliation: z.union([z.enum(AFFILIATIONS), z.literal('')]),
+    rank: z.string().min(1, '부서/사업장을 선택해 주세요.').max(50),
+    system_role: z.union([z.enum(['admin', 'user']), z.literal('')]),
+    birthday: z.string().nullable(),
+    phone: requiredPhoneSchema
+  })
+  .superRefine((data, ctx) => {
+    if (!data.affiliation) {
+      ctx.addIssue({
+        code: 'custom',
+        message: '소속을 선택해 주세요.',
+        path: ['affiliation']
+      });
+    }
+
+    if (!data.system_role) {
+      ctx.addIssue({
+        code: 'custom',
+        message: '시스템 역할을 선택해 주세요.',
+        path: ['system_role']
+      });
+    }
+
+    refineBirthday(data.birthday, ctx);
+
+    if (data.affiliation) {
+      validateOrganizationFields(
+        {
+          affiliation: data.affiliation,
+          rank: data.rank
+        },
+        ctx
+      );
+    }
+  });
+
+export type ApproveUserFormValues = z.infer<typeof approveUserSchema>;
+
 const emptyToNull = (value: string | null | undefined) =>
   value == null || value === '' || value === SELECT_NONE_VALUE ? null : value;
 

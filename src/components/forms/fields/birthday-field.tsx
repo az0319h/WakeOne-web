@@ -32,6 +32,7 @@ import {
 
 interface BirthdayFieldProps {
   label: string;
+  allowUnsetToggle?: boolean;
 }
 
 function BirthdaySelects({
@@ -39,13 +40,15 @@ function BirthdaySelects({
   month,
   day,
   onChange,
-  invalid
+  invalid,
+  disabled
 }: {
   year: string;
   month: string;
   day: string;
   onChange: (next: { year?: string; month?: string; day?: string }) => void;
   invalid?: boolean;
+  disabled?: boolean;
 }) {
   const yearNum = year ? Number(year) : null;
   const monthNum = month ? Number(month) : null;
@@ -64,8 +67,9 @@ function BirthdaySelects({
       <Select
         value={year || undefined}
         onValueChange={(nextYear) => onChange({ year: nextYear })}
+        disabled={disabled}
       >
-        <SelectTrigger className={triggerClass} aria-invalid={invalid}>
+        <SelectTrigger className={triggerClass} aria-invalid={invalid} disabled={disabled}>
           <SelectValue placeholder='년' />
         </SelectTrigger>
         <SelectContent>
@@ -80,9 +84,9 @@ function BirthdaySelects({
       <Select
         value={month || undefined}
         onValueChange={(nextMonth) => onChange({ month: nextMonth })}
-        disabled={!year}
+        disabled={disabled || !year}
       >
-        <SelectTrigger className={triggerClass} aria-invalid={invalid}>
+        <SelectTrigger className={triggerClass} aria-invalid={invalid} disabled={disabled || !year}>
           <SelectValue placeholder='월' />
         </SelectTrigger>
         <SelectContent>
@@ -97,9 +101,13 @@ function BirthdaySelects({
       <Select
         value={day || undefined}
         onValueChange={(nextDay) => onChange({ day: nextDay })}
-        disabled={!year || !month}
+        disabled={disabled || !year || !month}
       >
-        <SelectTrigger className={triggerClass} aria-invalid={invalid}>
+        <SelectTrigger
+          className={triggerClass}
+          aria-invalid={invalid}
+          disabled={disabled || !year || !month}
+        >
           <SelectValue placeholder='일' />
         </SelectTrigger>
         <SelectContent>
@@ -131,7 +139,7 @@ function partsFromValue(value: string | null | undefined): {
   };
 }
 
-export function BirthdayField({ label }: BirthdayFieldProps) {
+export function BirthdayField({ label, allowUnsetToggle = false }: BirthdayFieldProps) {
   const field = useFieldContext();
   const isTouched = useStore(field.store, (s) => s.meta.isTouched);
   const isValid = useStore(field.store, (s) => s.meta.isValid);
@@ -140,22 +148,38 @@ export function BirthdayField({ label }: BirthdayFieldProps) {
   const [year, setYear] = useState(() => partsFromValue(value).year);
   const [month, setMonth] = useState(() => partsFromValue(value).month);
   const [day, setDay] = useState(() => partsFromValue(value).day);
+  const [isUnsetMode, setIsUnsetMode] = useState(
+    () => allowUnsetToggle && !value
+  );
 
   useEffect(() => {
+    const isPartialLocalEntry =
+      Boolean(year || month || day) && !(year && month && day);
+
+    if (isPartialLocalEntry) {
+      return;
+    }
+
     const next = partsFromValue(value);
     if (next.year && next.month && next.day) {
       setYear(next.year);
       setMonth(next.month);
       setDay(next.day);
+      if (allowUnsetToggle) {
+        setIsUnsetMode(false);
+      }
       return;
     }
 
     if (!value) {
+      if (allowUnsetToggle) {
+        setIsUnsetMode(true);
+      }
       setYear('');
       setMonth('');
       setDay('');
     }
-  }, [value]);
+  }, [value, allowUnsetToggle, year, month, day]);
 
   function commitParts(nextYear: string, nextMonth: string, nextDay: string) {
     if (!nextYear && !nextMonth && !nextDay) {
@@ -164,7 +188,6 @@ export function BirthdayField({ label }: BirthdayFieldProps) {
     }
 
     if (!nextYear || !nextMonth || !nextDay) {
-      field.handleChange(null);
       return;
     }
 
@@ -187,6 +210,10 @@ export function BirthdayField({ label }: BirthdayFieldProps) {
   }
 
   function handlePartChange(next: { year?: string; month?: string; day?: string }) {
+    if (isUnsetMode) {
+      return;
+    }
+
     const nextYear = next.year ?? year;
     let nextMonth = next.month ?? month;
     let nextDay = next.day ?? day;
@@ -211,21 +238,41 @@ export function BirthdayField({ label }: BirthdayFieldProps) {
     field.handleChange(null);
   }
 
+  function handleUnsetToggle() {
+    if (!allowUnsetToggle) {
+      handleClear();
+      return;
+    }
+
+    if (isUnsetMode) {
+      setIsUnsetMode(false);
+      return;
+    }
+
+    setIsUnsetMode(true);
+    handleClear();
+  }
+
   const hasValue = Boolean(year || month || day);
   const invalid = isTouched && !isValid;
+  const showUnsetButton = allowUnsetToggle || hasValue;
 
   return (
     <FormFieldSet>
       <FormField>
         <div className='flex items-center justify-between gap-2'>
           <FieldLabel>{label}</FieldLabel>
-          {hasValue ? (
+          {showUnsetButton ? (
             <Button
               type='button'
               variant='ghost'
               size='sm'
-              className={cn('text-muted-foreground h-7 px-2 text-xs')}
-              onClick={handleClear}
+              className={cn(
+                'text-muted-foreground h-7 px-2 text-xs',
+                allowUnsetToggle && isUnsetMode && 'text-foreground bg-muted'
+              )}
+              onClick={handleUnsetToggle}
+              aria-pressed={allowUnsetToggle ? isUnsetMode : undefined}
             >
               <Icons.xCircle className='mr-1 h-3.5 w-3.5' />
               미설정
@@ -238,6 +285,7 @@ export function BirthdayField({ label }: BirthdayFieldProps) {
           day={day}
           onChange={handlePartChange}
           invalid={invalid}
+          disabled={allowUnsetToggle && isUnsetMode}
         />
       </FormField>
       <FormFieldError />

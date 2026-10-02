@@ -2,7 +2,7 @@ import type { Affiliation } from '@/features/users/constants/organization';
 
 export type SystemRole = 'admin' | 'user';
 
-export type ProfileStatus = 'active' | 'inactive';
+export type ProfileStatus = 'active' | 'inactive' | 'pending_approval' | 'rejected';
 
 export type AuthProfile = {
   user_id: string;
@@ -16,6 +16,14 @@ export type AuthProfile = {
   avatar_url: string | null;
   affiliation: Affiliation | null;
   rank: string | null;
+  google_email?: string | null;
+  google_display_name?: string | null;
+  approval_requested_at?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  rejected_at?: string | null;
+  rejected_by?: string | null;
+  rejection_reason?: string | null;
 };
 
 export type SignInPayload = {
@@ -40,5 +48,7 @@ export type ForcePasswordChangeResponse = {
 export const AUTH_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: '이메일 또는 비밀번호가 올바르지 않습니다.',
   ACCOUNT_DISABLED: '비활성화된 계정입니다.',
+  PENDING_APPROVAL: '관리자 승인 대기 중입니다. 승인 완료 후 로그인할 수 있습니다.',
+  REJECTED: '가입 요청이 거절되었습니다. 관리자에게 문의해 주세요.',
   UNKNOWN: '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.'
 } as const;

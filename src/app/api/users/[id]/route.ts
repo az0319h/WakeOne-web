@@ -213,7 +213,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       );
     }
 
-    if (target.status === 'inactive') {
+    if (target.status !== 'active') {
       return jsonWithActivityLog(
         requestId,
         {
@@ -224,9 +224,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
           targetLabel,
           httpMethod: 'PUT',
           httpPath,
-          metadata: buildErrorMetadata('inactive_user', '비활성화된 사용자는 수정할 수 없습니다.')
+          metadata: buildErrorMetadata('inactive_user', '활성화된 사용자만 수정할 수 있습니다.')
         },
-        { success: false, message: '비활성화된 사용자는 수정할 수 없습니다.' },
+        { success: false, message: '활성화된 사용자만 수정할 수 있습니다.' },
         400
       );
     }
@@ -443,6 +443,24 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
+    if (target.status !== 'inactive') {
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.reactivate',
+          targetType: 'user',
+          targetUserId: id,
+          targetLabel,
+          httpMethod: 'PATCH',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '비활성 사용자만 재활성화할 수 있습니다.')
+        },
+        { success: false, message: '비활성 사용자만 재활성화할 수 있습니다.' },
+        400
+      );
+    }
+
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
@@ -621,7 +639,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       );
     }
 
-    if (target.status === 'inactive') {
+    if (target.status !== 'active') {
       return jsonWithActivityLog(
         requestId,
         {
@@ -632,9 +650,9 @@ export async function DELETE(request: NextRequest, { params }: Params) {
           targetLabel,
           httpMethod: 'DELETE',
           httpPath,
-          metadata: buildErrorMetadata('inactive_user', '이미 비활성화된 사용자입니다.')
+          metadata: buildErrorMetadata('inactive_user', '활성화된 사용자만 비활성화할 수 있습니다.')
         },
-        { success: false, message: '이미 비활성화된 사용자입니다.' },
+        { success: false, message: '활성화된 사용자만 비활성화할 수 있습니다.' },
         400
       );
     }

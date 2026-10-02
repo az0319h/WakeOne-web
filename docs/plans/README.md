@@ -94,6 +94,9 @@
 | 54 | [54_google-tasks-cud-plan.md](./54_google-tasks-cud-plan.md) | **Approved** · Google Tasks CUD · 완료/정렬/move · write scope · task activity log |
 | 55 | [55_wallet-balance-email-admin-dual-slot-plan.md](./55_wallet-balance-email-admin-dual-slot-plan.md) | **Approved** · 식대 잔액 이메일 admin run 요약 알림 · 2회 KST 슬롯 · plan 51 확장 · SQL `55` |
 | 56 | [56_wallet-balance-email-slot-copy-plan.md](./56_wallet-balance-email-slot-copy-plan.md) | **Approved** · 슬롯별 이메일·인앱 고정 카피 · metadata.slot · plan 51/55 확장 · SQL 없음 |
+| 57 | [57_google-auth-approval-migration-plan.md](./57_google-auth-approval-migration-plan.md) | **Approved** · Google 로그인 전용 전환 · 신규 사용자 승인 대기 · password 기능 제거 · active-only 이름 매칭 · 이메일 발송 금지 |
+| 58 | [58_approval-birthday-optional-user-add-removal-plan.md](./58_approval-birthday-optional-user-add-removal-plan.md) | **Approved** · 승인 시 생일 미설정 · overview 생일 배너 null 제외 · 사용자 추가 UI/API 제거 |
+| 59 | [59_google-auth-admin-notif-activity-log-result-plan.md](./59_google-auth-admin-notif-activity-log-result-plan.md) | **Approved** · 활동 로그 302/303 「리다이렉트」 · Google pending 최초 admin 인앱 알림 · SQL `57` |
 
 ## 에이전트 참조
 

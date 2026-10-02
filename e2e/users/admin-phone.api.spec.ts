@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
+import { createActiveTestUser } from '../helpers/supabase-direct-auth';
 
 type ActivityLogItem = {
   request_id?: string;
@@ -68,18 +69,14 @@ async function expectUserUpdateLog(
   );
 }
 
-async function createUserViaApi(request: APIRequestContext, prefix: string) {
+async function createUserViaApi(prefix: string) {
   const email = uniqueEmail(prefix);
-  const response = await request.post('/api/users', {
-    data: createUserPayload(email)
-  });
-  expect(response.status()).toBe(201);
-  const body = (await response.json()) as { user_id?: string };
-  return { email, userId: body.user_id as string };
+  const created = await createActiveTestUser(prefix, { email, phone: E2E_TEST_PHONE });
+  return { email, userId: created.userId };
 }
 
 test.describe('admin 사용자 연락처 API', () => {
-  test('AC-6 plan30: POST 잘못된 phone 형식은 400 validation이다', async ({ request }) => {
+  test('AC-6 plan58: POST /api/users는 410 Gone이다', async ({ request }) => {
     const email = uniqueEmail('ac6-plan30-api');
     const response = await request.post('/api/users', {
       data: {
@@ -88,38 +85,17 @@ test.describe('admin 사용자 연락처 API', () => {
       }
     });
 
-    expect(response.status()).toBe(400);
+    expect(response.status()).toBe(410);
     const requestId = response.headers()['x-request-id'];
     expect(requestId).toBeTruthy();
 
     const body = (await response.json()) as { success?: boolean; message?: string };
     expect(body.success).toBe(false);
-    expect(body.message).toContain('입력값');
-
-    await expect
-      .poll(
-        async () => {
-          const logsResponse = await request.get(
-            `/api/activity-logs?action=${encodeURIComponent('user.create')}&limit=50`
-          );
-          const logsBody = (await logsResponse.json()) as {
-            data?: { logs?: ActivityLogItem[] };
-          };
-          const matched = logsBody.data?.logs?.find(
-            (item) =>
-              item.request_id === requestId &&
-              item.action === 'user.create' &&
-              item.http_status === 400
-          );
-          return matched ? JSON.stringify(matched.metadata ?? {}) : null;
-        },
-        { timeout: 10_000 }
-      )
-      .not.toBeNull();
+    expect(body.message).toContain('사용자 직접 추가');
   });
 
   test('AC-8 plan30: PUT body phone 누락은 400 validation이다', async ({ request }) => {
-    const { userId } = await createUserViaApi(request, 'ac8-plan30');
+    const { userId } = await createUserViaApi('ac8-plan30');
 
     const response = await request.put(`/api/users/${userId}`, {
       data: {
@@ -142,7 +118,7 @@ test.describe('admin 사용자 연락처 API', () => {
   test('AC-9 plan30: PUT phone 변경 성공 시 changed_fields에 phone이 포함된다', async ({
     request
   }) => {
-    const { userId } = await createUserViaApi(request, 'ac9-plan30');
+    const { userId } = await createUserViaApi('ac9-plan30');
 
     const response = await request.put(`/api/users/${userId}`, {
       data: {

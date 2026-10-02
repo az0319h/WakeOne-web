@@ -19,6 +19,7 @@ export const searchParams = {
   sort: parseAsString,
   log_user: parseAsString,
   notif_user: parseAsString,
+  tasks_user: parseAsString,
   wallet_user: parseAsString,
   action: parseAsString,
   search: parseAsString,
