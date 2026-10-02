@@ -8,12 +8,22 @@ import { formatBirthdayDisplay } from '@/lib/format-date';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { UserAvatarCell } from '../user-profile-modal';
 import { CellAction } from './cell-action';
-import { SYSTEM_ROLE_OPTIONS } from './options';
+import { PROFILE_STATUS_OPTIONS, SYSTEM_ROLE_OPTIONS } from './options';
 import { getAffiliationLabel } from '../../constants/organization';
 
 interface CreateColumnsOptions {
   onAvatarClick: (user: User) => void;
 }
+
+const STATUS_BADGE_CONFIG: Record<
+  User['status'],
+  { label: string; variant: 'outline' | 'secondary' | 'destructive' }
+> = {
+  active: { label: '활성', variant: 'outline' },
+  inactive: { label: '비활성', variant: 'destructive' },
+  pending_approval: { label: '승인 대기', variant: 'secondary' },
+  rejected: { label: '거절됨', variant: 'destructive' }
+};
 
 export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDef<User>[] {
   return [
@@ -101,15 +111,23 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
     {
       id: 'status',
       accessorKey: 'status',
-      header: '계정 상태',
+      header: ({ column }: { column: Column<User, unknown> }) => (
+        <DataTableColumnHeader column={column} title='계정 상태' />
+      ),
       cell: ({ cell }) => {
         const status = cell.getValue<User['status']>();
-        const isActive = status === 'active';
+        const config = STATUS_BADGE_CONFIG[status];
         return (
-          <Badge variant={isActive ? 'outline' : 'destructive'}>
-            {isActive ? '활성' : '비활성'}
+          <Badge variant={config.variant}>
+            {config.label}
           </Badge>
         );
+      },
+      enableColumnFilter: true,
+      meta: {
+        label: '계정 상태',
+        variant: 'multiSelect' as const,
+        options: PROFILE_STATUS_OPTIONS
       }
     },
     {

@@ -6,6 +6,7 @@ import {
 } from '@/config/admin-routes';
 import { isDisabledDashboardPath } from '@/config/disabled-routes';
 import { ACCESS_DENIED_FLASH_COOKIE } from '@/lib/auth/access-denied-flash';
+import { ACCOUNT_DISABLED_FLASH_COOKIE } from '@/lib/auth/account-disabled-flash';
 import {
   isMustChangeAllowedApiPath,
   MUST_CHANGE_API_JSON
@@ -193,12 +194,26 @@ export async function proxy(request: NextRequest) {
   const mustChange = hasMustChangeInitialPasswordCookieFromRequest(request);
 
   if (profile?.status === 'inactive') {
+    const alreadyOnNotice =
+      isSignInPath(pathname) &&
+      request.nextUrl.searchParams.get('accountDisabled') === '1';
+
+    if (alreadyOnNotice) {
+      return response;
+    }
+
     const signInUrl = request.nextUrl.clone();
     signInUrl.pathname = '/auth/sign-in';
+    signInUrl.search = '';
     signInUrl.searchParams.set('accountDisabled', '1');
-    signInUrl.search = signInUrl.searchParams.toString();
     const redirectResponse = NextResponse.redirect(signInUrl);
     copyCookies(response, redirectResponse);
+    redirectResponse.cookies.set(ACCOUNT_DISABLED_FLASH_COOKIE, '1', {
+      maxAge: 60,
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: false
+    });
     return redirectResponse;
   }
 

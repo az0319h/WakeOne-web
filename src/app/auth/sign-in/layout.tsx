@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSessionProfile } from '@/features/auth/api/session.server';
-import { hasMustChangeInitialPasswordCookie } from '@/lib/auth/must-change-cookie';
 import { buildSignInJsonLd } from '@/lib/sign-in-json-ld';
 import {
   SIGN_IN_DESCRIPTION,
@@ -54,13 +52,7 @@ export const metadata: Metadata = {
 export default async function SignInLayout({ children }: { children: React.ReactNode }) {
   const profile = await getSessionProfile();
 
-  if (profile) {
-    const cookieStore = await cookies();
-
-    if (hasMustChangeInitialPasswordCookie(cookieStore)) {
-      redirect('/auth/force-password-change');
-    }
-
+  if (profile?.status === 'active') {
     redirect('/dashboard/overview');
   }
 

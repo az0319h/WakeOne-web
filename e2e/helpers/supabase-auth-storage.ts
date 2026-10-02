@@ -6,6 +6,7 @@ import {
   type BrowserContext
 } from '@playwright/test';
 import { e2eBaseURL, normalizePlaywrightStorageState } from './auth-request';
+import { signInWithSupabasePassword } from './supabase-direct-auth';
 
 
 const REUSE_BUFFER_SECONDS = 120;
@@ -111,51 +112,10 @@ export async function authenticateStorageState(
     return;
   }
 
-  const apiContext = await playwrightRequest.newContext({
-    baseURL,
-    storageState: { cookies: [], origins: [] }
-  });
+  const { storageState } = await signInWithSupabasePassword(email, password);
+  writeStorageState(outputPath, storageState, baseURL);
 
-  try {
-    let signedIn = false;
-
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const signInResponse = await apiContext.post('/api/auth/sign-in', {
-        data: { email, password }
-      });
-
-      if (signInResponse.status() === 200) {
-        const body = (await signInResponse.json()) as { mustChange?: boolean };
-        if (body.mustChange) {
-          throw new Error(`E2E account ${email} must change password before setup`);
-        }
-        signedIn = true;
-        break;
-      }
-
-      const bodyText = await signInResponse.text();
-      const retryable =
-        signInResponse.status() === 429 ||
-        /rate limit|too many|잠시 후 다시 시도/i.test(bodyText);
-
-      if (!retryable || attempt === 7) {
-        throw new Error(`sign-in failed (${signInResponse.status()}): ${bodyText}`);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 3_000 * (attempt + 1)));
-    }
-
-    if (!signedIn) {
-      throw new Error(`Failed to sign in as ${email}`);
-    }
-
-    const storageState = await apiContext.storageState();
-    writeStorageState(outputPath, storageState, baseURL);
-
-    if (!(await probeAuthenticatedStorageState(outputPath, baseURL, probePath))) {
-      throw new Error(`auth storage probe failed for ${email}`);
-    }
-  } finally {
-    await apiContext.dispose();
+  if (!(await probeAuthenticatedStorageState(outputPath, baseURL, probePath))) {
+    throw new Error(`auth storage probe failed for ${email}`);
   }
 }

@@ -7,7 +7,7 @@ import type { Affiliation } from '@/features/users/constants/organization';
 export type SessionProfileFlags = {
   password_set_at: string | null;
   system_role: 'admin' | 'user';
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending_approval' | 'rejected';
   affiliation: Affiliation | null;
 };
 
@@ -67,7 +67,7 @@ export async function updateSession(request: NextRequest) {
         affiliation: data.affiliation
       };
 
-      if (data.status === 'inactive') {
+      if (data.status !== 'active') {
         await supabase.auth.signOut();
         sessionUser = null;
       }

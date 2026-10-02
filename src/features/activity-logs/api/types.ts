@@ -2,6 +2,9 @@ export type ActivityAction =
   | 'user.create'
   | 'user.invite'
   | 'user.update'
+  | 'user.approval_request'
+  | 'user.approve'
+  | 'user.reject'
   | 'user.reactivate'
   | 'user.deactivate'
   | 'contract.import_create'
@@ -41,7 +44,9 @@ export type ActivityAction =
   | 'support.status_update'
   | 'support.comment_create'
   | 'support.comment_update'
-  | 'support.comment_delete';
+  | 'support.comment_delete'
+  | 'google_tasks.connect'
+  | 'google_tasks.disconnect';
 
 export type ActivityTargetType =
   | 'user'
@@ -51,7 +56,8 @@ export type ActivityTargetType =
   | 'auth'
   | 'announcement'
   | 'support_request'
-  | 'support_comment';
+  | 'support_comment'
+  | 'google_tasks';
 
 export type ActivityLogErrorCode =
   | 'unauthenticated'
@@ -61,13 +67,15 @@ export type ActivityLogErrorCode =
   | 'duplicate_email'
   | 'forbidden_field'
   | 'inactive_user'
+  | 'not_pending'
   | 'not_found'
   | 'wrong_password'
   | 'invalid_otp'
   | 'profile_edit_disabled'
   | 'cron_paused'
   | 'safety_filter_blocked'
-  | 'internal_error';
+  | 'internal_error'
+  | 'gone';
 
 export type ActivityLogMetadata = {
   error_code?: ActivityLogErrorCode;
@@ -120,6 +128,10 @@ export type ActivityLogMetadata = {
   failed_count?: number;
   blocked_count?: number;
   skipped_count?: number;
+  google_email?: string;
+  approval_source?: string;
+  rejection_reason?: string;
+  birthday_set?: boolean;
 };
 
 export type ActivityLog = {

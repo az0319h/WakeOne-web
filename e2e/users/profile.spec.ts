@@ -40,21 +40,29 @@ test.describe('본인 프로필 read-only', () => {
     await expect(page.getByRole('status', { name: 'Loading' })).toBeVisible({
       timeout: 10_000
     });
-    await expect(page.getByRole('heading', { name: '프로필' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '프로필' }).first()).toBeVisible({
       timeout: 15_000
     });
-    await expect(page.getByRole('button', { name: '비밀번호 변경' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: '비밀번호 변경' })).toHaveCount(0);
 
     await navigation;
-    await expect(page.getByRole('button', { name: '비밀번호 변경' })).toBeVisible({
-      timeout: 15_000
-    });
+    await expect(page.getByRole('menuitem', { name: '비밀번호 변경' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: '보안' })).toHaveCount(0);
   });
 
-  test('AC-5 plan21: Security 비밀번호 변경·로그아웃은 유지된다', async ({ page }) => {
+  test('AC-5 plan21: 프로필에 보안 섹션·비밀번호 변경이 없다', async ({ page }) => {
     await page.goto('/dashboard/profile');
 
-    await expect(page.getByRole('button', { name: '비밀번호 변경' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '로그아웃' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '보안' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '로그아웃' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '비밀번호 변경' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: '비밀번호 변경' })).toHaveCount(0);
+  });
+
+  test('AC-57 plan57: 프로필에 소속·부서/사업장이 표시된다', async ({ page }) => {
+    await page.goto('/dashboard/profile');
+
+    await expect(page.getByText('소속', { exact: true })).toBeVisible();
+    await expect(page.getByText('부서/사업장', { exact: true })).toBeVisible();
   });
 });
