@@ -19,7 +19,7 @@ WakeOne의 Next.js 16 App Router 기반 어드민/운영 대시보드 프로젝�
 
 ```bash
 bun install
-cp env.example.txt .env.local
+cp env.example.txt .env
 bun run dev
 ```
 

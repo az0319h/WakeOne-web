@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useNavAccess, useNavProfilePatch } from '@/contexts/nav-access';
 import { createClient } from '@/lib/supabase/client';
 import { signOut } from '@/features/auth/api/service';
+import { writeAccountDisabledFlash } from '@/lib/auth/account-disabled-flash';
 import { notifyError } from '@/lib/notify';
 import type { AuthProfile } from '@/features/auth/api/types';
 
@@ -66,6 +67,7 @@ export function ProfileStatusRealtime({ profile }: ProfileStatusRealtimeProps) {
 
             if (next.status === 'inactive') {
               void (async () => {
+                writeAccountDisabledFlash();
                 notifyError('비활성화된 계정입니다.');
                 await signOut();
                 router.replace('/auth/sign-in?accountDisabled=1');

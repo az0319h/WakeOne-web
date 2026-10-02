@@ -6,7 +6,7 @@ import {
 } from '@/config/admin-routes';
 import { isDisabledDashboardPath } from '@/config/disabled-routes';
 import { ACCESS_DENIED_FLASH_COOKIE } from '@/lib/auth/access-denied-flash';
-import { hasMustChangeInitialPasswordCookieFromRequest } from '@/lib/auth/must-change-cookie';
+import { ACCOUNT_DISABLED_FLASH_COOKIE } from '@/lib/auth/account-disabled-flash';
 import { updateSession } from '@/lib/supabase/middleware';
 
 const LOCAL_ALLOWED_ORIGINS = [
@@ -23,13 +23,6 @@ const INACTIVE_JSON = {
   success: false,
   message: '비활성화된 계정입니다.'
 } as const;
-
-const MUST_CHANGE_JSON = {
-  success: false,
-  message: '초기 비밀번호를 변경해야 합니다.'
-} as const;
-
-const FORCE_PASSWORD_CHANGE_PATH = '/auth/force-password-change';
 
 function normalizeOrigin(origin: string): string {
   return origin.replace(/\/$/, '');
@@ -64,46 +57,11 @@ function isServiceTokenApiPath(pathname: string): boolean {
 }
 
 function isPublicAuthApiPath(pathname: string, method: string): boolean {
-  if (method !== 'POST') {
-    return false;
-  }
-
   return (
-    pathname === '/api/auth/sign-in' ||
-    pathname === '/api/auth/forgot-password/request' ||
-    pathname === '/api/auth/forgot-password/verify'
+    (pathname === '/api/auth/sign-in' && method === 'POST') ||
+    (pathname === '/api/auth/google/start' && method === 'GET') ||
+    (pathname === '/api/auth/google/callback' && method === 'GET')
   );
-}
-
-function isForcePasswordChangePage(pathname: string): boolean {
-  return (
-    pathname === FORCE_PASSWORD_CHANGE_PATH ||
-    pathname.startsWith(`${FORCE_PASSWORD_CHANGE_PATH}/`)
-  );
-}
-
-function isMustChangeAllowedApiPath(pathname: string, method: string): boolean {
-  if (pathname === '/api/auth/sign-in' && method === 'POST') {
-    return true;
-  }
-
-  if (pathname === '/api/auth/force-password-change' && method === 'PATCH') {
-    return true;
-  }
-
-  return false;
-}
-
-function redirectToForcePasswordChange(
-  request: NextRequest,
-  sessionResponse: NextResponse
-) {
-  const forceChangeUrl = request.nextUrl.clone();
-  forceChangeUrl.pathname = FORCE_PASSWORD_CHANGE_PATH;
-  forceChangeUrl.search = '';
-  const redirectResponse = NextResponse.redirect(forceChangeUrl);
-  copyCookies(sessionResponse, redirectResponse);
-  return redirectResponse;
 }
 
 function isDashboardPath(pathname: string): boolean {
@@ -174,26 +132,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const mustChangeBeforeSession =
-      hasMustChangeInitialPasswordCookieFromRequest(request);
     const { response, user, profile } = await updateSession(request);
-    const mustChange =
-      mustChangeBeforeSession ||
-      hasMustChangeInitialPasswordCookieFromRequest(request);
 
-    if (profile?.status === 'inactive') {
+    if (profile && profile.status !== 'active') {
       return jsonWithCookies(response, INACTIVE_JSON, 403);
     }
 
-    const isForcePasswordChangePatch =
-      pathname === '/api/auth/force-password-change' && request.method === 'PATCH';
-
-    if (!user && !isForcePasswordChangePatch) {
+    if (!user) {
       return jsonWithCookies(response, UNAUTHORIZED_JSON, 401);
-    }
-
-    if (mustChange && !isMustChangeAllowedApiPath(pathname, request.method)) {
-      return jsonWithCookies(response, MUST_CHANGE_JSON, 403);
     }
 
     return response;
@@ -206,45 +152,44 @@ export async function middleware(request: NextRequest) {
   }
 
   const { response, user, profile } = await updateSession(request);
-  const mustChange = hasMustChangeInitialPasswordCookieFromRequest(request);
 
-  if (profile?.status === 'inactive') {
+  if (profile && profile.status !== 'active') {
+    if (isSignInPath(pathname)) {
+      const authStatus = request.nextUrl.searchParams.get('authStatus');
+      const accountDisabled = request.nextUrl.searchParams.get('accountDisabled');
+      const alreadyOnSignInNotice =
+        (profile.status === 'pending_approval' &&
+          authStatus === 'pending_approval') ||
+        (profile.status === 'rejected' && authStatus === 'rejected') ||
+        (profile.status === 'inactive' && accountDisabled === '1');
+
+      if (alreadyOnSignInNotice) {
+        return response;
+      }
+    }
+
     const signInUrl = request.nextUrl.clone();
     signInUrl.pathname = '/auth/sign-in';
-    signInUrl.searchParams.set('accountDisabled', '1');
-    signInUrl.search = signInUrl.searchParams.toString();
+    signInUrl.search = '';
+    if (profile.status === 'pending_approval' || profile.status === 'rejected') {
+      signInUrl.searchParams.set('authStatus', profile.status);
+    } else {
+      signInUrl.searchParams.set('accountDisabled', '1');
+    }
     const redirectResponse = NextResponse.redirect(signInUrl);
     copyCookies(response, redirectResponse);
+    if (profile.status === 'inactive') {
+      redirectResponse.cookies.set(ACCOUNT_DISABLED_FLASH_COOKIE, '1', {
+        maxAge: 60,
+        path: '/',
+        sameSite: 'lax',
+        httpOnly: false
+      });
+    }
     return redirectResponse;
   }
 
   if (isAuthPath(pathname)) {
-    if (mustChange) {
-      if (isForcePasswordChangePage(pathname)) {
-        if (!user) {
-          const signInUrl = request.nextUrl.clone();
-          signInUrl.pathname = '/auth/sign-in';
-          signInUrl.search = '';
-          const redirectResponse = NextResponse.redirect(signInUrl);
-          copyCookies(response, redirectResponse);
-          return redirectResponse;
-        }
-
-        return response;
-      }
-
-      return redirectToForcePasswordChange(request, response);
-    }
-
-    if (isForcePasswordChangePage(pathname)) {
-      const signInUrl = request.nextUrl.clone();
-      signInUrl.pathname = '/auth/sign-in';
-      signInUrl.search = '';
-      const redirectResponse = NextResponse.redirect(signInUrl);
-      copyCookies(response, redirectResponse);
-      return redirectResponse;
-    }
-
     if (!user) {
       return response;
     }
@@ -267,10 +212,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isDashboardPath(pathname)) {
-    if (mustChange && user) {
-      return redirectToForcePasswordChange(request, response);
-    }
-
     if (!user) {
       const signInUrl = request.nextUrl.clone();
       signInUrl.pathname = '/auth/sign-in';

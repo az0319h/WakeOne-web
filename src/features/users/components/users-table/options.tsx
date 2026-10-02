@@ -3,6 +3,13 @@ export const SYSTEM_ROLE_OPTIONS = [
   { value: 'user', label: 'User' }
 ];
 
+export const PROFILE_STATUS_OPTIONS = [
+  { value: 'active', label: '활성' },
+  { value: 'inactive', label: '비활성' },
+  { value: 'pending_approval', label: '승인 대기' },
+  { value: 'rejected', label: '거절됨' }
+];
+
 export const ORGANIZATION_OPTIONS = [
   { value: 'wake', label: 'WAKE' },
   { value: 'sans', label: 'SANS' },

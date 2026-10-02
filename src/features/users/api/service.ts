@@ -1,7 +1,9 @@
 import { apiClient, apiClientWithMessage } from '@/lib/api-client';
 import type {
   CreateUserPayload,
+  ApproveUserPayload,
   InvitePayload,
+  RejectUserPayload,
   UserFilters,
   UserUpdatePayload,
   UsersResponse
@@ -13,6 +15,7 @@ export async function getUsers(filters: UserFilters): Promise<UsersResponse> {
   if (filters.page) searchParams.set('page', String(filters.page));
   if (filters.limit) searchParams.set('limit', String(filters.limit));
   if (filters.systemRoles) searchParams.set('systemRoles', filters.systemRoles);
+  if (filters.statuses) searchParams.set('statuses', filters.statuses);
   if (filters.search) searchParams.set('search', filters.search);
   if (filters.sort) searchParams.set('sort', filters.sort);
   if (filters.userId) searchParams.set('userId', filters.userId);
@@ -54,4 +57,24 @@ export async function reactivateUser(id: string) {
     method: 'PATCH',
     body: JSON.stringify({ action: 'reactivate' })
   });
+}
+
+export async function approveUser(id: string, data: ApproveUserPayload) {
+  return apiClientWithMessage<{ success: boolean; message: string }>(
+    `/users/${id}/approval/approve`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }
+  );
+}
+
+export async function rejectUser(id: string, data: RejectUserPayload = {}) {
+  return apiClientWithMessage<{ success: boolean; message: string }>(
+    `/users/${id}/approval/reject`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }
+  );
 }

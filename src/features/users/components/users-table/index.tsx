@@ -20,6 +20,7 @@ interface UsersTableBodyProps {
     limit: number;
     search?: string;
     systemRoles?: string;
+    statuses?: string;
     sort?: string;
   };
   profileUserId: string | undefined;
@@ -92,6 +93,7 @@ export function UsersTable() {
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
     system_role: parseAsString,
+    status: parseAsString,
     sort: getSortingStateParser(columnIds).withDefault([])
   });
 
@@ -100,6 +102,7 @@ export function UsersTable() {
     limit: params.perPage,
     ...(params.name && { search: params.name }),
     ...(params.system_role && { systemRoles: params.system_role }),
+    ...(params.status && { statuses: params.status }),
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 

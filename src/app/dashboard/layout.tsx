@@ -6,11 +6,9 @@ import { InfoSidebar } from '@/components/layout/info-sidebar';
 import { InfobarProvider } from '@/components/ui/infobar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { requireDashboardSession } from '@/features/auth/api/session.server';
-import { hasMustChangeInitialPasswordCookie } from '@/lib/auth/must-change-cookie';
 import { countMyContracts } from '@/features/contracts/api/service.server';
 import { NavAccessProvider } from '@/contexts/nav-access';
 import { AccessDeniedToast } from '@/components/dashboard/access-denied-toast';
@@ -37,10 +35,6 @@ export const metadata: Metadata = {
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
-
-  if (hasMustChangeInitialPasswordCookie(cookieStore)) {
-    redirect('/auth/force-password-change');
-  }
 
   const profile = await requireDashboardSession();
   const isAdmin = profile.system_role === 'admin';

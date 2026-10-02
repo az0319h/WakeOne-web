@@ -1,42 +1,23 @@
-import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { birthdaySelectTriggers } from '../helpers/birthday-select';
+import { createActiveTestUser } from '../helpers/supabase-direct-auth';
 
 function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 }
 
-function createUserPayload(
-  email: string,
-  fullName: string,
-  birthday: string | null = '1990-01-15'
-) {
-  return {
-    email,
-    full_name: fullName,
-    affiliation: 'wake',
-    rank: '사원',
-    system_role: 'user',
-    birthday: birthday ?? '1990-01-01',
-    phone: '01012345678'
-  };
-}
-
 async function createUserViaApi(
-  request: APIRequestContext,
   email: string,
   fullName: string,
   birthday = '1990-01-15'
 ) {
-  const response = await request.post('/api/users', {
-    data: createUserPayload(email, fullName, birthday)
+  const created = await createActiveTestUser('e2e-birthday-table', {
+    email,
+    fullName,
+    birthday,
+    phone: '01012345678'
   });
-  expect(response.status()).toBe(201);
-  const body = (await response.json()) as { user_id?: string };
-  return body.user_id as string;
-}
-
-async function selectOption(page: Page, combobox: Locator, optionName: string) {
-  await combobox.click();
-  await page.getByRole('option', { name: optionName, exact: true }).click();
+  return created.userId;
 }
 
 async function openEditSheetForEmail(page: Page, email: string) {
@@ -52,19 +33,9 @@ async function openEditSheetForEmail(page: Page, email: string) {
   return dialog;
 }
 
-function birthdayComboboxes(dialog: Locator) {
-  const comboboxes = dialog.getByRole('combobox');
-  return {
-    year: comboboxes.nth(3),
-    month: comboboxes.nth(4),
-    day: comboboxes.nth(5)
-  };
-}
-
 test.describe('plan22 Users 테이블 생일 · 수정 Sheet 초기값', () => {
   test('AC-01 plan22: 연락처 옆 생일 컬럼 · 포맷 · null — · 정렬·필터 없음', async ({
-    page,
-    request
+    page
   }) => {
     const withBirthdayEmail = uniqueEmail('p22-ac01-bday');
     const withBirthdayName = `생일있음${Date.now()}`;
@@ -72,14 +43,13 @@ test.describe('plan22 Users 테이블 생일 · 수정 Sheet 초기값', () => {
     const nullBirthdayName = `생일없음${Date.now()}`;
 
     const nullUserId = await createUserViaApi(
-      request,
       nullBirthdayEmail,
       nullBirthdayName,
       '1990-01-01'
     );
-    await createUserViaApi(request, withBirthdayEmail, withBirthdayName, '1990-01-15');
+    await createUserViaApi(withBirthdayEmail, withBirthdayName, '1990-01-15');
 
-    const nullBirthdayResponse = await request.put(`/api/users/${nullUserId}`, {
+    const nullBirthdayResponse = await page.request.put(`/api/users/${nullUserId}`, {
       data: { birthday: null, phone: '01012345678' }
     });
     expect(nullBirthdayResponse.status()).toBe(200);
@@ -117,18 +87,15 @@ test.describe('plan22 Users 테이블 생일 · 수정 Sheet 초기값', () => {
     await expect(nullRow.getByRole('cell', { name: '—', exact: true }).first()).toBeVisible();
   });
 
-  test('AC-02 plan22: 수정 Sheet 오픈 시 년·월·일 Select 초기 표시', async ({
-    page,
-    request
-  }) => {
+  test('AC-02 plan22: 수정 Sheet 오픈 시 년·월·일 Select 초기 표시', async ({ page }) => {
     const email = uniqueEmail('p22-ac02');
     const fullName = `시트초기${Date.now()}`;
-    await createUserViaApi(request, email, fullName, '1988-07-09');
+    await createUserViaApi(email, fullName, '1988-07-09');
 
     await page.goto('/dashboard/users');
     await page.getByPlaceholder('사용자 검색…').fill(fullName);
     const dialog = await openEditSheetForEmail(page, email);
-    const { year, month, day } = birthdayComboboxes(dialog);
+    const { year, month, day } = birthdaySelectTriggers(dialog);
 
     await expect(year).toHaveText('1988년');
     await expect(month).toHaveText('7월');
@@ -138,16 +105,16 @@ test.describe('plan22 Users 테이블 생일 · 수정 Sheet 초기값', () => {
     await expect(day).not.toHaveText('일');
   });
 
-  test('AC-03 plan22: Sheet 재오픈 후 동일 년·월·일 유지', async ({ page, request }) => {
+  test('AC-03 plan22: Sheet 재오픈 후 동일 년·월·일 유지', async ({ page }) => {
     const email = uniqueEmail('p22-ac03');
     const fullName = `시트재오픈${Date.now()}`;
-    await createUserViaApi(request, email, fullName, '1985-12-25');
+    await createUserViaApi(email, fullName, '1985-12-25');
 
     await page.goto('/dashboard/users');
     await page.getByPlaceholder('사용자 검색…').fill(fullName);
 
     const firstDialog = await openEditSheetForEmail(page, email);
-    const first = birthdayComboboxes(firstDialog);
+    const first = birthdaySelectTriggers(firstDialog);
     await expect(first.year).toHaveText('1985년');
     await expect(first.month).toHaveText('12월');
     await expect(first.day).toHaveText('25일');
@@ -158,35 +125,18 @@ test.describe('plan22 Users 테이블 생일 · 수정 Sheet 초기값', () => {
     await page.getByRole('button', { name: 'Close' }).click();
 
     const secondDialog = await openEditSheetForEmail(page, email);
-    const second = birthdayComboboxes(secondDialog);
+    const second = birthdaySelectTriggers(secondDialog);
     await expect(second.year).toHaveText('1985년');
     await expect(second.month).toHaveText('12월');
     await expect(second.day).toHaveText('25일');
   });
 
-  test('AC-05 plan22: 사용자 추가 후 목록에 생일 yyyy년 M월 d일 표시', async ({ page }) => {
+  test('AC-05 plan22: active 사용자 목록에 생일 yyyy년 M월 d일 표시', async ({ page }) => {
     const email = uniqueEmail('p22-ac05');
     const fullName = `생성회귀${Date.now()}`;
+    await createUserViaApi(email, fullName, '1993-04-04');
 
     await page.goto('/dashboard/users');
-    await page.getByRole('button', { name: '사용자 추가' }).click();
-    const dialog = page.getByRole('dialog', { name: '사용자 추가' });
-    await expect(dialog).toBeVisible();
-
-    await dialog.getByRole('textbox', { name: '이름' }).fill(fullName);
-    await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
-    await selectOption(page, dialog.getByRole('combobox', { name: '소속' }), '웨이크');
-    await selectOption(page, dialog.getByRole('combobox', { name: '직급' }), '사원');
-    await selectOption(page, dialog.getByRole('combobox', { name: '시스템 역할' }), 'User');
-
-    const comboboxes = dialog.getByRole('combobox');
-    await selectOption(page, comboboxes.nth(3), '1993년');
-    await selectOption(page, comboboxes.nth(4), '4월');
-    await selectOption(page, comboboxes.nth(5), '4일');
-
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-    await expect(page.getByText('사용자가 추가되었습니다.')).toBeVisible();
-
     await page.getByPlaceholder('사용자 검색…').fill(fullName);
     const row = page.getByRole('row', {
       name: new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))

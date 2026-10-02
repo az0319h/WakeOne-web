@@ -10,6 +10,9 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'user.create': '사용자 생성',
   'user.invite': '사용자 초대',
   'user.update': '사용자 정보 수정',
+  'user.approval_request': '사용자 승인 요청',
+  'user.approve': '사용자 승인',
+  'user.reject': '사용자 거절',
   'user.reactivate': '사용자 재활성화',
   'user.deactivate': '사용자 비활성화',
   'contract.import_create': '계약서 가져오기(신규)',
@@ -49,7 +52,9 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   'support.status_update': 'CS 문의 상태 변경',
   'support.comment_create': 'CS 댓글 등록',
   'support.comment_update': 'CS 댓글 수정',
-  'support.comment_delete': 'CS 댓글 삭제'
+  'support.comment_delete': 'CS 댓글 삭제',
+  'google_tasks.connect': 'Google Tasks 연결',
+  'google_tasks.disconnect': 'Google Tasks 연결 해제'
 };
 
 export const METADATA_LABELS: Record<string, string> = {
@@ -98,7 +103,10 @@ export const METADATA_LABELS: Record<string, string> = {
   sent_count: '발송 성공',
   failed_count: '발송 실패',
   blocked_count: '차단 건수',
-  skipped_count: 'skip 건수'
+  skipped_count: 'skip 건수',
+  google_email: 'Google 이메일',
+  approval_source: '승인 출처',
+  rejection_reason: '거절 사유'
 };
 
 export function isSupportCommentAction(action: ActivityAction): boolean {
@@ -167,6 +175,10 @@ export function getMetadataLabel(key: string): string {
 }
 
 export function getResultLabel(httpStatus: number): string {
+  if (httpStatus === 302 || httpStatus === 303) {
+    return '리다이렉트';
+  }
+
   if (httpStatus >= 200 && httpStatus < 300) {
     return '성공';
   }
@@ -207,7 +219,11 @@ export function getResultBadgeClass(httpStatus: number): string {
     return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300';
   }
 
-  if (httpStatus >= 200 && httpStatus < 300) {
+  if (
+    httpStatus === 302 ||
+    httpStatus === 303 ||
+    (httpStatus >= 200 && httpStatus < 300)
+  ) {
     return 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300';
   }
 
