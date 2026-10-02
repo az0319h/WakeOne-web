@@ -18,6 +18,14 @@ const PROFILE_LIST_SELECT = `
         affiliation,
         rank,
         deactivated_at,
+        google_email,
+        google_display_name,
+        approval_requested_at,
+        approved_at,
+        approved_by,
+        rejected_at,
+        rejected_by,
+        rejection_reason,
         created_at,
         updated_at
       `;
@@ -42,6 +50,14 @@ function mapProfileRow(row: {
   avatar_url: string | null;
   affiliation: User['affiliation'];
   rank: string | null;
+  google_email: string | null;
+  google_display_name: string | null;
+  approval_requested_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
 }): User {
@@ -52,11 +68,19 @@ function mapProfileRow(row: {
     phone: row.phone,
     birthday: row.birthday,
     system_role: row.system_role,
-    invite_status: row.password_set_at ? 'accepted' : 'pending',
+    invite_status: row.status === 'active' ? 'accepted' : 'pending',
     status: row.status,
     avatar_url: row.avatar_url,
     affiliation: row.affiliation,
     rank: row.rank,
+    google_email: row.google_email,
+    google_display_name: row.google_display_name,
+    approval_requested_at: row.approval_requested_at,
+    approved_at: row.approved_at,
+    approved_by: row.approved_by,
+    rejected_at: row.rejected_at,
+    rejected_by: row.rejected_by,
+    rejection_reason: row.rejection_reason,
     created_at: row.created_at,
     updated_at: row.updated_at
   };
@@ -96,13 +120,18 @@ function resolveSort(sortRaw: string | undefined) {
 
 function applyUserListFilters<T extends { in: Function; or: Function; eq: Function }>(
   query: T,
-  filters: Pick<UserFilters, 'search' | 'systemRoles' | 'userId'>
+  filters: Pick<UserFilters, 'search' | 'systemRoles' | 'statuses' | 'userId'>
 ) {
   let next = query;
   const systemRoles = parseCsvParam(filters.systemRoles);
+  const statuses = parseCsvParam(filters.statuses);
 
   if (systemRoles.length > 0) {
     next = next.in('system_role', systemRoles) as T;
+  }
+
+  if (statuses.length > 0) {
+    next = next.in('status', statuses) as T;
   }
 
   if (filters.userId) {

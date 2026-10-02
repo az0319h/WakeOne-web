@@ -1,7 +1,7 @@
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 
 /** 방침 시행일 — 본문을 개정할 때 함께 갱신합니다. */
-const PRIVACY_EFFECTIVE_DATE = '2026-08-04';
+const PRIVACY_EFFECTIVE_DATE = '2026-10-02';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -27,27 +27,37 @@ export default function PrivacyPolicyPage() {
           </h2>
           <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
             <li>
-              <span className='text-foreground font-medium'>계정·프로필 정보</span>: 이름, 이메일
-              주소, 휴대전화번호, 생년월일(생일), 소속, 직급, 프로필 이미지, 계정 권한·상태
+              <span className='text-foreground font-medium'>계정·프로필 정보</span>: 이름, 업무용
+              이메일 주소, Google 계정 이메일·표시 이름, 휴대전화번호, 생년월일(생일), 소속,
+              직급, 부서/사업장, 프로필 이미지, 계정 권한·상태(승인 대기·활성·비활성 등), 가입
+              승인·거절 관련 일시 및 사유
             </li>
             <li>
-              <span className='text-foreground font-medium'>인증 정보</span>: 비밀번호(암호화 저장),
-              로그인 이력, 세션 정보
+              <span className='text-foreground font-medium'>인증 정보</span>: Google OAuth 연동
+              식별 정보, Supabase 세션·쿠키 정보, 로그인 이력(활동 감사 로그 포함)
             </li>
             <li>
               <span className='text-foreground font-medium'>업무 처리 과정에서 생성되는 정보</span>:
               계약 문서의 기안자 이름·이메일, 계약 상대방·계약 내용·금액 등 문서 정보, 첨부파일,
-              법인카드 월 한도 및 잔여 한도, 알림 수신 이력
+              법인카드 월 한도 및 잔여 한도, CS 문의·댓글(제목·본문·상태), 공지사항, 앱 내 알림,
+              식대 잔액 확인 이메일 발송 설정·이력
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>선택적 연동 정보</span>: Google Tasks
+              연동 시 연결된 Google 계정 이메일, Google Tasks API 이용을 위한 암호화 저장된 토큰,
+              작업 목록·작업 내용
             </li>
             <li>
               <span className='text-foreground font-medium'>자동으로 수집되는 정보</span>: 서비스
-              이용 기록(수행 작업, 요청 경로·처리 결과, 발생 일시 등 활동 로그), 시스템 메일 발송
-              이력(수신자 이메일, 발송 상태)
+              이용 기록(수행 작업, 요청 경로·처리 결과, 발생 일시 등 활동 로그), 시스템·안내 메일
+              발송 이력(수신자 이메일, 발송 상태), Live 접속자 정보(접속 중인 이용자 식별 정보),
+              오류·성능 모니터링 정보(IP 주소, 요청 헤더, 오류 스택 등)
             </li>
           </ul>
           <p className='text-muted-foreground mt-3 text-base leading-relaxed'>
-            수집 방법: 관리자의 사용자 계정 등록, 이용자의 프로필 입력·수정, 서비스 이용 과정에서의
-            자동 생성, 외부 연동 시스템(계약 문서 연동, 법인카드 한도 연동)을 통한 수집.
+            수집 방법: Google 계정 OAuth 로그인, 관리자의 가입 승인·프로필 등록, 서비스 이용
+            과정에서의 자동 생성, 이용자의 선택적 Google Tasks 연동, 외부 연동 시스템(계약 문서
+            연동, 법인카드 한도 연동)을 통한 수집.
           </p>
         </section>
 
@@ -55,10 +65,14 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>2. 개인정보의 처리 목적</h2>
           <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
-            <li>계정 발급·본인 식별 및 로그인, 접근 권한 관리</li>
+            <li>Google 계정 로그인, 가입 승인·거절 및 접근 권한 관리</li>
             <li>계약 문서 관리, 첨부 누락 안내 등 업무 처리 및 관련 안내 메일 발송</li>
-            <li>법인카드 한도 조회 등 사내 자원 운영 지원</li>
+            <li>법인카드 한도 조회, 식대 잔액 확인 이메일 발송 및 발송 이력 관리</li>
+            <li>공지사항 제공 및 앱 내 알림 발송</li>
+            <li>CS 문의 접수·응대 및 관련 알림</li>
+            <li>Google Tasks 연동 서비스 제공</li>
             <li>생일자 안내 등 사내 복리후생 및 소통 지원</li>
+            <li>Live 접속자 표시 및 서비스 운영·장애 대응(오류 모니터링 포함)</li>
             <li>부정 이용 방지, 접근 이력 관리, 장애 대응 및 서비스 품질 개선</li>
           </ul>
         </section>
@@ -122,11 +136,22 @@ export default function PrivacyPolicyPage() {
           <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
             <li>
               <span className='text-foreground font-medium'>Supabase, Inc.</span> — 데이터베이스
-              운영, 인증·세션 관리, 파일 저장 (미국 등 서비스 제공 리전)
+              운영, 인증·세션 관리, 파일 저장(Storage), 실시간 통신(Realtime) (미국 등 서비스
+              제공 리전)
             </li>
             <li>
               <span className='text-foreground font-medium'>Vercel, Inc.</span> — 애플리케이션
               호스팅 및 서비스 운영 (미국 등)
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>Google LLC</span> — Google 계정 OAuth
+              로그인, Google Tasks API 연동 (미국 등)
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>
+                Functional Software, Inc. (Sentry)
+              </span>{' '}
+              — 애플리케이션 오류·성능 모니터링 (미국 등)
             </li>
             <li>
               <span className='text-foreground font-medium'>메일 발송 서비스 제공자(SMTP)</span> —
@@ -160,10 +185,11 @@ export default function PrivacyPolicyPage() {
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
             정보주체는 언제든지 개인정보의 열람, 정정·삭제, 처리정지를 요구할 수 있습니다. 프로필
-            정보의 일부는 서비스 내 프로필 화면에서 직접 확인·수정할 수 있으며, 그 밖의 요구는 아래
-            문의처를 통해 서면·이메일 등으로 접수할 수 있습니다. 회사는 요구를 받은 날부터 10일
-            이내에 조치하고 그 결과를 통지합니다. 다만 법령에서 정한 사유에 해당하는 경우 요구가
-            제한될 수 있습니다.
+            정보는 서비스 내 프로필 화면에서 조회할 수 있으며, 직접 수정은 제공하지 않습니다.
+            정정이 필요한 경우 관리자 또는 아래 문의처를 통해 요청할 수 있습니다. 그 밖의
+            열람·정정·삭제·처리정지 요구는 아래 문의처를 통해 서면·이메일 등으로 접수할 수
+            있습니다. 회사는 요구를 받은 날부터 10일 이내에 조치하고 그 결과를 통지합니다. 다만
+            법령에서 정한 사유에 해당하는 경우 요구가 제한될 수 있습니다.
           </p>
         </section>
 
@@ -178,7 +204,10 @@ export default function PrivacyPolicyPage() {
               제어(RLS) 적용
             </li>
             <li>접근 기록 관리: 주요 작업에 대한 활동 로그 기록 및 보관</li>
-            <li>암호화: 비밀번호 일방향 암호화 저장, 통신 구간 HTTPS 암호화</li>
+            <li>
+              암호화: Google OAuth 연동 정보 및 Google Tasks 연동 토큰의 암호화 저장, 통신 구간
+              HTTPS 암호화
+            </li>
             <li>첨부파일 보호: 인증된 이용자만 접근 가능한 저장소 운영 및 다운로드 통제</li>
             <li>퇴직·권한 변경 시 계정 비활성화 및 세션 회수</li>
           </ul>
@@ -190,9 +219,11 @@ export default function PrivacyPolicyPage() {
             10. 쿠키 등 자동 수집 장치의 운영
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
-            회사는 로그인 상태 유지 및 보안을 위해 인증 세션 쿠키를 사용합니다. 이용자는 브라우저
-            설정을 통해 쿠키 저장을 거부할 수 있으나, 이 경우 로그인 등 서비스 이용에 제한이 있을 수
-            있습니다. 회사는 광고·행태정보 수집 목적의 쿠키를 사용하지 않습니다.
+            회사는 로그인 상태 유지 및 보안을 위해 인증 세션 쿠키를 사용합니다. 서비스 운영 및
+            장애 대응을 위해 Sentry 등 제3자 모니터링 도구가 기술적 쿠키 또는 유사 저장 수단을
+            사용할 수 있습니다. 이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이
+            경우 로그인 등 서비스 이용에 제한이 있을 수 있습니다. 회사는 광고·행태정보 수집
+            목적의 쿠키를 사용하지 않습니다.
           </p>
         </section>
 

@@ -1,4 +1,6 @@
-import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { fillBirthday } from '../helpers/birthday-select';
+import { createActiveTestUser } from '../helpers/supabase-direct-auth';
 
 function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
@@ -6,43 +8,13 @@ function uniqueEmail(prefix: string) {
 
 const E2E_TEST_PHONE = '01012345678';
 
-function createUserPayload(email: string, fullName = 'E2E 테스트') {
-  return {
+async function createUserViaApi(email: string, fullName = 'E2E 테스트') {
+  const created = await createActiveTestUser('e2e-list', {
     email,
-    full_name: fullName,
-    affiliation: 'wake',
-    rank: '경영진',
-    system_role: 'user',
-    birthday: '1990-01-01',
+    fullName,
     phone: E2E_TEST_PHONE
-  };
-}
-
-async function createUserViaApi(
-  request: APIRequestContext,
-  email: string,
-  fullName = 'E2E 테스트'
-) {
-  const response = await request.post('/api/users', {
-    data: createUserPayload(email, fullName)
   });
-
-  expect(response.status()).toBe(201);
-  expect(response.headers()['x-request-id']).toBeTruthy();
-
-  const body = (await response.json()) as { user_id?: string };
-  return body.user_id as string;
-}
-
-async function openUserAddDialog(page: Page) {
-  await page.goto('/dashboard/users');
-  await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
-    timeout: 30_000
-  });
-  await page.getByRole('button', { name: '사용자 추가' }).click();
-  const dialog = page.getByRole('dialog', { name: '사용자 추가' });
-  await expect(dialog).toBeVisible();
-  return dialog;
+  return created.userId;
 }
 
 async function selectOption(page: Page, combobox: Locator, optionName: string) {
@@ -50,40 +22,6 @@ async function selectOption(page: Page, combobox: Locator, optionName: string) {
   await page.getByRole('option', { name: optionName, exact: true }).click();
 }
 
-async function fillSignInCredentials(page: Page, email: string, password: string) {
-  const atIndex = email.indexOf('@');
-  const localPart = email.slice(0, atIndex);
-  const domain = email.slice(atIndex + 1);
-
-  await page.getByRole('textbox', { name: '아이디' }).fill(localPart);
-
-  if (domain !== 'wakecorp.com') {
-    await page.getByTestId('login-domain-combobox').click();
-    await page.getByPlaceholder('도메인 검색 또는 입력…').fill(domain);
-    await page.getByRole('option', { name: `「${domain}」 사용` }).click();
-  }
-
-  await page.getByPlaceholder('비밀번호를 입력하세요').fill(password);
-}
-
-async function fillRequiredCreateFields(
-  page: Page,
-  dialog: Locator,
-  email: string,
-  fullName = '홍길동'
-) {
-  await dialog.getByRole('textbox', { name: '이름' }).fill(fullName);
-  await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
-  await dialog.getByRole('textbox', { name: '연락처' }).fill('01012345678');
-  await selectOption(page, dialog.getByRole('combobox', { name: '소속' }), '웨이크');
-  await selectOption(page, dialog.getByRole('combobox', { name: '부서/사업장' }), '경영진');
-  await selectOption(page, dialog.getByRole('combobox', { name: '시스템 역할' }), 'User');
-
-  const comboboxes = dialog.getByRole('combobox');
-  await selectOption(page, comboboxes.nth(3), '1990년');
-  await selectOption(page, comboboxes.nth(4), '1월');
-  await selectOption(page, comboboxes.nth(5), '1일');
-}
 
 test.describe('사용자 목록', () => {
   test('admin can view the users list', async ({ page }) => {
@@ -93,111 +31,20 @@ test.describe('사용자 목록', () => {
     await expect(page.getByRole('columnheader', { name: '이름' })).toBeVisible();
   });
 
-  test('AC-01: 생성 문구가 사용자 추가로 표시된다', async ({ page }) => {
-    const dialog = await openUserAddDialog(page);
-
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('textbox', { name: '이메일' })).toBeVisible();
-    await expect(dialog.getByRole('combobox', { name: '소속' })).toBeVisible();
-    await expect(dialog.getByRole('combobox', { name: '부서/사업장' })).toBeVisible();
-    await expect(dialog.getByRole('combobox', { name: '시스템 역할' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /사용자 초대/ })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /초대 보내기/ })).toHaveCount(0);
-  });
-
-  test('AC-02: 이메일을 비우면 오류가 표시되고 생성되지 않는다', async ({ page }) => {
-    const dialog = await openUserAddDialog(page);
-
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(dialog.getByRole('alert').filter({ hasText: '올바른 이메일 주소' })).toBeVisible();
-  });
-
-  test('AC-03: 필수 조직 정보를 비우면 오류가 표시되고 생성되지 않는다', async ({ page }) => {
-    const dialog = await openUserAddDialog(page);
-
-    await dialog.getByRole('textbox', { name: '이메일' }).fill(uniqueEmail('ac03-user'));
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(dialog.getByRole('alert').filter({ hasText: '소속을 선택해 주세요.' })).toBeVisible();
-    await expect(dialog.getByRole('alert').filter({ hasText: '부서/사업장을 선택해 주세요.' })).toBeVisible();
-    await expect(
-      dialog.getByRole('alert').filter({ hasText: '시스템 역할을 선택해 주세요.' })
-    ).toBeVisible();
-    await expect(dialog.getByRole('alert').filter({ hasText: '생일을 선택해 주세요.' })).toBeVisible();
-  });
-
-  test('AC-19-01: 이름을 비우면 오류가 표시되고 생성되지 않는다', async ({ page }) => {
-    const dialog = await openUserAddDialog(page);
-    const email = uniqueEmail('ac19-01');
-
-    await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
-    await fillRequiredCreateFields(page, dialog, email, '');
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(
-      dialog.getByRole('alert').filter({ hasText: '이름을 입력해 주세요.' })
-    ).toBeVisible();
-  });
-
-  test('AC-19-02: 이름 포함 전체 필수값 입력 후 목록에 표시된다', async ({ page }) => {
-    const email = uniqueEmail('ac19-02');
-    const fullName = `테스트유저${Date.now()}`;
-    const dialog = await openUserAddDialog(page);
-
-    await fillRequiredCreateFields(page, dialog, email, fullName);
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(page.getByText('사용자가 추가되었습니다.')).toBeVisible({ timeout: 30_000 });
-    await expect(
-      page.getByRole('cell', { name: new RegExp(`${fullName}\\s+${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) })
-    ).toBeVisible({ timeout: 15_000 });
-  });
-
-  test('AC-04: 사용자 추가 성공 후 목록에 새로고침 없이 표시된다', async ({ page }) => {
-    const email = uniqueEmail('ac04-user');
-    const dialog = await openUserAddDialog(page);
-
-    await fillRequiredCreateFields(page, dialog, email);
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(page.getByText('사용자가 추가되었습니다.')).toBeVisible();
-    await expect(page.getByRole('cell', { name: new RegExp(email) })).toBeVisible({
-      timeout: 15_000
+  test('AC-05 plan58: 사용자 추가 버튼이 없다', async ({ page }) => {
+    await page.goto('/dashboard/users');
+    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+      timeout: 30_000
     });
+    await expect(page.getByRole('button', { name: '사용자 추가' })).toHaveCount(0);
   });
 
-  test('AC-05: 신규 계정은 초기 비밀번호 로그인 시 force-change로 이동한다', async ({
-    browser,
-    request
-  }) => {
-    const email = uniqueEmail('ac05-user');
-    await createUserViaApi(request, email);
-
-    const context = await browser.newContext({
-      storageState: { cookies: [], origins: [] }
-    });
-    const page = await context.newPage();
-    const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
-
-    await page.goto(`${baseURL}/auth/sign-in`);
-    await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
-    await fillSignInCredentials(page, email, '12341234a');
-    await page.getByRole('button', { name: '로그인' }).click();
-
-    await expect(page).toHaveURL(/\/auth\/force-password-change/, { timeout: 30_000 });
-    await expect(
-      page.getByText('12341234a 비밀번호는 사용할 수 없습니다. 비밀번호를 변경해 주세요')
-    ).toBeVisible();
-    await context.close();
-  });
-
-  test('AC-19-06: admin이 다른 사용자 이름을 수정할 수 있다', async ({ page, request }) => {
+  test('AC-19-06: admin이 다른 사용자 이름을 수정할 수 있다', async ({ page }) => {
     const email = uniqueEmail('ac19-06');
     const originalName = `김철수E2E${Date.now()}`;
     const updatedName = `${originalName}수정`;
 
-    await createUserViaApi(request, email, originalName);
+    await createUserViaApi(email, originalName);
 
     await page.goto('/dashboard/users');
     const targetRow = page.getByRole('row', { name: new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
@@ -218,7 +65,7 @@ test.describe('사용자 목록', () => {
     await expect(page.getByText('사용자 정보가 저장되었습니다.')).toBeVisible();
     await expect(
       page.getByRole('dialog').getByRole('heading', { name: updatedName, level: 2 })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('button', { name: 'Close' }).click();
     await expect(
@@ -237,62 +84,9 @@ test.describe('사용자 목록', () => {
     await expect(page.getByRole('columnheader', { name: '초대 상태' })).toHaveCount(0);
   });
 
-  test('AC-1 plan21: 필수값 입력 후 사용자가 목록에 표시된다', async ({ page }) => {
-    const email = uniqueEmail('ac1-plan21');
-    const dialog = await openUserAddDialog(page);
-
-    await fillRequiredCreateFields(page, dialog, email);
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(page.getByText('사용자가 추가되었습니다.')).toBeVisible();
-    await expect(page.getByRole('cell', { name: new RegExp(email) })).toBeVisible({
-      timeout: 15_000
-    });
-  });
-
-  test('AC-2 plan21: 생일을 비우면 오류가 표시되고 생성되지 않는다', async ({ page }) => {
-    const dialog = await openUserAddDialog(page);
-    const email = uniqueEmail('ac2-plan21');
-
-    await dialog.getByRole('textbox', { name: '이름' }).fill('생일검증');
-    await dialog.getByRole('textbox', { name: '이메일' }).fill(email);
-    await dialog.getByRole('textbox', { name: '연락처' }).fill('01012345678');
-    await selectOption(page, dialog.getByRole('combobox', { name: '소속' }), '웨이크');
-    await selectOption(page, dialog.getByRole('combobox', { name: '부서/사업장' }), '경영진');
-    await selectOption(page, dialog.getByRole('combobox', { name: '시스템 역할' }), 'User');
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(
-      dialog.getByRole('alert').filter({ hasText: '생일을 선택해 주세요.' })
-    ).toBeVisible();
-    await expect(page.getByRole('cell', { name: new RegExp(email) })).toHaveCount(0);
-  });
-
-  test('AC-1 plan30: 연락처를 비우면 오류가 표시되고 생성되지 않는다', async ({ page }) => {
-    const dialog = await openUserAddDialog(page);
-    const email = uniqueEmail('ac1-plan30');
-
-    await fillRequiredCreateFields(page, dialog, email);
-    await dialog.getByRole('textbox', { name: '연락처' }).clear();
-    await dialog.getByRole('button', { name: '사용자 추가' }).click();
-
-    await expect(
-      dialog.getByRole('alert').filter({ hasText: '연락처를 입력해 주세요.' })
-    ).toBeVisible();
-    await expect(page.getByRole('cell', { name: new RegExp(email) })).toHaveCount(0);
-  });
-
-  test('AC-3 plan21: 부서·직책·못 먹는 음식 필드가 없다', async ({ page }) => {
-    const dialog = await openUserAddDialog(page);
-
-    await expect(dialog.getByText('부서', { exact: true })).toHaveCount(0);
-    await expect(dialog.getByText('직책', { exact: true })).toHaveCount(0);
-    await expect(dialog.getByText('못 먹는 음식')).toHaveCount(0);
-  });
-
-  test('AC-7 plan21: admin이 부서/사업장·생일을 수정할 수 있다', async ({ page, request }) => {
+  test('AC-7 plan21: admin이 부서/사업장·생일을 수정할 수 있다', async ({ page }) => {
     const email = uniqueEmail('ac7-plan21');
-    await createUserViaApi(request, email, `부서사업장수정${Date.now()}`);
+    await createUserViaApi(email, `부서사업장수정${Date.now()}`);
 
     await page.goto('/dashboard/users');
     const targetRow = page.getByRole('row', {
@@ -307,10 +101,11 @@ test.describe('사용자 목록', () => {
     await expect(dialog).toBeVisible();
     await selectOption(page, dialog.getByRole('combobox', { name: '부서/사업장' }), '마케팅팀');
 
-    const comboboxes = dialog.getByRole('combobox');
-    await selectOption(page, comboboxes.nth(3), '1991년');
-    await selectOption(page, comboboxes.nth(4), '2월');
-    await selectOption(page, comboboxes.nth(5), '2일');
+    await fillBirthday(page, dialog, {
+      year: '1991년',
+      month: '2월',
+      day: '2일'
+    });
 
     await dialog.getByRole('button', { name: '저장' }).click();
     await expect(page.getByText('사용자 정보가 저장되었습니다.')).toBeVisible();
@@ -320,15 +115,12 @@ test.describe('사용자 목록', () => {
     await expect(profileDialog.getByText('1991년 2월 2일')).toBeVisible();
   });
 
-  test('AC-8 plan21: NULL 생일 사용자에게 생일을 설정할 수 있다', async ({
-    page,
-    request
-  }) => {
+  test('AC-8 plan21: NULL 생일 사용자에게 생일을 설정할 수 있다', async ({ page }) => {
     const email = uniqueEmail('ac8-plan21');
     const fullName = `생일보완${Date.now()}`;
-    const userId = await createUserViaApi(request, email, fullName);
+    const userId = await createUserViaApi(email, fullName);
 
-    const nullBirthdayResponse = await request.put(`/api/users/${userId}`, {
+    const nullBirthdayResponse = await page.request.put(`/api/users/${userId}`, {
       data: { birthday: null, phone: E2E_TEST_PHONE }
     });
     expect(nullBirthdayResponse.status()).toBe(200);
@@ -343,10 +135,11 @@ test.describe('사용자 목록', () => {
     await page.getByRole('button', { name: '조직 정보 수정' }).click();
 
     const dialog = page.getByRole('dialog', { name: '사용자 수정' });
-    const comboboxes = dialog.getByRole('combobox');
-    await selectOption(page, comboboxes.nth(3), '1992년');
-    await selectOption(page, comboboxes.nth(4), '3월');
-    await selectOption(page, comboboxes.nth(5), '3일');
+    await fillBirthday(page, dialog, {
+      year: '1992년',
+      month: '3월',
+      day: '3일'
+    });
     await dialog.getByRole('button', { name: '저장' }).click();
 
     await expect(page.getByText('사용자 정보가 저장되었습니다.')).toBeVisible();
@@ -355,9 +148,9 @@ test.describe('사용자 목록', () => {
     await expect(profileDialog.getByText('1992년 3월 3일')).toBeVisible();
   });
 
-  test('AC-9 plan21: 프로필 Dialog에 소속·부서/사업장만 표시된다', async ({ page, request }) => {
+  test('AC-9 plan21: 프로필 Dialog에 소속·부서/사업장만 표시된다', async ({ page }) => {
     const email = uniqueEmail('ac9-plan21');
-    await createUserViaApi(request, email, `프로필확인${Date.now()}`);
+    await createUserViaApi(email, `프로필확인${Date.now()}`);
 
     await page.goto('/dashboard/users');
     const targetRow = page.getByRole('row', {

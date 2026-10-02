@@ -92,6 +92,26 @@ type InsertContractImportNotificationsInput = {
   importStatus: 'created' | 'backfill';
 };
 
+type InsertUserApprovalRequestAdminNotificationsInput = {
+  targetUserId: string;
+  googleEmail: string;
+  googleDisplayName: string | null;
+};
+
+const USER_APPROVAL_REQUEST_ADMIN_TITLE = 'Google 가입 승인 요청';
+
+function buildUserApprovalRequestAdminBody(
+  googleEmail: string,
+  googleDisplayName: string | null
+): string {
+  const trimmedName = googleDisplayName?.trim();
+  if (trimmedName) {
+    return `${googleEmail} · ${trimmedName}`;
+  }
+
+  return googleEmail;
+}
+
 function buildContractReminderAdminTitle(input: {
   sentCount: number;
   failedCount: number;
@@ -226,6 +246,42 @@ export async function listMatchedAuthorUserIds(authorName: string): Promise<stri
       return fullName && normalizePersonName(fullName) === normalizedAuthorName;
     })
     .map((row) => row.user_id as string);
+}
+
+export async function insertUserApprovalRequestAdminNotifications(
+  input: InsertUserApprovalRequestAdminNotificationsInput
+): Promise<void> {
+  const adminUserIds = await listActiveAdminUserIds();
+  if (adminUserIds.length === 0) {
+    return;
+  }
+
+  const body = buildUserApprovalRequestAdminBody(
+    input.googleEmail,
+    input.googleDisplayName
+  );
+  const supabase = getServiceRoleClient();
+
+  for (let offset = 0; offset < adminUserIds.length; offset += FAN_OUT_BATCH_SIZE) {
+    const batch = adminUserIds.slice(offset, offset + FAN_OUT_BATCH_SIZE);
+    const rows = batch.map((recipientUserId) => ({
+      recipient_user_id: recipientUserId,
+      type: 'user.approval_request_admin' as const,
+      title: USER_APPROVAL_REQUEST_ADMIN_TITLE,
+      body,
+      metadata: {
+        kind: 'user.approval_request_admin',
+        target_user_id: input.targetUserId,
+        google_email: input.googleEmail,
+        google_display_name: input.googleDisplayName
+      }
+    }));
+
+    const { error } = await supabase.from('notifications').insert(rows);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
 }
 
 export async function insertContractImportAdminNotifications(

@@ -9,9 +9,9 @@ export type SessionResult =
   | { ok: false; response: NextResponse };
 
 const UNAUTHORIZED_MESSAGE = '인증이 필요합니다.';
-const INACTIVE_MESSAGE = '비활성화된 계정입니다.';
+const INACTIVE_MESSAGE = '활성화된 계정만 접근할 수 있습니다.';
 const PROFILE_COLUMNS =
-  'user_id, email, full_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, rank';
+  'user_id, email, full_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, rank, google_email, google_display_name, approval_requested_at, approved_at, approved_by, rejected_at, rejected_by, rejection_reason';
 
 export async function getSessionUser() {
   const supabase = await createClient();
@@ -96,7 +96,7 @@ export async function requireSession(): Promise<SessionResult> {
     };
   }
 
-  if (!profile || profile.status === 'inactive') {
+  if (!profile || profile.status !== 'active') {
     return {
       ok: false,
       response: NextResponse.json(
@@ -140,8 +140,12 @@ export async function requireDashboardSession(): Promise<AuthProfile> {
 
   const profile = await getSessionProfile();
 
-  if (!profile || profile.status === 'inactive') {
-    redirect('/auth/sign-in?accountDisabled=1');
+  if (!profile || profile.status !== 'active') {
+    const authStatus =
+      profile?.status === 'pending_approval' || profile?.status === 'rejected'
+        ? profile.status
+        : null;
+    redirect(authStatus ? `/auth/sign-in?authStatus=${authStatus}` : '/auth/sign-in?accountDisabled=1');
   }
 
   return profile;

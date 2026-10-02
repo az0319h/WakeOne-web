@@ -50,6 +50,10 @@ const isGoogleTasksE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/google-tasks')
 );
 
+const isGoogleAuthPendingNotifE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('pending-admin-notifications')
+);
+
 if (isGoogleTasksE2eRun) {
   process.env.E2E_GOOGLE_TASKS_MOCK = '1';
 }
@@ -68,7 +72,8 @@ export default defineConfig({
     isContractImportNotificationsE2eRun ||
     isLiveUsersE2eRun ||
     isWalletBalanceEmailE2eRun ||
-    isGoogleTasksE2eRun
+    isGoogleTasksE2eRun ||
+    isGoogleAuthPendingNotifE2eRun
       ? 1
       : undefined,
   reporter: 'html',

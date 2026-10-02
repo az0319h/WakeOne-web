@@ -52,7 +52,7 @@ export default function SignInViewPage() {
             <div className='w-full space-y-2 text-center'>
               <h1 className='text-2xl font-semibold tracking-tight'>로그인</h1>
               <p className='text-muted-foreground text-sm'>
-                아이디와 비밀번호로 로그인하세요.
+                Google 계정으로 WakeOne에 로그인하세요.
               </p>
             </div>
             <UserAuthForm />

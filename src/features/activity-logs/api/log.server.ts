@@ -54,7 +54,11 @@ const METADATA_ALLOWLIST = new Set([
   'sent_count',
   'failed_count',
   'blocked_count',
-  'skipped_count'
+  'skipped_count',
+  'google_email',
+  'approval_source',
+  'rejection_reason',
+  'birthday_set'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -316,6 +320,26 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === 'recipient_status' && typeof value === 'string') {
       sanitized.recipient_status = value;
+      continue;
+    }
+
+    if (key === 'google_email' && typeof value === 'string') {
+      sanitized.google_email = value;
+      continue;
+    }
+
+    if (key === 'approval_source' && typeof value === 'string') {
+      sanitized.approval_source = value;
+      continue;
+    }
+
+    if (key === 'rejection_reason' && typeof value === 'string') {
+      sanitized.rejection_reason = value;
+      continue;
+    }
+
+    if (key === 'birthday_set' && typeof value === 'boolean') {
+      sanitized.birthday_set = value;
       continue;
     }
 

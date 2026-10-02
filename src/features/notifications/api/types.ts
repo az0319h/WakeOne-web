@@ -1,5 +1,6 @@
 export type NotificationType =
   | 'user.update'
+  | 'user.approval_request_admin'
   | 'contract.reminder_admin'
   | 'contract.reminder_recipient'
   | 'contract.import_admin'
@@ -21,6 +22,7 @@ export type NotificationMetadata = {
   changed_fields?: string[];
   kind?:
     | 'user.update'
+    | 'user.approval_request_admin'
     | 'contract.reminder_admin'
     | 'contract.reminder_recipient'
     | 'contract.import_admin'
@@ -59,6 +61,9 @@ export type NotificationMetadata = {
   document_numbers?: string[];
   request_id?: string;
   matched_count?: number;
+  target_user_id?: string;
+  google_email?: string;
+  google_display_name?: string | null;
 };
 
 export type Notification = {

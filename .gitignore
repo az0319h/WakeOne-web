@@ -5,9 +5,10 @@
 /.next/
 /out/
 
-# env files
+# env files (로컬은 .env 단일 파일만 사용)
 .env
 .env.local
+.env.production
 .env*.local
 
 # debug

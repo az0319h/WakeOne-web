@@ -4,6 +4,7 @@ export type UserFilters = {
   page?: number;
   limit?: number;
   systemRoles?: string;
+  statuses?: string;
   search?: string;
   sort?: string;
   userId?: string;
@@ -19,7 +20,7 @@ export type UsersResponse = {
   users: User[];
 };
 
-export type ProfileStatus = 'active' | 'inactive';
+export type ProfileStatus = 'active' | 'inactive' | 'pending_approval' | 'rejected';
 
 export type User = {
   id: string;
@@ -33,6 +34,14 @@ export type User = {
   avatar_url: string | null;
   affiliation: Affiliation | null;
   rank: string | null;
+  google_email: string | null;
+  google_display_name: string | null;
+  approval_requested_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -60,4 +69,18 @@ export type UserUpdatePayload = {
   rank?: string | null;
   system_role?: 'admin' | 'user';
   birthday?: string | null;
+};
+
+export type ApproveUserPayload = {
+  email: string;
+  full_name: string;
+  phone: string;
+  affiliation: Affiliation;
+  rank: string;
+  system_role: 'admin' | 'user';
+  birthday: string | null;
+};
+
+export type RejectUserPayload = {
+  rejection_reason?: string | null;
 };

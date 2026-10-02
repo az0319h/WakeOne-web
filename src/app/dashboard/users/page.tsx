@@ -4,7 +4,6 @@ import UserListingPage from '@/features/users/components/user-listing';
 import { searchParamsCache } from '@/lib/searchparams';
 import type { SearchParams } from 'nuqs/server';
 import { usersInfoContent } from '@/features/users/info-content';
-import { UserFormSheetTrigger } from '@/features/users/components/user-form-sheet';
 import { requireAdminPage } from '@/features/auth/api/session.server';
 import { Suspense } from 'react';
 
@@ -21,9 +20,8 @@ export default async function UsersPage(props: PageProps) {
   return (
     <PageContainer
       pageTitle='사용자 관리'
-      pageDescription='이메일 초대 및 사용자 목록을 관리합니다.'
+      pageDescription='Google 가입 승인 및 사용자 목록을 관리합니다.'
       infoContent={usersInfoContent}
-      pageHeaderAction={<UserFormSheetTrigger />}
     >
       <Suspense fallback={<PageLoadingSpinner variant='fill' />}>
         <UserListingPage />

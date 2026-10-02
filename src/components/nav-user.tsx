@@ -55,7 +55,6 @@ function NavUserAvatar({
 
 export function NavUser({ profile }: NavUserProps) {
   const { isMobile } = useSidebar();
-  const [passwordOpen, setPasswordOpen] = useState(false);
   const displayName = getProfileDisplayName(profile);
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -112,22 +111,12 @@ export function NavUser({ profile }: NavUserProps) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                setPasswordOpen(true);
-              }}
-            >
-              <Icons.lock className='mr-2 h-4 w-4' />
-              비밀번호 변경
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => void handleSignOut()}>
               <Icons.logout className='mr-2 h-4 w-4' />
               로그아웃
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <ProfilePasswordSheet open={passwordOpen} onOpenChange={setPasswordOpen} />
       </SidebarMenuItem>
     </SidebarMenu>
   );

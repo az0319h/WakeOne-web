@@ -11,6 +11,7 @@ import {
   SELECT_NONE_VALUE
 } from '@/features/users/constants/organization';
 import type {
+  ApproveUserFormValues,
   CreateUserFormValues,
   UserUpdateFormValues
 } from '../schemas/user';
@@ -95,6 +96,66 @@ export function UserCreateFormFields() {
         placeholder='역할 선택'
       />
       <FormBirthdayField name='birthday' label='생일' />
+    </div>
+  );
+}
+
+export function UserApprovalFormFields() {
+  const { FormTextField, FormSelectField, FormBirthdayField } =
+    useFormFields<ApproveUserFormValues>();
+  const form = useFormContext();
+  const affiliation = useStore(form.store, (state) => state.values.affiliation);
+  const activeAffiliation =
+    affiliation === 'wake' ||
+    affiliation === 'sans' ||
+    affiliation === 'sans_foundry'
+      ? affiliation
+      : null;
+
+  const rankOptions = activeAffiliation
+    ? toSelectOptions(RANK_BY_AFFILIATION[activeAffiliation])
+    : [];
+
+  return (
+    <div className='space-y-4'>
+      <FormTextField name='full_name' label='이름' placeholder='이름' />
+      <FormTextField
+        name='email'
+        label='이메일'
+        type='email'
+        placeholder='user@example.com'
+      />
+      <FormPhoneField
+        name='phone'
+        label='연락처'
+        placeholder='010-0000-0000'
+      />
+      <FormSelectField
+        name='affiliation'
+        label='소속'
+        options={REQUIRED_AFFILIATION_SELECT_OPTIONS}
+        placeholder='소속 선택'
+        listeners={{
+          onChange: ({ fieldApi }) => {
+            fieldApi.form.setFieldValue('rank', '');
+          }
+        }}
+      />
+      <FormSelectField
+        name='rank'
+        label='부서/사업장'
+        options={rankOptions}
+        placeholder={
+          activeAffiliation ? '부서/사업장 선택' : '소속을 먼저 선택해 주세요'
+        }
+      />
+      <FormSelectField
+        name='system_role'
+        label='시스템 역할'
+        options={SYSTEM_ROLE_OPTIONS}
+        placeholder='역할 선택'
+      />
+      <FormBirthdayField name='birthday' label='생일' allowUnsetToggle />
     </div>
   );
 }

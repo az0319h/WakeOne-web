@@ -3,6 +3,7 @@ import type { Notification } from '../api/types';
 
 export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-profile': '/dashboard/profile',
+  'view-pending-users': '/dashboard/users?status=pending_approval',
   'view-system-email-logs': '/dashboard/system-email-logs',
   'view-balance-email-logs': '/dashboard/wallet/balance-email-logs',
   'view-wallet': '/dashboard/wallet',
@@ -20,6 +21,17 @@ export function getNotificationActions(
       {
         id: 'view-profile',
         label: '프로필 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (notification.type === 'user.approval_request_admin') {
+    return [
+      {
+        id: 'view-pending-users',
+        label: '승인 대기 목록',
         type: 'redirect',
         style: 'primary'
       }
