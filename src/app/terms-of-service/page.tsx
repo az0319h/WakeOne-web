@@ -1,7 +1,7 @@
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 
 /** 약관 시행일 — 약관 본문을 개정할 때 함께 갱신합니다. */
-const TERMS_EFFECTIVE_DATE = '2026-08-04';
+const TERMS_EFFECTIVE_DATE = '2026-10-02';
 
 export default function TermsOfServicePage() {
   return (
@@ -35,12 +35,14 @@ export default function TermsOfServicePage() {
               말합니다.
             </li>
             <li>
-              <span className='text-foreground font-medium'>이용자</span>: 회사로부터 계정을
-              발급받아 서비스를 이용하는 임직원 및 회사가 이용을 승인한 자를 말합니다.
+              <span className='text-foreground font-medium'>이용자</span>: 관리자의 승인을 받아
+              서비스 이용 자격이 부여된 임직원을 말합니다. 승인 대기, 승인 거절, 비활성 상태의
+              계정은 이용자에 해당하지 않습니다.
             </li>
             <li>
-              <span className='text-foreground font-medium'>계정</span>: 이용자를 식별하고 서비스를
-              이용할 수 있도록 회사가 발급한 이메일 기반의 로그인 수단을 말합니다.
+              <span className='text-foreground font-medium'>계정</span>: Google 계정을 통한 OAuth
+              연동으로 WakeOne에 접근할 수 있도록 부여된 권한 및 이에 연결된 업무용 식별
+              정보(이메일, 이름, 프로필 등)를 말합니다.
             </li>
             <li>
               <span className='text-foreground font-medium'>관리자</span>: 회사로부터 관리자 권한을
@@ -49,7 +51,8 @@ export default function TermsOfServicePage() {
             <li>
               <span className='text-foreground font-medium'>업무 데이터</span>: 이용자가 서비스에
               등록·업로드하거나 서비스 이용 과정에서 생성된 계약 문서, 첨부파일, 기록 등 업무 관련
-              일체의 정보를 말합니다.
+              정보에 더하여, 공지사항, CS 문의·댓글, 앱 내 알림, Google Tasks 연동 데이터 등
+              서비스 이용 과정에서 생성·저장되는 정보를 포함합니다.
             </li>
           </ul>
         </section>
@@ -72,12 +75,15 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>제4조 (계정의 발급)</h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
-            서비스는 일반 공개 서비스가 아니며, 이용자가 직접 가입 신청을 할 수 없습니다. 계정은
-            인사 담당 부서 등 관리자가 신규 입사자 등 이용 대상자를 확인한 후 사용자 관리 화면에서
-            직접 생성합니다. 이용자는 관리자로부터 안내받은 계정 정보로 최초 로그인한 뒤 즉시
-            비밀번호를 변경하여야 합니다. 계정 생성에 필요한 정보는 회사가 보유한 인사 정보를
-            기준으로 등록되며, 정보가 변경된 경우 이용자는 지체 없이 이를 수정하거나 관리자에게
-            알려야 합니다.
+            서비스는 일반 공개 가입 서비스가 아니며, 이용자가 임의로 회원가입을 신청할 수
+            없습니다. 임직원은 회사가 허용한 Google 계정으로 로그인하여 서비스에 접근할 수
+            있습니다. 회사에 등록된 Google 계정으로 최초 로그인하는 경우, 관리자의 승인 전까지
+            서비스 이용이 제한될 수 있습니다. 관리자는 사용자 관리 화면에서 가입 승인 또는
+            거절을 결정하며, 승인 시 업무용 이메일, 이름, 소속, 직급, 연락처 등 필요한 정보를
+            확인·등록합니다. 이미 이용 자격이 부여된 이용자는 동일한 Google 계정으로 로그인하여
+            서비스를 이용합니다. 승인이 거절되었거나 계정이 비활성화된 경우, 해당 계정으로는
+            서비스에 접근할 수 없습니다. 인사 정보(소속, 직급, 연락처 등)가 변경된 경우, 이용자는
+            지체 없이 관리자 또는 아래 문의처를 통해 알려야 합니다.
           </p>
         </section>
 
@@ -87,10 +93,12 @@ export default function TermsOfServicePage() {
             제5조 (계정 관리 및 이용자의 의무)
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
-            이용자는 자신의 계정과 비밀번호를 직접 관리할 책임이 있으며, 이를 제3자에게 양도·대여
-            하거나 공유할 수 없습니다. 계정의 도용, 무단 사용 등 이상 징후를 인지한 경우 이용자는
-            즉시 회사에 통지하고 회사의 안내에 따라야 합니다. 이용자의 관리 소홀로 발생한 결과에
-            대하여 회사는 책임을 지지 않습니다.
+            이용자는 자신의 Google 계정 및 WakeOne 접근 권한을 스스로 관리할 책임이 있으며,
+            계정을 제3자에게 양도·대여하거나 공유할 수 없습니다. Google 계정의 보안(비밀번호,
+            2단계 인증 등)은 Google의 정책 및 이용자의 관리 책임에 따릅니다. 계정의 도용, 무단
+            사용, 승인되지 않은 접근 시도 등 이상 징후를 인지한 경우, 이용자는 즉시 회사에
+            통지하고 회사의 안내에 따라야 합니다. 이용자의 관리 소홀로 발생한 결과에 대하여
+            회사는 책임을 지지 않습니다.
           </p>
         </section>
 
@@ -102,11 +110,20 @@ export default function TermsOfServicePage() {
             추가·변경할 수 있습니다.
           </p>
           <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
-            <li>임직원 계정 및 프로필(소속, 직급, 연락처 등) 관리</li>
-            <li>계약 문서의 조회·등록·수정 및 첨부파일 관리, 첨부 누락 안내 메일 발송</li>
-            <li>법인카드 등 한도 정보의 동기화 및 조회</li>
+            <li>Google 계정 로그인 및 관리자 가입 승인·거절</li>
+            <li>임직원 계정 및 프로필(소속, 직급, 부서/사업장, 연락처 등) 관리</li>
+            <li>공지사항 조회, 첨부파일 제공 및 앱 내 알림</li>
+            <li>CS 문의 등록·댓글 및 관리자 응대</li>
+            <li>
+              계약 문서의 조회·등록·수정, 첨부파일 관리, 첨부 누락 안내 메일 발송, 계약 일괄
+              다운로드
+            </li>
+            <li>이용자 본인 이름과 일치하는 계약서 조회(내 계약서)</li>
+            <li>법인카드 등 식대 한도 정보의 동기화·조회 및 잔액 확인 이메일 발송</li>
+            <li>Google Tasks 연동(선택): 업무 목록 조회 및 연결 해제</li>
             <li>생일자 안내 등 사내 운영 지원 기능</li>
-            <li>알림, 활동 로그, 시스템 메일 발송 이력 조회</li>
+            <li>대시보드 Live 접속자 표시</li>
+            <li>알림, 활동 로그, 시스템·이메일 발송 이력 조회</li>
           </ul>
         </section>
 

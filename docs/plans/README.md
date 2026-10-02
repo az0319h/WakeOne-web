@@ -94,6 +94,7 @@
 | 54 | [54_google-tasks-cud-plan.md](./54_google-tasks-cud-plan.md) | **Approved** · Google Tasks CUD · 완료/정렬/move · write scope · task activity log |
 | 55 | [55_wallet-balance-email-admin-dual-slot-plan.md](./55_wallet-balance-email-admin-dual-slot-plan.md) | **Approved** · 식대 잔액 이메일 admin run 요약 알림 · 2회 KST 슬롯 · plan 51 확장 · SQL `55` |
 | 56 | [56_wallet-balance-email-slot-copy-plan.md](./56_wallet-balance-email-slot-copy-plan.md) | **Approved** · 슬롯별 이메일·인앱 고정 카피 · metadata.slot · plan 51/55 확장 · SQL 없음 |
+| 60 | [60_legal-docs-alignment-plan.md](./60_legal-docs-alignment-plan.md) | **Approved** · 이용약관·개인정보처리방침 Google 승인제·기능·위탁 현행화 · FE 2파일 · BE Out |
 
 ## 에이전트 참조
 
