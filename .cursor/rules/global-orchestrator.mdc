@@ -105,6 +105,8 @@ planner 내부: Phase 2 battle-plan 종료 시 사용자 **`go`** (또는 `진�
 - 행동: 해당 호출을 명확한 실행 의도로 간주하고 즉시 실행
 - 참고: 직접 호출 시에도 `core-conventions.mdc`는 항상 적용
 - 예외 설명: `@.cursor/agents/commit-pr.md` 직접 호출 시 커밋/PR 자동화만 독립 실행한다.
+- **`animate-ui`:** `/animate-ui http://localhost:3000/auth/sign-in` 또는 `/animate-ui /auth/sign-in` — **root 파이프라인 제외**. WakeOne **페이지 URL → 소스로 UI 분석** → shadcn MCP(`@animate-ui`)로 등장 효과 **3안(animate-ui docs 링크)** → 사용자 선택 후 **`frontend-dev` 위임** (`.cursor/agents/animate-ui.md`). Playwright **기본 불필요**.
+- **`commit-pr`·`release-pr` 공통:** `gh pr create`까지만 — **`gh pr merge` 절대 금지**. 사용자 `승인`은 PR 생성 허가이며 merge·운영 최종 확인은 **항상 사용자**가 GitHub에서 수행.
 
 ---
 
