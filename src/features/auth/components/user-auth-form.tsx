@@ -83,16 +83,13 @@ function UserAuthFormFields() {
   }, [searchParams]);
 
   return (
-    <div className='w-full space-y-4'>
+    <div className='w-full'>
       <Button asChild className='w-full' size='lg'>
         <a href={googleStartHref}>
-          <Icons.login className='h-4 w-4' />
+          <Icons.google className='h-5 w-5 shrink-0' />
           Google로 로그인
         </a>
       </Button>
-      <p className='text-muted-foreground text-center text-xs'>
-        승인된 계정만 대시보드에 접근할 수 있습니다.
-      </p>
     </div>
   );
 }
