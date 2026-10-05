@@ -2,7 +2,9 @@
 
 import { Separator } from '@/components/ui/separator';
 import type { AuthProfile } from '@/features/auth/api/types';
+import { formatLeaderRoleLabel } from '@/features/org-chart/lib/format-person-label';
 import { getAffiliationLabel } from '@/features/users/constants/organization';
+import { ProfileAdminPageContent } from './profile-admin-page-content';
 import { ProfileAvatar, ReadOnlyField } from './profile-display';
 import { ProfileAccountReadOnly } from './profile-account-read-only';
 
@@ -31,6 +33,10 @@ function ProfileSection({
 }
 
 export function ProfilePageContent({ profile }: ProfilePageContentProps) {
+  if (profile.system_role === 'admin') {
+    return <ProfileAdminPageContent profile={profile} />;
+  }
+
   return (
     <div className='mx-auto flex w-full max-w-3xl flex-col gap-8'>
       <ProfileSection
@@ -50,6 +56,11 @@ export function ProfilePageContent({ profile }: ProfilePageContentProps) {
         <div className='grid gap-4 sm:grid-cols-2'>
           <ReadOnlyField label='소속' value={getAffiliationLabel(profile.affiliation)} />
           <ReadOnlyField label='부서/사업장' value={profile.rank} />
+          <ReadOnlyField label='직급' value={profile.position_level} />
+          <ReadOnlyField
+            label='리더 역할'
+            value={formatLeaderRoleLabel(profile.leader_role)}
+          />
         </div>
       </ProfileSection>
 

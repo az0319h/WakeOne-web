@@ -106,7 +106,8 @@ export const METADATA_LABELS: Record<string, string> = {
   skipped_count: 'skip 건수',
   google_email: 'Google 이메일',
   approval_source: '승인 출처',
-  rejection_reason: '거절 사유'
+  rejection_reason: '거절 사유',
+  affiliation: '소속'
 };
 
 export function isSupportCommentAction(action: ActivityAction): boolean {

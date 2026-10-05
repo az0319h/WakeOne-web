@@ -15,13 +15,17 @@ import { Icons } from '@/components/icons';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { approveUserMutation } from '../api/mutations';
-import type { Affiliation } from '../constants/organization';
+import {
+  normalizeLeaderRole,
+  SELECT_NONE_VALUE,
+  type Affiliation
+} from '../constants/organization';
 import type { User } from '../api/types';
 import {
   approveUserSchema,
   type ApproveUserFormValues
 } from '../schemas/user';
-import { UserApprovalFormFields } from './user-edit-form-fields';
+import { UserApprovalOrgFormFields } from './user-org-form-fields';
 
 interface UserApprovalSheetProps {
   user: User;
@@ -35,6 +39,8 @@ function buildApproveDefaultValues(user: User): ApproveUserFormValues {
     full_name: '',
     affiliation: '',
     rank: '',
+    position_level: '',
+    leader_role: SELECT_NONE_VALUE,
     system_role: '',
     birthday: null,
     phone: ''
@@ -66,14 +72,30 @@ export function UserApprovalSheet({
       onSubmit: approveUserSchema
     },
     onSubmit: async ({ value }) => {
+      if (value.system_role === 'admin') {
+        await approveMutation.mutateAsync({
+          id: user.id,
+          values: {
+            email: value.email.trim().toLowerCase(),
+            full_name: value.full_name.trim(),
+            phone: value.phone,
+            system_role: 'admin',
+            birthday: null
+          }
+        });
+        return;
+      }
+
       await approveMutation.mutateAsync({
         id: user.id,
         values: {
           email: value.email.trim().toLowerCase(),
           full_name: value.full_name.trim(),
           affiliation: value.affiliation as Affiliation,
-          rank: value.rank.trim(),
-          system_role: value.system_role as 'admin' | 'user',
+          rank: value.rank?.trim() ?? '',
+          position_level: value.position_level ?? '',
+          leader_role: normalizeLeaderRole(value.leader_role),
+          system_role: 'user',
           birthday: value.birthday ?? null,
           phone: value.phone
         }
@@ -119,7 +141,7 @@ export function UserApprovalSheet({
 
           <form.AppForm>
             <form.Form id='user-approval-sheet' className='space-y-4'>
-              <UserApprovalFormFields />
+              <UserApprovalOrgFormFields />
             </form.Form>
           </form.AppForm>
         </div>

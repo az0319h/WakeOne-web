@@ -17,6 +17,8 @@ const PROFILE_LIST_SELECT = `
         avatar_url,
         affiliation,
         rank,
+        position_level,
+        leader_role,
         deactivated_at,
         google_email,
         google_display_name,
@@ -50,6 +52,8 @@ function mapProfileRow(row: {
   avatar_url: string | null;
   affiliation: User['affiliation'];
   rank: string | null;
+  position_level: string | null;
+  leader_role: User['leader_role'];
   google_email: string | null;
   google_display_name: string | null;
   approval_requested_at: string | null;
@@ -73,6 +77,8 @@ function mapProfileRow(row: {
     avatar_url: row.avatar_url,
     affiliation: row.affiliation,
     rank: row.rank,
+    position_level: row.position_level,
+    leader_role: row.leader_role,
     google_email: row.google_email,
     google_display_name: row.google_display_name,
     approval_requested_at: row.approval_requested_at,
