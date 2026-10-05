@@ -1,4 +1,7 @@
-import type { Affiliation } from '@/features/users/constants/organization';
+import type {
+  Affiliation,
+  LeaderRole
+} from '@/features/users/constants/organization';
 
 export type SystemRole = 'admin' | 'user';
 
@@ -16,6 +19,8 @@ export type AuthProfile = {
   avatar_url: string | null;
   affiliation: Affiliation | null;
   rank: string | null;
+  position_level: string | null;
+  leader_role: LeaderRole | null;
   google_email?: string | null;
   google_display_name?: string | null;
   approval_requested_at?: string | null;

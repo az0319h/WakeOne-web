@@ -32,7 +32,8 @@ export const searchParams = {
   pinned: parseAsString,
   support: parseAsString,
   support_status: parseAsString,
-  support_user: parseAsString
+  support_user: parseAsString,
+  affiliation: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')

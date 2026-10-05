@@ -32,6 +32,14 @@ export const navGroups: NavGroup[] = [
         shortcut: ['a', 'n'],
         isActive: false,
         items: []
+      },
+      {
+        title: '조직도',
+        url: '/dashboard/org-chart',
+        icon: 'teams',
+        shortcut: ['o', 'r'],
+        isActive: false,
+        items: []
       }
     ]
   },

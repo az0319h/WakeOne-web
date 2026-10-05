@@ -1,4 +1,7 @@
-import type { Affiliation } from '@/features/users/constants/organization';
+import type {
+  Affiliation,
+  LeaderRole
+} from '@/features/users/constants/organization';
 
 export type UserFilters = {
   page?: number;
@@ -34,6 +37,8 @@ export type User = {
   avatar_url: string | null;
   affiliation: Affiliation | null;
   rank: string | null;
+  position_level: string | null;
+  leader_role: LeaderRole | null;
   google_email: string | null;
   google_display_name: string | null;
   approval_requested_at: string | null;
@@ -63,23 +68,35 @@ export type InvitePayload = {
 
 export type UserUpdatePayload = {
   full_name?: string;
-  phone: string;
+  phone?: string;
   avatar_url?: string | null;
   affiliation?: Affiliation | null;
   rank?: string | null;
+  position_level?: string | null;
+  leader_role?: LeaderRole | null;
   system_role?: 'admin' | 'user';
   birthday?: string | null;
 };
 
-export type ApproveUserPayload = {
-  email: string;
-  full_name: string;
-  phone: string;
-  affiliation: Affiliation;
-  rank: string;
-  system_role: 'admin' | 'user';
-  birthday: string | null;
-};
+export type ApproveUserPayload =
+  | {
+      email: string;
+      full_name: string;
+      phone: string;
+      system_role: 'admin';
+      birthday: null;
+    }
+  | {
+      email: string;
+      full_name: string;
+      phone: string;
+      affiliation: Affiliation;
+      rank: string;
+      position_level: string;
+      leader_role?: LeaderRole | null;
+      system_role: 'user';
+      birthday: string | null;
+    };
 
 export type RejectUserPayload = {
   rejection_reason?: string | null;

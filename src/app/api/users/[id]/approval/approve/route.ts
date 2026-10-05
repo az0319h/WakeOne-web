@@ -10,6 +10,11 @@ import {
   resolveLoggingActor
 } from '@/features/activity-logs/api/log.server';
 import { requireAdminSession } from '@/features/auth/api/admin.server';
+import {
+  normalizeLeaderRole,
+  resolveRankFromPositionLevel,
+  type Affiliation
+} from '@/features/users/constants/organization';
 import { approveUserSchema } from '@/features/users/schemas/user';
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
@@ -184,24 +189,53 @@ export async function POST(request: NextRequest, { params }: Params) {
       email: normalizeEmail(parsed.data.email)
     };
 
+    const isAdminTarget = payload.system_role === 'admin';
+
+    const userRank = !isAdminTarget
+      ? resolveRankFromPositionLevel(payload.position_level!) ?? payload.rank!
+      : null;
+
+    const profileUpdate = isAdminTarget
+      ? {
+          email: payload.email,
+          full_name: payload.full_name,
+          affiliation: null,
+          rank: null,
+          position_level: null,
+          leader_role: null,
+          system_role: 'admin' as const,
+          birthday: null,
+          phone: payload.phone,
+          status: 'active' as const,
+          deactivated_at: null,
+          approved_at: new Date().toISOString(),
+          approved_by: adminCheck.userId,
+          rejected_at: null,
+          rejected_by: null,
+          rejection_reason: null
+        }
+      : {
+          email: payload.email,
+          full_name: payload.full_name,
+          affiliation: payload.affiliation as Affiliation,
+          rank: userRank,
+          position_level: payload.position_level!,
+          leader_role: normalizeLeaderRole(payload.leader_role),
+          system_role: 'user' as const,
+          birthday: payload.birthday ?? null,
+          phone: payload.phone,
+          status: 'active' as const,
+          deactivated_at: null,
+          approved_at: new Date().toISOString(),
+          approved_by: adminCheck.userId,
+          rejected_at: null,
+          rejected_by: null,
+          rejection_reason: null
+        };
+
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({
-        email: payload.email,
-        full_name: payload.full_name,
-        affiliation: payload.affiliation,
-        rank: payload.rank,
-        system_role: payload.system_role,
-        birthday: payload.birthday,
-        phone: payload.phone,
-        status: 'active',
-        deactivated_at: null,
-        approved_at: new Date().toISOString(),
-        approved_by: adminCheck.userId,
-        rejected_at: null,
-        rejected_by: null,
-        rejection_reason: null
-      })
+      .update(profileUpdate)
       .eq('user_id', id);
 
     if (updateError) {
@@ -226,6 +260,21 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     const successTargetLabel = await fetchUserTargetLabel(id);
+    const changedFields = isAdminTarget
+      ? ['email', 'full_name', 'system_role', 'phone', 'status']
+      : [
+          'email',
+          'full_name',
+          'affiliation',
+          'rank',
+          'position_level',
+          'leader_role',
+          'system_role',
+          'birthday',
+          'phone',
+          'status'
+        ];
+
     return jsonWithActivityLog(
       requestId,
       {
@@ -236,22 +285,21 @@ export async function POST(request: NextRequest, { params }: Params) {
         targetLabel: successTargetLabel,
         httpMethod: 'POST',
         httpPath,
-        metadata: {
-          previous_status: target.status,
-          new_status: 'active',
-          birthday_set: payload.birthday != null,
-          changed_fields: [
-            'email',
-            'full_name',
-            'affiliation',
-            'rank',
-            'system_role',
-            'birthday',
-            'phone',
-            'status'
-          ],
-          approval_source: 'admin'
-        }
+        metadata: isAdminTarget
+          ? {
+              previous_status: target.status,
+              new_status: 'active',
+              changed_fields: changedFields,
+              admin_profile: true,
+              approval_source: 'admin'
+            }
+          : {
+              previous_status: target.status,
+              new_status: 'active',
+              birthday_set: payload.birthday != null,
+              changed_fields: changedFields,
+              approval_source: 'admin'
+            }
       },
       { success: true, message: '사용자를 승인했습니다.' },
       200

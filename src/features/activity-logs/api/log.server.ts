@@ -58,7 +58,8 @@ const METADATA_ALLOWLIST = new Set([
   'google_email',
   'approval_source',
   'rejection_reason',
-  'birthday_set'
+  'birthday_set',
+  'affiliation'
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
