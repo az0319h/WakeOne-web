@@ -78,7 +78,7 @@ test.describe('sign-in visible copy', () => {
       await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible();
       await expect(page.locator('main')).toBeVisible();
       await expect(page.getByRole('region', { name: 'WakeOne 소개' })).toBeHidden();
-      await expect(page.getByText(/관리자 지정 계정으로 로그인해/)).toBeHidden();
+      await expect(page.getByText(/Google 계정으로 로그인해 사내 업무 정보를/)).toBeHidden();
     }
   });
 });
