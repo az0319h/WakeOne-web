@@ -39,5 +39,5 @@ export function OrgChartDataBody({ affiliation }: OrgChartDataBodyProps) {
     return <OrgChartD3Canvas nodes={data.nodes} affiliation={affiliation} />;
   }
 
-  return <OrgChartDrillDown nodes={data.nodes} />;
+  return <OrgChartDrillDown nodes={data.nodes} affiliation={affiliation} />;
 }

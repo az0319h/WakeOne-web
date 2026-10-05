@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { getInitials } from '@/features/auth/components/profile-display';
+import type { Affiliation } from '@/features/users/constants/organization';
 import { formatPersonLabel } from '@/features/org-chart/lib/format-person-label';
+import { pickLeadershipNodes } from '@/features/org-chart/lib/pick-leadership-nodes';
 import { isOrgChartDisplayEmpty } from '../lib/is-chart-empty';
 import type { OrgChartNode } from '../api/types';
 
 interface OrgChartDrillDownProps {
   nodes: OrgChartNode[];
+  affiliation: Affiliation;
 }
 
 function MemberCard({ node }: { node: OrgChartNode }) {
@@ -45,8 +48,13 @@ function MemberCard({ node }: { node: OrgChartNode }) {
   );
 }
 
-export function OrgChartDrillDown({ nodes }: OrgChartDrillDownProps) {
+export function OrgChartDrillDown({ nodes, affiliation }: OrgChartDrillDownProps) {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+
+  const leadershipNodes = useMemo(
+    () => pickLeadershipNodes(nodes, affiliation),
+    [nodes, affiliation]
+  );
 
   const teamNodes = useMemo(
     () => nodes.filter((node) => node.nodeType === 'team'),
@@ -71,7 +79,10 @@ export function OrgChartDrillDown({ nodes }: OrgChartDrillDownProps) {
     ? (membersByTeam.get(selectedTeamId) ?? [])
     : [];
 
-  if (isOrgChartDisplayEmpty(nodes) || teamNodes.length === 0) {
+  if (
+    isOrgChartDisplayEmpty(nodes) ||
+    (teamNodes.length === 0 && leadershipNodes.length === 0)
+  ) {
     return (
       <div className='text-muted-foreground flex flex-col items-center gap-2 px-4 py-8 text-center text-sm'>
         <p>표시할 임직원이 없습니다.</p>
@@ -117,26 +128,46 @@ export function OrgChartDrillDown({ nodes }: OrgChartDrillDownProps) {
   }
 
   return (
-    <div className='grid gap-3'>
-      {teamNodes.map((team) => {
-        const memberCount = membersByTeam.get(team.id)?.length ?? 0;
+    <div className='flex flex-col gap-6'>
+      {leadershipNodes.length > 0 ? (
+        <section data-testid='org-chart-leadership'>
+          <h3 className='text-muted-foreground mb-3 text-sm font-medium'>경영진</h3>
+          <div className='flex flex-col gap-3'>
+            {leadershipNodes.map((leader) => (
+              <MemberCard key={leader.id} node={leader} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-        return (
-          <Card
-            key={team.id}
-            className='cursor-pointer transition-colors hover:bg-muted/40'
-            onClick={() => setSelectedTeamId(team.id)}
-          >
-            <CardHeader className='flex flex-row items-center justify-between space-y-0 p-4'>
-              <CardTitle className='text-base font-medium'>{team.name}</CardTitle>
-              <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-                <span>{memberCount}명</span>
-                <Icons.chevronRight className='h-4 w-4' />
-              </div>
-            </CardHeader>
-          </Card>
-        );
-      })}
+      {teamNodes.length > 0 ? (
+        <section data-testid='org-chart-teams'>
+          {leadershipNodes.length > 0 ? (
+            <h3 className='text-muted-foreground mb-3 text-sm font-medium'>팀</h3>
+          ) : null}
+          <div className='grid gap-3'>
+            {teamNodes.map((team) => {
+              const memberCount = membersByTeam.get(team.id)?.length ?? 0;
+
+              return (
+                <Card
+                  key={team.id}
+                  className='cursor-pointer transition-colors hover:bg-muted/40'
+                  onClick={() => setSelectedTeamId(team.id)}
+                >
+                  <CardHeader className='flex flex-row items-center justify-between space-y-0 p-4'>
+                    <CardTitle className='text-base font-medium'>{team.name}</CardTitle>
+                    <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+                      <span>{memberCount}명</span>
+                      <Icons.chevronRight className='h-4 w-4' />
+                    </div>
+                  </CardHeader>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
