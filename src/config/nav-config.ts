@@ -110,14 +110,6 @@ export const navGroups: NavGroup[] = [
         ]
       },
       {
-        title: 'Google Tasks',
-        url: '/dashboard/tasks',
-        icon: 'forms',
-        shortcut: ['g', 't'],
-        isActive: false,
-        items: []
-      },
-      {
         title: '알림',
         url: '/dashboard/notifications',
         icon: 'notification',
