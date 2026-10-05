@@ -11,7 +11,6 @@ export const KBAR_NAV_SYNONYMS: Record<string, string> = {
   프로필: 'profile account 내 정보 settings',
   '내 계약서': 'my contracts contract 계약서 mc my-contracts',
   '식대 카드': 'wallet money 잔액 식대 meal wl',
-  'Google Tasks': 'tasks google 할일 tasklist gt',
   알림: 'notifications notification 알림함 nt',
   '활동 로그': 'logs activity audit 감사 log lg'
 };
