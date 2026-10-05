@@ -132,6 +132,8 @@ export type ActivityLogMetadata = {
   approval_source?: string;
   rejection_reason?: string;
   birthday_set?: boolean;
+  admin_profile?: boolean;
+  affiliation?: string;
 };
 
 export type ActivityLog = {

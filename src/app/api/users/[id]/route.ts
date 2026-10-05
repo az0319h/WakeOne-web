@@ -14,7 +14,12 @@ import { adminBanUser, adminSignOutGlobal, adminUnbanUser } from '@/lib/auth/adm
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   AFFILIATIONS,
+  LEADER_ROLES,
+  normalizeLeaderRole,
+  resolveRankFromPositionLevel,
+  SELECT_NONE_VALUE,
   validateOrganizationFields,
+  validatePositionFields,
   type Affiliation
 } from '@/features/users/constants/organization';
 import { insertUserUpdateNotification } from '@/features/notifications/api/fan-out.server';
@@ -32,17 +37,33 @@ const updateUserSchema = z
     avatar_url: z.string().url().max(2048).nullable().optional(),
     affiliation: z.enum(AFFILIATIONS).nullable().optional(),
     rank: z.string().max(50).nullable().optional(),
+    position_level: z.string().max(50).nullable().optional(),
+    leader_role: z
+      .union([z.enum(LEADER_ROLES), z.literal(SELECT_NONE_VALUE), z.null()])
+      .optional(),
     system_role: z.enum(['admin', 'user']).optional(),
     birthday: birthdaySchema,
     phone: z
       .string()
       .min(1, '연락처를 입력해 주세요.')
       .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.')
+      .optional()
   })
   .superRefine((data, ctx) => {
     validateOrganizationFields(data, ctx);
+    validatePositionFields(data, ctx);
     refineBirthday(data.birthday, ctx);
   });
+
+const ADMIN_TARGET_ALLOWED_FIELDS = ['avatar_url', 'system_role'] as const;
+const ADMIN_TARGET_IGNORED_ORG_FIELDS = [
+  'affiliation',
+  'rank',
+  'phone',
+  'birthday',
+  'position_level',
+  'leader_role'
+] as const;
 
 const patchUserSchema = z.object({
   action: z.literal('reactivate')
@@ -125,53 +146,11 @@ export async function PUT(request: NextRequest, { params }: Params) {
       );
     }
 
-    const parsed = updateUserSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return jsonWithActivityLog(
-        requestId,
-        {
-          ...actor,
-          action: 'user.update',
-          targetType: 'user',
-          targetUserId: id,
-          targetLabel,
-          httpMethod: 'PUT',
-          httpPath,
-          metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
-        },
-        { success: false, message: '입력값이 올바르지 않습니다.' },
-        400
-      );
-    }
-
-    const updates = Object.fromEntries(
-      Object.entries(parsed.data).filter(([, value]) => value !== undefined)
-    );
-
-    if (Object.keys(updates).length === 0) {
-      return jsonWithActivityLog(
-        requestId,
-        {
-          ...actor,
-          action: 'user.update',
-          targetType: 'user',
-          targetUserId: id,
-          targetLabel,
-          httpMethod: 'PUT',
-          httpPath,
-          metadata: buildErrorMetadata('validation', '수정할 항목이 없습니다.')
-        },
-        { success: false, message: '수정할 항목이 없습니다.' },
-        400
-      );
-    }
-
     const supabase = getServiceRoleClient();
 
     const { data: target, error: fetchError } = await supabase
       .from('profiles')
-      .select('status, affiliation, rank')
+      .select('status, affiliation, rank, system_role, position_level, leader_role')
       .eq('user_id', id)
       .maybeSingle();
 
@@ -231,24 +210,139 @@ export async function PUT(request: NextRequest, { params }: Params) {
       );
     }
 
-    const effectiveAffiliation = (updates.affiliation ?? target.affiliation) as Affiliation | null;
-    const effectiveRank = 'rank' in updates ? (updates.rank as string | null) : target.rank;
+    let updates: Record<string, unknown>;
 
-    const mergedOrgValidation = z
-      .object({
-        affiliation: z.enum(AFFILIATIONS).nullable(),
-        rank: z.string().max(50).nullable()
-      })
-      .superRefine((data, ctx) => validateOrganizationFields(data, ctx))
-      .safeParse({
-        affiliation: effectiveAffiliation,
-        rank: effectiveRank
-      });
+    if (target.system_role === 'admin') {
+      if ('full_name' in body) {
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.update',
+            targetType: 'user',
+            targetUserId: id,
+            targetLabel,
+            httpMethod: 'PUT',
+            httpPath,
+            metadata: buildErrorMetadata(
+              'forbidden_field',
+              '관리자 이름은 수정할 수 없습니다.',
+              { attempted_target: id }
+            )
+          },
+          { success: false, message: '관리자 이름은 수정할 수 없습니다.' },
+          400
+        );
+      }
 
-    if (!mergedOrgValidation.success) {
-      const orgMessage =
-        mergedOrgValidation.error.issues[0]?.message ??
-        '소속에 맞지 않는 조직 정보입니다.';
+      updates = Object.fromEntries(
+        Object.entries(body as Record<string, unknown>).filter(([key]) =>
+          ADMIN_TARGET_ALLOWED_FIELDS.includes(key as (typeof ADMIN_TARGET_ALLOWED_FIELDS)[number])
+        )
+      );
+
+      if (updates.avatar_url !== undefined && updates.avatar_url !== null) {
+        const avatarResult = z.string().url().max(2048).safeParse(updates.avatar_url);
+        if (!avatarResult.success) {
+          return jsonWithActivityLog(
+            requestId,
+            {
+              ...actor,
+              action: 'user.update',
+              targetType: 'user',
+              targetUserId: id,
+              targetLabel,
+              httpMethod: 'PUT',
+              httpPath,
+              metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
+            },
+            { success: false, message: '입력값이 올바르지 않습니다.' },
+            400
+          );
+        }
+      }
+
+      if (
+        updates.system_role !== undefined &&
+        updates.system_role !== 'admin' &&
+        updates.system_role !== 'user'
+      ) {
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.update',
+            targetType: 'user',
+            targetUserId: id,
+            targetLabel,
+            httpMethod: 'PUT',
+            httpPath,
+            metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
+          },
+          { success: false, message: '입력값이 올바르지 않습니다.' },
+          400
+        );
+      }
+    } else {
+      const parsed = updateUserSchema.safeParse(body);
+
+      if (!parsed.success) {
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.update',
+            targetType: 'user',
+            targetUserId: id,
+            targetLabel,
+            httpMethod: 'PUT',
+            httpPath,
+            metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
+          },
+          { success: false, message: '입력값이 올바르지 않습니다.' },
+          400
+        );
+      }
+
+      updates = Object.fromEntries(
+        Object.entries(parsed.data).filter(([, value]) => value !== undefined)
+      );
+
+      if ('leader_role' in updates) {
+        updates.leader_role = normalizeLeaderRole(
+          updates.leader_role as string | null | undefined
+        );
+      }
+
+      const effectivePositionLevel =
+        (updates.position_level as string | null | undefined) ?? target.position_level;
+      const autoRank = effectivePositionLevel
+        ? resolveRankFromPositionLevel(effectivePositionLevel)
+        : null;
+      if (autoRank) {
+        updates.rank = autoRank;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      if (target.system_role === 'admin') {
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.update',
+            targetType: 'user',
+            targetUserId: id,
+            targetLabel,
+            httpMethod: 'PUT',
+            httpPath,
+            metadata: { changed_fields: [], admin_profile: true }
+          },
+          { success: true, message: 'User updated successfully' },
+          200
+        );
+      }
+
       return jsonWithActivityLog(
         requestId,
         {
@@ -259,11 +353,63 @@ export async function PUT(request: NextRequest, { params }: Params) {
           targetLabel,
           httpMethod: 'PUT',
           httpPath,
-          metadata: buildErrorMetadata('validation', orgMessage)
+          metadata: buildErrorMetadata('validation', '수정할 항목이 없습니다.')
         },
-        { success: false, message: orgMessage },
+        { success: false, message: '수정할 항목이 없습니다.' },
         400
       );
+    }
+
+    if (target.system_role === 'user') {
+      const effectiveAffiliation = (updates.affiliation ?? target.affiliation) as Affiliation | null;
+      const effectiveRank = 'rank' in updates ? (updates.rank as string | null) : target.rank;
+      const effectivePositionLevel =
+        'position_level' in updates
+          ? (updates.position_level as string | null)
+          : target.position_level;
+      const effectiveLeaderRole =
+        'leader_role' in updates
+          ? (updates.leader_role as string | null)
+          : target.leader_role;
+
+      const mergedOrgValidation = z
+        .object({
+          affiliation: z.enum(AFFILIATIONS).nullable(),
+          rank: z.string().max(50).nullable(),
+          position_level: z.string().max(50).nullable(),
+          leader_role: z.string().nullable()
+        })
+        .superRefine((data, ctx) => {
+          validateOrganizationFields(data, ctx);
+          validatePositionFields(data, ctx);
+        })
+        .safeParse({
+          affiliation: effectiveAffiliation,
+          rank: effectiveRank,
+          position_level: effectivePositionLevel,
+          leader_role: effectiveLeaderRole
+        });
+
+      if (!mergedOrgValidation.success) {
+        const orgMessage =
+          mergedOrgValidation.error.issues[0]?.message ??
+          '소속에 맞지 않는 조직 정보입니다.';
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.update',
+            targetType: 'user',
+            targetUserId: id,
+            targetLabel,
+            httpMethod: 'PUT',
+            httpPath,
+            metadata: buildErrorMetadata('validation', orgMessage)
+          },
+          { success: false, message: orgMessage },
+          400
+        );
+      }
     }
 
     const { error: profileError } = await supabase.from('profiles').update(updates).eq('user_id', id);
@@ -299,6 +445,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     const successTargetLabel = await fetchUserTargetLabel(id);
+    const changedFields = Object.keys(updates).filter(
+      (field) =>
+        target.system_role === 'user' ||
+        !ADMIN_TARGET_IGNORED_ORG_FIELDS.includes(
+          field as (typeof ADMIN_TARGET_IGNORED_ORG_FIELDS)[number]
+        )
+    );
 
     return jsonWithActivityLog(
       requestId,
@@ -310,7 +463,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
         targetLabel: successTargetLabel,
         httpMethod: 'PUT',
         httpPath,
-        metadata: { changed_fields: Object.keys(updates) }
+        metadata:
+          target.system_role === 'admin'
+            ? { changed_fields: changedFields, admin_profile: true }
+            : { changed_fields: changedFields }
       },
       { success: true, message: 'User updated successfully' },
       200
