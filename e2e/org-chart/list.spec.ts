@@ -176,9 +176,11 @@ test.describe('조직도 목록 (user)', () => {
     await page.goto('/dashboard/org-chart?affiliation=wake');
 
     await expect(page.getByTestId('org-chart-canvas')).toHaveCount(0);
-    await expect(page.getByText('마케팅팀', { exact: true })).toBeVisible({
+    await expect(page.getByTestId('org-chart-leadership')).toBeVisible({
       timeout: 30_000
     });
+    await expect(page.getByTestId('org-chart-teams')).toBeVisible();
+    await expect(page.getByText('마케팅팀', { exact: true })).toBeVisible();
 
     await page.getByText('마케팅팀', { exact: true }).click();
     await expect(page.getByRole('button', { name: '팀 목록' })).toBeVisible();
