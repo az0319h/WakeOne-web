@@ -11,7 +11,7 @@ import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import type { OrgChartNode, OrgChartProfile } from './types';
 
 const ORG_CHART_PROFILE_SELECT =
-  'user_id, full_name, avatar_url, affiliation, rank, position_level, leader_role, system_role, status';
+  'user_id, full_name, avatar_url, email, phone, affiliation, rank, position_level, leader_role, system_role, status';
 
 function formatPersonLabel(profile: OrgChartProfile): string {
   const suffix =
@@ -34,7 +34,9 @@ function personNode(profile: OrgChartProfile, parentId: string | null): OrgChart
     positionLevel: profile.position_level,
     leaderRole: profile.leader_role,
     rank: profile.rank,
-    avatarUrl: profile.avatar_url
+    avatarUrl: profile.avatar_url,
+    email: profile.email,
+    phone: profile.phone
   };
 }
 
@@ -325,6 +327,8 @@ export async function fetchGroupCeoProfile(): Promise<OrgChartProfile | null> {
     user_id: data.user_id,
     full_name: data.full_name,
     avatar_url: data.avatar_url,
+    email: data.email,
+    phone: data.phone,
     affiliation: data.affiliation as Affiliation,
     rank: data.rank,
     position_level: data.position_level as string,
@@ -370,6 +374,8 @@ export async function listOrgChartProfiles(
       user_id: row.user_id,
       full_name: row.full_name,
       avatar_url: row.avatar_url,
+      email: row.email,
+      phone: row.phone,
       affiliation: row.affiliation as Affiliation,
       rank: row.rank,
       position_level: row.position_level as string,
