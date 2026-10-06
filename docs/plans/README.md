@@ -100,6 +100,7 @@
 | 60 | [60_legal-docs-alignment-plan.md](./60_legal-docs-alignment-plan.md) | **Approved** · 이용약관·개인정보처리방침 Google 승인제·기능·위탁 현행화 · FE 2파일 · BE Out |
 | 63 | [63_org-chart-admin-profile-plan.md](./63_org-chart-admin-profile-plan.md) | **Approved** · Read-only 조직도 d3 · profile position/leader · admin org 슬림 · SQL `63` |
 | 67 | [67_org-chart-pdf-download-plan.md](./67_org-chart-pdf-download-plan.md) | **Approved** · 조직도 PDF 다운로드 · pdfkit 박스+연결선 · org_chart.download log · desktop only |
+| 68 | [68_org-chart-person-hover-contact-plan.md](./68_org-chart-person-hover-contact-plan.md) | **Approved** · 조직도 desktop person hover 연락처 카드 · GET org-chart email/phone · Read-only |
 | 69 | [69_org-chart-mobile-tree-plan.md](./69_org-chart-mobile-tree-plan.md) | **Approved** · 조직도 mobile ReUI Tree · drill-down 제거 · `<md` only · FE only · Read-only |
 
 ## 에이전트 참조

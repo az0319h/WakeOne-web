@@ -7,9 +7,11 @@ import { Card } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { Affiliation } from '@/features/users/constants/organization';
+import { useOrgChartPersonHover } from '../hooks/use-org-chart-person-hover';
 import { isOrgChartDisplayEmpty } from '../lib/is-chart-empty';
 import { toD3TeamMemberLayout, type D3ChartDatum } from '../lib/team-member-layout';
 import type { OrgChartNode } from '../api/types';
+import { OrgChartPersonHoverCard } from './org-chart-person-hover-card';
 
 function OrgChartEmptyState() {
   return (
@@ -31,11 +33,15 @@ interface OrgChartD3CanvasProps {
 }
 
 function renderNodeContent(node: { data: D3ChartDatum }): string {
-  const { name, nodeType } = node.data;
+  const { name, nodeType, userId } = node.data;
   const isPerson = nodeType === 'person';
+  const personAttrs =
+    isPerson && userId
+      ? `data-org-chart-person="true" data-user-id="${userId}" data-testid="org-chart-person-node-${userId}"`
+      : '';
 
   return `
-    <div class="rounded-lg border bg-card text-card-foreground shadow-sm px-3 py-2 min-w-[140px] max-w-[220px]">
+    <div ${personAttrs} class="rounded-lg border bg-card text-card-foreground shadow-sm px-3 py-2 min-w-[140px] max-w-[220px]">
       <p class="text-xs font-medium leading-snug ${isPerson ? 'text-foreground' : 'text-muted-foreground'}">${name}</p>
     </div>
   `;
@@ -48,6 +54,9 @@ export function OrgChartD3Canvas({
 }: OrgChartD3CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<OrgChart<D3ChartDatum> | null>(null);
+
+  const { activeContact, anchorRect, closeImmediately, isOpen } =
+    useOrgChartPersonHover(containerRef, nodes);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -86,14 +95,17 @@ export function OrgChartD3Canvas({
   }, []);
 
   const handleZoomIn = () => {
+    closeImmediately();
     chartRef.current?.zoomIn?.();
   };
 
   const handleZoomOut = () => {
+    closeImmediately();
     chartRef.current?.zoomOut?.();
   };
 
   const handleFit = () => {
+    closeImmediately();
     chartRef.current?.fit?.();
   };
 
@@ -102,45 +114,53 @@ export function OrgChartD3Canvas({
   }
 
   return (
-    <Card className={cn('relative min-h-[480px] overflow-hidden', className)}>
-      <div className='absolute top-3 right-3 z-10 flex gap-1'>
-        <Button
-          type='button'
-          variant='outline'
-          size='icon'
-          className='h-8 w-8'
-          onClick={handleZoomIn}
-          aria-label='확대'
-        >
-          <Icons.add className='h-4 w-4' />
-        </Button>
-        <Button
-          type='button'
-          variant='outline'
-          size='icon'
-          className='h-8 w-8'
-          onClick={handleZoomOut}
-          aria-label='축소'
-        >
-          <Icons.minus className='h-4 w-4' />
-        </Button>
-        <Button
-          type='button'
-          variant='outline'
-          size='icon'
-          className='h-8 w-8'
-          onClick={handleFit}
-          aria-label='화면 맞춤'
-        >
-          <Icons.chevronsDown className='h-4 w-4' />
-        </Button>
-      </div>
+    <>
+      <Card className={cn('relative min-h-[480px] overflow-hidden', className)}>
+        <div className='absolute top-3 right-3 z-10 flex gap-1'>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='h-8 w-8'
+            onClick={handleZoomIn}
+            aria-label='확대'
+          >
+            <Icons.add className='h-4 w-4' />
+          </Button>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='h-8 w-8'
+            onClick={handleZoomOut}
+            aria-label='축소'
+          >
+            <Icons.minus className='h-4 w-4' />
+          </Button>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='h-8 w-8'
+            onClick={handleFit}
+            aria-label='화면 맞춤'
+          >
+            <Icons.chevronsDown className='h-4 w-4' />
+          </Button>
+        </div>
 
-      <div
-        ref={containerRef}
-        data-testid='org-chart-canvas'
-        className='h-[480px] w-full'
+        <div
+          ref={containerRef}
+          data-testid='org-chart-canvas'
+          className='h-[480px] w-full'
+        />
+      </Card>
+
+      <OrgChartPersonHoverCard
+        open={isOpen}
+        anchorRect={anchorRect}
+        contact={activeContact}
       />
-    </Card>
+    </>
   );
 }
