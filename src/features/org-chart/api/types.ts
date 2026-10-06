@@ -14,6 +14,8 @@ export type OrgChartNode = {
   leaderRole?: LeaderRole | null;
   rank?: string | null;
   avatarUrl?: string | null;
+  email?: string | null;
+  phone?: string | null;
 };
 
 export type OrgChartResponse = {
@@ -26,6 +28,8 @@ export type OrgChartProfile = {
   user_id: string;
   full_name: string;
   avatar_url: string | null;
+  email: string | null;
+  phone: string | null;
   affiliation: Affiliation;
   rank: string | null;
   position_level: string;

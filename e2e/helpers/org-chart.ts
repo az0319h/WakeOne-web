@@ -6,7 +6,7 @@ import type { APIRequestContext } from '@playwright/test';
 export type OrgChartAffiliation = 'wake' | 'sans' | 'sans_foundry';
 
 export type OrgChartUserOptions = {
-  email?: string;
+  email?: string | null;
   fullName?: string;
   affiliation?: OrgChartAffiliation | null;
   rank?: string | null;
@@ -14,7 +14,7 @@ export type OrgChartUserOptions = {
   leader_role?: 'team_leader' | 'part_leader' | null;
   system_role?: 'admin' | 'user';
   status?: 'active' | 'inactive' | 'pending_approval' | 'rejected';
-  phone?: string;
+  phone?: string | null;
   birthday?: string | null;
   password?: string;
 };
@@ -29,6 +29,9 @@ export type OrgChartNode = {
   positionLevel?: string;
   leaderRole?: string | null;
   rank?: string | null;
+  avatarUrl?: string | null;
+  email?: string | null;
+  phone?: string | null;
 };
 
 export type OrgChartResponse = {
@@ -76,11 +79,14 @@ export async function createOrgChartTestUser(
   options: OrgChartUserOptions = {}
 ) {
   const admin = getServiceRoleClient();
-  const email = options.email ?? uniqueOrgChartEmail(prefix);
+  const authEmail =
+    options.email === undefined || options.email === null || options.email === ''
+      ? uniqueOrgChartEmail(prefix)
+      : options.email;
   const password = options.password ?? 'E2eOrgChart9!';
 
   const { data, error } = await admin.auth.admin.createUser({
-    email,
+    email: authEmail,
     password,
     email_confirm: true
   });
@@ -89,10 +95,13 @@ export async function createOrgChartTestUser(
     throw new Error(`Failed to create org-chart test user: ${error?.message ?? 'no user'}`);
   }
 
+  const profileEmail =
+    options.email !== undefined ? (options.email ?? '') : authEmail;
+
   const { error: profileError } = await admin
     .from('profiles')
     .update({
-      email,
+      email: profileEmail,
       full_name: options.fullName ?? 'E2E 조직도',
       affiliation:
         options.affiliation !== undefined ? options.affiliation : 'wake',
@@ -102,7 +111,7 @@ export async function createOrgChartTestUser(
       leader_role: options.leader_role ?? null,
       system_role: options.system_role ?? 'user',
       birthday: options.birthday === undefined ? '1990-01-01' : options.birthday,
-      phone: options.phone ?? '01012345678',
+      phone: options.phone === undefined ? '01012345678' : options.phone,
       status: options.status ?? 'active',
       deactivated_at: options.status === 'inactive' ? new Date().toISOString() : null
     })
@@ -115,7 +124,7 @@ export async function createOrgChartTestUser(
 
   const fullName = options.fullName ?? 'E2E 조직도';
 
-  return { userId: data.user.id, email, password, fullName };
+  return { userId: data.user.id, email: authEmail, password, fullName };
 }
 
 export async function fetchOrgChart(

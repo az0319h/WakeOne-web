@@ -9,6 +9,7 @@ export type D3ChartDatum = {
   parentId: string | null;
   name: string;
   nodeType: OrgChartNode['nodeType'];
+  userId?: string;
 };
 
 function sansMemberTierKey(positionLevel: string | undefined): string {
@@ -71,6 +72,7 @@ export function toD3TeamMemberLayout(
     id: node.id,
     parentId: parentOverride.get(node.id) ?? node.parentId,
     name: node.name,
-    nodeType: node.nodeType
+    nodeType: node.nodeType,
+    userId: node.userId
   }));
 }
