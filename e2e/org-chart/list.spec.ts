@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   createOrgChartTestUser,
   membersOfTeam,
@@ -13,6 +13,14 @@ async function expectCanvasContains(canvas: Locator, text: string) {
   await expect
     .poll(async () => readCanvasInnerText(canvas), { timeout: 30_000 })
     .toContain(text);
+}
+
+async function ensureTreeItemExpanded(page: Page, name: string | RegExp) {
+  const item = page.getByRole('treeitem', { name });
+  await expect(item).toBeVisible({ timeout: 15_000 });
+  if ((await item.getAttribute('aria-expanded')) === 'false') {
+    await item.click();
+  }
 }
 
 test.describe('조직도 목록 (user)', () => {
@@ -67,10 +75,17 @@ test.describe('조직도 목록 (user)', () => {
 
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/dashboard/org-chart?affiliation=wake');
-    await page.getByText('마케팅팀', { exact: true }).click();
+    await expect(page.getByTestId('org-chart-mobile-tree')).toBeVisible({
+      timeout: 30_000
+    });
+    await expect(page.getByRole('tree')).toBeVisible();
+    await expect(page.getByRole('treeitem', { name: '마케팅팀' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '팀 목록' })).toHaveCount(0);
+    await ensureTreeItemExpanded(page, '마케팅팀');
     await expect(page.getByText(active.fullName, { exact: false })).toBeVisible({
       timeout: 15_000
     });
+    await expect(page.getByText(inactive.fullName, { exact: false })).toHaveCount(0);
   });
 
   test('AC-04: wake 탭 CEO 아래 COO·팀 노드 (본부 분기 없음)', async ({
@@ -160,12 +175,20 @@ test.describe('조직도 목록 (user)', () => {
 
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/dashboard/org-chart?affiliation=wake');
-    await page.getByText('디자인팀', { exact: true }).click();
-    const cards = page.locator('main').getByText(/E2E AC05 (T|P)/);
-    await expect(cards.first()).toContainText('E2E AC05 T');
+    await expect(page.getByTestId('org-chart-mobile-tree')).toBeVisible({
+      timeout: 30_000
+    });
+    await ensureTreeItemExpanded(page, '디자인팀');
+    await ensureTreeItemExpanded(page, new RegExp(`E2E AC05 T ${stamp}`));
+    const memberItems = page.getByRole('treeitem').filter({ hasText: /E2E AC05 (T|P)/ });
+    await expect(memberItems.first()).toContainText('E2E AC05 T');
+    const memberTexts = await memberItems.allTextContents();
+    expect(memberTexts.join('\n').indexOf('E2E AC05 T')).toBeLessThan(
+      memberTexts.join('\n').indexOf('E2E AC05 P')
+    );
   });
 
-  test('AC-06: mobile viewport는 drill-down만 (d3 canvas 없음)', async ({ page }) => {
+  test('AC-06: mobile viewport는 ReUI tree만 (d3 canvas 없음)', async ({ page }) => {
     await createOrgChartTestUser('ac06-mobile', {
       fullName: `E2E AC06 Mobile ${Date.now()}`,
       rank: '마케팅팀',
@@ -176,14 +199,14 @@ test.describe('조직도 목록 (user)', () => {
     await page.goto('/dashboard/org-chart?affiliation=wake');
 
     await expect(page.getByTestId('org-chart-canvas')).toHaveCount(0);
-    await expect(page.getByTestId('org-chart-leadership')).toBeVisible({
+    await expect(page.getByTestId('org-chart-mobile-tree')).toBeVisible({
       timeout: 30_000
     });
-    await expect(page.getByTestId('org-chart-teams')).toBeVisible();
-    await expect(page.getByText('마케팅팀', { exact: true })).toBeVisible();
-
-    await page.getByText('마케팅팀', { exact: true }).click();
-    await expect(page.getByRole('button', { name: '팀 목록' })).toBeVisible();
+    await expect(page.getByRole('tree')).toBeVisible();
+    await expect(page.getByTestId('org-chart-leadership')).toHaveCount(0);
+    await expect(page.getByTestId('org-chart-teams')).toHaveCount(0);
+    await expect(page.getByRole('treeitem', { name: '마케팅팀' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '팀 목록' })).toHaveCount(0);
     await expect(page.getByTestId('org-chart-canvas')).toHaveCount(0);
   });
 
@@ -219,10 +242,14 @@ test.describe('조직도 목록 (user)', () => {
 
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/dashboard/org-chart?affiliation=wake');
-    await page.getByText('인사팀', { exact: true }).click();
+    await expect(page.getByTestId('org-chart-mobile-tree')).toBeVisible({
+      timeout: 30_000
+    });
+    await ensureTreeItemExpanded(page, '인사팀');
     await expect(page.getByText(visibleUser.fullName, { exact: false })).toBeVisible({
       timeout: 15_000
     });
+    await expect(page.getByText(hiddenAdmin.fullName, { exact: false })).toHaveCount(0);
   });
 
   test('TREE-02: CEO → COO → 마케팅팀 → E (경영진 팀 노드 없음)', async ({
@@ -265,11 +292,23 @@ test.describe('조직도 목록 (user)', () => {
 
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/dashboard/org-chart?affiliation=wake');
-    await page.getByText('마케팅팀', { exact: true }).click();
+    await expect(page.getByRole('tree')).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.getByRole('treeitem').filter({ hasText: `E2E TREE02 CEO ${stamp}` })
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByRole('treeitem').filter({ hasText: `E2E TREE02 COO ${stamp}` })
+    ).toBeVisible();
+    const treeItemTexts = await page.getByRole('treeitem').allTextContents();
+    const treeText = treeItemTexts.join('\n');
+    expect(treeText.indexOf(`E2E TREE02 CEO ${stamp}`)).toBeLessThan(
+      treeText.indexOf(`E2E TREE02 COO ${stamp}`)
+    );
+    await ensureTreeItemExpanded(page, '마케팅팀');
     await expect(page.getByText(member.fullName, { exact: false })).toBeVisible({
       timeout: 15_000
     });
-    await expect(page.getByText('경영진', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('treeitem', { name: '경영진' })).toHaveCount(0);
   });
 
   test('AC-17: org-chart는 dashboard layout 하위 (sidebar·page content)', async ({
@@ -332,7 +371,10 @@ test.describe('조직도 승인 flow (admin)', () => {
 
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/dashboard/org-chart?affiliation=wake');
-    await page.getByText('마케팅팀', { exact: true }).click();
+    await expect(page.getByTestId('org-chart-mobile-tree')).toBeVisible({
+      timeout: 30_000
+    });
+    await ensureTreeItemExpanded(page, '마케팅팀');
     await expect(page.getByText(fullName, { exact: false })).toBeVisible({
       timeout: 30_000
     });
