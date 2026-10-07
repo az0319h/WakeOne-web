@@ -132,7 +132,7 @@ root 본인은 전역 문서 확인·승인 게이트·downstream(designer~verif
 | [2] designer | `Task(subagent_type="designer")` | UI 설계·컴포넌트 트리 **직접 작성** | `designer.md` §스킬 Read 순서 · plan UI 섹션 · `[designer Step n/6]` 마커 |
 | [3] backend-dev | `Task(subagent_type="backend-dev")` (변경 시) | SQL/API **직접 구현** | `backend-dev.md` §스킬 Read · **Supabase MCP 선행** · `[backend-dev]` 마커 |
 | [4] frontend-dev | `Task(subagent_type="frontend-dev")` | FE 코드 **직접 구현** | `frontend-dev.md` §스킬 Read · designer + **BE 산출물(API·타입)** · Mutation 규칙 · `[frontend-dev]` 마커 |
-| [5] verifier | `Task(subagent_type="verifier")` | tsc/lint/build **직접 실행 후 완료 보고** | `verifier.md` §7단계 순서 · Playwright MCP **skip 금지** · Step 7 **e2e-remote-cleanup** · `[verifier Step n/7]` 마커 |
+| [5] verifier | `Task(subagent_type="verifier")` | tsc/lint/build **직접 실행 후 완료 보고** | `verifier.md` §7단계 · Playwright MCP **skip 금지** · Step 7 **`npm run e2e:cleanup` exit 0 + remaining 0건 인용 필수** · globalTeardown만으로 Step 7 완료 **금지** · `[verifier Step n/7]` 마커 |
 
 - 각 Task prompt에 **이전 단계 산출물 전문 또는 요약** + **plan 경로** 포함.
 - plan 경로: `docs/plans/{NN}_{slug}-plan.md` — [README](../../docs/plans/README.md) 번호 규칙.
