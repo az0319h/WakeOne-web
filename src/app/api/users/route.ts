@@ -4,13 +4,19 @@ import {
   actorFromProfile,
   buildErrorMetadata,
   createRequestId,
+  fetchUserTargetLabel,
   finishWithActivityLog,
   jsonWithActivityLog,
   resolveLoggingActor
 } from '@/features/activity-logs/api/log.server';
+import {
+  createUserForAdmin,
+  listUsersForAdmin
+} from '@/features/users/api/service.server';
+import { approveUserSchema } from '@/features/users/schemas/user';
 import { normalizeEmail } from '@/lib/auth/normalize-email';
+import { isDevUserProvisioningEnabled } from '@/lib/env/wakeone-env';
 import { createClient } from '@/lib/supabase/server';
-import { listUsersForAdmin } from '@/features/users/api/service.server';
 import type { UserFilters } from '@/features/users/api/types';
 
 const USER_CREATE_REMOVED_MESSAGE =
@@ -77,8 +83,64 @@ export async function POST(request: NextRequest) {
   const actor = actorFromProfile(adminCheck.profile);
   let attemptedEmail = 'unknown';
 
+  if (!isDevUserProvisioningEnabled()) {
+    try {
+      const body = (await request.json()) as unknown;
+      if (
+        typeof body === 'object' &&
+        body !== null &&
+        'email' in body &&
+        typeof body.email === 'string'
+      ) {
+        attemptedEmail = normalizeEmail(body.email);
+      }
+    } catch {
+      // empty or invalid JSON — 410 still returns with attempted_target unknown
+    }
+
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.create',
+        targetType: 'user',
+        targetUserId: null,
+        targetLabel: attemptedEmail,
+        httpMethod: 'POST',
+        httpPath,
+        metadata: buildErrorMetadata('gone', USER_CREATE_REMOVED_MESSAGE, {
+          attempted_target: attemptedEmail
+        })
+      },
+      { success: false, message: USER_CREATE_REMOVED_MESSAGE },
+      410
+    );
+  }
+
   try {
-    const body = (await request.json()) as unknown;
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.create',
+          targetType: 'user',
+          targetUserId: null,
+          targetLabel: attemptedEmail,
+          httpMethod: 'POST',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '요청 본문이 올바르지 않습니다.', {
+            attempted_target: attemptedEmail
+          })
+        },
+        { success: false, message: '요청 본문이 올바르지 않습니다.' },
+        400
+      );
+    }
+
     if (
       typeof body === 'object' &&
       body !== null &&
@@ -87,25 +149,142 @@ export async function POST(request: NextRequest) {
     ) {
       attemptedEmail = normalizeEmail(body.email);
     }
-  } catch {
-    // empty or invalid JSON — 410 still returns with attempted_target unknown
-  }
 
-  return jsonWithActivityLog(
-    requestId,
-    {
-      ...actor,
-      action: 'user.create',
-      targetType: 'user',
-      targetUserId: null,
-      targetLabel: attemptedEmail,
-      httpMethod: 'POST',
-      httpPath,
-      metadata: buildErrorMetadata('gone', USER_CREATE_REMOVED_MESSAGE, {
-        attempted_target: attemptedEmail
-      })
-    },
-    { success: false, message: USER_CREATE_REMOVED_MESSAGE },
-    410
-  );
+    const parsed = approveUserSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.create',
+          targetType: 'user',
+          targetUserId: null,
+          targetLabel: attemptedEmail,
+          httpMethod: 'POST',
+          httpPath,
+          metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.', {
+            attempted_target: attemptedEmail
+          })
+        },
+        { success: false, message: '입력값이 올바르지 않습니다.' },
+        400
+      );
+    }
+
+    const result = await createUserForAdmin(parsed.data, adminCheck.userId);
+
+    if (!result.ok) {
+      if (result.kind === 'conflict') {
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.create',
+            targetType: 'user',
+            targetUserId: result.existingUserId,
+            targetLabel: attemptedEmail,
+            httpMethod: 'POST',
+            httpPath,
+            metadata: buildErrorMetadata('duplicate_email', result.message, {
+              attempted_target: attemptedEmail,
+              previous_status: result.status
+            })
+          },
+          { success: false, message: result.message },
+          409
+        );
+      }
+
+      if (result.kind === 'auth_error') {
+        return jsonWithActivityLog(
+          requestId,
+          {
+            ...actor,
+            action: 'user.create',
+            targetType: 'user',
+            targetUserId: null,
+            targetLabel: attemptedEmail,
+            httpMethod: 'POST',
+            httpPath,
+            metadata: buildErrorMetadata('duplicate_email', result.message, {
+              attempted_target: attemptedEmail
+            })
+          },
+          { success: false, message: result.message },
+          409
+        );
+      }
+
+      return jsonWithActivityLog(
+        requestId,
+        {
+          ...actor,
+          action: 'user.create',
+          targetType: 'user',
+          targetUserId: result.userId ?? null,
+          targetLabel: attemptedEmail,
+          httpMethod: 'POST',
+          httpPath,
+          metadata: buildErrorMetadata('internal_error', result.message, {
+            attempted_target: attemptedEmail
+          })
+        },
+        { success: false, message: result.message },
+        500
+      );
+    }
+
+    const successTargetLabel = await fetchUserTargetLabel(result.userId);
+
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.create',
+        targetType: 'user',
+        targetUserId: result.userId,
+        targetLabel: successTargetLabel,
+        httpMethod: 'POST',
+        httpPath,
+        metadata: result.isAdminTarget
+          ? {
+              new_status: 'active',
+              changed_fields: result.changedFields,
+              approval_source: 'dev_provision',
+              admin_profile: true
+            }
+          : {
+              new_status: 'active',
+              birthday_set: result.birthdaySet,
+              changed_fields: result.changedFields,
+              approval_source: 'dev_provision'
+            }
+      },
+      {
+        success: true,
+        message: '사용자가 추가되었습니다.',
+        user_id: result.userId
+      },
+      201
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown server error';
+    return jsonWithActivityLog(
+      requestId,
+      {
+        ...actor,
+        action: 'user.create',
+        targetType: 'user',
+        targetUserId: null,
+        targetLabel: attemptedEmail,
+        httpMethod: 'POST',
+        httpPath,
+        metadata: buildErrorMetadata('internal_error', message, {
+          attempted_target: attemptedEmail
+        })
+      },
+      { success: false, message },
+      500
+    );
+  }
 }
