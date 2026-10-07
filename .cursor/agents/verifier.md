@@ -25,7 +25,7 @@ model: inherit
 4. lint:strict
 5. react-doctor
 6. build            → exit 0
-7. 원격 목 데이터 정리 → e2e-remote-cleanup (Supabase MCP execute_sql)
+7. 원격 목 데이터 정리 → **`npm run e2e:cleanup` 필수 실행** + 잔존 0건 확인 (globalTeardown만으로 Step 7 완료 처리 **금지**)
 ```
 
 2단계 상세:
@@ -56,7 +56,7 @@ Playwright 검증 계정은 `.env`의 `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*`
 | 4 | `npm run lint:strict` | `[verifier Step 4/7] lint` |
 | 5 | `react-doctor/SKILL.md` | `[verifier Step 5/7] react-doctor` |
 | 6 | `grinding-until-pass/SKILL.md` · `npm run build` | `[verifier Step 6/7] build` |
-| 7 | `e2e-remote-cleanup/SKILL.md` · Supabase MCP `execute_sql` | `[verifier Step 7/7] remote cleanup` |
+| 7 | `e2e-remote-cleanup/SKILL.md` · **`npm run e2e:cleanup`** · 잔존 SQL 확인 | `[verifier Step 7/7] remote cleanup` |
 
 1. `./.cursor/skills/verifier/SKILL.md` — **가장 먼저 Read**
 2. `./.cursor/skills/playwright-e2e-spec/SKILL.md` — 2a spec 생성
@@ -74,7 +74,16 @@ Playwright 검증 계정은 `.env`의 `E2E_ADMIN_*`, `E2E_USER_*`, `E2E_USER2_*`
 
 - **2b**: `npx playwright test` **전 spec green**
 - **6**: `npm run build` exit 0
-- **7**: 원격 Supabase(EC2) E2E 목 데이터 **0건 확인** (`e2e-remote-cleanup`)
+- **7**: `npm run e2e:cleanup` **exit 0** + `remaining.users=0` · `remaining.profiles_e2e=0` 확인
+
+**Step 7 필수 규칙 (절대 생략 금지):**
+
+| 규칙 | 내용 |
+|------|------|
+| **명령** | Playwright 2b~6 pass **직후** 반드시 `npm run e2e:cleanup` 실행 |
+| **globalTeardown** | teardown이 돌았어도 **Step 7 생략 불가** — 스크립트로 **재실행·잔존 확인** |
+| **완료 보고** | cleanup exit 0 + remaining 0건 **출력 인용** 없으면 **무효** |
+| **실패 시** | MCP/SQL 재시도 → root **완료 보고 금지** |
 
 위를 만족한 후에만 완료 보고. Step 7 실패 시 **완료 보고 금지**.
 
