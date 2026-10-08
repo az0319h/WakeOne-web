@@ -25,6 +25,7 @@ export default async function OrgChartPage(props: PageProps) {
 
   return (
     <PageContainer
+      viewportFill
       pageTitle='조직도'
       pageDescription='임직원 조직을 확인합니다.'
     >
