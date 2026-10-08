@@ -83,22 +83,54 @@ export async function importContractViaApi(
   return body.contract as { id: number; document_number: string };
 }
 
-async function uploadContractAttachmentBufferViaApi(
+async function postContractAttachmentPrepareWithRetry(
+  request: import('@playwright/test').APIRequestContext,
+  contractId: number,
+  fileName: string,
+  fileSize: number,
+  contentType: string
+) {
+  let lastResponse: Awaited<ReturnType<typeof request.post>> | null = null;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    lastResponse = await request.post(
+      `/api/contracts/${contractId}/attachments/prepare`,
+      {
+        data: {
+          fileName,
+          fileSize,
+          contentType
+        }
+      }
+    );
+
+    if (lastResponse.status() === 200) {
+      return lastResponse;
+    }
+
+    if (lastResponse.status() !== 404 || attempt === 4) {
+      return lastResponse;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+  }
+
+  return lastResponse!;
+}
+
+export async function uploadContractAttachmentBufferViaApi(
   request: import('@playwright/test').APIRequestContext,
   contractId: number,
   fileName: string,
   buffer: Buffer,
   contentType: string
 ) {
-  const prepareResponse = await request.post(
-    `/api/contracts/${contractId}/attachments/prepare`,
-    {
-      data: {
-        fileName,
-        fileSize: buffer.byteLength,
-        contentType
-      }
-    }
+  const prepareResponse = await postContractAttachmentPrepareWithRetry(
+    request,
+    contractId,
+    fileName,
+    buffer.byteLength,
+    contentType
   );
 
   if (prepareResponse.status() !== 200) {
