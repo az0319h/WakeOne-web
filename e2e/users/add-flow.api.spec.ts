@@ -63,7 +63,10 @@ async function expectUserCreateLog(
 }
 
 test.describe('사용자 추가 API 제거 (plan 58)', () => {
-  test('AC-06 plan58: POST /api/users는 410과 user.create log를 남긴다', async ({ request }) => {
+  test('AC-01 plan70: non-dev env POST /api/users는 410과 user.create log를 남긴다', async ({
+    request
+  }) => {
+    test.skip(process.env.WAKEONE_ENV === 'development', 'dev provision enabled');
     const email = uniqueEmail('ac06-user-removed');
     const response = await request.post('/api/users', {
       data: createUserPayload(email)

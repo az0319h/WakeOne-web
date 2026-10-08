@@ -88,6 +88,35 @@ test.describe('조직도 목록 (user)', () => {
     await expect(page.getByText(inactive.fullName, { exact: false })).toHaveCount(0);
   });
 
+  test('PLAN70-AC-01: desktop canvas가 viewport fill (height > 500px)', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/dashboard/org-chart?affiliation=wake');
+
+    const canvas = page.getByTestId('org-chart-canvas');
+    await expect(canvas).toBeVisible({ timeout: 30_000 });
+
+    const box = await canvas.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThan(500);
+  });
+
+  test('PLAN70-AC-10: affiliation 전환 후에도 canvas fill 유지', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/dashboard/org-chart?affiliation=wake');
+
+    const canvas = page.getByTestId('org-chart-canvas');
+    await expect(canvas).toBeVisible({ timeout: 30_000 });
+
+    await page.getByRole('tab', { name: '산스', exact: true }).click();
+    await expect(canvas).toBeVisible({ timeout: 30_000 });
+
+    const box = await canvas.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThan(500);
+  });
+
   test('AC-04: wake 탭 CEO 아래 COO·팀 노드 (본부 분기 없음)', async ({
     page,
     playwright

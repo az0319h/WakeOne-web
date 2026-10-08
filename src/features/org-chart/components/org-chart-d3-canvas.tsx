@@ -15,16 +15,20 @@ import { OrgChartPersonHoverCard } from './org-chart-person-hover-card';
 
 function OrgChartEmptyState() {
   return (
-    <div className='text-muted-foreground flex min-h-[480px] flex-col items-center justify-center gap-2 px-6 text-center text-sm'>
-      <p>표시할 임직원이 없습니다.</p>
-      <p className='text-xs'>
-        사용자 관리에서 직급(position_level)을 설정하면 조직도에 표시됩니다.
-        <br />
-        CEO·COO는 직급을 CEO 또는 COO로 지정해 주세요.
-      </p>
-    </div>
+    <Card className='flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0'>
+      <div className='text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-sm'>
+        <p>표시할 임직원이 없습니다.</p>
+        <p className='text-xs'>
+          사용자 관리에서 직급(position_level)을 설정하면 조직도에 표시됩니다.
+          <br />
+          CEO·COO는 직급을 CEO 또는 COO로 지정해 주세요.
+        </p>
+      </div>
+    </Card>
   );
 }
+
+const RESIZE_FIT_DEBOUNCE_MS = 75;
 
 interface OrgChartD3CanvasProps {
   nodes: OrgChartNode[];
@@ -81,7 +85,40 @@ export function OrgChartD3Canvas({
     } else {
       chartRef.current.data(data).render().expandAll().fit();
     }
+
+    requestAnimationFrame(() => {
+      chartRef.current?.fit?.();
+    });
   }, [affiliation, nodes]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || nodes.length === 0) {
+      return;
+    }
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const observer = new ResizeObserver(() => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+
+      debounceTimer = setTimeout(() => {
+        closeImmediately();
+        chartRef.current?.fit?.();
+      }, RESIZE_FIT_DEBOUNCE_MS);
+    });
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [closeImmediately, nodes.length]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -115,7 +152,12 @@ export function OrgChartD3Canvas({
 
   return (
     <>
-      <Card className={cn('relative min-h-[480px] overflow-hidden', className)}>
+      <Card
+        className={cn(
+          'relative flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0',
+          className
+        )}
+      >
         <div className='absolute top-3 right-3 z-10 flex gap-1'>
           <Button
             type='button'
@@ -152,7 +194,7 @@ export function OrgChartD3Canvas({
         <div
           ref={containerRef}
           data-testid='org-chart-canvas'
-          className='h-[480px] w-full'
+          className='h-full min-h-0 w-full flex-1 overflow-hidden'
         />
       </Card>
 

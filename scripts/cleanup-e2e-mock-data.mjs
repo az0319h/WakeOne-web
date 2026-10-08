@@ -126,6 +126,7 @@ async function main() {
     (remaining.contracts_e2e_author ?? 0) > 0 ||
     (remaining.reminder_runs ?? 0) > 0 ||
     (remaining.users ?? 0) > 0 ||
+    (remaining.profiles_e2e ?? 0) > 0 ||
     (remaining.activity_logs_e2e ?? 0) > 0
   ) {
     console.error('cleanup-e2e-mock-data: mock data still remains.', remaining);

@@ -51,15 +51,8 @@ export type User = {
   updated_at: string;
 };
 
-export type CreateUserPayload = {
-  email: string;
-  full_name: string;
-  phone: string;
-  affiliation: Affiliation;
-  rank: string;
-  system_role: 'admin' | 'user';
-  birthday: string;
-};
+/** Dev-only pre-provision — same shape as approval (approveUserSchema). */
+export type CreateUserPayload = ApproveUserPayload;
 
 /** @deprecated Use CreateUserPayload. */
 export type InvitePayload = {

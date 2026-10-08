@@ -155,6 +155,54 @@ test.describe('조직도 person hover 연락처 카드', () => {
     });
     await waitForDashboardPresenceReady(page);
   });
+
+  test('PLAN70-AC-08: viewport resize 시 hover card가 즉시 close된다', async ({
+    page
+  }) => {
+    const stamp = Date.now();
+    const person = await createOrgChartTestUser('hover-resize', {
+      fullName: `E2E Hover Resize ${stamp}`,
+      rank: '마케팅팀',
+      position_level: '과장'
+    });
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/dashboard/org-chart?affiliation=wake');
+    await waitForPersonOnCanvas(page, person.fullName);
+    await hoverPersonNode(page, person.userId);
+
+    await expect(page.getByTestId('org-chart-person-hover-card')).toBeVisible();
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+
+    await expect(page.getByTestId('org-chart-person-hover-card')).toHaveCount(0, {
+      timeout: 3_000
+    });
+    await expect(page.getByTestId('org-chart-canvas')).toBeVisible();
+  });
+
+  test('PLAN70-AC-09: zoom 후 화면 맞춤 시 canvas가 정상 유지된다', async ({
+    page
+  }) => {
+    const stamp = Date.now();
+    const person = await createOrgChartTestUser('hover-zoom-fit', {
+      fullName: `E2E Hover ZoomFit ${stamp}`,
+      rank: '마케팅팀',
+      position_level: '과장'
+    });
+
+    await gotoWakeOrgChartDesktop(page);
+    await waitForPersonOnCanvas(page, person.fullName);
+
+    const canvas = page.getByTestId('org-chart-canvas');
+    await page.getByRole('button', { name: '확대' }).click();
+    await page.getByRole('button', { name: '화면 맞춤' }).click();
+
+    await expect(canvas).toBeVisible();
+    await expect
+      .poll(async () => readCanvasInnerText(canvas), { timeout: 15_000 })
+      .toContain(person.fullName);
+  });
 });
 
 test.describe('조직도 person hover 연락처 카드 (admin)', () => {

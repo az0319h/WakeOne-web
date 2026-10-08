@@ -102,6 +102,8 @@
 | 67 | [67_org-chart-pdf-download-plan.md](./67_org-chart-pdf-download-plan.md) | **Approved** · 조직도 PDF 다운로드 · pdfkit 박스+연결선 · org_chart.download log · desktop only |
 | 68 | [68_org-chart-person-hover-contact-plan.md](./68_org-chart-person-hover-contact-plan.md) | **Approved** · 조직도 desktop person hover 연락처 카드 · GET org-chart email/phone · Read-only |
 | 69 | [69_org-chart-mobile-tree-plan.md](./69_org-chart-mobile-tree-plan.md) | **Approved** · 조직도 mobile ReUI Tree · drill-down 제거 · `<md` only · FE only · Read-only |
+| 70 | [70_dev-user-provision-plan.md](./70_dev-user-provision-plan.md) | **Approved** · dev-only 사용자 사전 등록 · WAKEONE_ENV gate · Google OAuth active link |
+| 71 | [71_org-chart-viewport-fill-plan.md](./71_org-chart-viewport-fill-plan.md) | **Approved** · 조직도 desktop D3 viewport fill · flex-1 min-h-0 · ResizeObserver fit · FE only · Read-only |
 
 ## 에이전트 참조
 
