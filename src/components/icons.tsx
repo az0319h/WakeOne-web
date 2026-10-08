@@ -91,7 +91,10 @@ import {
   IconVideo,
   IconWallet,
   IconCrown,
-  IconX
+  IconX,
+  IconRotateClockwise,
+  IconZoomIn,
+  IconZoomOut
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -205,6 +208,9 @@ export const Icons = {
   plusCircle: IconCirclePlus,
   xCircle: IconCircleX,
   minus: IconMinus,
+  zoomIn: IconZoomIn,
+  zoomOut: IconZoomOut,
+  rotateClockwise: IconRotateClockwise,
 
   // Theme
   sun: IconSun,

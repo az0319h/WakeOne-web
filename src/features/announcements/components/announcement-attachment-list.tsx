@@ -9,10 +9,10 @@ import { formatAbsoluteDateKoOrPlaceholder } from '@/lib/format-date';
 import { notifyError } from '@/lib/notify';
 import { formatBytes } from '@/lib/utils';
 import { deleteAnnouncementAttachmentMutation } from '../api/mutations';
+import { openAttachmentLightbox } from '@/features/attachments/components/attachment-lightbox-provider';
 import {
   canOpenAnnouncementAttachment,
-  downloadAnnouncementAttachment,
-  openAnnouncementAttachment
+  downloadAnnouncementAttachment
 } from '../api/service';
 import type { AnnouncementAttachmentSummary } from '../api/types';
 
@@ -26,11 +26,13 @@ interface AnnouncementAttachmentListProps {
 function AnnouncementAttachmentRow({
   announcementId,
   attachment,
+  allAttachments,
   canDelete,
   onDeleted
 }: {
   announcementId: number;
   attachment: AnnouncementAttachmentSummary;
+  allAttachments: AnnouncementAttachmentSummary[];
   canDelete?: boolean;
   onDeleted?: () => void;
 }) {
@@ -77,9 +79,12 @@ function AnnouncementAttachmentRow({
   }
 
   function handleOpen() {
-    if (!openAnnouncementAttachment(announcementId, attachment.id)) {
-      notifyError('첨부파일을 새 탭으로 열 수 없습니다.');
-    }
+    openAttachmentLightbox({
+      source: { kind: 'announcement', parentId: announcementId },
+      parentId: announcementId,
+      attachments: allAttachments,
+      initialAttachmentId: attachment.id
+    });
   }
 
   return (
@@ -123,7 +128,7 @@ function AnnouncementAttachmentRow({
               aria-label={`${attachment.file_name} 바로가기`}
               onClick={handleOpen}
             >
-              <Icons.externalLink className='h-4 w-4' />
+              <Icons.eye className='h-4 w-4' />
               바로가기
             </Button>
           ) : null}
@@ -177,6 +182,7 @@ export function AnnouncementAttachmentList({
           key={attachment.id}
           announcementId={announcementId}
           attachment={attachment}
+          allAttachments={attachments}
           canDelete={canDelete}
           onDeleted={onAttachmentsChange}
         />

@@ -1,8 +1,9 @@
 # 계약·공지 첨부 Viewer 탭 제목 기획서
 
 > Date: 2026-09-02
-> Status: Approved
+> Status: Cancelled
 > Author: planner
+> **Superseded by:** [plan 72](./72_contract-attachment-modal-viewer-plan.md) (Modal lightbox · react-pdf · plan 48 iframe·새 탭 flow 폐기)
 > **선행:** [07](./07_auth-route-guard-plan.md), [16](./16_contract-management-plan.md), [38](./38_contract-attachment-size-limit-plan.md), [39](./39_announcements-plan.md), [41](./41_user-my-contracts-plan.md)
 
 ## 한 줄 요약
@@ -293,3 +294,4 @@ e2e/announcements/attachments-size.api.spec.ts — AC-07 regression
 | 날짜 | 변경 내용 | 작성자 |
 |------|----------|--------|
 | 2026-09-02 | 최초 작성 · `/root` planner Phase 3+4 · Status Approved | planner |
+| 2026-10-08 | **Cancelled** — Superseded by [plan 72](./72_contract-attachment-modal-viewer-plan.md) · Modal lightbox로 대체 | planner |
