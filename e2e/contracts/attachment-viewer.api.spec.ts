@@ -41,6 +41,7 @@ async function importContractForAuthor(
 }
 
 test.describe('첨부 inline download API 회귀 (plan 48 AC-07)', () => {
+  test.describe.configure({ mode: 'serial' });
   test('AC-07: contracts inline download는 200과 inline content-disposition을 반환한다', async ({
     request
   }) => {
@@ -73,17 +74,14 @@ test.describe('첨부 inline download API 회귀 (plan 48 AC-07)', () => {
       storageState: 'e2e/.auth/admin.json',
       baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000'
     });
-    const userRequest = await playwright.request.newContext({
-      storageState: 'e2e/.auth/user.json',
-      baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000'
-    });
-
     try {
-      const userEmail = process.env.E2E_USER_EMAIL!;
+      const userEmail = process.env.E2E_USER2_EMAIL;
+      test.skip(!userEmail, 'E2E_USER2_EMAIL required');
+
       const authorName = `E2E-AC48-07M-${Date.now()}`;
       const documentNumber = uniqueDocumentNumber('AC48-07M');
 
-      await ensureUserAuthorName(adminRequest, userEmail, authorName);
+      await ensureUserAuthorName(adminRequest, userEmail as string, authorName);
       const contract = await importContractForAuthor(
         adminRequest,
         documentNumber,
@@ -98,17 +96,25 @@ test.describe('첨부 inline download API 회귀 (plan 48 AC-07)', () => {
       expect(uploadResponse.status()).toBe(201);
       const attachmentId = (await uploadResponse.json()).attachment.id as number;
 
-      const response = await userRequest.get(
-        `/api/my-contracts/${contract.id}/attachments/${attachmentId}/download?disposition=inline`
-      );
+      const user2Request = await playwright.request.newContext({
+        storageState: 'e2e/.auth/user2.json',
+        baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000'
+      });
 
-      expect(response.status()).toBe(200);
-      const contentDisposition = response.headers()['content-disposition'] ?? '';
-      expect(contentDisposition).toContain('inline');
-      expect(contentDisposition).toContain(MY_CONTRACT_PDF);
+      try {
+        const response = await user2Request.get(
+          `/api/my-contracts/${contract.id}/attachments/${attachmentId}/download?disposition=inline`
+        );
+
+        expect(response.status()).toBe(200);
+        const contentDisposition = response.headers()['content-disposition'] ?? '';
+        expect(contentDisposition).toContain('inline');
+        expect(contentDisposition).toContain(MY_CONTRACT_PDF);
+      } finally {
+        await user2Request.dispose();
+      }
     } finally {
       await adminRequest.dispose();
-      await userRequest.dispose();
     }
   });
 

@@ -58,6 +58,10 @@ const isDevProvisionE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('dev-provision')
 );
 
+const isAttachmentsE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/attachments')
+);
+
 if (isDevProvisionE2eRun) {
   process.env.WAKEONE_ENV = 'development';
   process.env.NEXT_PUBLIC_WAKEONE_ENV = 'development';
@@ -83,7 +87,8 @@ export default defineConfig({
     isWalletBalanceEmailE2eRun ||
     isGoogleTasksE2eRun ||
     isGoogleAuthPendingNotifE2eRun ||
-    isDevProvisionE2eRun
+    isDevProvisionE2eRun ||
+    isAttachmentsE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -181,6 +186,7 @@ export default defineConfig({
         /profile-name-live-display\//,
         /kbar\/nav-user\.spec\.ts$/,
         /contracts\/my-contracts-viewer\.spec\.ts$/,
+        /attachments\//,
         /live-users\//,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
@@ -251,6 +257,16 @@ export default defineConfig({
         /announcements\/list-infinite-scroll\.spec\.ts$/,
         /announcements\/notify-fanout\.spec\.ts$/
       ],
+      fullyParallel: false
+    },
+    {
+      name: 'chromium-attachments',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2'],
+      testMatch: [/attachments\/.*\.spec\.ts$/],
       fullyParallel: false
     },
     {

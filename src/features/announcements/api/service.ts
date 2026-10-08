@@ -126,19 +126,13 @@ export function getAnnouncementAttachmentDownloadUrl(
   return options?.inline ? `${endpoint}?disposition=inline` : endpoint;
 }
 
-export function getAnnouncementAttachmentViewerUrl(
-  announcementId: number,
-  attachmentId: number
-): string {
-  return `/dashboard/announcements/${announcementId}/attachments/${attachmentId}/view`;
-}
-
 export async function downloadAnnouncementAttachment(
   announcementId: number,
   attachmentId: number
 ): Promise<Blob> {
   const response = await fetch(
-    getAnnouncementAttachmentDownloadUrl(announcementId, attachmentId)
+    getAnnouncementAttachmentDownloadUrl(announcementId, attachmentId),
+    { credentials: 'include' }
   );
   if (!response.ok) {
     let message = `API error: ${response.status}`;
@@ -171,19 +165,3 @@ export function canOpenAnnouncementAttachment(
   return INLINE_ATTACHMENT_EXTENSIONS.has(getFileExtension(attachment.file_name));
 }
 
-export function openAnnouncementAttachment(
-  announcementId: number,
-  attachmentId: number
-): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  const url = getAnnouncementAttachmentViewerUrl(announcementId, attachmentId);
-  const link = document.createElement('a');
-  link.href = url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.click();
-  return true;
-}

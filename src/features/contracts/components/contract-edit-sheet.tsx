@@ -25,11 +25,8 @@ import {
   updateContractMutation,
   uploadContractAttachmentMutation
 } from '../api/mutations';
-import {
-  canOpenContractAttachment,
-  downloadContractAttachment,
-  openContractAttachment
-} from '../api/service';
+import { openAttachmentLightbox } from '@/features/attachments/components/attachment-lightbox-provider';
+import { canOpenContractAttachment, downloadContractAttachment } from '../api/service';
 import {
   CONTRACT_ATTACHMENT_DOCUMENT_LIMIT_HINT,
   CONTRACT_ATTACHMENT_DOCUMENT_MAX_BYTES,
@@ -150,10 +147,12 @@ function buildSubmitSchema() {
 function ContractAttachmentRow({
   contractId,
   attachment,
+  allAttachments,
   onContractChange
 }: {
   contractId: number;
   attachment: ContractAttachmentSummary;
+  allAttachments: ContractAttachmentSummary[];
   onContractChange: (contract: ContractDocument) => void;
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -203,9 +202,12 @@ function ContractAttachmentRow({
   }
 
   function handleOpen() {
-    if (!openContractAttachment(contractId, attachment.id)) {
-      notifyError('첨부파일을 새 탭으로 열 수 없습니다.');
-    }
+    openAttachmentLightbox({
+      source: { kind: 'contract', parentId: contractId },
+      parentId: contractId,
+      attachments: allAttachments,
+      initialAttachmentId: attachment.id
+    });
   }
 
   return (
@@ -255,7 +257,7 @@ function ContractAttachmentRow({
             title='열기'
             onClick={handleOpen}
           >
-            <Icons.externalLink className='h-4 w-4' />
+            <Icons.eye className='h-4 w-4' />
             <span className='sr-only'>열기</span>
           </Button>
         ) : null}
@@ -512,6 +514,7 @@ function ContractAttachmentManager({
               key={attachment.id}
               contractId={contract.id}
               attachment={attachment}
+              allAttachments={contract.attachments}
               onContractChange={onContractChange}
             />
           ))}

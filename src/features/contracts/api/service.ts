@@ -230,7 +230,8 @@ export async function downloadContractAttachment(
   attachmentId: number
 ): Promise<Blob> {
   const response = await fetch(
-    getContractAttachmentDownloadUrl(id, attachmentId)
+    getContractAttachmentDownloadUrl(id, attachmentId),
+    { credentials: 'include' }
   );
   if (!response.ok) {
     let message = `API error: ${response.status}`;
@@ -250,7 +251,8 @@ export async function downloadMyContractAttachment(
   attachmentId: number
 ): Promise<Blob> {
   const response = await fetch(
-    getMyContractAttachmentDownloadUrl(id, attachmentId)
+    getMyContractAttachmentDownloadUrl(id, attachmentId),
+    { credentials: 'include' }
   );
   if (!response.ok) {
     let message = `API error: ${response.status}`;
@@ -283,20 +285,6 @@ export function getMyContractAttachmentDownloadUrl(
   return options?.inline ? `${endpoint}?disposition=inline` : endpoint;
 }
 
-export function getContractAttachmentViewerUrl(
-  contractId: number,
-  attachmentId: number
-): string {
-  return `/dashboard/contracts/${contractId}/attachments/${attachmentId}/view`;
-}
-
-export function getMyContractAttachmentViewerUrl(
-  contractId: number,
-  attachmentId: number
-): string {
-  return `/dashboard/my-contracts/${contractId}/attachments/${attachmentId}/view`;
-}
-
 export function canOpenContractAttachment(
   attachment: Pick<ContractAttachmentSummary, 'content_type' | 'file_name'>
 ): boolean {
@@ -317,36 +305,3 @@ export function canOpenContractAttachment(
   );
 }
 
-export function openContractAttachment(
-  id: number,
-  attachmentId: number
-): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  const url = getContractAttachmentViewerUrl(id, attachmentId);
-  const link = document.createElement('a');
-  link.href = url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.click();
-  return true;
-}
-
-export function openMyContractAttachment(
-  id: number,
-  attachmentId: number
-): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  const url = getMyContractAttachmentViewerUrl(id, attachmentId);
-  const link = document.createElement('a');
-  link.href = url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.click();
-  return true;
-}

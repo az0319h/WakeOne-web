@@ -85,7 +85,7 @@
 | 45 | [45_auth-session-audit-log-plan.md](./45_auth-session-audit-log-plan.md) | **Approved** · sign-in `auth.sign_in` activity log · plan 08 정책 확장 · 로그아웃 Out |
 | 46 | [46_sign-in-seo-plan.md](./46_sign-in-seo-plan.md) | **Approved** · `/auth/sign-in` SEO · metadata·JSON-LD·모바일 intro · BE Out |
 | 47 | [47_contract-import-notifications-plan.md](./47_contract-import-notifications-plan.md) | **Approved** · OpenClaw import 성공 시 admin·작성자 in-app 알림 · SQL `47` |
-| 48 | [48_contract-attachment-viewer-tab-title-plan.md](./48_contract-attachment-viewer-tab-title-plan.md) | **Approved** · 계약·공지 첨부 viewer 탭 title=fileName · iframe inline · plan 41 AC-07 supersede |
+| 48 | [48_contract-attachment-viewer-tab-title-plan.md](./48_contract-attachment-viewer-tab-title-plan.md) | **Cancelled** · iframe viewer 새 탭 — [72](./72_contract-attachment-modal-viewer-plan.md)로 supersede |
 | 49 | [49_live-users-presence-plan.md](./49_live-users-presence-plan.md) | **Approved** · overview Live 접속자 · Realtime Presence · SQL `49` · dashboard layout track |
 | 50 | [50_live-users-admin-hide-live-dot-plan.md](./50_live-users-admin-hide-live-dot-plan.md) | **Approved** · Live 접속자 admin 목록 제외 · Live dot · plan 49 FE 확장 · BE Out |
 | 51 | [51_wallet-balance-email-plan.md](./51_wallet-balance-email-plan.md) | **Approved** · 식대 잔액 확인 이메일·알림 설정·admin 로그 · allowlist BLOCKER · SQL `50`/`53` · **Rev 2026-09-16** due=0 no-run |
@@ -104,6 +104,7 @@
 | 69 | [69_org-chart-mobile-tree-plan.md](./69_org-chart-mobile-tree-plan.md) | **Approved** · 조직도 mobile ReUI Tree · drill-down 제거 · `<md` only · FE only · Read-only |
 | 70 | [70_dev-user-provision-plan.md](./70_dev-user-provision-plan.md) | **Approved** · dev-only 사용자 사전 등록 · WAKEONE_ENV gate · Google OAuth active link |
 | 71 | [71_org-chart-viewport-fill-plan.md](./71_org-chart-viewport-fill-plan.md) | **Approved** · 조직도 desktop D3 viewport fill · flex-1 min-h-0 · ResizeObserver fit · FE only · Read-only |
+| 72 | [72_contract-attachment-modal-viewer-plan.md](./72_contract-attachment-modal-viewer-plan.md) | **Approved** · 계약·공지 첨부 Slack lightbox Dialog · react-pdf · embla carousel · plan 48 supersede |
 
 ## 에이전트 참조
 

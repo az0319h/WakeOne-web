@@ -14,6 +14,7 @@ import { NavAccessProvider } from '@/contexts/nav-access';
 import { AccessDeniedToast } from '@/components/dashboard/access-denied-toast';
 import { ProfileStatusRealtime } from '@/features/auth/components/profile-status-realtime';
 import { NotificationsRealtime } from '@/features/notifications/components/notifications-realtime';
+import { AttachmentLightboxProvider } from '@/features/attachments/components/attachment-lightbox-provider';
 import { DashboardPresenceTrack } from '@/features/live-users/components/dashboard-presence-track';
 import {
   NOTIFICATIONS_PAGE_SIZE,
@@ -58,23 +59,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <NavAccessProvider profile={profile} hasMyContracts={hasMyContracts}>
       <DashboardPresenceTrack profile={profile}>
         <HydrationBoundary state={dehydrate(queryClient)}>
-          <KBar>
-            <SidebarProvider defaultOpen={defaultOpen}>
-              <AppSidebar />
-              <SidebarInset className='min-w-0'>
-                <Header />
-                <Suspense fallback={null}>
-                  <AccessDeniedToast />
-                </Suspense>
-                <ProfileStatusRealtime profile={profile} />
-                <NotificationsRealtime profile={profile} />
-                <InfobarProvider defaultOpen={false} className='min-w-0'>
-                  <div className='flex min-h-0 min-w-0 flex-1 flex-col'>{children}</div>
-                  <InfoSidebar side='right' />
-                </InfobarProvider>
-              </SidebarInset>
-            </SidebarProvider>
-          </KBar>
+          <AttachmentLightboxProvider>
+            <KBar>
+              <SidebarProvider defaultOpen={defaultOpen}>
+                <AppSidebar />
+                <SidebarInset className='min-w-0'>
+                  <Header />
+                  <Suspense fallback={null}>
+                    <AccessDeniedToast />
+                  </Suspense>
+                  <ProfileStatusRealtime profile={profile} />
+                  <NotificationsRealtime profile={profile} />
+                  <InfobarProvider defaultOpen={false} className='min-w-0'>
+                    <div className='flex min-h-0 min-w-0 flex-1 flex-col'>{children}</div>
+                    <InfoSidebar side='right' />
+                  </InfobarProvider>
+                </SidebarInset>
+              </SidebarProvider>
+            </KBar>
+          </AttachmentLightboxProvider>
         </HydrationBoundary>
       </DashboardPresenceTrack>
     </NavAccessProvider>

@@ -18,11 +18,8 @@ import { notifyError } from '@/lib/notify';
 import { formatAbsoluteDateKoOrPlaceholder } from '@/lib/format-date';
 import { cn } from '@/lib/utils';
 import { contractByIdQueryOptions } from '../api/queries';
-import {
-  canOpenContractAttachment,
-  downloadContractAttachment,
-  openContractAttachment
-} from '../api/service';
+import { openAttachmentLightbox } from '@/features/attachments/components/attachment-lightbox-provider';
+import { canOpenContractAttachment, downloadContractAttachment } from '../api/service';
 import type { ContractAttachmentSummary, ContractDocument } from '../api/types';
 import { CONTRACT_ATTACHMENT_STATUS_LABELS } from './contracts-table/options';
 
@@ -71,10 +68,12 @@ function DetailItem({
 
 function AttachmentRow({
   contractId,
-  attachment
+  attachment,
+  allAttachments
 }: {
   contractId: number;
   attachment: ContractAttachmentSummary;
+  allAttachments: ContractAttachmentSummary[];
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const isActive = attachment.status === 'active';
@@ -106,9 +105,12 @@ function AttachmentRow({
   }
 
   function handleOpen() {
-    if (!openContractAttachment(contractId, attachment.id)) {
-      notifyError('첨부파일을 새 탭으로 열 수 없습니다.');
-    }
+    openAttachmentLightbox({
+      source: { kind: 'contract', parentId: contractId },
+      parentId: contractId,
+      attachments: allAttachments,
+      initialAttachmentId: attachment.id
+    });
   }
 
   return (
@@ -146,7 +148,7 @@ function AttachmentRow({
             title='열기'
             onClick={handleOpen}
           >
-            <Icons.externalLink className='h-4 w-4' />
+            <Icons.eye className='h-4 w-4' />
             <span className='sr-only'>열기</span>
           </Button>
         ) : null}
@@ -259,6 +261,7 @@ function ContractDetailContent({
                   key={attachment.id}
                   contractId={contract.id}
                   attachment={attachment}
+                  allAttachments={contract.attachments}
                 />
               ))}
             </div>
