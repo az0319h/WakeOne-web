@@ -54,6 +54,15 @@ const isGoogleAuthPendingNotifE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('pending-admin-notifications')
 );
 
+const isDevProvisionE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('dev-provision')
+);
+
+if (isDevProvisionE2eRun) {
+  process.env.WAKEONE_ENV = 'development';
+  process.env.NEXT_PUBLIC_WAKEONE_ENV = 'development';
+}
+
 if (isGoogleTasksE2eRun) {
   process.env.E2E_GOOGLE_TASKS_MOCK = '1';
 }
@@ -73,7 +82,8 @@ export default defineConfig({
     isLiveUsersE2eRun ||
     isWalletBalanceEmailE2eRun ||
     isGoogleTasksE2eRun ||
-    isGoogleAuthPendingNotifE2eRun
+    isGoogleAuthPendingNotifE2eRun ||
+    isDevProvisionE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -90,11 +100,17 @@ export default defineConfig({
         webServer: {
           command: 'npm run dev',
           url: baseURL,
-          reuseExistingServer: !isGoogleTasksE2eRun,
+          reuseExistingServer: !isGoogleTasksE2eRun && !isDevProvisionE2eRun,
           timeout: 120_000,
           env: {
             ...process.env,
-            ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {})
+            ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {}),
+            ...(isDevProvisionE2eRun
+              ? {
+                  WAKEONE_ENV: 'development',
+                  NEXT_PUBLIC_WAKEONE_ENV: 'development'
+                }
+              : {})
           }
         }
       }),
@@ -168,7 +184,8 @@ export default defineConfig({
         /live-users\//,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
-        /wallet-balance-email\/balance-email-logs-rbac\.spec\.ts$/
+        /wallet-balance-email\/balance-email-logs-rbac\.spec\.ts$/,
+        ...(isDevProvisionE2eRun ? [] : [/users\/dev-provision\.spec\.ts$/])
       ]
     },
     {
@@ -300,7 +317,8 @@ export default defineConfig({
       testIgnore: [
         /profile-name-live-display\//,
         /^notifications\//,
-        ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : [])
+        ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : []),
+        ...(isDevProvisionE2eRun ? [] : [/users\/dev-provision\.api\.spec\.ts$/])
       ]
     }
   ]

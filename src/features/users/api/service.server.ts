@@ -3,7 +3,204 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/features/auth/api/session.server';
-import type { User, UserFilters, UsersResponse } from './types';
+import {
+  normalizeLeaderRole,
+  resolveRankFromPositionLevel,
+  type Affiliation
+} from '@/features/users/constants/organization';
+import type { ApproveUserFormValues } from '@/features/users/schemas/user';
+import { normalizeEmail } from '@/lib/auth/normalize-email';
+import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import type { ProfileStatus, User, UserFilters, UsersResponse } from './types';
+
+const EMAIL_CONFLICT_MESSAGES: Record<ProfileStatus, string> = {
+  pending_approval: '승인 대기 중인 이메일입니다. 사용자 목록에서 수락해 주세요.',
+  active: '이미 등록된 이메일입니다.',
+  rejected: '거절된 계정입니다. 사용자 추가로 재등록할 수 없습니다.',
+  inactive: '비활성화된 계정입니다. 활성화 후 이용해 주세요.'
+};
+
+export type CreateUserForAdminResult =
+  | {
+      ok: true;
+      userId: string;
+      email: string;
+      birthdaySet: boolean;
+      changedFields: string[];
+      isAdminTarget: boolean;
+    }
+  | {
+      ok: false;
+      kind: 'conflict';
+      status: ProfileStatus;
+      message: string;
+      existingUserId: string;
+    }
+  | {
+      ok: false;
+      kind: 'auth_error';
+      message: string;
+    }
+  | {
+      ok: false;
+      kind: 'profile_error';
+      message: string;
+      userId?: string;
+    };
+
+async function findProfileByEmail(
+  supabase: SupabaseClient,
+  email: string
+): Promise<{ user_id: string; status: ProfileStatus; email: string } | null> {
+  const normalized = normalizeEmail(email);
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('user_id, status, email')
+    .or(`email.ilike.${normalized},google_email.ilike.${normalized}`)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+/** Dev-only admin pre-provision: email-only auth user + active profile (plan 70). */
+export async function createUserForAdmin(
+  input: ApproveUserFormValues,
+  adminUserId: string
+): Promise<CreateUserForAdminResult> {
+  const supabase = getServiceRoleClient();
+  const payload = {
+    ...input,
+    email: normalizeEmail(input.email)
+  };
+
+  const existing = await findProfileByEmail(supabase, payload.email);
+  if (existing) {
+    return {
+      ok: false,
+      kind: 'conflict',
+      status: existing.status,
+      message: EMAIL_CONFLICT_MESSAGES[existing.status],
+      existingUserId: existing.user_id
+    };
+  }
+
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: payload.email,
+    email_confirm: true
+  });
+
+  if (authError || !authData.user) {
+    const message = authError?.message ?? 'Auth user creation failed';
+    if (/already registered|already exists|duplicate/i.test(message)) {
+      const duplicate = await findProfileByEmail(supabase, payload.email);
+      if (duplicate) {
+        return {
+          ok: false,
+          kind: 'conflict',
+          status: duplicate.status,
+          message: EMAIL_CONFLICT_MESSAGES[duplicate.status],
+          existingUserId: duplicate.user_id
+        };
+      }
+    }
+
+    return {
+      ok: false,
+      kind: 'auth_error',
+      message
+    };
+  }
+
+  const userId = authData.user.id;
+  const isAdminTarget = payload.system_role === 'admin';
+
+  const userRank = !isAdminTarget
+    ? resolveRankFromPositionLevel(payload.position_level!) ?? payload.rank!
+    : null;
+
+  const profileUpdate = isAdminTarget
+    ? {
+        email: payload.email,
+        full_name: payload.full_name,
+        affiliation: null,
+        rank: null,
+        position_level: null,
+        leader_role: null,
+        system_role: 'admin' as const,
+        birthday: null,
+        phone: payload.phone,
+        status: 'active' as const,
+        deactivated_at: null,
+        approved_at: new Date().toISOString(),
+        approved_by: adminUserId,
+        rejected_at: null,
+        rejected_by: null,
+        rejection_reason: null,
+        approval_requested_at: null
+      }
+    : {
+        email: payload.email,
+        full_name: payload.full_name,
+        affiliation: payload.affiliation as Affiliation,
+        rank: userRank,
+        position_level: payload.position_level!,
+        leader_role: normalizeLeaderRole(payload.leader_role),
+        system_role: 'user' as const,
+        birthday: payload.birthday ?? null,
+        phone: payload.phone,
+        status: 'active' as const,
+        deactivated_at: null,
+        approved_at: new Date().toISOString(),
+        approved_by: adminUserId,
+        rejected_at: null,
+        rejected_by: null,
+        rejection_reason: null,
+        approval_requested_at: null
+      };
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update(profileUpdate)
+    .eq('user_id', userId);
+
+  if (profileError) {
+    return {
+      ok: false,
+      kind: 'profile_error',
+      message: profileError.message,
+      userId
+    };
+  }
+
+  const changedFields = isAdminTarget
+    ? ['email', 'full_name', 'system_role', 'phone', 'status']
+    : [
+        'email',
+        'full_name',
+        'affiliation',
+        'rank',
+        'position_level',
+        'leader_role',
+        'system_role',
+        'birthday',
+        'phone',
+        'status'
+      ];
+
+  return {
+    ok: true,
+    userId,
+    email: payload.email,
+    birthdaySet: !isAdminTarget && payload.birthday != null,
+    changedFields,
+    isAdminTarget
+  };
+}
 
 const PROFILE_LIST_SELECT = `
         user_id,

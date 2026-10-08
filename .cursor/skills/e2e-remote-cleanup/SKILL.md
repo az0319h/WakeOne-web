@@ -21,7 +21,7 @@ disable-model-invocation: true
 | 항목 | 내용 |
 |------|------|
 | 스크립트 | `scripts/cleanup-e2e-mock-data.mjs` |
-| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/41_e2e_cleanup_att_orphan.sql` |
+| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/70_e2e_cleanup_test_com_profiles.sql` (+ `71` trigger fix) |
 | 수동 실행 | `npm run e2e:cleanup` |
 | 디버그 skip | `E2E_SKIP_CLEANUP=1` (완료 보고·CI에는 사용 금지) |
 | 사전 준비 | `globalSetup` → `scripts/e2e-plan03-prep.cjs` (E2E 계정 비밀번호·active 복구) |
@@ -32,7 +32,8 @@ disable-model-invocation: true
 
 | 조건 | Step 7 실행 |
 |------|-------------|
-| verifier Step 2b Playwright **실행됨** + Step 2b~6 **전부 통과** | **필수** |
+| verifier Step 2b Playwright **실행됨** + Step 2b~6 **전부 통과** | **필수** — `npm run e2e:cleanup` **반드시 실행** |
+| Playwright globalTeardown만 실행됨 | **Step 7 미완** — teardown ≠ verifier Step 7 |
 | Playwright skip / 미실행 | skip (사유 1줄) |
 | Step 2b~6 중 하나라도 실패 (재시도 중) | **실행 금지** — 디버깅용 데이터 유지 |
 | root **3회 실패 중단** 직전 | **권장** — 사용자에게 잔존 목 데이터 안내 + cleanup 실행 여부 제안 |
@@ -58,12 +59,13 @@ select
       or contract_target = 'E2E 계약대상') as contracts,
   (select count(*) from public.contract_documents where document_number ~ '^ATT-') as att_contracts,
   (select count(*) from public.contract_reminder_runs where run_key ~ '^(AC|E2E|PV|P28|P29|ATT)') as reminder_runs,
-  (select count(*) from auth.users where email ilike '%@example.com' or email in ('e2e@test.local', 'prod-verify@test.local')) as users;
+  (select count(*) from auth.users where email ilike '%@example.com' or email ilike '%@test.com' or email in ('e2e@test.local', 'prod-verify@test.local')) as users,
+  (select count(*) from public.profiles where full_name ~ '^E2E ' and email not in ('1234@naver.com','4321@naver.com','wakeone.ops@gmail.com')) as profiles_e2e;
 ```
 
-`npm run e2e:cleanup`은 RPC `remaining` + ATT/E2E author 사후 count까지 검증한다 (exit 1 if orphan).
+`npm run e2e:cleanup`은 RPC `remaining.users` · `remaining.profiles_e2e` · ATT/E2E author 사후 count까지 검증한다 (exit 1 if orphan).
 
-4. **완료 보고** — 삭제 전·후 count 또는 「0건 확인」 명시
+5. **완료 보고** — stdout의 `remaining` JSON **인용** (`users:0`, `profiles_e2e:0` 필수)
 
 ## 삭제 대상 (allowlist)
 
@@ -72,6 +74,8 @@ select
 | 계약 | `document_number ~ '^(AC\|E2E\|PV\|P28\|P29\|ATT)'` **또는** `author_name = 'E2E 작성자'` / `author_email = 'e2e@test.local'` / `contract_target = 'E2E 계약대상'` | `e2e/helpers/contracts.ts`, import/list/attachments spec |
 | 독촉 run | `run_key ~ '^(AC\|E2E\|PV\|P28\|P29\|ATT)'` | `e2e/helpers/reminders.ts`, contract-reminder API spec |
 | 사용자 | `email ilike '%@example.com'` | users E2E API/UI spec |
+| 사용자 | `email ilike '%@test.com'` | org-chart person-hover 등 (plan 68) — **sql/70+** |
+| 사용자 | `profiles.full_name ~ '^E2E '` (fixture 이메일 제외) | 조직도·hover E2E 잔존 방어 |
 | 사용자 | `e2e@test.local`, `prod-verify@test.local` | contract import / prod verify |
 | activity_logs | metadata `document_number` 또는 `email` 위 패턴 일치 | 검증 중 생성된 감사 로그 |
 

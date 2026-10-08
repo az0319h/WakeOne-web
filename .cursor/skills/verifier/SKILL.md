@@ -120,4 +120,4 @@ spec: e2e/{feature}/*.spec.ts
 - `docs/plans/{feature}-plan.md` 경로를 prompt에 명시
 - AC 번호별 통과/실패를 spec test title과 1:1 보고
 - CUD activity log는 API spec으로 검증
-- **2b~6 pass 후** `e2e-remote-cleanup/SKILL.md` Read → **`npm run e2e:cleanup`** (Playwright teardown과 동일). teardown이 이미 실행됐으면 remaining 0건 확인만
+- **2b~6 pass 후** `e2e-remote-cleanup/SKILL.md` Read → **`npm run e2e:cleanup` 반드시 실행** (globalTeardown 실행 여부 **무관**). stdout의 `remaining.users`·`remaining.profiles_e2e` **0건**을 완료 보고에 **인용**

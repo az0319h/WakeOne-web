@@ -128,7 +128,8 @@ export const approveUserSchema = z
       validateOrganizationFields(
         {
           affiliation: data.affiliation,
-          rank: data.rank
+          rank: data.rank,
+          position_level: data.position_level
         },
         ctx
       );
@@ -195,7 +196,8 @@ export const userUpdateSchema = z
     validateOrganizationFields(
       {
         affiliation,
-        rank: emptyToNull(data.rank)
+        rank: emptyToNull(data.rank),
+        position_level: emptyToNull(data.position_level)
       },
       ctx
     );

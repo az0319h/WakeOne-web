@@ -141,7 +141,7 @@ planner 내부: Phase 2 battle-plan 종료 시 사용자 **`go`** (또는 `진�
 |-----------|------|-------------|
 | **기획 문제** (spec이 AC 자체를 잘못 반영) | `/planner` → AC 재정의 | **필요** |
 | **구현 문제** (AC·spec은 맞으나 코드 불일치) | FE/BE 수정 → spec 재실행 | **생략** |
-| **완료 조건** | spec 전부 green + build 통과 + **원격 목 데이터 cleanup pass** 전까지 완료 보고 **금지** | — |
+| **완료 조건** | spec 전부 green + build 통과 + **`npm run e2e:cleanup` exit 0** (`remaining.users=0` · `remaining.profiles_e2e=0` 인용) 전까지 완료 보고 **금지** | — |
 
 ### 호출 규칙
 
