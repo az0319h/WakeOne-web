@@ -233,20 +233,24 @@ export function AttachmentLightboxDialog({
             ) : null}
           </div>
 
-          <footer className='grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-t border-neutral-800 bg-neutral-950 px-4 py-3'>
-            <Button
-              type='button'
-              variant='outline'
-              size='icon'
-              isLoading={isDownloading}
-              className='size-8 border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800 hover:text-neutral-100'
-              aria-label='다운로드'
-              onClick={() => void handleDownload()}
-            >
-              <Icons.download className='h-4 w-4' />
-            </Button>
+          <footer className='grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-neutral-800 bg-neutral-950 px-4 py-3'>
+            <div className='flex justify-start'>
+              <Button
+                type='button'
+                variant='outline'
+                size='icon'
+                isLoading={isDownloading}
+                className='size-8 border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800 hover:text-neutral-100'
+                aria-label='다운로드'
+                onClick={() => void handleDownload()}
+              >
+                <Icons.download className='h-4 w-4' />
+              </Button>
+            </div>
             {statusLabel ? (
-              <p className='text-center text-xs text-neutral-400'>{statusLabel}</p>
+              <p className='whitespace-nowrap text-center text-xs text-neutral-400'>
+                {statusLabel}
+              </p>
             ) : (
               <span aria-hidden='true' />
             )}
