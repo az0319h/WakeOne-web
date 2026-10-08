@@ -63,11 +63,13 @@ export function OrgChartDataBody({ affiliation }: OrgChartDataBodyProps) {
 
   if (isDesktop) {
     return (
-      <OrgChartD3Canvas
-        key='org-chart-desktop'
-        nodes={data.nodes}
-        affiliation={affiliation}
-      />
+      <div className='flex min-h-0 flex-1 flex-col'>
+        <OrgChartD3Canvas
+          key='org-chart-desktop'
+          nodes={data.nodes}
+          affiliation={affiliation}
+        />
+      </div>
     );
   }
 

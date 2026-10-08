@@ -11,16 +11,18 @@ export function OrgChartPageContent() {
   return (
     <div
       data-testid='org-chart-page-content'
-      className='flex flex-1 flex-col gap-6'
+      className='flex min-h-0 flex-1 flex-col gap-6'
     >
       <OrgChartTabs />
 
-      <Suspense
-        key={affiliation}
-        fallback={<PageLoadingSpinner variant='fill' />}
-      >
-        <OrgChartDataBody affiliation={affiliation} />
-      </Suspense>
+      <div className='flex min-h-0 flex-1 flex-col'>
+        <Suspense
+          key={affiliation}
+          fallback={<PageLoadingSpinner variant='fill' />}
+        >
+          <OrgChartDataBody affiliation={affiliation} />
+        </Suspense>
+      </div>
     </div>
   );
 }

@@ -23,8 +23,10 @@ export async function OrgChartListing() {
   });
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <OrgChartPageContent />
-    </HydrationBoundary>
+    <div className='flex min-h-0 flex-1 flex-col'>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <OrgChartPageContent />
+      </HydrationBoundary>
+    </div>
   );
 }
