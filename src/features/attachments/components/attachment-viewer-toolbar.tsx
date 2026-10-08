@@ -79,18 +79,14 @@ export function AttachmentViewerToolbar({
       ) : null}
       <Button
         type='button'
-        variant='ghost'
-        size='sm'
-        className={cn(
-          'h-8 min-w-[3.25rem] px-2 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100',
-          !canReset && 'pointer-events-none invisible'
-        )}
-        tabIndex={canReset ? 0 : -1}
-        aria-hidden={!canReset}
+        variant='outline'
+        size='icon'
+        className='size-8 border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800 disabled:opacity-40'
+        aria-label='초기화'
         disabled={!canReset}
         onClick={() => onTransformChange(DEFAULT_VIEWER_TRANSFORM)}
       >
-        초기화
+        <Icons.restore className='h-4 w-4' />
       </Button>
     </div>
   );

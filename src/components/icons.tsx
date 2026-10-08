@@ -92,6 +92,7 @@ import {
   IconWallet,
   IconCrown,
   IconX,
+  IconRestore,
   IconRotateClockwise,
   IconZoomIn,
   IconZoomOut
@@ -211,6 +212,7 @@ export const Icons = {
   zoomIn: IconZoomIn,
   zoomOut: IconZoomOut,
   rotateClockwise: IconRotateClockwise,
+  restore: IconRestore,
 
   // Theme
   sun: IconSun,

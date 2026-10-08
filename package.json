@@ -20,6 +20,7 @@
     "test:e2e:ui": "playwright test --ui",
     "e2e:prep": "node scripts/e2e-plan03-prep.cjs",
     "e2e:cleanup": "node scripts/cleanup-e2e-mock-data.mjs",
+    "postinstall": "node scripts/copy-pdf-worker.mjs",
     "prepare": "husky"
   },
   "dependencies": {
@@ -90,7 +91,7 @@
     "nextjs-toploader": "^3.9.17",
     "nodemailer": "^8.0.10",
     "nuqs": "^2.8.9",
-    "pdfjs-dist": "^6.4.299",
+    "pdfjs-dist": "6.3.289",
     "playwright": "^1.61.0-alpha-1778188671000",
     "postcss": "8.5.14",
     "radix-ui": "^1.5.0",
@@ -135,6 +136,7 @@
   "overrides": {
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "pdfjs-dist": "6.3.289",
     "postcss": "8.5.14"
   },
   "lint-staged": {
