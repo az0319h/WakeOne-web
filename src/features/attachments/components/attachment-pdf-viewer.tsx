@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Document, Page } from 'react-pdf';
-import '@/features/attachments/lib/pdf-worker';
+import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
@@ -22,6 +21,12 @@ import {
 } from '../api/viewer-fit';
 import type { AttachmentPdfPageInfo } from './attachment-lightbox-dialog';
 import { AttachmentPdfThumbnailRail } from './attachment-pdf-thumbnail-rail';
+
+// Worker must be configured in the same module as Document/Page (react-pdf).
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 type AttachmentPdfViewerProps = {
   file: Blob;

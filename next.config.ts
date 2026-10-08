@@ -1,5 +1,9 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { withSentryConfig } from '@sentry/nextjs';
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // Define the base Next.js configuration
 const baseConfig: NextConfig = {
@@ -19,7 +23,12 @@ const baseConfig: NextConfig = {
       }
     ]
   },
-  transpilePackages: ['geist'],
+  transpilePackages: ['geist', 'react-pdf', 'pdfjs-dist'],
+  turbopack: {
+    resolveAlias: {
+      canvas: path.join(projectRoot, 'src/lib/empty-module.ts')
+    }
+  },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
   }
