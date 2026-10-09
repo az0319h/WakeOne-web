@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { Icons } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import {
   ResizableHandle,
@@ -60,16 +62,25 @@ function PdfMainPane({
     <div
       tabIndex={isActive ? 0 : -1}
       aria-label={`${fileName} PDF 뷰어`}
-      className='flex h-full min-h-0 min-w-0 flex-col overflow-hidden'
+      className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
     >
       <div
         ref={viewportRef}
+        data-attachment-pan-viewport
         className={cn(
           'min-h-0 flex-1 bg-neutral-950 p-4 md:p-6',
           needsScroll
             ? 'overflow-auto overscroll-contain'
             : 'flex items-center justify-center overflow-hidden'
         )}
+        style={
+          needsScroll
+            ? {
+                touchAction: 'pan-x pan-y',
+                WebkitOverflowScrolling: 'touch'
+              }
+            : undefined
+        }
       >
         <div
           className={cn(needsScroll && 'mx-auto w-fit')}
@@ -211,6 +222,44 @@ export function AttachmentPdfViewer({
     onPageNaturalSizeChange: setPageNaturalSize
   };
 
+  const mobilePageNavigation = (
+    <nav
+      aria-label='PDF 페이지 이동'
+      className='flex shrink-0 items-center justify-center gap-3 border-t border-neutral-800 bg-neutral-950 px-4 py-2 md:hidden'
+    >
+      <Button
+        type='button'
+        variant='outline'
+        size='sm'
+        className='border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800 hover:text-neutral-100'
+        aria-label='이전 PDF 페이지'
+        disabled={pageNumber <= 1}
+        onClick={goToPreviousPage}
+      >
+        <Icons.chevronLeft className='h-4 w-4' />
+        이전 페이지
+      </Button>
+      <span
+        aria-live='polite'
+        className='min-w-14 text-center text-xs text-neutral-400 tabular-nums'
+      >
+        {pageNumber} / {numPages}
+      </span>
+      <Button
+        type='button'
+        variant='outline'
+        size='sm'
+        className='border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800 hover:text-neutral-100'
+        aria-label='다음 PDF 페이지'
+        disabled={pageNumber >= numPages}
+        onClick={goToNextPage}
+      >
+        다음 페이지
+        <Icons.chevronRight className='h-4 w-4' />
+      </Button>
+    </nav>
+  );
+
   return (
     <div className={cn('h-full min-h-0 w-full overflow-hidden', className)}>
       <Document
@@ -229,7 +278,10 @@ export function AttachmentPdfViewer({
         }
       >
         {numPages > 0 ? isMobile ? (
-          <PdfMainPane {...mainPaneProps} />
+          <>
+            <PdfMainPane {...mainPaneProps} />
+            {mobilePageNavigation}
+          </>
         ) : (
           <ResizablePanelGroup
             direction='horizontal'

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 import type { AttachmentLightboxItem, LightboxSource } from '../api/types';
+import { viewerNeedsScroll } from '../api/viewer-fit';
 import type { ViewerTransform } from '../api/viewer-transform';
 import type { AttachmentPdfPageInfo } from './attachment-lightbox-dialog';
 import { AttachmentLightboxSlide } from './attachment-lightbox-slide';
@@ -40,6 +41,7 @@ export function AttachmentLightboxCarousel({
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const showNav = attachments.length >= 2;
   const resolvedActiveIndex = api === undefined ? initialIndex : activeIndex;
+  const carouselDragEnabled = !viewerNeedsScroll(transform.zoom);
 
   useEffect(() => {
     setActiveIndex(initialIndex);
@@ -74,7 +76,12 @@ export function AttachmentLightboxCarousel({
   return (
     <Carousel
       setApi={setApi}
-      opts={{ startIndex: initialIndex, loop: false }}
+      opts={{
+        startIndex: initialIndex,
+        loop: false,
+        watchDrag: carouselDragEnabled
+      }}
+      data-carousel-drag-enabled={carouselDragEnabled}
       className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden'
       aria-label='첨부파일 미리보기'
     >
