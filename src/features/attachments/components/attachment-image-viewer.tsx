@@ -78,6 +78,9 @@ export function AttachmentImageViewer({
   return (
     <div
       ref={viewportRef}
+      tabIndex={0}
+      aria-label={`${fileName} 이미지 뷰어`}
+      data-attachment-pan-viewport
       className={cn(
         'h-full min-h-0 w-full bg-neutral-950 p-4 md:p-6',
         needsScroll
@@ -85,6 +88,14 @@ export function AttachmentImageViewer({
           : 'flex items-center justify-center overflow-hidden',
         className
       )}
+      style={
+        needsScroll
+          ? {
+              touchAction: 'pan-x pan-y',
+              WebkitOverflowScrolling: 'touch'
+            }
+          : undefined
+      }
     >
       <div
         className={cn(needsScroll && 'mx-auto w-fit shrink-0')}
