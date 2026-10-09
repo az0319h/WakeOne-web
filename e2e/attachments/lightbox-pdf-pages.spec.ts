@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import {
   importContractWithPdf,
   openAttachmentLightboxFromSheet,
@@ -61,5 +61,47 @@ test.describe('첨부 Lightbox PDF 페이지 (admin)', () => {
     await lightbox.getByLabel(`${PDF_FILE_NAME} PDF 뷰어`).focus();
     await page.keyboard.press('ArrowDown');
     await waitForPdfPageIndicator(lightbox, '2 / 3');
+  });
+
+  test('모바일: 이전/다음 버튼으로 PDF 페이지를 명확히 이동한다', async ({
+    page,
+    request
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    const { documentNumber } = await importContractWithPdf(
+      request,
+      'AC72-MOBILE-PAGES',
+      PDF_FILE_NAME,
+      3
+    );
+
+    const sheet = await openContractDetailSheet(page, documentNumber);
+    const lightbox = await openAttachmentLightboxFromSheet(
+      page,
+      sheet,
+      PDF_FILE_NAME
+    );
+    await waitForPdfCanvas(lightbox);
+
+    const previousPage = lightbox.getByRole('button', {
+      name: '이전 PDF 페이지'
+    });
+    const nextPage = lightbox.getByRole('button', {
+      name: '다음 PDF 페이지'
+    });
+    const pageNavigation = lightbox.getByRole('navigation', {
+      name: 'PDF 페이지 이동'
+    });
+
+    await expect(
+      lightbox.getByRole('tablist', { name: 'PDF 페이지 목록' })
+    ).toHaveCount(0);
+    await expect(pageNavigation.getByText('1 / 3', { exact: true })).toBeVisible();
+    await expect(previousPage).toBeDisabled();
+
+    await nextPage.click();
+    await expect(pageNavigation.getByText('2 / 3', { exact: true })).toBeVisible();
+    await previousPage.click();
+    await expect(pageNavigation.getByText('1 / 3', { exact: true })).toBeVisible();
   });
 });

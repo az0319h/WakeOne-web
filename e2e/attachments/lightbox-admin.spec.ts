@@ -131,6 +131,79 @@ test.describe('첨부 Lightbox (admin)', () => {
     ).toBeVisible({ timeout: 30_000 });
   });
 
+  test('모바일: 확대 이미지 pan은 파일 carousel drag와 충돌하지 않는다', async ({
+    page,
+    request
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    const documentNumber = uniqueDocumentNumber('AC72-MOBILE-PAN');
+    const contract = await importContractViaApi(request, documentNumber);
+    await uploadContractPdfFixtureViaApi(request, contract.id, PDF_FILE_NAME);
+    await uploadContractPngFixtureViaApi(request, contract.id, PNG_FILE_NAME);
+
+    const sheet = await openContractDetailSheet(page, documentNumber);
+    const lightbox = await openAttachmentLightboxFromSheet(
+      page,
+      sheet,
+      PNG_FILE_NAME
+    );
+    const image = lightbox.getByRole('img', { name: PNG_FILE_NAME });
+    await expect(image).toBeVisible({ timeout: 30_000 });
+
+    await lightbox.getByRole('button', { name: '확대' }).click();
+
+    const carousel = lightbox.getByRole('region', {
+      name: '첨부파일 미리보기'
+    });
+    const imageViewport = lightbox.getByLabel(`${PNG_FILE_NAME} 이미지 뷰어`);
+    await expect(carousel).toHaveAttribute('data-carousel-drag-enabled', 'false');
+
+    await expect
+      .poll(() =>
+        imageViewport.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return {
+            hasHorizontalOverflow: element.scrollWidth > element.clientWidth,
+            hasVerticalOverflow: element.scrollHeight > element.clientHeight,
+            overflowX: style.overflowX,
+            overflowY: style.overflowY,
+            touchAction: style.touchAction
+          };
+        })
+      )
+      .toEqual({
+        hasHorizontalOverflow: true,
+        hasVerticalOverflow: false,
+        overflowX: 'auto',
+        overflowY: 'auto',
+        touchAction: 'pan-x pan-y'
+      });
+
+    const viewportBox = await imageViewport.boundingBox();
+    expect(viewportBox).not.toBeNull();
+    if (viewportBox) {
+      await page.mouse.move(
+        viewportBox.x + viewportBox.width * 0.75,
+        viewportBox.y + viewportBox.height / 2
+      );
+      await page.mouse.down();
+      await page.mouse.move(
+        viewportBox.x + viewportBox.width * 0.25,
+        viewportBox.y + viewportBox.height / 2,
+        { steps: 8 }
+      );
+      await page.mouse.up();
+    }
+
+    await expect(
+      attachmentLightboxDialog(page, PNG_FILE_NAME)
+    ).toBeVisible();
+    await lightbox.getByRole('button', { name: 'Next slide' }).click();
+    const pdfLightbox = attachmentLightboxDialog(page, PDF_FILE_NAME);
+    await expect(pdfLightbox).toBeVisible();
+    await waitForPdfCanvas(pdfLightbox);
+  });
+
   test('AC-10: Escape 키로 lightbox Dialog가 닫힌다', async ({ page, request }) => {
     const { documentNumber } = await importContractWithPdf(
       request,
