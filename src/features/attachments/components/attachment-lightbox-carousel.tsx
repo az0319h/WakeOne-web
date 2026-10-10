@@ -60,8 +60,10 @@ export function AttachmentLightboxCarousel({
 
     api.scrollTo(initialIndex, true);
     onSelect();
+    api.on('reInit', onSelect);
     api.on('select', onSelect);
     return () => {
+      api.off('reInit', onSelect);
       api.off('select', onSelect);
     };
   }, [api, initialIndex, onActiveIndexChange]);
@@ -77,7 +79,6 @@ export function AttachmentLightboxCarousel({
     <Carousel
       setApi={setApi}
       opts={{
-        startIndex: initialIndex,
         loop: false,
         watchDrag: carouselDragEnabled
       }}

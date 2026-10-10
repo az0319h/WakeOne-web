@@ -131,32 +131,48 @@ test.describe('첨부 Lightbox (admin)', () => {
     ).toBeVisible({ timeout: 30_000 });
   });
 
-  test('모바일: 확대 이미지 pan은 파일 carousel drag와 충돌하지 않는다', async ({
+  test('모바일: 두 번째 파일 확대·축소 시 현재 파일과 carousel 위치를 유지한다', async ({
     page,
     request
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     const documentNumber = uniqueDocumentNumber('AC72-MOBILE-PAN');
     const contract = await importContractViaApi(request, documentNumber);
-    await uploadContractPdfFixtureViaApi(request, contract.id, PDF_FILE_NAME);
     await uploadContractPngFixtureViaApi(request, contract.id, PNG_FILE_NAME);
+    await uploadContractPdfFixtureViaApi(request, contract.id, PDF_FILE_NAME);
 
     const sheet = await openContractDetailSheet(page, documentNumber);
     const lightbox = await openAttachmentLightboxFromSheet(
       page,
       sheet,
-      PNG_FILE_NAME
+      PDF_FILE_NAME
     );
-    const image = lightbox.getByRole('img', { name: PNG_FILE_NAME });
+    await waitForPdfCanvas(lightbox);
+
+    await lightbox.getByRole('button', { name: 'Next slide' }).click();
+
+    const imageLightbox = attachmentLightboxDialog(page, PNG_FILE_NAME);
+    const image = imageLightbox.getByRole('img', { name: PNG_FILE_NAME });
     await expect(image).toBeVisible({ timeout: 30_000 });
+    await expect(imageLightbox.getByText(/파일 2 \/ 2/)).toBeVisible();
 
-    await lightbox.getByRole('button', { name: '확대' }).click();
+    await imageLightbox.getByRole('button', { name: '확대' }).click();
 
-    const carousel = lightbox.getByRole('region', {
+    const carousel = imageLightbox.getByRole('region', {
       name: '첨부파일 미리보기'
     });
-    const imageViewport = lightbox.getByLabel(`${PNG_FILE_NAME} 이미지 뷰어`);
-    await expect(carousel).toHaveAttribute('data-carousel-drag-enabled', 'false');
+    const imageViewport = imageLightbox.getByLabel(
+      `${PNG_FILE_NAME} 이미지 뷰어`
+    );
+    await expect(carousel).toHaveAttribute(
+      'data-carousel-drag-enabled',
+      'false'
+    );
+    await expect(image).toBeVisible();
+    await expect(imageLightbox.getByText(/파일 2 \/ 2/)).toBeVisible();
+    await expect(
+      imageLightbox.getByRole('button', { name: 'Next slide' })
+    ).toBeDisabled();
 
     await expect
       .poll(() =>
@@ -195,13 +211,19 @@ test.describe('첨부 Lightbox (admin)', () => {
       await page.mouse.up();
     }
 
+    await expect(attachmentLightboxDialog(page, PNG_FILE_NAME)).toBeVisible();
+
+    await imageLightbox.getByRole('button', { name: '축소' }).click();
+
+    await expect(carousel).toHaveAttribute(
+      'data-carousel-drag-enabled',
+      'true'
+    );
+    await expect(image).toBeVisible();
+    await expect(imageLightbox.getByText(/파일 2 \/ 2/)).toBeVisible();
     await expect(
-      attachmentLightboxDialog(page, PNG_FILE_NAME)
-    ).toBeVisible();
-    await lightbox.getByRole('button', { name: 'Next slide' }).click();
-    const pdfLightbox = attachmentLightboxDialog(page, PDF_FILE_NAME);
-    await expect(pdfLightbox).toBeVisible();
-    await waitForPdfCanvas(pdfLightbox);
+      imageLightbox.getByRole('button', { name: 'Next slide' })
+    ).toBeDisabled();
   });
 
   test('AC-10: Escape 키로 lightbox Dialog가 닫힌다', async ({ page, request }) => {
