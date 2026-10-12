@@ -1,65 +1,67 @@
-import 'server-only';
+import "server-only";
 
-import { NextResponse } from 'next/server';
-import type { AuthProfile } from '@/features/auth/api/types';
-import { getSessionProfile } from '@/features/auth/api/session.server';
-import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { NextResponse } from "next/server";
+import type { AuthProfile } from "@/features/auth/api/types";
+import { getSessionProfile } from "@/features/auth/api/session.server";
+import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type {
   ActivityAction,
   ActivityLogErrorCode,
   ActivityLogMetadata,
-  ActivityTargetType
-} from './types';
+  ActivityTargetType,
+} from "./types";
 
 const METADATA_ALLOWLIST = new Set([
-  'error_code',
-  'message',
-  'validation_errors',
-  'changed_fields',
-  'attempted_target',
-  'asset_number',
-  'asset_name',
-  'document_number',
-  'source_message_id',
-  'source_type',
-  'file_name',
-  'recipient_email',
-  'missing_document_numbers',
-  'status',
-  'unmatched_count',
-  'unmatched_author_names',
-  'notification_id',
-  'count',
-  'duplicate_run',
-  'announcement_id',
-  'support_request_id',
-  'comment_id',
-  'parent_id',
-  'root_comment_id',
-  'depth',
-  'deleted_by_admin',
-  'body_length',
-  'previous_status',
-  'new_status',
-  'title',
-  'must_change',
-  'target_user_id',
-  'enabled',
-  'hour',
-  'minute',
-  'exclude_weekends',
-  'run_id',
-  'recipient_status',
-  'due_count',
-  'sent_count',
-  'failed_count',
-  'blocked_count',
-  'skipped_count',
-  'google_email',
-  'approval_source',
-  'rejection_reason',
-  'birthday_set',
-  'affiliation'
+  "error_code",
+  "message",
+  "validation_errors",
+  "changed_fields",
+  "attempted_target",
+  "asset_number",
+  "asset_name",
+  "document_number",
+  "source_message_id",
+  "task_key",
+  "benefit_type",
+  "source_type",
+  "file_name",
+  "recipient_email",
+  "missing_document_numbers",
+  "status",
+  "unmatched_count",
+  "unmatched_author_names",
+  "notification_id",
+  "count",
+  "duplicate_run",
+  "announcement_id",
+  "support_request_id",
+  "comment_id",
+  "parent_id",
+  "root_comment_id",
+  "depth",
+  "deleted_by_admin",
+  "body_length",
+  "previous_status",
+  "new_status",
+  "title",
+  "must_change",
+  "target_user_id",
+  "enabled",
+  "hour",
+  "minute",
+  "exclude_weekends",
+  "run_id",
+  "recipient_status",
+  "due_count",
+  "sent_count",
+  "failed_count",
+  "blocked_count",
+  "skipped_count",
+  "google_email",
+  "approval_source",
+  "rejection_reason",
+  "birthday_set",
+  "affiliation",
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -84,10 +86,8 @@ export function createRequestId(): string {
   return crypto.randomUUID();
 }
 
-export function formatActorDisplayName(
-  profile: Pick<AuthProfile, 'full_name'>
-): string | null {
-  const name = profile.full_name?.trim() ?? '';
+export function formatActorDisplayName(profile: Pick<AuthProfile, "full_name">): string | null {
+  const name = profile.full_name?.trim() ?? "";
   return name || null;
 }
 
@@ -99,19 +99,19 @@ export function actorFromProfile(profile: AuthProfile): {
   return {
     actorUserId: profile.user_id,
     actorEmail: profile.email,
-    actorDisplayName: formatActorDisplayName(profile)
+    actorDisplayName: formatActorDisplayName(profile),
   };
 }
 
 export const ANONYMOUS_ACTOR = {
   actorUserId: null,
-  actorEmail: 'anonymous',
-  actorDisplayName: null
+  actorEmail: "anonymous",
+  actorDisplayName: null,
 } as const;
 
 export async function resolveLoggingActor(
   httpStatus: number,
-  session?: { userId: string; profile: AuthProfile }
+  session?: { userId: string; profile: AuthProfile },
 ): Promise<{
   actorUserId: string | null;
   actorEmail: string;
@@ -121,7 +121,7 @@ export async function resolveLoggingActor(
     return {
       actorUserId: session.userId,
       actorEmail: session.profile.email,
-      actorDisplayName: formatActorDisplayName(session.profile)
+      actorDisplayName: formatActorDisplayName(session.profile),
     };
   }
 
@@ -138,7 +138,7 @@ export async function resolveLoggingActor(
 }
 
 function sanitizeValidationErrors(
-  errors: Record<string, string> | undefined
+  errors: Record<string, string> | undefined,
 ): Record<string, string> | undefined {
   if (!errors) {
     return undefined;
@@ -172,7 +172,7 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       continue;
     }
 
-    if (key === 'validation_errors') {
+    if (key === "validation_errors") {
       const cleaned = sanitizeValidationErrors(value as Record<string, string>);
       if (cleaned) {
         sanitized.validation_errors = cleaned;
@@ -180,178 +180,178 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       continue;
     }
 
-    if (key === 'changed_fields' && Array.isArray(value)) {
+    if (key === "changed_fields" && Array.isArray(value)) {
       sanitized.changed_fields = value.filter(
-        (field) => typeof field === 'string' && !SENSITIVE_FIELD_PATTERN.test(field)
+        (field) => typeof field === "string" && !SENSITIVE_FIELD_PATTERN.test(field),
       );
       continue;
     }
 
-    if (key === 'missing_document_numbers' && Array.isArray(value)) {
-      sanitized.missing_document_numbers = value.filter((item) => typeof item === 'string');
+    if (key === "missing_document_numbers" && Array.isArray(value)) {
+      sanitized.missing_document_numbers = value.filter((item) => typeof item === "string");
       continue;
     }
 
-    if (key === 'unmatched_author_names' && Array.isArray(value)) {
-      sanitized.unmatched_author_names = value.filter((item) => typeof item === 'string');
+    if (key === "unmatched_author_names" && Array.isArray(value)) {
+      sanitized.unmatched_author_names = value.filter((item) => typeof item === "string");
       continue;
     }
 
-    if (key === 'unmatched_count' && typeof value === 'number') {
+    if (key === "unmatched_count" && typeof value === "number") {
       sanitized.unmatched_count = value;
       continue;
     }
 
-    if (key === 'count' && typeof value === 'number') {
+    if (key === "count" && typeof value === "number") {
       sanitized.count = value;
       continue;
     }
 
-    if (key === 'duplicate_run' && typeof value === 'boolean') {
+    if (key === "duplicate_run" && typeof value === "boolean") {
       sanitized.duplicate_run = value;
       continue;
     }
 
-    if (key === 'must_change' && typeof value === 'boolean') {
+    if (key === "must_change" && typeof value === "boolean") {
       sanitized.must_change = value;
       continue;
     }
 
-    if (key === 'announcement_id' && typeof value === 'number') {
+    if (key === "announcement_id" && typeof value === "number") {
       sanitized.announcement_id = value;
       continue;
     }
 
-    if (key === 'support_request_id' && typeof value === 'number') {
+    if (key === "support_request_id" && typeof value === "number") {
       sanitized.support_request_id = value;
       continue;
     }
 
-    if (key === 'comment_id' && typeof value === 'number') {
+    if (key === "comment_id" && typeof value === "number") {
       sanitized.comment_id = value;
       continue;
     }
 
-    if (key === 'parent_id' && (typeof value === 'number' || value === null)) {
+    if (key === "parent_id" && (typeof value === "number" || value === null)) {
       sanitized.parent_id = value;
       continue;
     }
 
-    if (key === 'root_comment_id' && (typeof value === 'number' || value === null)) {
+    if (key === "root_comment_id" && (typeof value === "number" || value === null)) {
       sanitized.root_comment_id = value;
       continue;
     }
 
-    if (key === 'depth' && typeof value === 'number') {
+    if (key === "depth" && typeof value === "number") {
       sanitized.depth = value;
       continue;
     }
 
-    if (key === 'deleted_by_admin' && typeof value === 'boolean') {
+    if (key === "deleted_by_admin" && typeof value === "boolean") {
       sanitized.deleted_by_admin = value;
       continue;
     }
 
-    if (key === 'body_length' && typeof value === 'number') {
+    if (key === "body_length" && typeof value === "number") {
       sanitized.body_length = value;
       continue;
     }
 
-    if (key === 'previous_status' && typeof value === 'string') {
+    if (key === "previous_status" && typeof value === "string") {
       sanitized.previous_status = value;
       continue;
     }
 
-    if (key === 'new_status' && typeof value === 'string') {
+    if (key === "new_status" && typeof value === "string") {
       sanitized.new_status = value;
       continue;
     }
 
-    if (key === 'title' && typeof value === 'string') {
+    if (key === "title" && typeof value === "string") {
       sanitized.title = value.length > 100 ? `${value.slice(0, 100)}…` : value;
       continue;
     }
 
-    if (key === 'notification_id' && typeof value === 'number') {
+    if (key === "notification_id" && typeof value === "number") {
       sanitized.notification_id = value;
       continue;
     }
 
-    if (key === 'run_id' && typeof value === 'number') {
+    if (key === "run_id" && typeof value === "number") {
       sanitized.run_id = value;
       continue;
     }
 
-    if (key === 'hour' && typeof value === 'number') {
+    if (key === "hour" && typeof value === "number") {
       sanitized.hour = value;
       continue;
     }
 
-    if (key === 'minute' && typeof value === 'number') {
+    if (key === "minute" && typeof value === "number") {
       sanitized.minute = value;
       continue;
     }
 
     if (
-      (key === 'due_count' ||
-        key === 'sent_count' ||
-        key === 'failed_count' ||
-        key === 'blocked_count' ||
-        key === 'skipped_count') &&
-      typeof value === 'number'
+      (key === "due_count" ||
+        key === "sent_count" ||
+        key === "failed_count" ||
+        key === "blocked_count" ||
+        key === "skipped_count") &&
+      typeof value === "number"
     ) {
       (sanitized as Record<string, unknown>)[key] = value;
       continue;
     }
 
-    if (key === 'enabled' && typeof value === 'boolean') {
+    if (key === "enabled" && typeof value === "boolean") {
       sanitized.enabled = value;
       continue;
     }
 
-    if (key === 'exclude_weekends' && typeof value === 'boolean') {
+    if (key === "exclude_weekends" && typeof value === "boolean") {
       sanitized.exclude_weekends = value;
       continue;
     }
 
-    if (key === 'target_user_id' && typeof value === 'string') {
+    if (key === "target_user_id" && typeof value === "string") {
       sanitized.target_user_id = value;
       continue;
     }
 
-    if (key === 'recipient_status' && typeof value === 'string') {
+    if (key === "recipient_status" && typeof value === "string") {
       sanitized.recipient_status = value;
       continue;
     }
 
-    if (key === 'google_email' && typeof value === 'string') {
+    if (key === "google_email" && typeof value === "string") {
       sanitized.google_email = value;
       continue;
     }
 
-    if (key === 'approval_source' && typeof value === 'string') {
+    if (key === "approval_source" && typeof value === "string") {
       sanitized.approval_source = value;
       continue;
     }
 
-    if (key === 'rejection_reason' && typeof value === 'string') {
+    if (key === "rejection_reason" && typeof value === "string") {
       sanitized.rejection_reason = value;
       continue;
     }
 
-    if (key === 'birthday_set' && typeof value === 'boolean') {
+    if (key === "birthday_set" && typeof value === "boolean") {
       sanitized.birthday_set = value;
       continue;
     }
 
-    if (key === 'message' && typeof value === 'string') {
+    if (key === "message" && typeof value === "string") {
       if (!SENSITIVE_FIELD_PATTERN.test(value)) {
         sanitized.message = value;
       }
       continue;
     }
 
-    if (typeof value === 'string' || typeof value === 'object') {
+    if (typeof value === "string" || typeof value === "object") {
       (sanitized as Record<string, unknown>)[key] = value;
     }
   }
@@ -362,12 +362,12 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 export function buildErrorMetadata(
   errorCode: ActivityLogErrorCode,
   message?: string,
-  extra?: ActivityLogMetadata
+  extra?: ActivityLogMetadata,
 ): ActivityLogMetadata {
   return sanitizeMetadata({
     error_code: errorCode,
     ...(message ? { message } : {}),
-    ...extra
+    ...extra,
   });
 }
 
@@ -376,7 +376,7 @@ export async function recordActivityLog(input: RecordActivityLogInput): Promise<
     const supabase = getServiceRoleClient();
     const metadata = sanitizeMetadata(input.metadata);
 
-    const { error } = await supabase.from('activity_logs').insert({
+    const { error } = await supabase.from("activity_logs").insert({
       request_id: input.requestId,
       actor_user_id: input.actorUserId,
       actor_email: input.actorEmail,
@@ -388,55 +388,55 @@ export async function recordActivityLog(input: RecordActivityLogInput): Promise<
       http_method: input.httpMethod,
       http_path: input.httpPath,
       http_status: input.httpStatus,
-      metadata
+      metadata,
     });
 
     if (error) {
-      console.error('[activity-logs] insert failed:', error.message);
+      console.error("[activity-logs] insert failed:", error.message);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[activity-logs] insert failed:', message);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[activity-logs] insert failed:", message);
   }
 }
 
 export function withRequestId(response: NextResponse, requestId: string): NextResponse {
   const headers = new Headers(response.headers);
-  headers.set('x-request-id', requestId);
+  headers.set("x-request-id", requestId);
   return new NextResponse(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers
+    headers,
   });
 }
 
 export async function jsonWithActivityLog(
   requestId: string,
-  logInput: Omit<RecordActivityLogInput, 'requestId' | 'httpStatus'>,
+  logInput: Omit<RecordActivityLogInput, "requestId" | "httpStatus">,
   body: unknown,
-  status: number
+  status: number,
 ): Promise<NextResponse> {
   await recordActivityLog({
     ...logInput,
     requestId,
-    httpStatus: status
+    httpStatus: status,
   });
 
   return NextResponse.json(body, {
     status,
-    headers: { 'x-request-id': requestId }
+    headers: { "x-request-id": requestId },
   });
 }
 
 export async function finishWithActivityLog(
   requestId: string,
-  logInput: Omit<RecordActivityLogInput, 'requestId' | 'httpStatus'>,
-  response: NextResponse
+  logInput: Omit<RecordActivityLogInput, "requestId" | "httpStatus">,
+  response: NextResponse,
 ): Promise<NextResponse> {
   await recordActivityLog({
     ...logInput,
     requestId,
-    httpStatus: response.status
+    httpStatus: response.status,
   });
 
   return withRequestId(response, requestId);
@@ -446,16 +446,16 @@ export async function fetchUserTargetLabel(userId: string): Promise<string> {
   try {
     const supabase = getServiceRoleClient();
     const { data } = await supabase
-      .from('profiles')
-      .select('email, full_name')
-      .eq('user_id', userId)
+      .from("profiles")
+      .select("email, full_name")
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (!data?.email) {
       return userId;
     }
 
-    const name = data.full_name?.trim() ?? '';
+    const name = data.full_name?.trim() ?? "";
     return name ? `${name} (${data.email})` : data.email;
   } catch {
     return userId;

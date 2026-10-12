@@ -1,0 +1,79 @@
+import type { Affiliation } from "@/features/users/constants/organization";
+
+export type BenefitType = "book" | "fitness" | "education";
+export type BenefitStatus = "정상" | "한도 초과";
+
+export interface BenefitImportPayload {
+  document_number: string;
+  task_key: string;
+  benefit_type: BenefitType;
+  document_created_at: string;
+  approved_at: string;
+  applicant_name: string;
+  amount: number;
+  description?: string | null;
+  source_document_url: string;
+  source_message_id?: string | null;
+}
+
+export interface BenefitDocument {
+  id: number;
+  document_number: string;
+  task_key: string;
+  benefit_type: BenefitType;
+  document_created_at: string;
+  approved_at: string;
+  applicant_name: string;
+  amount: number;
+  description: string | null;
+  source_document_url: string;
+}
+
+export interface BenefitCategoryTotals {
+  book: number;
+  fitness: number;
+  education: number;
+}
+
+export interface BenefitMemberSummary {
+  user_id: string;
+  full_name: string;
+  affiliation: Affiliation;
+  team: string | null;
+  position_level: string;
+  total_used: number;
+  limit: number;
+  overage: number;
+  status: BenefitStatus;
+  category_totals: BenefitCategoryTotals;
+  documents: BenefitDocument[];
+}
+
+export interface BenefitsAdminFilters {
+  month: string;
+  affiliation?: Affiliation;
+  team?: string;
+  name?: string;
+}
+
+export interface BenefitsAdminResponse {
+  month: string;
+  limit: number;
+  members: BenefitMemberSummary[];
+  teams: string[];
+}
+
+export interface MyBenefitsResponse {
+  month: string;
+  limit: number;
+  total_used: number;
+  remaining: number;
+  overage: number;
+  status: BenefitStatus;
+  category_totals: BenefitCategoryTotals;
+  documents: BenefitDocument[];
+}
+
+export type BenefitImportResult =
+  | { status: "created"; document: BenefitDocument }
+  | { status: "duplicate"; document: BenefitDocument };

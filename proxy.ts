@@ -1,39 +1,36 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import {
-  getAdminAccessDeniedParam,
-  isAdminDashboardPath
-} from '@/config/admin-routes';
-import { isDisabledDashboardPath } from '@/config/disabled-routes';
-import { ACCESS_DENIED_FLASH_COOKIE } from '@/lib/auth/access-denied-flash';
-import { ACCOUNT_DISABLED_FLASH_COOKIE } from '@/lib/auth/account-disabled-flash';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getAdminAccessDeniedParam, isAdminDashboardPath } from "@/config/admin-routes";
+import { isDisabledDashboardPath } from "@/config/disabled-routes";
+import { ACCESS_DENIED_FLASH_COOKIE } from "@/lib/auth/access-denied-flash";
+import { ACCOUNT_DISABLED_FLASH_COOKIE } from "@/lib/auth/account-disabled-flash";
 import {
   isMustChangeAllowedApiPath,
-  MUST_CHANGE_API_JSON
-} from '@/lib/auth/must-change-api-guard.server';
-import { hasMustChangeInitialPasswordCookieFromRequest } from '@/lib/auth/must-change-cookie';
-import { updateSession } from '@/lib/supabase/middleware';
+  MUST_CHANGE_API_JSON,
+} from "@/lib/auth/must-change-api-guard.server";
+import { hasMustChangeInitialPasswordCookieFromRequest } from "@/lib/auth/must-change-cookie";
+import { updateSession } from "@/lib/supabase/middleware";
 
-const LOCAL_ALLOWED_ORIGIN = 'http://localhost:3000';
+const LOCAL_ALLOWED_ORIGIN = "http://localhost:3000";
 
 const UNAUTHORIZED_JSON = {
   success: false,
-  message: '인증이 필요합니다.'
+  message: "인증이 필요합니다.",
 } as const;
 
 const INACTIVE_JSON = {
   success: false,
-  message: '비활성화된 계정입니다.'
+  message: "비활성화된 계정입니다.",
 } as const;
 
-const FORCE_PASSWORD_CHANGE_PATH = '/auth/force-password-change';
+const FORCE_PASSWORD_CHANGE_PATH = "/auth/force-password-change";
 
 function normalizeOrigin(origin: string): string {
-  return origin.replace(/\/$/, '');
+  return origin.replace(/\/$/, "");
 }
 
 function getAllowedOrigins(): string[] {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === "production";
 
   if (!isProduction) {
     return [LOCAL_ALLOWED_ORIGIN];
@@ -48,59 +45,56 @@ function getAllowedOrigins(): string[] {
 }
 
 function isApiPath(pathname: string): boolean {
-  return pathname.startsWith('/api/');
+  return pathname.startsWith("/api/");
 }
 
 function isServiceTokenApiPath(pathname: string): boolean {
   return (
-    pathname === '/api/contracts/import' ||
-    pathname === '/api/contracts/reminders' ||
-    pathname === '/api/wallet/sync' ||
-    pathname === '/api/wallet/balance-email/dispatch'
+    pathname === "/api/contracts/import" ||
+    pathname === "/api/contracts/reminders" ||
+    pathname === "/api/benefits/import" ||
+    pathname === "/api/wallet/sync" ||
+    pathname === "/api/wallet/balance-email/dispatch"
   );
 }
 
 function isPublicAuthApiPath(pathname: string, method: string): boolean {
-  if (method !== 'POST') {
+  if (method !== "POST") {
     return false;
   }
 
   return (
-    pathname === '/api/auth/sign-in' ||
-    pathname === '/api/auth/forgot-password/request' ||
-    pathname === '/api/auth/forgot-password/verify'
+    pathname === "/api/auth/sign-in" ||
+    pathname === "/api/auth/forgot-password/request" ||
+    pathname === "/api/auth/forgot-password/verify"
   );
 }
 
 function isForcePasswordChangePage(pathname: string): boolean {
   return (
-    pathname === FORCE_PASSWORD_CHANGE_PATH ||
-    pathname.startsWith(`${FORCE_PASSWORD_CHANGE_PATH}/`)
+    pathname === FORCE_PASSWORD_CHANGE_PATH || pathname.startsWith(`${FORCE_PASSWORD_CHANGE_PATH}/`)
   );
 }
 
-function redirectToForcePasswordChange(
-  request: NextRequest,
-  sessionResponse: NextResponse
-) {
+function redirectToForcePasswordChange(request: NextRequest, sessionResponse: NextResponse) {
   const forceChangeUrl = request.nextUrl.clone();
   forceChangeUrl.pathname = FORCE_PASSWORD_CHANGE_PATH;
-  forceChangeUrl.search = '';
+  forceChangeUrl.search = "";
   const redirectResponse = NextResponse.redirect(forceChangeUrl);
   copyCookies(sessionResponse, redirectResponse);
   return redirectResponse;
 }
 
 function isDashboardPath(pathname: string): boolean {
-  return pathname === '/dashboard' || pathname.startsWith('/dashboard/');
+  return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 }
 
 function isAuthPath(pathname: string): boolean {
-  return pathname === '/auth' || pathname.startsWith('/auth/');
+  return pathname === "/auth" || pathname.startsWith("/auth/");
 }
 
 function isSignInPath(pathname: string): boolean {
-  return pathname === '/auth/sign-in' || pathname.startsWith('/auth/sign-in/');
+  return pathname === "/auth/sign-in" || pathname.startsWith("/auth/sign-in/");
 }
 
 function copyCookies(from: NextResponse, to: NextResponse) {
@@ -112,7 +106,7 @@ function copyCookies(from: NextResponse, to: NextResponse) {
 function jsonWithCookies(
   sessionResponse: NextResponse,
   body: Record<string, unknown>,
-  status: number
+  status: number,
 ) {
   const jsonResponse = NextResponse.json(body, { status });
   copyCookies(sessionResponse, jsonResponse);
@@ -122,18 +116,18 @@ function jsonWithCookies(
 function redirectWithAccessDeniedFlash(
   request: NextRequest,
   sessionResponse: NextResponse,
-  key: string
+  key: string,
 ) {
   const overviewUrl = request.nextUrl.clone();
-  overviewUrl.pathname = '/dashboard/overview';
-  overviewUrl.search = '';
+  overviewUrl.pathname = "/dashboard/overview";
+  overviewUrl.search = "";
   const redirectResponse = NextResponse.redirect(overviewUrl);
   copyCookies(sessionResponse, redirectResponse);
   redirectResponse.cookies.set(ACCESS_DENIED_FLASH_COOKIE, key, {
     maxAge: 30,
-    path: '/',
-    sameSite: 'lax',
-    httpOnly: false
+    path: "/",
+    sameSite: "lax",
+    httpOnly: false,
   });
   return redirectResponse;
 }
@@ -145,13 +139,13 @@ export async function proxy(request: NextRequest) {
 
   if (allowedOrigins.length === 0) {
     return NextResponse.json(
-      { message: 'NEXT_PUBLIC_APP_URL is required in production.' },
-      { status: 500 }
+      { message: "NEXT_PUBLIC_APP_URL is required in production." },
+      { status: 500 },
     );
   }
 
   if (!allowedOrigins.includes(requestOrigin)) {
-    return NextResponse.json({ message: 'Forbidden origin' }, { status: 403 });
+    return NextResponse.json({ message: "Forbidden origin" }, { status: 403 });
   }
 
   if (isApiPath(pathname) && !isServiceTokenApiPath(pathname)) {
@@ -159,19 +153,17 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const mustChangeBeforeSession =
-      hasMustChangeInitialPasswordCookieFromRequest(request);
+    const mustChangeBeforeSession = hasMustChangeInitialPasswordCookieFromRequest(request);
     const { response, user, profile } = await updateSession(request);
     const mustChange =
-      mustChangeBeforeSession ||
-      hasMustChangeInitialPasswordCookieFromRequest(request);
+      mustChangeBeforeSession || hasMustChangeInitialPasswordCookieFromRequest(request);
 
-    if (profile?.status === 'inactive') {
+    if (profile?.status === "inactive") {
       return jsonWithCookies(response, INACTIVE_JSON, 403);
     }
 
     const isForcePasswordChangePatch =
-      pathname === '/api/auth/force-password-change' && request.method === 'PATCH';
+      pathname === "/api/auth/force-password-change" && request.method === "PATCH";
 
     if (!user && !isForcePasswordChangePatch) {
       return jsonWithCookies(response, UNAUTHORIZED_JSON, 401);
@@ -193,26 +185,25 @@ export async function proxy(request: NextRequest) {
   const { response, user, profile } = await updateSession(request);
   const mustChange = hasMustChangeInitialPasswordCookieFromRequest(request);
 
-  if (profile?.status === 'inactive') {
+  if (profile?.status === "inactive") {
     const alreadyOnNotice =
-      isSignInPath(pathname) &&
-      request.nextUrl.searchParams.get('accountDisabled') === '1';
+      isSignInPath(pathname) && request.nextUrl.searchParams.get("accountDisabled") === "1";
 
     if (alreadyOnNotice) {
       return response;
     }
 
     const signInUrl = request.nextUrl.clone();
-    signInUrl.pathname = '/auth/sign-in';
-    signInUrl.search = '';
-    signInUrl.searchParams.set('accountDisabled', '1');
+    signInUrl.pathname = "/auth/sign-in";
+    signInUrl.search = "";
+    signInUrl.searchParams.set("accountDisabled", "1");
     const redirectResponse = NextResponse.redirect(signInUrl);
     copyCookies(response, redirectResponse);
-    redirectResponse.cookies.set(ACCOUNT_DISABLED_FLASH_COOKIE, '1', {
+    redirectResponse.cookies.set(ACCOUNT_DISABLED_FLASH_COOKIE, "1", {
       maxAge: 60,
-      path: '/',
-      sameSite: 'lax',
-      httpOnly: false
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false,
     });
     return redirectResponse;
   }
@@ -222,8 +213,8 @@ export async function proxy(request: NextRequest) {
       if (isForcePasswordChangePage(pathname)) {
         if (!user) {
           const signInUrl = request.nextUrl.clone();
-          signInUrl.pathname = '/auth/sign-in';
-          signInUrl.search = '';
+          signInUrl.pathname = "/auth/sign-in";
+          signInUrl.search = "";
           const redirectResponse = NextResponse.redirect(signInUrl);
           copyCookies(response, redirectResponse);
           return redirectResponse;
@@ -237,8 +228,8 @@ export async function proxy(request: NextRequest) {
 
     if (isForcePasswordChangePage(pathname)) {
       const signInUrl = request.nextUrl.clone();
-      signInUrl.pathname = '/auth/sign-in';
-      signInUrl.search = '';
+      signInUrl.pathname = "/auth/sign-in";
+      signInUrl.search = "";
       const redirectResponse = NextResponse.redirect(signInUrl);
       copyCookies(response, redirectResponse);
       return redirectResponse;
@@ -250,16 +241,16 @@ export async function proxy(request: NextRequest) {
 
     if (isSignInPath(pathname)) {
       const dashboardUrl = request.nextUrl.clone();
-      dashboardUrl.pathname = '/dashboard/overview';
-      dashboardUrl.search = '';
+      dashboardUrl.pathname = "/dashboard/overview";
+      dashboardUrl.search = "";
       const redirectResponse = NextResponse.redirect(dashboardUrl);
       copyCookies(response, redirectResponse);
       return redirectResponse;
     }
 
     const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = '/dashboard/overview';
-    dashboardUrl.search = '';
+    dashboardUrl.pathname = "/dashboard/overview";
+    dashboardUrl.search = "";
     const redirectResponse = NextResponse.redirect(dashboardUrl);
     copyCookies(response, redirectResponse);
     return redirectResponse;
@@ -272,8 +263,8 @@ export async function proxy(request: NextRequest) {
 
     if (!user) {
       const signInUrl = request.nextUrl.clone();
-      signInUrl.pathname = '/auth/sign-in';
-      signInUrl.searchParams.set('redirectTo', pathname);
+      signInUrl.pathname = "/auth/sign-in";
+      signInUrl.searchParams.set("redirectTo", pathname);
       const redirectResponse = NextResponse.redirect(signInUrl);
       copyCookies(response, redirectResponse);
       return redirectResponse;
@@ -281,15 +272,15 @@ export async function proxy(request: NextRequest) {
 
     if (isDisabledDashboardPath(pathname)) {
       const overviewUrl = request.nextUrl.clone();
-      overviewUrl.pathname = '/dashboard/overview';
-      overviewUrl.search = '';
+      overviewUrl.pathname = "/dashboard/overview";
+      overviewUrl.search = "";
       const redirectResponse = NextResponse.redirect(overviewUrl);
       copyCookies(response, redirectResponse);
       return redirectResponse;
     }
 
-    if (isAdminDashboardPath(pathname) && profile?.system_role !== 'admin') {
-      const accessDenied = getAdminAccessDeniedParam(pathname) ?? 'users';
+    if (isAdminDashboardPath(pathname) && profile?.system_role !== "admin") {
+      const accessDenied = getAdminAccessDeniedParam(pathname) ?? "users";
       return redirectWithAccessDeniedFlash(request, response, accessDenied);
     }
   }
@@ -299,8 +290,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/api/:path*',
-    '/trpc/:path*'
-  ]
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/api/:path*",
+    "/trpc/:path*",
+  ],
 };
