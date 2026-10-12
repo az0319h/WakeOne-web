@@ -187,6 +187,7 @@ export default defineConfig({
         /kbar\/nav-user\.spec\.ts$/,
         /contracts\/my-contracts-viewer\.spec\.ts$/,
         /benefits\/my-benefits\.spec\.ts$/,
+        /benefits\/my-benefits-url-filters\.spec\.ts$/,
         /attachments\//,
         /live-users\//,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
@@ -224,6 +225,7 @@ export default defineConfig({
         /kbar\/nav-user\.spec\.ts$/,
         /contracts\/my-contracts-viewer\.spec\.ts$/,
         /benefits\/my-benefits\.spec\.ts$/,
+        /benefits\/my-benefits-url-filters\.spec\.ts$/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /google-tasks\/rbac\.spec\.ts$/,
         ...(isWalletBalanceEmailE2eRun ? [] : [/wallet-balance-email\/notifications\.spec\.ts$/])

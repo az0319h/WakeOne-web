@@ -7,8 +7,8 @@ export default async function BenefitsPage() {
 
   return (
     <PageContainer
-      pageTitle="복지비 사용 현황"
-      pageDescription="월별 10만원 예산의 신청 내역을 한눈에 확인합니다."
+      pageTitle="복지비 관리"
+      pageDescription="구성원별 복지비 사용 현황과 신청 문서를 관리합니다."
     >
       <BenefitsAdminDashboard />
     </PageContainer>

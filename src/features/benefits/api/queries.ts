@@ -5,7 +5,8 @@ import type { BenefitsAdminFilters } from "./types";
 export const benefitKeys = {
   all: ["benefits"] as const,
   admin: (filters: BenefitsAdminFilters) => [...benefitKeys.all, "admin", filters] as const,
-  mine: (month: string) => [...benefitKeys.all, "mine", month] as const,
+  mine: (month: string, user?: string) =>
+    [...benefitKeys.all, "mine", month, user ?? "self"] as const,
 };
 
 export const benefitsAdminQueryOptions = (filters: BenefitsAdminFilters) =>
@@ -15,9 +16,9 @@ export const benefitsAdminQueryOptions = (filters: BenefitsAdminFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const myBenefitsQueryOptions = (month: string) =>
+export const myBenefitsQueryOptions = (month: string, user?: string) =>
   queryOptions({
-    queryKey: benefitKeys.mine(month),
-    queryFn: () => fetchMyBenefits(month),
+    queryKey: benefitKeys.mine(month, user),
+    queryFn: () => fetchMyBenefits(month, user),
     placeholderData: keepPreviousData,
   });

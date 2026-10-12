@@ -41,6 +41,8 @@ export interface BenefitMemberSummary {
   affiliation: Affiliation;
   team: string | null;
   position_level: string;
+  /** 복지비 관리(admin) UI: 비활성 프로필이 조회 월에 노출될 때 true */
+  is_inactive_profile: boolean;
   total_used: number;
   limit: number;
   overage: number;

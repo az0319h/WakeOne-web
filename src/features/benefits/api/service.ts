@@ -21,8 +21,11 @@ export function fetchBenefitsAdmin(filters: BenefitsAdminFilters) {
   ).then((response) => response.data);
 }
 
-export function fetchMyBenefits(month: string) {
+export function fetchMyBenefits(month: string, user?: string) {
   return apiClientWithMessage<{ success: boolean; data: MyBenefitsResponse }>(
-    buildQuery("/my-benefits", { month }),
+    buildQuery("/my-benefits", {
+      month,
+      ...(user ? { user } : {}),
+    }),
   ).then((response) => response.data);
 }
