@@ -6,6 +6,7 @@ import {
 } from "@/features/org-chart/api/service.server";
 import type { OrgChartProfile } from "@/features/org-chart/api/types";
 import { AFFILIATIONS, type Affiliation } from "@/features/users/constants/organization";
+import { compareYearMonth, getKstYearMonthString } from "@/lib/kst";
 import { normalizePersonName } from "@/lib/normalize-person-name";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type {
@@ -21,6 +22,17 @@ import type {
 } from "./types";
 
 export const MONTHLY_BENEFIT_LIMIT = 100_000;
+
+/** wallet `resolveWalletTargetUserId`와 동일 semantics */
+export function resolveBenefitsTargetUserId(
+  viewerUserId: string,
+  isAdmin: boolean,
+  requestedUserId: string | null,
+): string {
+  return isAdmin && requestedUserId && requestedUserId !== "self"
+    ? requestedUserId
+    : viewerUserId;
+}
 
 const DOCUMENT_SELECT =
   "id, document_number, task_key, benefit_type, document_created_at, approved_at, applicant_name, amount, description, source_document_url, applicant_user_id";
@@ -57,6 +69,32 @@ function mapDocument(row: Record<string, unknown>): BenefitDocument {
     description: row.description == null ? null : String(row.description),
     source_document_url: String(row.source_document_url),
   };
+}
+
+const PROFILE_ROSTER_SELECT =
+  "user_id, full_name, avatar_url, email, phone, affiliation, rank, position_level, leader_role, system_role, status, deactivated_at";
+
+function isBenefitsAdminRosterProfile(profile: {
+  system_role: string;
+  position_level: string | null;
+  rank: string | null;
+}): boolean {
+  if (profile.system_role !== "user") return false;
+  if (!profile.position_level) return false;
+  if (
+    profile.rank === "경영진" &&
+    profile.position_level !== "CEO" &&
+    profile.position_level !== "COO"
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isInactiveBenefitsAdminMonth(deactivatedAt: string | null, viewMonth: string): boolean {
+  if (!deactivatedAt) return false;
+  const deactivatedMonth = getKstYearMonthString(deactivatedAt);
+  return compareYearMonth(viewMonth, deactivatedMonth) <= 0;
 }
 
 function summarizeDocuments(documents: BenefitDocument[]) {
@@ -104,33 +142,77 @@ async function listMonthDocuments(
 export async function listBenefitsAdmin(
   filters: BenefitsAdminFilters,
 ): Promise<BenefitsAdminResponse> {
-  monthRange(filters.month);
+  const viewMonth = filters.month;
+  monthRange(viewMonth);
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select(
-      "user_id, full_name, avatar_url, email, phone, affiliation, rank, position_level, leader_role, system_role, status",
-    )
-    .eq("status", "active")
+    .select(PROFILE_ROSTER_SELECT)
     .eq("system_role", "user");
 
   if (error) throw new Error(error.message);
 
-  const eligible = (data ?? []).filter((row) =>
-    isEligibleOrgChartMember(
-      row as {
-        status: string;
-        system_role: string;
-        position_level: string | null;
-        rank: string | null;
-      },
-    ),
-  ) as OrgChartProfile[];
+  type ProfileRow = {
+    user_id: string;
+    full_name: string;
+    avatar_url: string | null;
+    email: string | null;
+    phone: string | null;
+    affiliation: Affiliation;
+    rank: string | null;
+    position_level: string;
+    leader_role: OrgChartProfile["leader_role"];
+    system_role: string;
+    status: string;
+    deactivated_at: string | null;
+  };
+
+  const rosterRows = (data ?? []) as ProfileRow[];
+
+  const activeEligible = rosterRows.filter((row) =>
+    isEligibleOrgChartMember({
+      status: row.status,
+      system_role: row.system_role,
+      position_level: row.position_level,
+      rank: row.rank,
+    }),
+  );
+
+  const inactiveEligible = rosterRows.filter(
+    (row) =>
+      row.status === "inactive" &&
+      isBenefitsAdminRosterProfile(row) &&
+      isInactiveBenefitsAdminMonth(row.deactivated_at, viewMonth),
+  );
 
   const affiliation = filters.affiliation ?? "wake";
-  const affiliationMembers = eligible.filter((profile) => profile.affiliation === affiliation);
-  const sorted = sortOrgChartMembers(affiliation, affiliationMembers);
-  const documents = await listMonthDocuments(filters.month);
+  const affiliationMembers = [...activeEligible, ...inactiveEligible].filter(
+    (profile) => profile.affiliation === affiliation,
+  );
+
+  const inactiveUserIds = new Set(
+    inactiveEligible
+      .filter((profile) => profile.affiliation === affiliation)
+      .map((profile) => profile.user_id),
+  );
+
+  const sorted = sortOrgChartMembers(
+    affiliation,
+    affiliationMembers.map((profile) => ({
+      user_id: profile.user_id,
+      full_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+      email: profile.email,
+      phone: profile.phone,
+      affiliation: profile.affiliation,
+      rank: profile.rank,
+      position_level: profile.position_level,
+      leader_role: profile.leader_role,
+      system_role: "user",
+      status: "active",
+    })),
+  );
+  const documents = await listMonthDocuments(viewMonth);
   const documentsByUser = new Map<string, BenefitDocument[]>();
   for (const document of documents) {
     const list = documentsByUser.get(document.applicant_user_id) ?? [];
@@ -154,6 +236,7 @@ export async function listBenefitsAdmin(
         affiliation: profile.affiliation,
         team: profile.rank,
         position_level: profile.position_level,
+        is_inactive_profile: inactiveUserIds.has(profile.user_id),
         total_used: summary.totalUsed,
         limit: MONTHLY_BENEFIT_LIMIT,
         overage: summary.overage,
@@ -171,7 +254,7 @@ export async function listBenefitsAdmin(
     ),
   );
 
-  return { month: filters.month, limit: MONTHLY_BENEFIT_LIMIT, members, teams };
+  return { month: viewMonth, limit: MONTHLY_BENEFIT_LIMIT, members, teams };
 }
 
 export async function getMyBenefits(userId: string, month: string): Promise<MyBenefitsResponse> {

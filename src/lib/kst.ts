@@ -31,3 +31,15 @@ export function getKstYearMonth(now = new Date()): { year: number; month: number
 
   return { year, month };
 }
+
+/** ISO 시각을 KST 기준 `YYYY-MM`으로 변환 */
+export function getKstYearMonthString(iso: string | Date): string {
+  const date = typeof iso === 'string' ? new Date(iso) : iso;
+  const { year, month } = getKstYearMonth(date);
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+/** `YYYY-MM` 문자열 비교 (a가 b보다 이전이면 음수) */
+export function compareYearMonth(a: string, b: string): number {
+  return a.localeCompare(b);
+}
