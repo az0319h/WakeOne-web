@@ -1,4 +1,4 @@
-import { NavGroup } from '@/types';
+import { NavGroup } from "@/types";
 
 /**
  * Navigation configuration with RBAC support
@@ -15,133 +15,151 @@ import { NavGroup } from '@/types';
  */
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview (개요)',
+    label: "Overview (개요)",
     items: [
       {
-        title: '대시보드',
-        url: '/dashboard/overview',
-        icon: 'dashboard',
+        title: "대시보드",
+        url: "/dashboard/overview",
+        icon: "dashboard",
         isActive: false,
-        shortcut: ['d', 'd'],
-        items: []
+        shortcut: ["d", "d"],
+        items: [],
       },
       {
-        title: '공지사항',
-        url: '/dashboard/announcements',
-        icon: 'post',
-        shortcut: ['a', 'n'],
+        title: "공지사항",
+        url: "/dashboard/announcements",
+        icon: "post",
+        shortcut: ["a", "n"],
         isActive: false,
-        items: []
+        items: [],
       },
       {
-        title: '조직도',
-        url: '/dashboard/org-chart',
-        icon: 'teams',
-        shortcut: ['o', 'r'],
+        title: "조직도",
+        url: "/dashboard/org-chart",
+        icon: "teams",
+        shortcut: ["o", "r"],
         isActive: false,
-        items: []
-      }
-    ]
+        items: [],
+      },
+    ],
   },
   {
-    label: 'Admin (관리)',
+    label: "Admin (관리)",
     items: [
       {
-        title: '사용자 관리',
-        url: '/dashboard/users',
-        icon: 'teams',
-        shortcut: ['u', 'u'],
+        title: "사용자 관리",
+        url: "/dashboard/users",
+        icon: "teams",
+        shortcut: ["u", "u"],
         isActive: false,
-        access: { systemRole: 'admin' },
-        items: []
+        access: { systemRole: "admin" },
+        items: [],
       },
       {
-        title: '계약서 관리',
-        url: '/dashboard/contracts',
-        icon: 'forms',
-        shortcut: ['c', 't'],
+        title: "계약서 관리",
+        url: "/dashboard/contracts",
+        icon: "forms",
+        shortcut: ["c", "t"],
         isActive: false,
-        access: { systemRole: 'admin' },
+        access: { systemRole: "admin" },
         items: [
           {
-            title: '독촉 이메일 로그',
-            url: '/dashboard/system-email-logs',
-            icon: 'send',
-            shortcut: ['e', 'l']
-          }
-        ]
+            title: "독촉 이메일 로그",
+            url: "/dashboard/system-email-logs",
+            icon: "send",
+            shortcut: ["e", "l"],
+          },
+        ],
       },
       {
-        title: 'CS 문의',
-        url: '/dashboard/support',
-        icon: 'help',
-        shortcut: ['c', 's'],
+        title: "복지비 관리",
+        url: "/dashboard/benefits",
+        icon: "wallet",
+        shortcut: ["b", "m"],
         isActive: false,
-        access: { systemRole: 'admin' },
-        items: []
-      }
-    ]
+        access: { systemRole: "admin" },
+        items: [],
+      },
+      {
+        title: "CS 문의",
+        url: "/dashboard/support",
+        icon: "help",
+        shortcut: ["c", "s"],
+        isActive: false,
+        access: { systemRole: "admin" },
+        items: [],
+      },
+    ],
   },
   {
-    label: 'Account (계정)',
+    label: "Account (계정)",
     items: [
       {
-        title: '프로필',
-        url: '/dashboard/profile',
-        icon: 'profile',
-        shortcut: ['p', 'r'],
+        title: "프로필",
+        url: "/dashboard/profile",
+        icon: "profile",
+        shortcut: ["p", "r"],
         isActive: false,
-        items: []
+        items: [],
       },
       {
-        title: '내 계약서',
-        url: '/dashboard/my-contracts',
-        icon: 'page',
-        shortcut: ['m', 'c'],
+        title: "내 계약서",
+        url: "/dashboard/my-contracts",
+        icon: "page",
+        shortcut: ["m", "c"],
         isActive: false,
         access: { hasMyContracts: true },
-        items: []
+        items: [],
       },
       {
-        title: '식대 카드',
-        url: '/dashboard/wallet',
-        icon: 'wallet',
-        shortcut: ['w', 'l'],
+        title: "내 복지비",
+        url: "/dashboard/my-benefits",
+        icon: "wallet",
+        shortcut: ["m", "b"],
+        isActive: false,
+        access: { systemRole: "user" },
+        items: [],
+      },
+      {
+        title: "식대 카드",
+        url: "/dashboard/wallet",
+        icon: "wallet",
+        shortcut: ["w", "l"],
         isActive: false,
         items: [
           {
-            title: '잔액 확인 이메일 로그',
-            url: '/dashboard/wallet/balance-email-logs',
-            icon: 'send',
-            access: { systemRole: 'admin' }
-          }
-        ]
+            title: "잔액 확인 이메일 로그",
+            url: "/dashboard/wallet/balance-email-logs",
+            icon: "send",
+            access: { systemRole: "admin" },
+          },
+        ],
       },
       {
-        title: '알림',
-        url: '/dashboard/notifications',
-        icon: 'notification',
-        shortcut: ['n', 't'],
+        title: "알림",
+        url: "/dashboard/notifications",
+        icon: "notification",
+        shortcut: ["n", "t"],
         isActive: false,
-        items: []
+        items: [],
       },
       {
-        title: 'CS 문의',
-        url: '/dashboard/support',
-        icon: 'help',
-        shortcut: ['c', 's'],
+        title: "CS 문의",
+        url: "/dashboard/support",
+        icon: "help",
+        shortcut: ["c", "s"],
         isActive: false,
-        access: { systemRole: 'user' },
-        items: []
+        access: { systemRole: "user" },
+        items: [],
       },
       {
-        title: '활동 로그',
-        url: '/dashboard/logs',
-        icon: 'forms',
-        shortcut: ['l', 'g'],
+        title: "활동 로그",
+        url: "/dashboard/logs",
+        icon: "forms",
+        shortcut: ["l", "g"],
         isActive: false,
-        items: []
-      }
-    ]
-  }
+        items: [],
+      },
+    ],
+  },
 ];

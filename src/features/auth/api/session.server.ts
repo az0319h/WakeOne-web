@@ -13,19 +13,39 @@ const INACTIVE_MESSAGE = '활성화된 계정만 접근할 수 있습니다.';
 const PROFILE_COLUMNS =
   'user_id, email, full_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, rank, position_level, leader_role, google_email, google_display_name, approval_requested_at, approved_at, approved_by, rejected_at, rejected_by, rejection_reason';
 
+function isInvalidRefreshTokenError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const value = error as { code?: unknown; message?: unknown };
+  return (
+    value.code === 'refresh_token_not_found' ||
+    (typeof value.message === 'string' &&
+      value.message.toLowerCase().includes('refresh token not found'))
+  );
+}
+
 export async function getSessionUser() {
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  return user;
+  try {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    return user;
+  } catch (error) {
+    if (isInvalidRefreshTokenError(error)) return null;
+    throw error;
+  }
 }
 
 export async function getSessionProfile(): Promise<AuthProfile | null> {
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  let user;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+  } catch (error) {
+    if (isInvalidRefreshTokenError(error)) return null;
+    throw error;
+  }
 
   if (!user) {
     return null;
@@ -65,10 +85,17 @@ export async function getSessionProfile(): Promise<AuthProfile | null> {
 
 export async function requireSession(): Promise<SessionResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
+  let user;
+  let authError;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+    authError = result.error;
+  } catch (error) {
+    if (!isInvalidRefreshTokenError(error)) throw error;
+    user = null;
+    authError = error;
+  }
 
   if (authError || !user) {
     return {

@@ -1,81 +1,85 @@
 export type ActivityAction =
-  | 'user.create'
-  | 'user.invite'
-  | 'user.update'
-  | 'user.approval_request'
-  | 'user.approve'
-  | 'user.reject'
-  | 'user.reactivate'
-  | 'user.deactivate'
-  | 'contract.import_create'
-  | 'contract.import_duplicate'
-  | 'contract.import_backfill'
-  | 'contract.import_failed'
-  | 'contract.update'
-  | 'contract.soft_delete'
-  | 'contract.attachment_upload'
-  | 'contract.attachment_soft_delete'
-  | 'contract.no_attachment_set'
-  | 'contract.no_attachment_unset'
-  | 'contract.reminder_send'
-  | 'contract.reminder_failed'
-  | 'wallet.sync_create'
-  | 'wallet.sync_failed'
-  | 'wallet.balance_email_pref_update'
-  | 'wallet.balance_email_send'
-  | 'wallet.balance_email_failed'
-  | 'wallet.balance_email_blocked'
-  | 'wallet.balance_email_dispatch'
-  | 'profile.update'
-  | 'profile.password_change'
-  | 'auth.sign_in'
-  | 'auth.password_reset_request'
-  | 'auth.password_reset_complete'
-  | 'auth.force_password_change'
-  | 'notification.read'
-  | 'notification.read_all'
-  | 'announcement.create'
-  | 'announcement.update'
-  | 'announcement.delete'
-  | 'announcement.attachment_upload'
-  | 'announcement.attachment_delete'
-  | 'support.create'
-  | 'support.update'
-  | 'support.status_update'
-  | 'support.comment_create'
-  | 'support.comment_update'
-  | 'support.comment_delete'
-  | 'google_tasks.connect'
-  | 'google_tasks.disconnect';
+  | "user.create"
+  | "user.invite"
+  | "user.update"
+  | "user.approval_request"
+  | "user.approve"
+  | "user.reject"
+  | "user.reactivate"
+  | "user.deactivate"
+  | "contract.import_create"
+  | "contract.import_duplicate"
+  | "contract.import_backfill"
+  | "contract.import_failed"
+  | "contract.update"
+  | "contract.soft_delete"
+  | "contract.attachment_upload"
+  | "contract.attachment_soft_delete"
+  | "contract.no_attachment_set"
+  | "contract.no_attachment_unset"
+  | "contract.reminder_send"
+  | "contract.reminder_failed"
+  | "wallet.sync_create"
+  | "wallet.sync_failed"
+  | "wallet.balance_email_pref_update"
+  | "wallet.balance_email_send"
+  | "wallet.balance_email_failed"
+  | "wallet.balance_email_blocked"
+  | "wallet.balance_email_dispatch"
+  | "benefit.import_create"
+  | "benefit.import_duplicate"
+  | "benefit.import_failed"
+  | "profile.update"
+  | "profile.password_change"
+  | "auth.sign_in"
+  | "auth.password_reset_request"
+  | "auth.password_reset_complete"
+  | "auth.force_password_change"
+  | "notification.read"
+  | "notification.read_all"
+  | "announcement.create"
+  | "announcement.update"
+  | "announcement.delete"
+  | "announcement.attachment_upload"
+  | "announcement.attachment_delete"
+  | "support.create"
+  | "support.update"
+  | "support.status_update"
+  | "support.comment_create"
+  | "support.comment_update"
+  | "support.comment_delete"
+  | "google_tasks.connect"
+  | "google_tasks.disconnect";
 
 export type ActivityTargetType =
-  | 'user'
-  | 'profile'
-  | 'contract'
-  | 'wallet'
-  | 'auth'
-  | 'announcement'
-  | 'support_request'
-  | 'support_comment'
-  | 'google_tasks';
+  | "user"
+  | "profile"
+  | "contract"
+  | "wallet"
+  | "benefit"
+  | "auth"
+  | "announcement"
+  | "support_request"
+  | "support_comment"
+  | "google_tasks";
 
 export type ActivityLogErrorCode =
-  | 'unauthenticated'
-  | 'forbidden'
-  | 'validation'
-  | 'missing_approved_at'
-  | 'duplicate_email'
-  | 'forbidden_field'
-  | 'inactive_user'
-  | 'not_pending'
-  | 'not_found'
-  | 'wrong_password'
-  | 'invalid_otp'
-  | 'profile_edit_disabled'
-  | 'cron_paused'
-  | 'safety_filter_blocked'
-  | 'internal_error'
-  | 'gone';
+  | "unauthenticated"
+  | "forbidden"
+  | "validation"
+  | "missing_approved_at"
+  | "duplicate_email"
+  | "forbidden_field"
+  | "inactive_user"
+  | "not_pending"
+  | "not_found"
+  | "wrong_password"
+  | "invalid_otp"
+  | "profile_edit_disabled"
+  | "cron_paused"
+  | "safety_filter_blocked"
+  | "internal_error"
+  | "gone";
 
 export type ActivityLogMetadata = {
   error_code?: ActivityLogErrorCode;
@@ -87,6 +91,8 @@ export type ActivityLogMetadata = {
   asset_name?: string;
   document_number?: string;
   source_message_id?: string;
+  task_key?: string;
+  benefit_type?: string;
   source_type?: string;
   file_name?: string;
   recipient_email?: string;

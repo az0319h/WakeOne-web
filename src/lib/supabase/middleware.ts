@@ -1,15 +1,46 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
-import { getSupabasePublishableKey, getSupabaseUrl } from './env';
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { getSupabasePublishableKey, getSupabaseUrl } from "./env";
 
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { Affiliation } from "@/features/users/constants/organization";
 
 export type SessionProfileFlags = {
   password_set_at: string | null;
-  system_role: 'admin' | 'user';
-  status: 'active' | 'inactive' | 'pending_approval' | 'rejected';
+  system_role: "admin" | "user";
+  status: "active" | "inactive" | "pending_approval" | "rejected";
   affiliation: Affiliation | null;
 };
+
+function isInvalidRefreshTokenError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { code?: unknown; message?: unknown };
+  return (
+    value.code === "refresh_token_not_found" ||
+    (typeof value.message === "string" &&
+      value.message.toLowerCase().includes("refresh token not found"))
+  );
+}
+
+function clearInvalidAuthCookies(request: NextRequest): NextResponse {
+  const authCookies = request.cookies
+    .getAll()
+    .filter(({ name }) => name.startsWith("sb-") && name.includes("auth-token"));
+
+  for (const { name } of authCookies) {
+    request.cookies.delete(name);
+  }
+
+  const response = NextResponse.next({ request });
+  for (const { name } of authCookies) {
+    response.cookies.set(name, "", {
+      expires: new Date(0),
+      maxAge: 0,
+      path: "/",
+      sameSite: "lax",
+    });
+  }
+  return response;
+}
 
 export async function updateSession(request: NextRequest) {
   let url: string;
@@ -22,7 +53,7 @@ export async function updateSession(request: NextRequest) {
     return {
       response: NextResponse.next({ request }),
       user: null,
-      profile: null as SessionProfileFlags | null
+      profile: null as SessionProfileFlags | null,
     };
   }
 
@@ -41,22 +72,31 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           supabaseResponse.cookies.set(name, value, options);
         });
-      }
-    }
+      },
+    },
   });
 
-  const {
-    data: { user: authUser }
-  } = await supabase.auth.getUser();
+  let authUser;
+  try {
+    const result = await supabase.auth.getUser();
+    authUser = result.data.user;
+  } catch (error) {
+    if (!isInvalidRefreshTokenError(error)) throw error;
+    return {
+      response: clearInvalidAuthCookies(request),
+      user: null,
+      profile: null as SessionProfileFlags | null,
+    };
+  }
 
   let sessionUser = authUser;
   let profile: SessionProfileFlags | null = null;
 
   if (authUser) {
     const { data } = await supabase
-      .from('profiles')
-      .select('password_set_at, system_role, status, affiliation')
-      .eq('user_id', authUser.id)
+      .from("profiles")
+      .select("password_set_at, system_role, status, affiliation")
+      .eq("user_id", authUser.id)
       .maybeSingle();
 
     if (data) {
@@ -64,10 +104,10 @@ export async function updateSession(request: NextRequest) {
         password_set_at: data.password_set_at,
         system_role: data.system_role,
         status: data.status,
-        affiliation: data.affiliation
+        affiliation: data.affiliation,
       };
 
-      if (data.status !== 'active') {
+      if (data.status !== "active") {
         await supabase.auth.signOut();
         sessionUser = null;
       }
