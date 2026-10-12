@@ -117,7 +117,6 @@ export const navGroups: NavGroup[] = [
         icon: "wallet",
         shortcut: ["m", "b"],
         isActive: false,
-        access: { systemRole: "user" },
         items: [],
       },
       {

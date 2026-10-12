@@ -1,30 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageLoadingSpinner } from "@/components/ui/page-loading-spinner";
 import { formatAbsoluteDateKo } from "@/lib/format-date";
+import { usersQueryOptions } from "@/features/users/api/queries";
+import { useMyBenefitsMonth } from "../hooks/use-my-benefits-month";
 import { myBenefitsQueryOptions } from "../api/queries";
 import type { BenefitType } from "../api/types";
+import type { MyBenefitsViewerProfile } from "../api/viewer-profile";
 
 const TYPE_LABEL: Record<BenefitType, string> = {
   book: "도서 신청서",
   fitness: "체력증진비 신청",
   education: "외부교육 신청서",
 };
-
-const KST_MONTH_FORMATTER = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-});
-
-function currentKstMonth() {
-  return KST_MONTH_FORMATTER.format(new Date()).slice(0, 7);
-}
 
 function moveMonth(month: string, offset: number) {
   const [year, monthNumber] = month.split("-").map(Number);
@@ -42,17 +35,44 @@ function money(value: number) {
 }
 
 interface MyBenefitsDashboardProps {
-  fullName: string;
-  team: string | null;
-  positionLevel: string | null;
+  isAdmin: boolean;
+  benefitsUser?: string;
+  viewerProfile: MyBenefitsViewerProfile;
 }
 
-export function MyBenefitsDashboard({ fullName, team, positionLevel }: MyBenefitsDashboardProps) {
-  const [month, setMonth] = useState(currentKstMonth);
-  const query = useQuery(myBenefitsQueryOptions(month));
+export function MyBenefitsDashboard({
+  isAdmin,
+  benefitsUser,
+  viewerProfile,
+}: MyBenefitsDashboardProps) {
+  const { month, setMonth } = useMyBenefitsMonth();
+  const proxyUser = isAdmin ? (benefitsUser ?? "self") : undefined;
+  const query = useQuery(myBenefitsQueryOptions(month, proxyUser));
+
+  const viewingOtherUser = isAdmin && benefitsUser && benefitsUser !== "self";
+  const { data: subjectUsers } = useQuery({
+    ...usersQueryOptions({ userId: benefitsUser, limit: 1 }),
+    enabled: Boolean(viewingOtherUser),
+  });
+
+  const headerProfile = useMemo(() => {
+    if (viewingOtherUser) {
+      const subject = subjectUsers?.users.find((user) => user.id === benefitsUser);
+      return {
+        fullName: subject?.full_name ?? "…",
+        team: subject?.rank ?? null,
+        positionLevel: subject?.position_level ?? null,
+      };
+    }
+    return {
+      fullName: viewerProfile.fullName,
+      team: viewerProfile.team,
+      positionLevel: viewerProfile.positionLevel,
+    };
+  }, [benefitsUser, subjectUsers?.users, viewerProfile, viewingOtherUser]);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
+    <div className="flex flex-1 flex-col gap-5">
       <div className="flex justify-end">
         <div className="flex items-center overflow-hidden rounded-lg border bg-card">
           <span className="px-4 text-sm font-semibold">{monthLabel(month)}</span>
@@ -62,7 +82,7 @@ export function MyBenefitsDashboard({ fullName, team, positionLevel }: MyBenefit
             size="icon"
             className="rounded-none border-l"
             aria-label="이전 달"
-            onClick={() => setMonth((value) => moveMonth(value, -1))}
+            onClick={() => setMonth(moveMonth(month, -1))}
           >
             <Icons.chevronLeft className="size-4" />
           </Button>
@@ -72,7 +92,7 @@ export function MyBenefitsDashboard({ fullName, team, positionLevel }: MyBenefit
             size="icon"
             className="rounded-none border-l"
             aria-label="다음 달"
-            onClick={() => setMonth((value) => moveMonth(value, 1))}
+            onClick={() => setMonth(moveMonth(month, 1))}
           >
             <Icons.chevronRight className="size-4" />
           </Button>
@@ -92,7 +112,9 @@ export function MyBenefitsDashboard({ fullName, team, positionLevel }: MyBenefit
           <Card>
             <CardHeader className="flex-row items-center justify-between border-b py-3">
               <p className="text-sm font-semibold">
-                {[fullName, team, positionLevel].filter(Boolean).join(" · ")}
+                {[headerProfile.fullName, headerProfile.team, headerProfile.positionLevel]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
               <p className="text-sm font-medium">{monthLabel(month)}</p>
             </CardHeader>
@@ -168,7 +190,7 @@ export function MyBenefitsDashboard({ fullName, team, positionLevel }: MyBenefit
                         </p>
                       ) : null}
                     </div>
-                    <span className="text-muted-foreground">승인완료</span>
+                    <span className="text-muted-foreground">{document.document_number}</span>
                     <span className="font-semibold">{money(document.amount)}</span>
                     <span>{formatAbsoluteDateKo(document.document_created_at)}</span>
                     <a

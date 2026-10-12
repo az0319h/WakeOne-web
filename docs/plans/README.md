@@ -105,6 +105,9 @@
 | 70 | [70_dev-user-provision-plan.md](./70_dev-user-provision-plan.md) | **Approved** · dev-only 사용자 사전 등록 · WAKEONE_ENV gate · Google OAuth active link |
 | 71 | [71_org-chart-viewport-fill-plan.md](./71_org-chart-viewport-fill-plan.md) | **Approved** · 조직도 desktop D3 viewport fill · flex-1 min-h-0 · ResizeObserver fit · FE only · Read-only |
 | 72 | [72_contract-attachment-modal-viewer-plan.md](./72_contract-attachment-modal-viewer-plan.md) | **Approved** · 계약·공지 첨부 Slack lightbox Dialog · react-pdf · embla carousel · plan 48 supersede |
+| 73 | [73_benefits-url-filters-plan.md](./73_benefits-url-filters-plan.md) | **Approved** · 복지비 관리·내 복지비 nuqs URL 필터 · 이름 500ms debounce · FE only · plan 40 shell Out |
+| 74 | [74_admin-my-benefits-proxy-plan.md](./74_admin-my-benefits-proxy-plan.md) | **Approved** · admin 내 복지비 타인 조회 · `benefits_user` + GET `/api/my-benefits` `user` · wallet 패리티 · Read-only |
+| 75 | [75_benefits-admin-inactive-roster-plan.md](./75_benefits-admin-inactive-roster-plan.md) | **Approved** · 복지비 관리만 · 비활성 `deactivated_at` 월 기준 M≤D 노출 · M>D 제외 · 비활성 행 연한 빨강 |
 
 ## 에이전트 참조
 
