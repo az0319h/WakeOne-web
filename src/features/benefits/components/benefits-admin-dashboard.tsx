@@ -28,6 +28,8 @@ import { benefitsAdminQueryOptions } from "../api/queries";
 import { BenefitDocumentAdminRow } from "./benefit-document-admin-row";
 import { BenefitsAdminChartsSection } from "./benefits-admin-charts-section";
 import { BenefitsAdminSummarySection } from "./benefits-admin-summary-section";
+import { BENEFITS_EARLIEST_MONTH } from "../lib/benefits-view-month";
+import { currentKstMonth } from "../lib/kst-month";
 import { aggregateBenefitsAdminSummary, formatBenefitMoney } from "./benefits-admin-utils";
 
 const ADMIN_TABLE_COLUMN_COUNT = 8;
@@ -108,6 +110,8 @@ export function BenefitsAdminDashboard() {
           <Input
             type="month"
             value={month}
+            min={BENEFITS_EARLIEST_MONTH}
+            max={currentKstMonth()}
             onChange={(event) => setMonth(event.target.value)}
             className="sm:w-40"
             aria-label="조회 월"

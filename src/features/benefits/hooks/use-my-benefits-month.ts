@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useQueryStates } from "nuqs";
 import { parseAsBenefitsMonth } from "../lib/benefits-month-parser";
-import { currentKstMonth, isValidBenefitsMonth, normalizeBenefitsMonth } from "../lib/kst-month";
+import { normalizeBenefitsMonth, resolveBenefitsViewMonth } from "../lib/benefits-view-month";
 
 export function useMyBenefitsMonth() {
   const [{ month }, setParams] = useQueryStates(
@@ -13,18 +13,19 @@ export function useMyBenefitsMonth() {
 
   useEffect(() => {
     const raw = new URLSearchParams(window.location.search).get("month");
-    if (raw && !isValidBenefitsMonth(raw)) {
-      void setParams({ month: currentKstMonth() });
+    if (!raw) {
+      return;
+    }
+    const resolved = resolveBenefitsViewMonth(raw);
+    if (raw !== resolved) {
+      void setParams({ month: resolved });
     }
   }, [setParams]);
 
   const normalizedMonth = normalizeBenefitsMonth(month);
 
   function setMonth(next: string) {
-    if (!isValidBenefitsMonth(next)) {
-      return;
-    }
-    void setParams({ month: next });
+    void setParams({ month: resolveBenefitsViewMonth(next) });
   }
 
   return { month: normalizedMonth, setMonth };

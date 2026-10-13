@@ -87,3 +87,52 @@ export async function deleteBenefitDocumentByNumber(documentNumber: string) {
   const admin = getServiceRoleClient();
   await admin.from('benefit_documents').delete().eq('document_number', documentNumber);
 }
+
+export type ProfileEmploymentSnapshot = {
+  created_at: string;
+  status: string;
+  deactivated_at: string | null;
+  position_level: string | null;
+  rank: string | null;
+};
+
+export async function getProfileEmploymentSnapshot(
+  userId: string
+): Promise<ProfileEmploymentSnapshot> {
+  const admin = getServiceRoleClient();
+  const { data, error } = await admin
+    .from('profiles')
+    .select('created_at, status, deactivated_at, position_level, rank')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error(`Profile employment snapshot failed: ${error?.message ?? 'no row'}`);
+  }
+  return {
+    created_at: data.created_at,
+    status: data.status,
+    deactivated_at: data.deactivated_at,
+    position_level: data.position_level,
+    rank: data.rank
+  };
+}
+
+export async function setProfileEmploymentForE2e(
+  userId: string,
+  input: ProfileEmploymentSnapshot
+): Promise<void> {
+  const admin = getServiceRoleClient();
+  const { error } = await admin
+    .from('profiles')
+    .update({
+      created_at: input.created_at,
+      status: input.status,
+      deactivated_at: input.deactivated_at,
+      position_level: input.position_level,
+      rank: input.rank
+    })
+    .eq('user_id', userId);
+  if (error) {
+    throw new Error(`Failed to set profile employment: ${error.message}`);
+  }
+}

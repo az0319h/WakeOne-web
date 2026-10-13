@@ -1,3 +1,5 @@
+import { BENEFITS_EARLIEST_MONTH } from "../lib/benefits-view-month";
+import { compareYearMonth } from "@/lib/kst";
 import type { BenefitMemberSummary } from "../api/types";
 
 export function formatBenefitMoney(value: number) {
@@ -21,6 +23,11 @@ export function getBenefitsTrendMonths(anchorMonth: string, count = 6): string[]
     months.push(`${yy}-${mm}`);
   }
   return months;
+}
+
+/** 추이 차트: API 조회 없이 0원으로만 표시 (복지비 운영 월 이전) */
+export function isBenefitsTrendMonthZeroOnly(monthKey: string): boolean {
+  return compareYearMonth(monthKey, BENEFITS_EARLIEST_MONTH) < 0;
 }
 
 export function formatBenefitTrendMonthLabel(monthKey: string) {
