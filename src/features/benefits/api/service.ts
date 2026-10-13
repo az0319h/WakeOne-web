@@ -1,5 +1,10 @@
 import { apiClientWithMessage } from "@/lib/api-client";
-import type { BenefitsAdminFilters, BenefitsAdminResponse, MyBenefitsResponse } from "./types";
+import type {
+  BenefitDocument,
+  BenefitsAdminFilters,
+  BenefitsAdminResponse,
+  MyBenefitsResponse
+} from './types';
 
 function buildQuery(path: string, filters: Record<string, string | undefined>): string {
   const params = new URLSearchParams();
@@ -27,5 +32,19 @@ export function fetchMyBenefits(month: string, user?: string) {
       month,
       ...(user ? { user } : {}),
     }),
+  ).then((response) => response.data);
+}
+
+export function cancelBenefitDocument(documentId: number) {
+  return apiClientWithMessage<{ success: boolean; data: BenefitDocument }>(
+    `/benefits/documents/${documentId}/cancel`,
+    { method: 'PATCH' }
+  ).then((response) => response.data);
+}
+
+export function restoreBenefitDocument(documentId: number) {
+  return apiClientWithMessage<{ success: boolean; data: BenefitDocument }>(
+    `/benefits/documents/${documentId}/restore`,
+    { method: 'PATCH' }
   ).then((response) => response.data);
 }

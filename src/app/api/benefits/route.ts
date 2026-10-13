@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSession } from "@/features/auth/api/session.server";
+import { requireBenefitsAdminSession } from '@/features/auth/api/session.server';
 import { isAffiliation, listBenefitsAdmin } from "@/features/benefits/api/service.server";
 
 export async function GET(request: NextRequest) {
-  const session = await requireAdminSession();
+  const session = await requireBenefitsAdminSession();
   if (!session.ok) return session.response;
 
   const month = request.nextUrl.searchParams.get("month") ?? "";

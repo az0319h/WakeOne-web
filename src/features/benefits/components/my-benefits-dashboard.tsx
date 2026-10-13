@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Icons } from "@/components/icons";
+import { Badge } from '@/components/ui/badge';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageLoadingSpinner } from "@/components/ui/page-loading-spinner";
@@ -11,6 +12,8 @@ import { usersQueryOptions } from "@/features/users/api/queries";
 import { useMyBenefitsMonth } from "../hooks/use-my-benefits-month";
 import { myBenefitsQueryOptions } from "../api/queries";
 import type { BenefitType } from "../api/types";
+import { isBenefitDocumentCancelled } from '../api/types';
+import { cn } from '@/lib/utils';
 import type { MyBenefitsViewerProfile } from "../api/viewer-profile";
 
 const TYPE_LABEL: Record<BenefitType, string> = {
@@ -177,32 +180,69 @@ export function MyBenefitsDashboard({
                   승인 완료된 신청 내역이 없습니다.
                 </div>
               ) : (
-                query.data.documents.map((document) => (
-                  <div
-                    key={document.id}
-                    className="grid gap-2 rounded-lg border px-4 py-3 text-sm sm:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto] sm:items-center"
-                  >
-                    <div>
-                      <p className="font-semibold">{TYPE_LABEL[document.benefit_type]}</p>
-                      {document.description ? (
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {document.description}
-                        </p>
-                      ) : null}
-                    </div>
-                    <span className="text-muted-foreground">{document.document_number}</span>
-                    <span className="font-semibold">{money(document.amount)}</span>
-                    <span>{formatAbsoluteDateKo(document.document_created_at)}</span>
-                    <a
-                      href={document.source_document_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 font-medium hover:underline"
+                query.data.documents.map((document) => {
+                  const cancelled = isBenefitDocumentCancelled(document);
+                  return (
+                    <div
+                      key={document.id}
+                      className={cn(
+                        'grid gap-2 rounded-lg border px-4 py-3 text-sm sm:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto] sm:items-center',
+                        cancelled && 'opacity-70'
+                      )}
                     >
-                      Flex에서 열기 <Icons.externalLink className="size-3.5" />
-                    </a>
-                  </div>
-                ))
+                      <div>
+                        <p
+                          className={cn(
+                            'font-semibold',
+                            cancelled && 'text-muted-foreground line-through'
+                          )}
+                        >
+                          {TYPE_LABEL[document.benefit_type]}
+                        </p>
+                        {document.description ? (
+                          <p
+                            className={cn(
+                              'mt-0.5 text-xs text-muted-foreground',
+                              cancelled && 'line-through'
+                            )}
+                          >
+                            {document.description}
+                          </p>
+                        ) : null}
+                      </div>
+                      <span
+                        className={cn(
+                          'text-muted-foreground',
+                          cancelled && 'line-through'
+                        )}
+                      >
+                        {document.document_number}
+                      </span>
+                      <span
+                        className={cn('font-semibold', cancelled && 'line-through text-muted-foreground')}
+                      >
+                        {money(document.amount)}
+                      </span>
+                      <span className={cancelled ? 'line-through text-muted-foreground' : ''}>
+                        {formatAbsoluteDateKo(document.document_created_at)}
+                      </span>
+                      {cancelled ? (
+                        <Badge variant="outline" className="justify-self-end text-muted-foreground">
+                          취소됨
+                        </Badge>
+                      ) : (
+                        <a
+                          href={document.source_document_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 font-medium hover:underline"
+                        >
+                          Flex에서 열기 <Icons.externalLink className="size-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </CardContent>
           </Card>

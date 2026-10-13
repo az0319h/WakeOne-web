@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getAdminAccessDeniedParam, isAdminDashboardPath } from "@/config/admin-routes";
+import {
+  getAdminAccessDeniedParam,
+  isAdminDashboardPath,
+  isBenefitsAdminDashboardPath
+} from '@/config/admin-routes';
+import { canAccessBenefitsAdmin } from '@/features/auth/api/benefits-access.server';
 import { isDisabledDashboardPath } from "@/config/disabled-routes";
 import { ACCESS_DENIED_FLASH_COOKIE } from "@/lib/auth/access-denied-flash";
 import { ACCOUNT_DISABLED_FLASH_COOKIE } from "@/lib/auth/account-disabled-flash";
@@ -224,8 +229,13 @@ export async function middleware(request: NextRequest) {
       return redirectResponse;
     }
 
-    if (isAdminDashboardPath(pathname) && profile?.system_role !== "admin") {
-      const accessDenied = getAdminAccessDeniedParam(pathname) ?? "users";
+    if (isBenefitsAdminDashboardPath(pathname) && profile && !canAccessBenefitsAdmin(profile)) {
+      const accessDenied = getAdminAccessDeniedParam(pathname) ?? 'benefits';
+      return redirectWithAccessDeniedFlash(request, response, accessDenied);
+    }
+
+    if (isAdminDashboardPath(pathname) && profile?.system_role !== 'admin') {
+      const accessDenied = getAdminAccessDeniedParam(pathname) ?? 'users';
       return redirectWithAccessDeniedFlash(request, response, accessDenied);
     }
   }

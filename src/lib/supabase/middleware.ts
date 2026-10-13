@@ -6,9 +6,10 @@ import type { Affiliation } from "@/features/users/constants/organization";
 
 export type SessionProfileFlags = {
   password_set_at: string | null;
-  system_role: "admin" | "user";
-  status: "active" | "inactive" | "pending_approval" | "rejected";
+  system_role: 'admin' | 'user';
+  status: 'active' | 'inactive' | 'pending_approval' | 'rejected';
   affiliation: Affiliation | null;
+  rank: string | null;
 };
 
 function isInvalidRefreshTokenError(error: unknown): boolean {
@@ -95,7 +96,7 @@ export async function updateSession(request: NextRequest) {
   if (authUser) {
     const { data } = await supabase
       .from("profiles")
-      .select("password_set_at, system_role, status, affiliation")
+      .select('password_set_at, system_role, status, affiliation, rank')
       .eq("user_id", authUser.id)
       .maybeSingle();
 
@@ -105,6 +106,7 @@ export async function updateSession(request: NextRequest) {
         system_role: data.system_role,
         status: data.status,
         affiliation: data.affiliation,
+        rank: data.rank
       };
 
       if (data.status !== "active") {

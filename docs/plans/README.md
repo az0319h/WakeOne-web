@@ -108,6 +108,8 @@
 | 73 | [73_benefits-url-filters-plan.md](./73_benefits-url-filters-plan.md) | **Approved** · 복지비 관리·내 복지비 nuqs URL 필터 · 이름 500ms debounce · FE only · plan 40 shell Out |
 | 74 | [74_admin-my-benefits-proxy-plan.md](./74_admin-my-benefits-proxy-plan.md) | **Approved** · admin 내 복지비 타인 조회 · `benefits_user` + GET `/api/my-benefits` `user` · wallet 패리티 · Read-only |
 | 75 | [75_benefits-admin-inactive-roster-plan.md](./75_benefits-admin-inactive-roster-plan.md) | **Approved** · 복지비 관리만 · 비활성 `deactivated_at` 월 기준 M≤D 노출 · M>D 제외 · 비활성 행 연한 빨강 |
+| 76 | [76_hr-benefits-manager-access-plan.md](./76_hr-benefits-manager-access-plan.md) | **Completed** · wake `rank=인사팀` 복지비 관리 admin 동일 · HR nav 그룹 · 내 복지비 proxy Out |
+| 77 | [77_benefit-document-manual-cancel-plan.md](./77_benefit-document-manual-cancel-plan.md) | **Completed** · benefit_documents soft cancel·복구 · 합계 제외 · 내 복지비 취소됨 표시 · import duplicate 유지 |
 
 ## 에이전트 참조
 

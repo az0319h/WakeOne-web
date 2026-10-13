@@ -29,6 +29,8 @@ export type ActivityAction =
   | "benefit.import_create"
   | "benefit.import_duplicate"
   | "benefit.import_failed"
+  | "benefit.document_cancel"
+  | "benefit.document_restore"
   | "profile.update"
   | "profile.password_change"
   | "auth.sign_in"
