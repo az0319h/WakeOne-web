@@ -27,6 +27,15 @@ export interface BenefitDocument {
   amount: number;
   description: string | null;
   source_document_url: string;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
+  applicant_user_id?: string;
+}
+
+export function isBenefitDocumentCancelled(
+  document: Pick<BenefitDocument, "cancelled_at">,
+): boolean {
+  return document.cancelled_at != null;
 }
 
 export interface BenefitCategoryTotals {

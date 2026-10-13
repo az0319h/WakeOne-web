@@ -20,6 +20,7 @@ import type {
   BenefitType,
   MyBenefitsResponse,
 } from "./types";
+import { isBenefitDocumentCancelled } from "./types";
 
 export const MONTHLY_BENEFIT_LIMIT = 100_000;
 
@@ -35,7 +36,7 @@ export function resolveBenefitsTargetUserId(
 }
 
 const DOCUMENT_SELECT =
-  "id, document_number, task_key, benefit_type, document_created_at, approved_at, applicant_name, amount, description, source_document_url, applicant_user_id";
+  "id, document_number, task_key, benefit_type, document_created_at, approved_at, applicant_name, amount, description, source_document_url, applicant_user_id, cancelled_at, cancelled_by";
 
 function monthRange(month: string): { from: string; to: string } {
   if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -68,6 +69,10 @@ function mapDocument(row: Record<string, unknown>): BenefitDocument {
     amount: Number(row.amount),
     description: row.description == null ? null : String(row.description),
     source_document_url: String(row.source_document_url),
+    cancelled_at: row.cancelled_at == null ? null : String(row.cancelled_at),
+    cancelled_by: row.cancelled_by == null ? null : String(row.cancelled_by),
+    applicant_user_id:
+      row.applicant_user_id == null ? undefined : String(row.applicant_user_id)
   };
 }
 
@@ -100,6 +105,7 @@ function isInactiveBenefitsAdminMonth(deactivatedAt: string | null, viewMonth: s
 function summarizeDocuments(documents: BenefitDocument[]) {
   const categoryTotals = emptyTotals();
   for (const document of documents) {
+    if (isBenefitDocumentCancelled(document)) continue;
     categoryTotals[document.benefit_type] += document.amount;
   }
   const totalUsed = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
@@ -381,4 +387,60 @@ export async function importBenefitDocument(
 
 export function isAffiliation(value: string | null): value is Affiliation {
   return Boolean(value && (AFFILIATIONS as readonly string[]).includes(value));
+}
+
+async function getBenefitDocumentById(id: number): Promise<BenefitDocument | null> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from("benefit_documents")
+    .select(DOCUMENT_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return mapDocument(data as Record<string, unknown>);
+}
+
+export async function cancelBenefitDocument(
+  id: number,
+  actorUserId: string,
+): Promise<BenefitDocument> {
+  const existing = await getBenefitDocumentById(id);
+  if (!existing) {
+    throw new Error("복지비 문서를 찾을 수 없습니다.");
+  }
+  if (isBenefitDocumentCancelled(existing)) {
+    throw new Error("이미 취소된 문서입니다.");
+  }
+
+  const supabase = getServiceRoleClient();
+  const cancelledAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("benefit_documents")
+    .update({ cancelled_at: cancelledAt, cancelled_by: actorUserId })
+    .eq("id", id)
+    .select(DOCUMENT_SELECT)
+    .single();
+  if (error) throw new Error(error.message);
+  return mapDocument(data as Record<string, unknown>);
+}
+
+export async function restoreBenefitDocument(id: number): Promise<BenefitDocument> {
+  const existing = await getBenefitDocumentById(id);
+  if (!existing) {
+    throw new Error("복지비 문서를 찾을 수 없습니다.");
+  }
+  if (!isBenefitDocumentCancelled(existing)) {
+    throw new Error("취소되지 않은 문서입니다.");
+  }
+
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from("benefit_documents")
+    .update({ cancelled_at: null, cancelled_by: null })
+    .eq("id", id)
+    .select(DOCUMENT_SELECT)
+    .single();
+  if (error) throw new Error(error.message);
+  return mapDocument(data as Record<string, unknown>);
 }

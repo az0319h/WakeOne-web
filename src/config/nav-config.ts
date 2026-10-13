@@ -44,6 +44,20 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: 'HR (인사)',
+    items: [
+      {
+        title: '복지비 관리',
+        url: '/dashboard/benefits',
+        icon: 'wallet',
+        shortcut: ['b', 'h'],
+        isActive: false,
+        access: { hasHrBenefitsNav: true },
+        items: []
+      }
+    ]
+  },
+  {
     label: "Admin (관리)",
     items: [
       {

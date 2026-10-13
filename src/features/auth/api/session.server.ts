@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { canAccessBenefitsAdmin } from './benefits-access.server';
 import type { AuthProfile } from './types';
 
 export type SessionResult =
@@ -188,6 +189,16 @@ export async function requireAdminPage(): Promise<AuthProfile> {
   return profile;
 }
 
+export async function requireBenefitsAdminPage(): Promise<AuthProfile> {
+  const profile = await requireDashboardSession();
+
+  if (!canAccessBenefitsAdmin(profile)) {
+    redirect('/dashboard/overview');
+  }
+
+  return profile;
+}
+
 export async function requireAdminSession(): Promise<SessionResult> {
   const session = await requireSession();
 
@@ -200,6 +211,26 @@ export async function requireAdminSession(): Promise<SessionResult> {
       ok: false,
       response: NextResponse.json(
         { success: false, message: '관리자 권한이 필요합니다.' },
+        { status: 403 }
+      )
+    };
+  }
+
+  return session;
+}
+
+export async function requireBenefitsAdminSession(): Promise<SessionResult> {
+  const session = await requireSession();
+
+  if (!session.ok) {
+    return session;
+  }
+
+  if (!canAccessBenefitsAdmin(session.profile)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: '복지비 관리 권한이 필요합니다.' },
         { status: 403 }
       )
     };

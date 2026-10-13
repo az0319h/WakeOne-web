@@ -37,6 +37,8 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "benefit.import_create": "복지비 가져오기(신규)",
   "benefit.import_duplicate": "복지비 가져오기(중복)",
   "benefit.import_failed": "복지비 가져오기(실패)",
+  "benefit.document_cancel": "복지비 문서 취소",
+  "benefit.document_restore": "복지비 문서 복구",
   "profile.update": "프로필 수정",
   "profile.password_change": "비밀번호 변경",
   "auth.sign_in": "로그인",

@@ -23,71 +23,17 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AFFILIATION_OPTIONS } from "@/features/users/constants/organization";
-import { formatAbsoluteDateKo } from "@/lib/format-date";
 import { useBenefitsAdminFilters } from "../hooks/use-benefits-admin-filters";
 import { benefitsAdminQueryOptions } from "../api/queries";
-import type { BenefitDocument, BenefitType } from "../api/types";
+import { BenefitDocumentAdminRow } from "./benefit-document-admin-row";
 import { BenefitsAdminChartsSection } from "./benefits-admin-charts-section";
 import { BenefitsAdminSummarySection } from "./benefits-admin-summary-section";
 import { aggregateBenefitsAdminSummary, formatBenefitMoney } from "./benefits-admin-utils";
 
 const ADMIN_TABLE_COLUMN_COUNT = 8;
 
-const TYPE_LABEL: Record<BenefitType, string> = {
-  book: "도서 신청서",
-  fitness: "체력증진비 신청",
-  education: "외부교육 신청서",
-};
-
 function amountOrDash(value: number) {
   return value > 0 ? formatBenefitMoney(value) : "-";
-}
-
-function openBenefitDocument(url: string) {
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-function DocumentRow({ document }: { document: BenefitDocument }) {
-  const hasFlexUrl = Boolean(document.source_document_url);
-
-  return (
-    <TableRow
-      className={
-        hasFlexUrl
-          ? "bg-muted/20 cursor-pointer hover:bg-muted/40"
-          : "bg-muted/20 hover:bg-muted/30"
-      }
-      onClick={() => {
-        if (hasFlexUrl) {
-          openBenefitDocument(document.source_document_url);
-        }
-      }}
-    >
-      <TableCell className="pl-14">
-        <p className="text-sm font-medium">{TYPE_LABEL[document.benefit_type]}</p>
-        {document.description ? (
-          <p className="text-xs text-muted-foreground">{document.description}</p>
-        ) : null}
-      </TableCell>
-      <TableCell className="font-mono text-xs whitespace-nowrap">
-        {document.document_number}
-      </TableCell>
-      <TableCell className="font-mono text-xs whitespace-nowrap">
-        {formatAbsoluteDateKo(document.approved_at)}
-      </TableCell>
-      <TableCell className="text-sm font-medium">{formatBenefitMoney(document.amount)}</TableCell>
-      <TableCell>
-        {document.benefit_type === "book" ? formatBenefitMoney(document.amount) : ""}
-      </TableCell>
-      <TableCell>
-        {document.benefit_type === "fitness" ? formatBenefitMoney(document.amount) : ""}
-      </TableCell>
-      <TableCell>
-        {document.benefit_type === "education" ? formatBenefitMoney(document.amount) : ""}
-      </TableCell>
-      <TableCell className="text-xs text-muted-foreground">—</TableCell>
-    </TableRow>
-  );
 }
 
 export function BenefitsAdminDashboard() {
@@ -347,7 +293,7 @@ export function BenefitsAdminDashboard() {
                             </TableRow>
                             {isExpanded
                               ? member.documents.map((document) => (
-                                  <DocumentRow key={document.id} document={document} />
+                                  <BenefitDocumentAdminRow key={document.id} document={document} />
                                 ))
                               : null}
                           </Fragment>

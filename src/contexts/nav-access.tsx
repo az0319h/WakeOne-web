@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { createContext, use, useEffect, useState } from 'react';
-import type { AuthProfile } from '@/features/auth/api/types';
-import type { PermissionCheck } from '@/types';
+import { createContext, use, useEffect, useState } from "react";
+import type { AuthProfile } from "@/features/auth/api/types";
+import type { PermissionCheck } from "@/types";
 
 interface NavAccessContextValue {
   profile: AuthProfile | null;
   hasMyContracts: boolean;
+  hasHrBenefitsNav: boolean;
   patchProfile: (patch: Partial<AuthProfile>) => void;
 }
 
@@ -15,10 +16,12 @@ const NavAccessContext = createContext<NavAccessContextValue | null>(null);
 export function NavAccessProvider({
   profile,
   hasMyContracts = false,
-  children
+  hasHrBenefitsNav = false,
+  children,
 }: {
   profile: AuthProfile | null;
   hasMyContracts?: boolean;
+  hasHrBenefitsNav?: boolean;
   children: React.ReactNode;
 }) {
   const [liveProfile, setLiveProfile] = useState(profile);
@@ -32,7 +35,14 @@ export function NavAccessProvider({
   }
 
   return (
-    <NavAccessContext value={{ profile: liveProfile, hasMyContracts, patchProfile }}>
+    <NavAccessContext
+      value={{
+        profile: liveProfile,
+        hasMyContracts,
+        hasHrBenefitsNav,
+        patchProfile,
+      }}
+    >
       {children}
     </NavAccessContext>
   );
@@ -44,7 +54,10 @@ export function useNavAccess() {
 
 export function useNavAccessFlags() {
   const context = use(NavAccessContext);
-  return { hasMyContracts: context?.hasMyContracts ?? false };
+  return {
+    hasMyContracts: context?.hasMyContracts ?? false,
+    hasHrBenefitsNav: context?.hasHrBenefitsNav ?? false,
+  };
 }
 
 export function useNavProfilePatch() {
@@ -54,7 +67,7 @@ export function useNavProfilePatch() {
 export function checkNavAccess(
   access: PermissionCheck | undefined,
   profile: AuthProfile | null,
-  flags?: { hasMyContracts?: boolean }
+  flags?: { hasMyContracts?: boolean; hasHrBenefitsNav?: boolean },
 ): boolean {
   if (!access) {
     return true;
@@ -62,6 +75,10 @@ export function checkNavAccess(
 
   if (access.hasMyContracts !== undefined) {
     return (flags?.hasMyContracts ?? false) === access.hasMyContracts;
+  }
+
+  if (access.hasHrBenefitsNav !== undefined) {
+    return (flags?.hasHrBenefitsNav ?? false) === access.hasHrBenefitsNav;
   }
 
   if (access.systemRole !== undefined) {

@@ -1,12 +1,14 @@
-import { Icons } from '@/components/icons';
+import { Icons } from "@/components/icons";
 
-export type SystemRole = 'admin' | 'user';
+export type SystemRole = "admin" | "user";
 
 export interface PermissionCheck {
   /** Supabase `profiles.system_role` — navigation visibility (UX only). */
   systemRole?: SystemRole;
   /** 매칭 active 계약 ≥1 — 「내 계약서」 nav (UX only, 서버 가드 별도). */
   hasMyContracts?: boolean;
+  /** wake 인사팀(user) — 「복지비 관리」 HR nav (UX only, 서버 가드 별도). */
+  hasHrBenefitsNav?: boolean;
   /** @deprecated Clerk-era fields — ignored by `checkNavAccess`. */
   permission?: string;
   plan?: string;

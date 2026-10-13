@@ -1,29 +1,30 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 import {
   clearAccessDeniedFlash,
-  readAccessDeniedFlash
-} from '@/lib/auth/access-denied-flash';
-import { notifyError } from '@/lib/notify';
+  readAccessDeniedFlash,
+} from "@/lib/auth/access-denied-flash";
+import { notifyError } from "@/lib/notify";
 
 const ACCESS_DENIED_MESSAGES: Record<string, string> = {
-  users: '이 페이지에 접근할 권한이 없습니다.'
+  users: "이 페이지에 접근할 권한이 없습니다.",
+  benefits: "이 페이지에 접근할 권한이 없습니다.",
 };
 
 function readLegacyAccessDeniedParam(): string | null {
   const params = new URLSearchParams(window.location.search);
-  return params.get('accessDenied');
+  return params.get("accessDenied");
 }
 
 function stripLegacyAccessDeniedParam() {
   const url = new URL(window.location.href);
-  if (!url.searchParams.has('accessDenied')) {
+  if (!url.searchParams.has("accessDenied")) {
     return;
   }
-  url.searchParams.delete('accessDenied');
+  url.searchParams.delete("accessDenied");
   const next = `${url.pathname}${url.search}${url.hash}`;
-  window.history.replaceState(window.history.state, '', next);
+  window.history.replaceState(window.history.state, "", next);
 }
 
 export function AccessDeniedToast() {

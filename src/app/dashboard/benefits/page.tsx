@@ -1,9 +1,9 @@
 import PageContainer from "@/components/layout/page-container";
-import { requireAdminPage } from "@/features/auth/api/session.server";
+import { requireBenefitsAdminPage } from '@/features/auth/api/session.server';
 import { BenefitsAdminDashboard } from "@/features/benefits/components/benefits-admin-dashboard";
 
 export default async function BenefitsPage() {
-  await requireAdminPage();
+  await requireBenefitsAdminPage();
 
   return (
     <PageContainer
