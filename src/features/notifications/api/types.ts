@@ -14,7 +14,13 @@ export type NotificationType =
   | 'support.updated'
   | 'support.status_changed'
   | 'support.comment_created'
-  | 'support.reply_created';
+  | 'support.reply_created'
+  | 'benefit.import_operations'
+  | 'benefit.import_applicant'
+  | 'benefit.document_cancel_operations'
+  | 'benefit.document_cancel_applicant'
+  | 'benefit.document_restore_operations'
+  | 'benefit.document_restore_applicant';
 
 export type NotificationStatus = 'unread' | 'read';
 
@@ -36,7 +42,17 @@ export type NotificationMetadata = {
     | 'support.updated'
     | 'support.status_changed'
     | 'support.comment_created'
-    | 'support.reply_created';
+    | 'support.reply_created'
+    | 'benefit.import_operations'
+    | 'benefit.import_applicant'
+    | 'benefit.document_cancel_operations'
+    | 'benefit.document_cancel_applicant'
+    | 'benefit.document_restore_operations'
+    | 'benefit.document_restore_applicant';
+  benefit_document_id?: number;
+  benefit_type?: 'book' | 'fitness' | 'education';
+  applicant_user_id?: string;
+  actor_user_id?: string;
   contract_id?: number;
   document_number?: string;
   import_status?: 'created' | 'backfill';

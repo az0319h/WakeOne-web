@@ -1,6 +1,7 @@
 import { buildErrorMetadata } from '@/features/activity-logs/api/log.server';
 import { cancelBenefitDocument } from '@/features/benefits/api/service.server';
 import { requireBenefitsAdminSession } from '@/features/auth/api/session.server';
+import { insertBenefitDocumentCancelNotifications } from '@/features/notifications/api/fan-out.server';
 import { newBenefitRequestId } from '@/app/api/benefits/_utils';
 import {
   logBenefitDocumentAuthFailure,
@@ -47,6 +48,23 @@ export async function PATCH(_request: Request, { params }: Params) {
 
   try {
     const document = await cancelBenefitDocument(documentId, session.userId);
+
+    if (document.applicant_user_id) {
+      try {
+        await insertBenefitDocumentCancelNotifications({
+          benefitDocumentId: document.id,
+          documentNumber: document.document_number,
+          benefitType: document.benefit_type,
+          applicantUserId: document.applicant_user_id,
+          applicantName: document.applicant_name,
+          actorUserId: session.userId
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[benefits/documents/cancel] notification fan-out failed', message);
+      }
+    }
+
     return logBenefitDocumentMutation({
       requestId,
       action: 'benefit.document_cancel',
