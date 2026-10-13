@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { getProfileDisplayName } from '@/features/auth/lib/display-name';
+import type { BenefitType } from '@/features/benefits/api/types';
 import { WALLET_BALANCE_EMAIL_SLOT_COPY } from '@/features/wallet/constants/wallet-balance-email-slot-copy';
 import { normalizePersonName } from '@/lib/normalize-person-name';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
@@ -702,4 +704,312 @@ export async function insertSupportCommentNotification(
   if (error) {
     throw new Error(error.message);
   }
+}
+
+const BENEFIT_TYPE_LABEL: Record<BenefitType, string> = {
+  book: '도서',
+  fitness: '체력증진',
+  education: '외부교육'
+};
+
+type BenefitNotificationAudience = 'operations' | 'applicant';
+
+type InsertBenefitImportNotificationsInput = {
+  benefitDocumentId: number;
+  documentNumber: string;
+  benefitType: BenefitType;
+  applicantUserId: string;
+  applicantName: string;
+};
+
+type InsertBenefitDocumentMutationNotificationsInput = {
+  event: 'cancel' | 'restore';
+  benefitDocumentId: number;
+  documentNumber: string;
+  benefitType: BenefitType;
+  applicantUserId: string;
+  applicantName: string;
+  actorUserId: string;
+};
+
+export async function listActiveBenefitOperationsUserIds(): Promise<string[]> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('user_id, system_role, affiliation, rank')
+    .eq('status', 'active');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const userIds = new Set<string>();
+  for (const row of data ?? []) {
+    const userId = row.user_id as string;
+    if (row.system_role === 'admin') {
+      userIds.add(userId);
+      continue;
+    }
+    if (
+      row.system_role === 'user' &&
+      row.affiliation === 'wake' &&
+      row.rank === '인사팀'
+    ) {
+      userIds.add(userId);
+    }
+  }
+
+  return [...userIds];
+}
+
+function buildBenefitRecipientMap(
+  operationsUserIds: string[],
+  applicantUserId: string | null | undefined
+): Map<string, BenefitNotificationAudience> {
+  const recipients = new Map<string, BenefitNotificationAudience>();
+  for (const userId of operationsUserIds) {
+    recipients.set(userId, 'operations');
+  }
+  if (applicantUserId && !recipients.has(applicantUserId)) {
+    recipients.set(applicantUserId, 'applicant');
+  }
+  return recipients;
+}
+
+async function getActiveProfileDisplayName(userId: string): Promise<string> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    return '알 수 없음';
+  }
+
+  return getProfileDisplayName({
+    email: String(data.email ?? ''),
+    full_name: data.full_name ?? null
+  });
+}
+
+async function insertBenefitNotificationRows(
+  rows: Array<{
+    recipient_user_id: string;
+    type:
+      | 'benefit.import_operations'
+      | 'benefit.import_applicant'
+      | 'benefit.document_cancel_operations'
+      | 'benefit.document_cancel_applicant'
+      | 'benefit.document_restore_operations'
+      | 'benefit.document_restore_applicant';
+    title: string;
+    body: string;
+    metadata: Record<string, unknown>;
+  }>
+): Promise<void> {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const supabase = getServiceRoleClient();
+  for (let offset = 0; offset < rows.length; offset += FAN_OUT_BATCH_SIZE) {
+    const batch = rows.slice(offset, offset + FAN_OUT_BATCH_SIZE);
+    const { error } = await supabase.from('notifications').insert(batch);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+}
+
+function buildBenefitImportCopy(
+  audience: BenefitNotificationAudience,
+  input: { typeLabel: string; documentNumber: string; applicantName: string }
+): { title: string; body: string } {
+  const title = `${input.typeLabel} 신청이 등록되었습니다`;
+  if (audience === 'operations') {
+    return {
+      title,
+      body: `${input.applicantName}님의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})이 Gmail/Flex에서 등록되었습니다.`
+    };
+  }
+
+  return {
+    title,
+    body: `회원님의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})이 등록되었습니다.`
+  };
+}
+
+function buildBenefitCancelCopy(
+  audience: BenefitNotificationAudience,
+  input: {
+    typeLabel: string;
+    documentNumber: string;
+    applicantName: string;
+    actorName: string;
+    actorUserId: string;
+    applicantUserId: string;
+  }
+): { title: string; body: string } {
+  const title = `${input.typeLabel} 신청이 취소되었습니다`;
+  if (audience === 'operations') {
+    const body =
+      input.actorUserId === input.applicantUserId
+        ? `${input.actorName}님이 본인의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})을 취소했습니다.`
+        : `${input.actorName}님이 ${input.applicantName}님의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})을 취소했습니다.`;
+    return { title, body };
+  }
+
+  return {
+    title,
+    body: `회원님의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})이 취소되었습니다.`
+  };
+}
+
+function buildBenefitRestoreCopy(
+  audience: BenefitNotificationAudience,
+  input: {
+    typeLabel: string;
+    documentNumber: string;
+    applicantName: string;
+    actorName: string;
+    actorUserId: string;
+    applicantUserId: string;
+  }
+): { title: string; body: string } {
+  const title = `${input.typeLabel} 신청이 복구되었습니다`;
+  if (audience === 'operations') {
+    const body =
+      input.actorUserId === input.applicantUserId
+        ? `${input.actorName}님이 본인의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})을 복구했습니다.`
+        : `${input.actorName}님이 ${input.applicantName}님의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})을 복구했습니다.`;
+    return { title, body };
+  }
+
+  return {
+    title,
+    body: `회원님의 ${input.typeLabel} 신청(문서번호 ${input.documentNumber})이 복구되었습니다.`
+  };
+}
+
+export async function insertBenefitImportNotifications(
+  input: InsertBenefitImportNotificationsInput
+): Promise<void> {
+  const operationsUserIds = await listActiveBenefitOperationsUserIds();
+  const recipients = buildBenefitRecipientMap(operationsUserIds, input.applicantUserId);
+  const typeLabel = BENEFIT_TYPE_LABEL[input.benefitType];
+
+  const rows = [...recipients.entries()].map(([recipientUserId, audience]) => {
+    const type: 'benefit.import_operations' | 'benefit.import_applicant' =
+      audience === 'operations' ? 'benefit.import_operations' : 'benefit.import_applicant';
+    const { title, body } = buildBenefitImportCopy(audience, {
+      typeLabel,
+      documentNumber: input.documentNumber,
+      applicantName: input.applicantName
+    });
+
+    return {
+      recipient_user_id: recipientUserId,
+      type,
+      title,
+      body,
+      metadata: {
+        kind: type,
+        benefit_document_id: input.benefitDocumentId,
+        document_number: input.documentNumber,
+        benefit_type: input.benefitType,
+        applicant_user_id: input.applicantUserId
+      }
+    };
+  });
+
+  await insertBenefitNotificationRows(rows);
+}
+
+export async function insertBenefitDocumentCancelNotifications(
+  input: Omit<InsertBenefitDocumentMutationNotificationsInput, 'event'>
+): Promise<void> {
+  const actorName = await getActiveProfileDisplayName(input.actorUserId);
+  const operationsUserIds = await listActiveBenefitOperationsUserIds();
+  const recipients = buildBenefitRecipientMap(operationsUserIds, input.applicantUserId);
+  const typeLabel = BENEFIT_TYPE_LABEL[input.benefitType];
+
+  const rows = [...recipients.entries()].map(([recipientUserId, audience]) => {
+    const type: 'benefit.document_cancel_operations' | 'benefit.document_cancel_applicant' =
+      audience === 'operations'
+        ? 'benefit.document_cancel_operations'
+        : 'benefit.document_cancel_applicant';
+    const { title, body } = buildBenefitCancelCopy(audience, {
+      typeLabel,
+      documentNumber: input.documentNumber,
+      applicantName: input.applicantName,
+      actorName,
+      actorUserId: input.actorUserId,
+      applicantUserId: input.applicantUserId
+    });
+
+    return {
+      recipient_user_id: recipientUserId,
+      type,
+      title,
+      body,
+      metadata: {
+        kind: type,
+        benefit_document_id: input.benefitDocumentId,
+        document_number: input.documentNumber,
+        benefit_type: input.benefitType,
+        applicant_user_id: input.applicantUserId,
+        actor_user_id: input.actorUserId
+      }
+    };
+  });
+
+  await insertBenefitNotificationRows(rows);
+}
+
+export async function insertBenefitDocumentRestoreNotifications(
+  input: Omit<InsertBenefitDocumentMutationNotificationsInput, 'event'>
+): Promise<void> {
+  const actorName = await getActiveProfileDisplayName(input.actorUserId);
+  const operationsUserIds = await listActiveBenefitOperationsUserIds();
+  const recipients = buildBenefitRecipientMap(operationsUserIds, input.applicantUserId);
+  const typeLabel = BENEFIT_TYPE_LABEL[input.benefitType];
+
+  const rows = [...recipients.entries()].map(([recipientUserId, audience]) => {
+    const type: 'benefit.document_restore_operations' | 'benefit.document_restore_applicant' =
+      audience === 'operations'
+        ? 'benefit.document_restore_operations'
+        : 'benefit.document_restore_applicant';
+    const { title, body } = buildBenefitRestoreCopy(audience, {
+      typeLabel,
+      documentNumber: input.documentNumber,
+      applicantName: input.applicantName,
+      actorName,
+      actorUserId: input.actorUserId,
+      applicantUserId: input.applicantUserId
+    });
+
+    return {
+      recipient_user_id: recipientUserId,
+      type,
+      title,
+      body,
+      metadata: {
+        kind: type,
+        benefit_document_id: input.benefitDocumentId,
+        document_number: input.documentNumber,
+        benefit_type: input.benefitType,
+        applicant_user_id: input.applicantUserId,
+        actor_user_id: input.actorUserId
+      }
+    };
+  });
+
+  await insertBenefitNotificationRows(rows);
 }

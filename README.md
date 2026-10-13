@@ -74,9 +74,11 @@ docs/
 
 ## 에이전트 워크플로우
 
-- 전체 실행(`/run`·`/root`): `planner -> designer -> backend-dev -> frontend-dev -> verifier`
-- 직접 호출(별도 `/run` 불필요): `@.cursor/agents/{agent}.md`
-- 커밋/PR 전용: `@.cursor/agents/commit-pr.md`
+- 전체 실행: Agent 채팅에서 `/root` (레거시 단계 승인: `/run` + 규칙은 `global-orchestrator.mdc`)
+- 파이프라인 순서: `planner -> designer -> backend-dev -> frontend-dev -> verifier`
+- Subagent 슬래시 호출: `/planner`, `/designer`, `/backend-dev`, `/frontend-dev`, `/verifier`, `/animate-ui`, `/commit-pr`, `/release-pr`, `/root`
+- 대안(동일 프롬프트): `@.cursor/agents/{agent}.md`
+- 커밋/PR 전용: `/commit-pr` 또는 `@.cursor/agents/commit-pr.md`
   - 미리보기 후, 사용자 응답이 정확히 `승인`일 때만 원격 반영
 
 ## 검증 명령

@@ -20,7 +20,7 @@ export default async function globalTeardown() {
     });
   } catch {
     throw new Error(
-      'E2E mock data cleanup failed after test run. Fix scripts/cleanup-e2e-mock-data.mjs or apply supabase/sql/41_e2e_cleanup_att_orphan.sql.'
+      'E2E mock data cleanup failed after test run. Fix scripts/cleanup-e2e-mock-data.mjs or apply supabase/sql/74_e2e_cleanup_complete.sql.'
     );
   }
 }

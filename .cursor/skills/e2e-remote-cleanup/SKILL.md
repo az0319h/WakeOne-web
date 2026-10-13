@@ -21,7 +21,7 @@ disable-model-invocation: true
 | 항목 | 내용 |
 |------|------|
 | 스크립트 | `scripts/cleanup-e2e-mock-data.mjs` |
-| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/70_e2e_cleanup_test_com_profiles.sql` (+ `71` trigger fix) |
+| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/74_e2e_cleanup_complete.sql` |
 | 수동 실행 | `npm run e2e:cleanup` |
 | 디버그 skip | `E2E_SKIP_CLEANUP=1` (완료 보고·CI에는 사용 금지) |
 | 사전 준비 | `globalSetup` → `scripts/e2e-plan03-prep.cjs` (E2E 계정 비밀번호·active 복구) |
@@ -46,7 +46,7 @@ disable-model-invocation: true
 ## 워크플로 (고정)
 
 1. **Read** `scripts/cleanup-e2e-mock-data.sql` (삭제 대상·순서 확인)
-2. **우선** `node scripts/cleanup-e2e-mock-data.mjs` (Playwright globalTeardown과 동일 RPC)
+2. **우선** `node scripts/cleanup-e2e-mock-data.mjs` (연결된 E2E 객체와 DB 미참조 Storage orphan 삭제 후 RPC 실행)
 3. **대안** Supabase MCP `execute_sql` — `scripts/cleanup-e2e-mock-data.sql` 전체 1회 (`apply_migration` **금지**)
 4. **검증** — RPC `remaining` 또는 아래 쿼리로 잔존 0건 확인:
 
@@ -63,7 +63,7 @@ select
   (select count(*) from public.profiles where full_name ~ '^E2E ' and email not in ('1234@naver.com','4321@naver.com','wakeone.ops@gmail.com')) as profiles_e2e;
 ```
 
-`npm run e2e:cleanup`은 RPC `remaining.users` · `remaining.profiles_e2e` · ATT/E2E author 사후 count까지 검증한다 (exit 1 if orphan).
+`npm run e2e:cleanup`은 RPC `remaining` 전체 · fixture 계정 조직도 필드 복구(`fixture_org_chart_profiles=0`) · ATT/E2E author 사후 count · `storage remaining`의 `announcement_orphans`와 `contract_orphans`가 모두 0인지 검증한다.
 
 5. **완료 보고** — stdout의 `remaining` JSON **인용** (`users:0`, `profiles_e2e:0` 필수)
 
@@ -78,6 +78,9 @@ select
 | 사용자 | `profiles.full_name ~ '^E2E '` (fixture 이메일 제외) | 조직도·hover E2E 잔존 방어 |
 | 사용자 | `e2e@test.local`, `prod-verify@test.local` | contract import / prod verify |
 | activity_logs | metadata `document_number` 또는 `email` 위 패턴 일치 | 검증 중 생성된 감사 로그 |
+| fixture 산출물 | fixture 3계정의 알림·활동 로그·wallet·Google Tasks 행 (계정 자체는 유지) | 반복 E2E 계정 |
+| 공지 | `title ilike 'E2E-ANN-%'` + 첨부·Storage 객체 | announcements E2E |
+| 복지비 | E2E 문서번호/task-key/작성자 marker | benefits E2E |
 
 **운영 실데이터 보호:** 위 패턴 **외** 행은 삭제하지 않는다. `DELETE` without WHERE on 전체 테이블 **금지**.
 

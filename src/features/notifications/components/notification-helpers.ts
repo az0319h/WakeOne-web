@@ -10,7 +10,9 @@ export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-announcement': '/dashboard/announcements',
   'view-support': '/dashboard/support',
   'view-contracts': '/dashboard/contracts',
-  'view-my-contracts': '/dashboard/my-contracts'
+  'view-my-contracts': '/dashboard/my-contracts',
+  'view-benefits': '/dashboard/benefits',
+  'view-my-benefits': '/dashboard/my-benefits'
 };
 
 export function getNotificationActions(
@@ -117,6 +119,36 @@ export function getNotificationActions(
       {
         id: 'view-support',
         label: '문의 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (
+    notification.type === 'benefit.import_operations' ||
+    notification.type === 'benefit.document_cancel_operations' ||
+    notification.type === 'benefit.document_restore_operations'
+  ) {
+    return [
+      {
+        id: 'view-benefits',
+        label: '복지비 관리',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (
+    notification.type === 'benefit.import_applicant' ||
+    notification.type === 'benefit.document_cancel_applicant' ||
+    notification.type === 'benefit.document_restore_applicant'
+  ) {
+    return [
+      {
+        id: 'view-my-benefits',
+        label: '내 복지비 보기',
         type: 'redirect',
         style: 'primary'
       }

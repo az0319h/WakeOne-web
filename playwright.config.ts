@@ -136,6 +136,11 @@ export default defineConfig({
       timeout: 90_000
     },
     {
+      name: 'setup-hr-benefits',
+      testMatch: /auth\.hr-benefits\.setup\.ts/,
+      timeout: 90_000
+    },
+    {
       name: 'wallet-balance-email-api',
       use: {
         ...devices['Desktop Chrome'],
@@ -171,8 +176,8 @@ export default defineConfig({
         storageState: 'e2e/.auth/admin.json'
       },
       dependencies: isWalletBalanceEmailE2eRun
-        ? ['setup', 'setup-user', 'setup-user2', 'wallet-balance-email-api']
-        : ['setup', 'setup-user', 'setup-user2'],
+        ? ['setup', 'setup-user', 'setup-user2', 'setup-hr-benefits', 'wallet-balance-email-api']
+        : ['setup', 'setup-user', 'setup-user2', 'setup-hr-benefits'],
       testIgnore: [
         /auth\.setup\.ts/,
         /auth\.user\.setup\.ts/,
@@ -186,6 +191,8 @@ export default defineConfig({
         /profile-name-live-display\//,
         /kbar\/nav-user\.spec\.ts$/,
         /contracts\/my-contracts-viewer\.spec\.ts$/,
+        /benefits\/my-benefits\.spec\.ts$/,
+        /benefits\/my-benefits-url-filters\.spec\.ts$/,
         /attachments\//,
         /live-users\//,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
@@ -222,6 +229,8 @@ export default defineConfig({
         /balance-email-logs-rbac\.spec\.ts$/,
         /kbar\/nav-user\.spec\.ts$/,
         /contracts\/my-contracts-viewer\.spec\.ts$/,
+        /benefits\/my-benefits\.spec\.ts$/,
+        /benefits\/my-benefits-url-filters\.spec\.ts$/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /google-tasks\/rbac\.spec\.ts$/,
         ...(isWalletBalanceEmailE2eRun ? [] : [/wallet-balance-email\/notifications\.spec\.ts$/])
@@ -328,7 +337,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json'
       },
-      dependencies: ['setup', 'setup-user'],
+      dependencies: ['setup', 'setup-user', 'setup-hr-benefits'],
       testMatch: /\.api\.spec\.ts$/,
       testIgnore: [
         /profile-name-live-display\//,
