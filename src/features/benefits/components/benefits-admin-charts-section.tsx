@@ -18,6 +18,7 @@ import {
   formatBenefitMoney,
   formatBenefitTrendMonthLabel,
   getBenefitsTrendMonths,
+  isBenefitsTrendMonthZeroOnly,
 } from "./benefits-admin-utils";
 
 const usageChartConfig = {
@@ -45,9 +46,13 @@ export function BenefitsAdminChartsSection({
   categorySum,
 }: BenefitsAdminChartsSectionProps) {
   const trendMonths = useMemo(() => getBenefitsTrendMonths(filters.month), [filters.month]);
+  const trendQueryableMonths = useMemo(
+    () => trendMonths.filter((month) => !isBenefitsTrendMonthZeroOnly(month)),
+    [trendMonths],
+  );
 
   const trendQueries = useQueries({
-    queries: trendMonths.map((month) =>
+    queries: trendQueryableMonths.map((month) =>
       benefitsAdminQueryOptions({
         ...filters,
         month,
@@ -55,16 +60,24 @@ export function BenefitsAdminChartsSection({
     ),
   });
 
+  const usedByMonth = useMemo(() => {
+    const map = new Map<string, number>();
+    trendQueryableMonths.forEach((month, index) => {
+      const members = trendQueries[index]?.data?.members ?? [];
+      map.set(
+        month,
+        members.reduce((sum, member) => sum + member.total_used, 0),
+      );
+    });
+    return map;
+  }, [trendQueryableMonths, trendQueries]);
+
   const trendLoading = trendQueries.some((item) => item.isLoading);
-  const trendData = trendMonths.map((month, index) => {
-    const members = trendQueries[index]?.data?.members ?? [];
-    const used = members.reduce((sum, member) => sum + member.total_used, 0);
-    return {
-      month,
-      label: formatBenefitTrendMonthLabel(month),
-      used,
-    };
-  });
+  const trendData = trendMonths.map((month) => ({
+    month,
+    label: formatBenefitTrendMonthLabel(month),
+    used: isBenefitsTrendMonthZeroOnly(month) ? 0 : (usedByMonth.get(month) ?? 0),
+  }));
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

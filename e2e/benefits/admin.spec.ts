@@ -8,9 +8,9 @@ test.describe("복지비 관리", () => {
     await expect(page.getByText("총 지급 한도")).toBeVisible();
     await expect(page.getByText("월별 복지비 사용 추이")).toBeVisible();
     await expect(page.getByText("카테고리별 사용 비중")).toBeVisible();
-    await expect(page.getByRole("button", { name: "웨이크" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "산스", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "산스파운드리" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "웨이크", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "산스", exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "산스파운드리" })).toBeVisible();
     await expect(page.getByLabel("조회 월")).toBeVisible();
     await expect(page.getByPlaceholder("이름 검색")).toBeVisible();
 

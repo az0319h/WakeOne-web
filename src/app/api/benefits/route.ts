@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireBenefitsAdminSession } from '@/features/auth/api/session.server';
 import { isAffiliation, listBenefitsAdmin } from "@/features/benefits/api/service.server";
+import { resolveBenefitsViewMonth } from "@/features/benefits/lib/benefits-view-month";
 
 export async function GET(request: NextRequest) {
   const session = await requireBenefitsAdminSession();
   if (!session.ok) return session.response;
 
-  const month = request.nextUrl.searchParams.get("month") ?? "";
+  const month = resolveBenefitsViewMonth(request.nextUrl.searchParams.get("month"));
   const affiliationValue = request.nextUrl.searchParams.get("affiliation");
   const team = request.nextUrl.searchParams.get("team")?.trim() || undefined;
   const name = request.nextUrl.searchParams.get("name")?.trim() || undefined;

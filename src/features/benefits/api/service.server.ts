@@ -6,7 +6,6 @@ import {
 } from "@/features/org-chart/api/service.server";
 import type { OrgChartProfile } from "@/features/org-chart/api/types";
 import { AFFILIATIONS, type Affiliation } from "@/features/users/constants/organization";
-import { compareYearMonth, getKstYearMonthString } from "@/lib/kst";
 import { normalizePersonName } from "@/lib/normalize-person-name";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type {
@@ -20,6 +19,8 @@ import type {
   BenefitType,
   MyBenefitsResponse,
 } from "./types";
+import { isBenefitsAdminRosterForViewMonth } from "../lib/benefits-roster-month";
+import { resolveBenefitsViewMonth } from "../lib/benefits-view-month";
 import { isBenefitDocumentCancelled } from "./types";
 
 export const MONTHLY_BENEFIT_LIMIT = 100_000;
@@ -77,30 +78,7 @@ function mapDocument(row: Record<string, unknown>): BenefitDocument {
 }
 
 const PROFILE_ROSTER_SELECT =
-  "user_id, full_name, avatar_url, email, phone, affiliation, rank, position_level, leader_role, system_role, status, deactivated_at";
-
-function isBenefitsAdminRosterProfile(profile: {
-  system_role: string;
-  position_level: string | null;
-  rank: string | null;
-}): boolean {
-  if (profile.system_role !== "user") return false;
-  if (!profile.position_level) return false;
-  if (
-    profile.rank === "경영진" &&
-    profile.position_level !== "CEO" &&
-    profile.position_level !== "COO"
-  ) {
-    return false;
-  }
-  return true;
-}
-
-function isInactiveBenefitsAdminMonth(deactivatedAt: string | null, viewMonth: string): boolean {
-  if (!deactivatedAt) return false;
-  const deactivatedMonth = getKstYearMonthString(deactivatedAt);
-  return compareYearMonth(viewMonth, deactivatedMonth) <= 0;
-}
+  "user_id, full_name, avatar_url, email, phone, affiliation, rank, position_level, leader_role, system_role, status, deactivated_at, created_at";
 
 function summarizeDocuments(documents: BenefitDocument[]) {
   const categoryTotals = emptyTotals();
@@ -148,7 +126,7 @@ async function listMonthDocuments(
 export async function listBenefitsAdmin(
   filters: BenefitsAdminFilters,
 ): Promise<BenefitsAdminResponse> {
-  const viewMonth = filters.month;
+  const viewMonth = resolveBenefitsViewMonth(filters.month);
   monthRange(viewMonth);
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
@@ -171,34 +149,34 @@ export async function listBenefitsAdmin(
     system_role: string;
     status: string;
     deactivated_at: string | null;
+    created_at: string;
   };
 
   const rosterRows = (data ?? []) as ProfileRow[];
 
-  const activeEligible = rosterRows.filter((row) =>
-    isEligibleOrgChartMember({
-      status: row.status,
-      system_role: row.system_role,
-      position_level: row.position_level,
-      rank: row.rank,
-    }),
-  );
-
-  const inactiveEligible = rosterRows.filter(
-    (row) =>
-      row.status === "inactive" &&
-      isBenefitsAdminRosterProfile(row) &&
-      isInactiveBenefitsAdminMonth(row.deactivated_at, viewMonth),
+  const rosterEligible = rosterRows.filter((row) =>
+    isBenefitsAdminRosterForViewMonth(
+      row,
+      viewMonth,
+      isEligibleOrgChartMember({
+        status: row.status,
+        system_role: row.system_role,
+        position_level: row.position_level,
+        rank: row.rank,
+      }),
+    ),
   );
 
   const affiliation = filters.affiliation ?? "wake";
-  const affiliationMembers = [...activeEligible, ...inactiveEligible].filter(
+  const affiliationMembers = rosterEligible.filter(
     (profile) => profile.affiliation === affiliation,
   );
 
   const inactiveUserIds = new Set(
-    inactiveEligible
-      .filter((profile) => profile.affiliation === affiliation)
+    rosterEligible
+      .filter(
+        (profile) => profile.affiliation === affiliation && profile.status === "inactive",
+      )
       .map((profile) => profile.user_id),
   );
 
@@ -264,10 +242,11 @@ export async function listBenefitsAdmin(
 }
 
 export async function getMyBenefits(userId: string, month: string): Promise<MyBenefitsResponse> {
-  const documents = await listMonthDocuments(month, userId);
+  const viewMonth = resolveBenefitsViewMonth(month);
+  const documents = await listMonthDocuments(viewMonth, userId);
   const summary = summarizeDocuments(documents);
   return {
-    month,
+    month: viewMonth,
     limit: MONTHLY_BENEFIT_LIMIT,
     total_used: summary.totalUsed,
     remaining: Math.max(0, MONTHLY_BENEFIT_LIMIT - summary.totalUsed),
