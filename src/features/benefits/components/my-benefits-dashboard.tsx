@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageLoadingSpinner } from "@/components/ui/page-loading-spinner";
 import { formatAbsoluteDateKo } from "@/lib/format-date";
 import { usersQueryOptions } from "@/features/users/api/queries";
+import { isBenefitsMonthAtEarliest, isBenefitsMonthAtLatest } from "../lib/benefits-view-month";
 import { useMyBenefitsMonth } from "../hooks/use-my-benefits-month";
 import { myBenefitsQueryOptions } from "../api/queries";
 import type { BenefitType } from "../api/types";
@@ -85,6 +86,7 @@ export function MyBenefitsDashboard({
             size="icon"
             className="rounded-none border-l"
             aria-label="이전 달"
+            disabled={isBenefitsMonthAtEarliest(month)}
             onClick={() => setMonth(moveMonth(month, -1))}
           >
             <Icons.chevronLeft className="size-4" />
@@ -95,6 +97,7 @@ export function MyBenefitsDashboard({
             size="icon"
             className="rounded-none border-l"
             aria-label="다음 달"
+            disabled={isBenefitsMonthAtLatest(month)}
             onClick={() => setMonth(moveMonth(month, 1))}
           >
             <Icons.chevronRight className="size-4" />

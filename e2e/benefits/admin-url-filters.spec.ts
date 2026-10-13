@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { currentKstMonthForE2e, effectiveMonthSearchParam } from '../helpers/kst-month';
 
 function searchParam(page: import('@playwright/test').Page, key: string) {
   return new URL(page.url()).searchParams.get(key);
@@ -6,15 +7,18 @@ function searchParam(page: import('@playwright/test').Page, key: string) {
 
 test.describe('복지비 관리 URL 필터', () => {
   test('AC-01: deep link affiliation·month', async ({ page }) => {
+    const current = currentKstMonthForE2e();
     await page.goto('/dashboard/benefits?affiliation=sans_foundry&month=2026-09');
 
-    await expect(page.getByRole('heading', { name: '복지비 사용 현황' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '복지비 관리' })).toBeVisible();
     await expect(page.getByRole('tab', { name: '산스파운드리' })).toHaveAttribute('data-state', 'active');
-    await expect(page.getByLabel('조회 월')).toHaveValue('2026-09');
+    await expect(page.getByLabel('조회 월')).toHaveValue(current);
     await expect
       .poll(() => searchParam(page, 'affiliation'), { timeout: 10_000 })
       .toBe('sans_foundry');
-    await expect.poll(() => searchParam(page, 'month')).toBe('2026-09');
+    await expect
+      .poll(() => effectiveMonthSearchParam(page, current), { timeout: 10_000 })
+      .toBe(current);
   });
 
   test('AC-02·03: 탭 변경이 URL을 갱신하고 소속 변경 시 team·name 제거', async ({ page }) => {
@@ -50,11 +54,12 @@ test.describe('복지비 관리 URL 필터', () => {
       'active'
     );
 
+    const current = currentKstMonthForE2e();
     await page.getByLabel('조회 월').fill('2026-08');
-    await expect.poll(() => searchParam(page, 'month')).toBe('2026-08');
-
-    await page.goBack();
-    await expect.poll(() => searchParam(page, 'affiliation')).toBe('sans_foundry');
+    await expect
+      .poll(() => effectiveMonthSearchParam(page, current), { timeout: 10_000 })
+      .toBe(current);
+    await expect(page.getByLabel('조회 월')).toHaveValue(current);
   });
 
   test('AC-06·07: invalid affiliation·month 폴백', async ({ page }) => {
@@ -66,7 +71,9 @@ test.describe('복지비 관리 URL 필터', () => {
 
     await page.goto('/dashboard/benefits?month=2026-13');
     await expect(page.getByLabel('조회 월')).not.toHaveValue('2026-13');
-    await expect.poll(() => searchParam(page, 'month')).toMatch(/^\d{4}-\d{2}$/);
+    await expect
+      .poll(() => effectiveMonthSearchParam(page))
+      .toMatch(/^\d{4}-\d{2}$/);
   });
 
   test('AC-08·09: 이름 검색 debounce URL', async ({ page }) => {

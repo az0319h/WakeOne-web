@@ -17,9 +17,3 @@ export function isValidBenefitsMonth(value: string) {
   return month >= 1 && month <= 12;
 }
 
-export function normalizeBenefitsMonth(value: string | null | undefined) {
-  if (value && isValidBenefitsMonth(value)) {
-    return value;
-  }
-  return currentKstMonth();
-}

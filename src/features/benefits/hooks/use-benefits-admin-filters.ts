@@ -5,7 +5,7 @@ import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import type { Affiliation } from "@/features/users/constants/organization";
 import { parseAsBenefitsMonth } from "../lib/benefits-month-parser";
-import { currentKstMonth, isValidBenefitsMonth, normalizeBenefitsMonth } from "../lib/kst-month";
+import { normalizeBenefitsMonth, resolveBenefitsViewMonth } from "../lib/benefits-view-month";
 import type { BenefitsAdminFilters } from "../api/types";
 
 const affiliationValues = ["wake", "sans", "sans_foundry"] as const;
@@ -31,8 +31,12 @@ export function useBenefitsAdminFilters() {
 
   useEffect(() => {
     const raw = new URLSearchParams(window.location.search).get("month");
-    if (raw && !isValidBenefitsMonth(raw)) {
-      void setParams({ month: currentKstMonth() });
+    if (!raw) {
+      return;
+    }
+    const resolved = resolveBenefitsViewMonth(raw);
+    if (raw !== resolved) {
+      void setParams({ month: resolved });
     }
   }, [setParams]);
 
@@ -57,10 +61,7 @@ export function useBenefitsAdminFilters() {
   }
 
   function setMonth(month: string) {
-    if (!isValidBenefitsMonth(month)) {
-      return;
-    }
-    void setParams({ month });
+    void setParams({ month: resolveBenefitsViewMonth(month) });
   }
 
   function setTeam(team: string) {

@@ -4,6 +4,7 @@ import {
   getMyBenefits,
   resolveBenefitsTargetUserId,
 } from "@/features/benefits/api/service.server";
+import { resolveBenefitsViewMonth } from "@/features/benefits/lib/benefits-view-month";
 
 export async function GET(request: NextRequest) {
   const session = await requireSession();
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     requestedUser,
   );
 
-  const month = request.nextUrl.searchParams.get("month") ?? "";
+  const month = resolveBenefitsViewMonth(request.nextUrl.searchParams.get("month"));
   try {
     const data = await getMyBenefits(targetUserId, month);
     return NextResponse.json({ success: true, data });
