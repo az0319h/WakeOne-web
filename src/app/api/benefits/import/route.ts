@@ -13,6 +13,7 @@ import {
   benefitImportSchema,
   normalizeBenefitDocumentNumber,
 } from "@/features/benefits/api/validators";
+import { insertBenefitImportNotifications } from "@/features/notifications/api/fan-out.server";
 import {
   benefitServiceActor,
   getBenefitImportToken,
@@ -136,6 +137,32 @@ export async function POST(request: NextRequest) {
   try {
     const result = await importBenefitDocument(payload, requestId);
     const created = result.status === "created";
+
+    if (created) {
+      const applicantUserId = result.document.applicant_user_id;
+      if (applicantUserId) {
+        try {
+          if (
+            process.env.NODE_ENV !== "production" &&
+            result.document.document_number.includes("FANOUT-FAIL")
+          ) {
+            throw new Error("E2E simulated benefit notification fan-out failure");
+          }
+
+          await insertBenefitImportNotifications({
+            benefitDocumentId: result.document.id,
+            documentNumber: result.document.document_number,
+            benefitType: result.document.benefit_type,
+            applicantUserId,
+            applicantName: result.document.applicant_name,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown error";
+          console.error("[benefits/import] notification fan-out failed", message);
+        }
+      }
+    }
+
     const status = created ? 201 : 200;
     const message = created
       ? "복지비 문서가 import되었습니다."
