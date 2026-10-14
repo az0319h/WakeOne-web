@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageLoadingSpinner } from "@/components/ui/page-loading-spinner";
-import { formatAbsoluteDateKo, formatAbsoluteMonthKo } from "@/lib/format-date";
+import { formatAbsoluteDateKo } from "@/lib/format-date";
 import { usersQueryOptions } from "@/features/users/api/queries";
 import { formatBenefitDocumentDescription } from "../lib/format-benefit-document-description";
 import { isBenefitsMonthAtEarliest, isBenefitsMonthAtLatest } from "../lib/benefits-view-month";
@@ -216,17 +216,6 @@ export function MyBenefitsDashboard({
                               document.benefit_type,
                               document.description
                             )}
-                          </p>
-                        ) : null}
-                        {document.benefit_type === 'fitness' && document.benefit_month ? (
-                          <p
-                            data-testid='benefit-document-benefit-month'
-                            className={cn(
-                              'mt-0.5 text-xs whitespace-nowrap text-muted-foreground tabular-nums',
-                              cancelled && 'line-through'
-                            )}
-                          >
-                            해당 월 {formatAbsoluteMonthKo(document.benefit_month)}
                           </p>
                         ) : null}
                       </div>
