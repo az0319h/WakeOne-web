@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { createActiveTestUser } from '../helpers/supabase-direct-auth';
 
 const E2E_TEST_PHONE = '01012345678';

@@ -95,6 +95,9 @@ export type ActivityLogMetadata = {
   source_message_id?: string;
   task_key?: string;
   benefit_type?: string;
+  /** plan 80 — fitness 귀속 월 `YYYY-MM` */
+  benefit_month?: string;
+  benefit_month_reason?: string;
   source_type?: string;
   file_name?: string;
   recipient_email?: string;

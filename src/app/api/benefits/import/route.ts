@@ -6,6 +6,7 @@ import {
 } from "@/features/activity-logs/api/log.server";
 import type { ActivityAction, ActivityLogMetadata } from "@/features/activity-logs/api/types";
 import {
+  BenefitMonthValidationError,
   importBenefitDocument,
   recordBenefitImportEvent,
 } from "@/features/benefits/api/service.server";
@@ -178,9 +179,35 @@ export async function POST(request: NextRequest) {
         task_key: result.document.task_key,
         benefit_type: result.document.benefit_type,
         status: result.status,
+        ...(created && result.document.benefit_month
+          ? { benefit_month: result.document.benefit_month.slice(0, 7) }
+          : {}),
       },
     });
   } catch (error) {
+    if (error instanceof BenefitMonthValidationError) {
+      await tryRecordFailure({
+        requestId,
+        documentNumber: payload.document_number,
+        taskKey: payload.task_key,
+        errorCode: error.reason,
+        message: error.message,
+      });
+      return logResponse({
+        requestId,
+        action: "benefit.import_failed",
+        status: 400,
+        body: { success: false, message: error.message },
+        documentNumber: payload.document_number,
+        metadata: buildErrorMetadata("validation", error.message, {
+          document_number: payload.document_number,
+          task_key: payload.task_key,
+          benefit_type: payload.benefit_type,
+          benefit_month_reason: error.reason,
+        }),
+      });
+    }
+
     const message =
       error instanceof Error ? error.message : "복지비 import 중 오류가 발생했습니다.";
     const identityError = message.includes("이름이 일치하지") || message.includes("동명이인");

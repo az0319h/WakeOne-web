@@ -23,6 +23,8 @@ const METADATA_ALLOWLIST = new Set([
   "source_message_id",
   "task_key",
   "benefit_type",
+  "benefit_month",
+  "benefit_month_reason",
   "source_type",
   "file_name",
   "recipient_email",

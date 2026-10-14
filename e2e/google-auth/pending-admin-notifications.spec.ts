@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 import {
-  countUnreadNotifications,
   createFreshPendingGoogleUser,
   filterApprovalRequestAdminNotifications,
   listNotificationsForUser,
