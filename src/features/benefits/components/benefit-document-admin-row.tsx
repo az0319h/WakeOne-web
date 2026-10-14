@@ -7,7 +7,7 @@ import { AlertModal } from '@/components/modal/alert-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { formatAbsoluteDateKo } from '@/lib/format-date';
+import { formatAbsoluteDateKo, formatAbsoluteMonthKo } from '@/lib/format-date';
 import { notifySuccess } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import {
@@ -59,6 +59,8 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
   return (
     <>
       <TableRow
+        data-testid='benefit-document-row'
+        data-document-number={document.document_number}
         className={cn(
           'group bg-muted/20',
           hasFlexUrl && !cancelled && 'cursor-pointer hover:bg-muted/40',
@@ -88,6 +90,17 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
               )}
             >
               {document.description}
+            </p>
+          ) : null}
+          {document.benefit_type === 'fitness' && document.benefit_month ? (
+            <p
+              data-testid='benefit-document-benefit-month'
+              className={cn(
+                'text-xs whitespace-nowrap text-muted-foreground tabular-nums',
+                cancelled && 'line-through'
+              )}
+            >
+              해당 월 {formatAbsoluteMonthKo(document.benefit_month)}
             </p>
           ) : null}
         </TableCell>
