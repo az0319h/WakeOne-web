@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageLoadingSpinner } from "@/components/ui/page-loading-spinner";
 import { formatAbsoluteDateKo } from "@/lib/format-date";
 import { usersQueryOptions } from "@/features/users/api/queries";
+import { formatBenefitDocumentDescription } from "../lib/format-benefit-document-description";
 import { isBenefitsMonthAtEarliest, isBenefitsMonthAtLatest } from "../lib/benefits-view-month";
 import { useMyBenefitsMonth } from "../hooks/use-my-benefits-month";
 import { myBenefitsQueryOptions } from "../api/queries";
@@ -209,7 +210,10 @@ export function MyBenefitsDashboard({
                               cancelled && 'line-through'
                             )}
                           >
-                            {document.description}
+                            {formatBenefitDocumentDescription(
+                              document.benefit_type,
+                              document.description
+                            )}
                           </p>
                         ) : null}
                       </div>
