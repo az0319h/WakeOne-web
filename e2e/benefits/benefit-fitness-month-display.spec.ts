@@ -8,7 +8,9 @@ import { createOrgChartTestUser } from '../helpers/org-chart';
 // plan: docs/plans/80_benefit-fitness-target-month-plan.md
 test.describe.configure({ mode: 'serial' });
 
-test.describe('체력증진비 해당 월 표시 UI (plan 80)', () => {
+const FITNESS_DESCRIPTION = 'E2E benefit cancel';
+
+test.describe('체력증진비 해당 월 UI 미표시 (plan 80 AC-14~16)', () => {
   test.use({ storageState: 'e2e/.auth/admin.json' });
   test.setTimeout(90_000);
 
@@ -69,12 +71,12 @@ test.describe('체력증진비 해당 월 표시 UI (plan 80)', () => {
     return page.getByTestId('benefit-document-row').filter({ hasText: documentNumber });
   }
 
-  async function expectMonthLabels(page: Page) {
+  async function expectFitnessAndBookWithoutMonthLabel(page: Page) {
     const fitnessRow = documentRow(page, numbers.fitness);
     await expect(fitnessRow).toBeVisible({ timeout: 15_000 });
-    await expect(fitnessRow.getByTestId('benefit-document-benefit-month')).toHaveText(
-      '해당 월 2026-10'
-    );
+    await expect(fitnessRow.getByTestId('benefit-document-benefit-month')).toHaveCount(0);
+    await expect(fitnessRow).not.toContainText('해당 월');
+    await expect(fitnessRow).toContainText(FITNESS_DESCRIPTION);
 
     const bookRow = documentRow(page, numbers.book);
     await expect(bookRow).toBeVisible();
@@ -102,16 +104,16 @@ test.describe('체력증진비 해당 월 표시 UI (plan 80)', () => {
     await expect(page.getByRole('heading', { name: '내 복지비 사용 현황' })).toBeVisible();
   }
 
-  test('AC-14: 관리자 화면 fitness 행에 「해당 월 2026-10」 · book 행 미표시', async ({
+  test('AC-14: 관리자 화면 fitness·book 행에 「해당 월」 미표시 · description만', async ({
     page
   }) => {
     await openAdminMember(page);
-    await expectMonthLabels(page);
+    await expectFitnessAndBookWithoutMonthLabel(page);
   });
 
-  test('AC-15: 내 복지비(admin proxy) fitness 행 표시 · book 행 미표시', async ({ page }) => {
+  test('AC-15: 내 복지비(admin proxy) fitness·book 행 「해당 월」 미표시', async ({ page }) => {
     await openMyBenefitsProxy(page);
-    await expectMonthLabels(page);
+    await expectFitnessAndBookWithoutMonthLabel(page);
   });
 
   test('AC-16: 기존형 fitness(null) 행은 두 화면 모두 미표시 · 크래시 없음', async ({ page }) => {
