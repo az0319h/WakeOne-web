@@ -77,7 +77,7 @@ export function OrgChartDataBody({ affiliation }: OrgChartDataBodyProps) {
     <div
       key='org-chart-mobile'
       data-testid='org-chart-mobile-tree'
-      className='flex flex-1 flex-col'
+      className='flex min-h-0 flex-1 flex-col overflow-y-auto'
     >
       <OrgChartMobileTree nodes={data.nodes} affiliation={affiliation} />
     </div>
