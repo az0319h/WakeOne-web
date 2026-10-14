@@ -21,7 +21,7 @@ disable-model-invocation: true
 | 항목 | 내용 |
 |------|------|
 | 스크립트 | `scripts/cleanup-e2e-mock-data.mjs` |
-| RPC | `public.cleanup_e2e_mock_data()` — `supabase/sql/74_e2e_cleanup_complete.sql` |
+| RPC | `public.cleanup_e2e_mock_data()` — 최신 `supabase/sql/82_e2e_cleanup_preserve_fixture_real_data.sql` (74+82) |
 | 수동 실행 | `npm run e2e:cleanup` |
 | 디버그 skip | `E2E_SKIP_CLEANUP=1` (완료 보고·CI에는 사용 금지) |
 | 사전 준비 | `globalSetup` → `scripts/e2e-plan03-prep.cjs` (E2E 계정 비밀번호·active 복구) |
@@ -78,7 +78,7 @@ select
 | 사용자 | `profiles.full_name ~ '^E2E '` (fixture 이메일 제외) | 조직도·hover E2E 잔존 방어 |
 | 사용자 | `e2e@test.local`, `prod-verify@test.local` | contract import / prod verify |
 | activity_logs | metadata `document_number` 또는 `email` 위 패턴 일치 | 검증 중 생성된 감사 로그 |
-| fixture 산출물 | fixture 3계정의 알림·활동 로그·wallet·Google Tasks 행 (계정 자체는 유지) | 반복 E2E 계정 |
+| fixture E2E 산출물 | fixture 3계정에 **E2E marker·test doc 패턴**으로 붙은 알림·로그·wallet 행만 삭제 (복지비 import 등 **실데이터 알림은 유지**) | sql/82+ |
 | 공지 | `title ilike 'E2E-ANN-%'` + 첨부·Storage 객체 | announcements E2E |
 | 복지비 | E2E 문서번호/task-key/작성자 marker | benefits E2E |
 

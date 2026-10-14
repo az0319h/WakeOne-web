@@ -16,6 +16,7 @@ import {
 } from '../api/mutations';
 import type { BenefitDocument, BenefitType } from '../api/types';
 import { isBenefitDocumentCancelled } from '../api/types';
+import { formatBenefitDocumentDescription } from '../lib/format-benefit-document-description';
 import { formatBenefitMoney } from './benefits-admin-utils';
 
 const TYPE_LABEL: Record<BenefitType, string> = {
@@ -89,7 +90,10 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
                 cancelled && 'line-through'
               )}
             >
-              {document.description}
+              {formatBenefitDocumentDescription(
+                document.benefit_type,
+                document.description
+              )}
             </p>
           ) : null}
           {document.benefit_type === 'fitness' && document.benefit_month ? (
