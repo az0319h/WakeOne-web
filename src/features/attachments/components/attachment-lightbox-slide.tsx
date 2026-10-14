@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { notifyError } from '@/lib/notify';
-import { cn } from '@/lib/utils';
 import { fetchAttachmentBlob } from '../api/fetch-attachment-blob';
 import {
   getAttachmentMediaType,
