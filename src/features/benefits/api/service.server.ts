@@ -21,6 +21,11 @@ import type {
 } from "./types";
 import { isBenefitsAdminRosterForViewMonth } from "../lib/benefits-roster-month";
 import { resolveBenefitsViewMonth } from "../lib/benefits-view-month";
+import {
+  parseBenefitMonth,
+  quoteBenefitMonthInput,
+  type BenefitMonthFailureReason,
+} from "../lib/parse-benefit-month";
 import { isBenefitDocumentCancelled } from "./types";
 
 export const MONTHLY_BENEFIT_LIMIT = 100_000;
@@ -37,7 +42,17 @@ export function resolveBenefitsTargetUserId(
 }
 
 const DOCUMENT_SELECT =
-  "id, document_number, task_key, benefit_type, document_created_at, approved_at, applicant_name, amount, description, source_document_url, applicant_user_id, cancelled_at, cancelled_by";
+  "id, document_number, task_key, benefit_type, document_created_at, approved_at, applicant_name, amount, description, source_document_url, benefit_month, attributed_month, applicant_user_id, cancelled_at, cancelled_by";
+
+export class BenefitMonthValidationError extends Error {
+  constructor(
+    readonly reason: BenefitMonthFailureReason,
+    message: string,
+  ) {
+    super(message);
+    this.name = "BenefitMonthValidationError";
+  }
+}
 
 function monthRange(month: string): { from: string; to: string } {
   if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -70,6 +85,8 @@ function mapDocument(row: Record<string, unknown>): BenefitDocument {
     amount: Number(row.amount),
     description: row.description == null ? null : String(row.description),
     source_document_url: String(row.source_document_url),
+    benefit_month: row.benefit_month == null ? null : String(row.benefit_month),
+    attributed_month: String(row.attributed_month),
     cancelled_at: row.cancelled_at == null ? null : String(row.cancelled_at),
     cancelled_by: row.cancelled_by == null ? null : String(row.cancelled_by),
     applicant_user_id:
@@ -105,8 +122,9 @@ async function listMonthDocuments(
   let query = supabase
     .from("benefit_documents")
     .select(DOCUMENT_SELECT)
-    .gte("document_created_at", from)
-    .lt("document_created_at", to)
+    .gte("attributed_month", from)
+    .lt("attributed_month", to)
+    .order("attributed_month", { ascending: false })
     .order("document_created_at", { ascending: false })
     .order("id", { ascending: false });
 
@@ -334,6 +352,27 @@ export async function importBenefitDocument(
     return { status: "duplicate", document: mapDocument(existing as Record<string, unknown>) };
   }
 
+  let benefitMonth: string | null = null;
+  if (payload.benefit_type === "fitness") {
+    const parsed = parseBenefitMonth(payload.benefit_month, payload.document_created_at);
+    if (!parsed.ok) {
+      throw new BenefitMonthValidationError(
+        parsed.reason,
+        parsed.reason === "benefit_month_missing"
+          ? "체력증진비는 해당 월(1~12월)이 필요합니다."
+          : `해당 월 형식이 올바르지 않습니다: ${quoteBenefitMonthInput(payload.benefit_month)}`,
+      );
+    }
+    benefitMonth = parsed.month;
+  }
+
+  if (
+    process.env.NODE_ENV !== "production" &&
+    payload.document_number.includes("E2E-IMPORT-FAIL")
+  ) {
+    throw new Error("E2E simulated benefit import failure");
+  }
+
   const applicantUserId = await findUniqueApplicantUserId(payload.applicant_name);
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
@@ -350,6 +389,7 @@ export async function importBenefitDocument(
       description: payload.description ?? null,
       source_document_url: payload.source_document_url,
       source_message_id: payload.source_message_id ?? null,
+      benefit_month: benefitMonth,
     })
     .select(DOCUMENT_SELECT)
     .single();

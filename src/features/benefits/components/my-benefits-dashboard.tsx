@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageLoadingSpinner } from "@/components/ui/page-loading-spinner";
-import { formatAbsoluteDateKo } from "@/lib/format-date";
+import { formatAbsoluteDateKo, formatAbsoluteMonthKo } from "@/lib/format-date";
 import { usersQueryOptions } from "@/features/users/api/queries";
+import { formatBenefitDocumentDescription } from "../lib/format-benefit-document-description";
 import { isBenefitsMonthAtEarliest, isBenefitsMonthAtLatest } from "../lib/benefits-view-month";
 import { useMyBenefitsMonth } from "../hooks/use-my-benefits-month";
 import { myBenefitsQueryOptions } from "../api/queries";
@@ -188,6 +189,8 @@ export function MyBenefitsDashboard({
                   return (
                     <div
                       key={document.id}
+                      data-testid='benefit-document-row'
+                      data-document-number={document.document_number}
                       className={cn(
                         'grid gap-2 rounded-lg border px-4 py-3 text-sm sm:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto] sm:items-center',
                         cancelled && 'opacity-70'
@@ -209,7 +212,21 @@ export function MyBenefitsDashboard({
                               cancelled && 'line-through'
                             )}
                           >
-                            {document.description}
+                            {formatBenefitDocumentDescription(
+                              document.benefit_type,
+                              document.description
+                            )}
+                          </p>
+                        ) : null}
+                        {document.benefit_type === 'fitness' && document.benefit_month ? (
+                          <p
+                            data-testid='benefit-document-benefit-month'
+                            className={cn(
+                              'mt-0.5 text-xs whitespace-nowrap text-muted-foreground tabular-nums',
+                              cancelled && 'line-through'
+                            )}
+                          >
+                            해당 월 {formatAbsoluteMonthKo(document.benefit_month)}
                           </p>
                         ) : null}
                       </div>

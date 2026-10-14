@@ -6,6 +6,10 @@ import { normalizeBirthdayToDateString } from '@/lib/birthday';
 /** 절대 날짜 표준 패턴 — 예: `2026-07-20` */
 const ABSOLUTE_DATE_PATTERN = 'yyyy-MM-dd';
 
+/** 절대 월 표준 패턴 — 예: `2026-07` */
+const ABSOLUTE_MONTH_PATTERN = 'yyyy-MM';
+const MONTH_PREFIX_REGEX = /^\d{4}-\d{2}/;
+
 /**
  * 대시보드·계약·필터 등 **날짜만** 표시의 **유일한** 일반 포맷터.
  * `@/lib/format-date` 외 feature별 date 포맷 함수·`toLocaleDateString` 직접 호출 금지.
@@ -18,6 +22,23 @@ export function formatAbsoluteDateKo(date: string | Date): string {
   }
 
   return format(parsed, ABSOLUTE_DATE_PATTERN, { locale: ko });
+}
+
+/**
+ * 월 표시 — 예: `2026-10-01` → `2026-10`.
+ * 문자열은 `Date` 변환 시 타임존에 따라 전월로 밀릴 수 있어 앞 7자만 사용한다.
+ */
+export function formatAbsoluteMonthKo(date: string | Date): string {
+  if (typeof date === 'string') {
+    const prefix = date.match(MONTH_PREFIX_REGEX);
+    return prefix ? prefix[0] : date;
+  }
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return format(date, ABSOLUTE_MONTH_PATTERN, { locale: ko });
 }
 
 export function formatAbsoluteDateKoOrPlaceholder(

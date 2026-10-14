@@ -5,10 +5,6 @@ import {
   kstMonthLabel
 } from '../helpers/kst-month';
 
-function searchParam(page: import('@playwright/test').Page, key: string) {
-  return new URL(page.url()).searchParams.get(key);
-}
-
 test.describe('복지비 조회 월 하한·폴백', () => {
   test('AC-01·02: 범위 밖 month는 KST 당월로 교정', async ({ page }) => {
     const current = currentKstMonthForE2e();

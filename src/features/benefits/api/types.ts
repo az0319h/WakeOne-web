@@ -14,6 +14,8 @@ export interface BenefitImportPayload {
   description?: string | null;
   source_document_url: string;
   source_message_id?: string | null;
+  /** Flex 「해당 월」 원문 — fitness만 사용 */
+  benefit_month?: string | number | null;
 }
 
 export interface BenefitDocument {
@@ -27,6 +29,10 @@ export interface BenefitDocument {
   amount: number;
   description: string | null;
   source_document_url: string;
+  /** 체력증진비 해당 월 `YYYY-MM-01` — book·education·기존 fitness 행은 null */
+  benefit_month: string | null;
+  /** 조회·한도 집계 귀속 월 `YYYY-MM-01` */
+  attributed_month: string;
   cancelled_at: string | null;
   cancelled_by: string | null;
   applicant_user_id?: string;

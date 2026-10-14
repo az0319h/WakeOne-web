@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { signOut } from '@/features/auth/api/service';
-import { ProfilePasswordSheet } from '@/features/auth/components/profile-password-sheet';
 import type { AuthProfile } from '@/features/auth/api/types';
 import { getProfileDisplayName } from '@/features/auth/lib/display-name';
 

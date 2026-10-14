@@ -2,7 +2,7 @@
  * Playwright globalTeardown · verifier Step 7 — 원격 Supabase E2E 목 데이터 삭제
  * Usage: node scripts/cleanup-e2e-mock-data.mjs
  * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- * RPC: public.cleanup_e2e_mock_data() (supabase/sql/74_e2e_cleanup_complete.sql)
+ * RPC: public.cleanup_e2e_mock_data() (supabase/sql/82_e2e_cleanup_preserve_fixture_real_data.sql)
  */
 import fs from 'node:fs';
 import path from 'node:path';

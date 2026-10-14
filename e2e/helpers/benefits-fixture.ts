@@ -39,6 +39,8 @@ export type InsertBenefitDocumentInput = {
   documentCreatedAt: string;
   amount: number;
   benefitType?: 'book' | 'fitness' | 'education';
+  /** `YYYY-MM-01` — fitness만 허용 (DB check) */
+  benefitMonth?: string | null;
 };
 
 export async function insertBenefitDocumentForE2e(input: InsertBenefitDocumentInput) {
@@ -55,7 +57,8 @@ export async function insertBenefitDocumentForE2e(input: InsertBenefitDocumentIn
       applicant_name: input.applicantName,
       amount: input.amount,
       description: 'E2E benefit cancel',
-      source_document_url: 'https://example.com/flex/e2e-benefit'
+      source_document_url: 'https://example.com/flex/e2e-benefit',
+      ...(input.benefitMonth !== undefined ? { benefit_month: input.benefitMonth } : {})
     })
     .select('id')
     .single();
@@ -86,6 +89,35 @@ export async function getProfileForBenefitsFixture(userId: string): Promise<{
 export async function deleteBenefitDocumentByNumber(documentNumber: string) {
   const admin = getServiceRoleClient();
   await admin.from('benefit_documents').delete().eq('document_number', documentNumber);
+}
+
+export async function getBenefitDocumentRowByNumber(
+  documentNumber: string
+): Promise<Record<string, unknown> | null> {
+  const admin = getServiceRoleClient();
+  const { data, error } = await admin
+    .from('benefit_documents')
+    .select('*')
+    .eq('document_number', documentNumber)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Failed to read benefit document: ${error.message}`);
+  }
+  return data;
+}
+
+export async function listBenefitImportEventsByRequestId(
+  requestId: string
+): Promise<Array<Record<string, unknown>>> {
+  const admin = getServiceRoleClient();
+  const { data, error } = await admin
+    .from('benefit_import_events')
+    .select('*')
+    .eq('request_id', requestId);
+  if (error) {
+    throw new Error(`Failed to read benefit import events: ${error.message}`);
+  }
+  return data ?? [];
 }
 
 export type ProfileEmploymentSnapshot = {

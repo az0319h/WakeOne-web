@@ -43,6 +43,8 @@ export const benefitImportSchema = z.object({
       }
     }, "Flex 원문 URL만 허용됩니다."),
   source_message_id: optionalText(200),
+  /** Flex 「해당 월」 원문 — fitness 필수 판정은 duplicate 확인 이후 service에서 (plan 80) */
+  benefit_month: z.union([z.string(), z.number()]).nullable().optional(),
 });
 
 export function normalizeBenefitDocumentNumber(value: string): string {
