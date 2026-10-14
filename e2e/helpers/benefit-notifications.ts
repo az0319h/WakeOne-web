@@ -73,15 +73,17 @@ export function buildBenefitImportPayload(options: {
   applicantName: string;
   benefitType?: 'book' | 'fitness' | 'education';
 }) {
+  const benefitType = options.benefitType ?? 'book';
   return {
     document_number: options.documentNumber,
     task_key: options.taskKey,
-    benefit_type: options.benefitType ?? 'book',
+    benefit_type: benefitType,
     document_created_at: '2026-10-01',
     approved_at: '2026-10-02T10:00:00+09:00',
     applicant_name: options.applicantName,
     amount: 12_000,
-    source_document_url: 'https://flex.team/e2e/benefit-import'
+    source_document_url: 'https://flex.team/e2e/benefit-import',
+    ...(benefitType === 'fitness' ? { benefit_month: '10' } : {})
   };
 }
 
