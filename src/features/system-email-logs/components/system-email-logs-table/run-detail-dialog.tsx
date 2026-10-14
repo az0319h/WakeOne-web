@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { DataTableScrollContainer } from '@/components/ui/table/data-table-scroll-container';
 import {
@@ -75,7 +74,7 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
           ) : null}
         </DialogHeader>
 
-        <ScrollArea className='min-h-0 flex-1 pr-3'>
+        <div className='min-h-0 flex-1 overflow-y-auto pr-3'>
           {isLoading ? <PageLoadingSpinner variant='compact' /> : null}
           {isError ? (
             <p className='text-destructive text-sm'>상세 정보를 불러오지 못했습니다.</p>
@@ -178,8 +177,7 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
               ) : null}
             </div>
           ) : null}
-          <ScrollBar orientation='vertical' />
-        </ScrollArea>
+        </div>
 
         <DialogFooter>
           <Button
