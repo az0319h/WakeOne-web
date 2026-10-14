@@ -112,6 +112,7 @@
 | 77 | [77_benefit-document-manual-cancel-plan.md](./77_benefit-document-manual-cancel-plan.md) | **Completed** · benefit_documents soft cancel·복구 · 합계 제외 · 내 복지비 취소됨 표시 · import duplicate 유지 |
 | 78 | [78_benefit-notifications-plan.md](./78_benefit-notifications-plan.md) | **Approved** · 복지비 3유형 등록·취소·복구 operations+applicant Realtime 알림 · SQL `77` 예정 |
 | 79 | [79_benefits-month-floor-roster-window-plan.md](./79_benefits-month-floor-roster-window-plan.md) | **Completed** · 조회 월 `2026-10`~당월 · 범위 밖→당월 · 관리 명단 `created_at`~퇴사 월 윈도우 · plan 75 활성 무관 노출 supersede |
+| 80 | [80_benefit-fitness-target-month-plan.md](./80_benefit-fitness-target-month-plan.md) | **Approved** · 체력증진비 Flex「해당 월」import 파싱 · `benefit_month` + generated `attributed_month` 귀속 월 집계 · 두 화면 해당 월 표시 · SQL `79` (dev만) |
 
 ## 에이전트 참조
 
