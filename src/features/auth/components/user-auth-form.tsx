@@ -25,7 +25,11 @@ const AUTH_STATUS_MESSAGES = {
 
 const AUTH_ERROR_MESSAGES = {
   google_oauth_start_failed: 'Google 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
-  google_oauth_callback_failed: 'Google 로그인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+  google_oauth_callback_failed: 'Google 로그인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+  google_tasks_scope_required:
+    'Google Tasks 권한이 필수입니다. 권한을 허용하지 않으면 WakeOne을 이용할 수 없습니다.',
+  google_tasks_connection_failed:
+    'Google Tasks 연결에 실패했습니다. Google 로그인을 다시 시도해 주세요.'
 } as const;
 
 function shouldShowAccountDisabledToast(searchParams: {
@@ -74,11 +78,8 @@ function UserAuthFormFields() {
     }
 
     const authError = searchParams.get('authError');
-    if (
-      authError === 'google_oauth_start_failed' ||
-      authError === 'google_oauth_callback_failed'
-    ) {
-      notifyError(AUTH_ERROR_MESSAGES[authError]);
+    if (authError && authError in AUTH_ERROR_MESSAGES) {
+      notifyError(AUTH_ERROR_MESSAGES[authError as keyof typeof AUTH_ERROR_MESSAGES]);
     }
   }, [searchParams]);
 

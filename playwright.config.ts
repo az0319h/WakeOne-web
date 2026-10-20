@@ -46,9 +46,14 @@ const isWalletBalanceEmailE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/wallet-balance-email')
 );
 
-const isGoogleTasksE2eRun = process.argv.some((arg) =>
-  arg.replace(/\\/g, '/').includes('e2e/google-tasks')
-);
+const isGoogleTasksE2eRun = process.argv.some((arg) => {
+  const normalized = arg.replace(/\\/g, '/');
+  return (
+    normalized.includes('e2e/google-tasks') ||
+    normalized.includes('e2e/kanban') ||
+    normalized.includes('google-tasks-activity-log')
+  );
+});
 
 const isGoogleAuthPendingNotifE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('pending-admin-notifications')

@@ -12,7 +12,8 @@ export const KBAR_NAV_SYNONYMS: Record<string, string> = {
   '내 계약서': 'my contracts contract 계약서 mc my-contracts',
   '식대 카드': 'wallet money 잔액 식대 meal wl',
   알림: 'notifications notification 알림함 nt',
-  '활동 로그': 'logs activity audit 감사 log lg'
+  '활동 로그': 'logs activity audit 감사 log lg',
+  칸반: 'kanban tasks 할일 할 일 kb'
 };
 
 export function getKbarNavKeywords(title: string, groupLabel: string): string {

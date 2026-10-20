@@ -1,6 +1,5 @@
 export const DISABLED_DASHBOARD_PATHS = [
   '/dashboard/workspaces',
-  '/dashboard/kanban',
   '/dashboard/chat',
   '/dashboard/forms',
   '/dashboard/billing',

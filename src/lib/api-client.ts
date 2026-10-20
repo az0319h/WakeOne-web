@@ -9,7 +9,9 @@ function createRequestInit(options?: RequestInit): RequestInit {
   const isFormData =
     typeof FormData !== 'undefined' && options?.body instanceof FormData;
 
-  if (!isFormData && !headers.has('Content-Type')) {
+  const hasBody =
+    options?.body !== undefined && options?.body !== null && options?.body !== '';
+  if (!isFormData && hasBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 

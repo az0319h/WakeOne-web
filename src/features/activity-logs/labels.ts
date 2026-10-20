@@ -59,7 +59,18 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "support.comment_update": "CS 댓글 수정",
   "support.comment_delete": "CS 댓글 삭제",
   "google_tasks.connect": "Google Tasks 연결",
+  "google_tasks.connect_failed": "Google Tasks 연결 실패",
   "google_tasks.disconnect": "Google Tasks 연결 해제",
+  "google_tasks.tasklist.create": "Google Tasks 목록 생성",
+  "google_tasks.tasklist.update": "Google Tasks 목록 수정",
+  "google_tasks.tasklist.delete": "Google Tasks 목록 삭제",
+  "google_tasks.tasklist.clear_completed": "Google Tasks 완료 항목 삭제",
+  "google_tasks.task.create": "Google Tasks 할 일 생성",
+  "google_tasks.task.update": "Google Tasks 할 일 수정",
+  "google_tasks.task.delete": "Google Tasks 할 일 삭제",
+  "google_tasks.task.complete": "Google Tasks 할 일 완료",
+  "google_tasks.task.uncomplete": "Google Tasks 할 일 완료 취소",
+  "google_tasks.task.move": "Google Tasks 할 일 이동",
 };
 
 export const METADATA_LABELS: Record<string, string> = {
