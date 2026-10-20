@@ -29,6 +29,7 @@ import type { KanbanBoardTask } from '../utils/board-tasks';
 import { AddGoogleTaskDialog } from './add-google-task-dialog';
 import { GoogleTaskCard } from './google-task-card';
 import { GoogleTasksColumnEmpty } from './google-tasks-column-empty';
+import { RenameTasklistDialog } from './rename-tasklist-dialog';
 
 interface GoogleTasksColumnProps
   extends Omit<React.ComponentProps<typeof KanbanColumn>, 'children'> {
@@ -45,6 +46,7 @@ export function GoogleTasksColumn({
   className,
   ...props
 }: GoogleTasksColumnProps) {
+  const [renameOpen, setRenameOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -108,6 +110,12 @@ export function GoogleTasksColumn({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align='end'>
+                <DropdownMenuItem
+                  onSelect={() => setRenameOpen(true)}
+                  data-testid='kanban-rename-tasklist-menu-item'
+                >
+                  이름 바꾸기
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={completedCount === 0}
                   onSelect={() => setClearOpen(true)}
@@ -185,6 +193,13 @@ export function GoogleTasksColumn({
           </CollapsibleContent>
         </Collapsible>
       </KanbanColumn>
+
+      <RenameTasklistDialog
+        tasklistId={tasklist.id}
+        title={tasklist.title}
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+      />
 
       <AlertModal
         isOpen={clearOpen}
