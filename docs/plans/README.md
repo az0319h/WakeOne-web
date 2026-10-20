@@ -115,6 +115,7 @@
 | 80 | [80_benefit-fitness-target-month-plan.md](./80_benefit-fitness-target-month-plan.md) | **Approved** · 체력증진비 Flex「해당 월」import 파싱 · `benefit_month` + generated `attributed_month` 귀속 월 집계 · 두 화면 해당 월 표시 · SQL `79` (dev만) |
 | 81 | [81_kanban-google-tasks-plan.md](./81_kanban-google-tasks-plan.md) | **Approved** · `/dashboard/kanban` Google Tasks 멀티리스트 칸반 · 로그인 Tasks scope · plan 52/54/57 supersede · SQL `83` |
 | 84 | [84_kanban-tasklist-rename-plan.md](./84_kanban-tasklist-rename-plan.md) | **Approved** · 칸반 tasklist 이름 수정 Dialog · plan 81 follow-up · SQL 없음 |
+| 85 | [85_kanban-task-live-reorder-plan.md](./85_kanban-task-live-reorder-plan.md) | **Approved** · 미완료 task DnD만 리얼타임(같은/다른 목록) · drop 시 move 1회 · plan 81 follow-up · SQL 없음 |
 
 ## 에이전트 참조
 

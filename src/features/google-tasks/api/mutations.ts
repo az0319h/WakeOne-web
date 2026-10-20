@@ -1,4 +1,5 @@
 import { mutationOptions, type QueryClient, type QueryKey } from '@tanstack/react-query';
+import { compareGoogleTaskPosition, googleTaskPositionBetween } from '@/lib/google-tasks/position';
 import type { GoogleTask } from '@/lib/google-tasks/types';
 import { notifyError } from '@/lib/notify';
 import { getQueryClient } from '@/lib/query-client';
@@ -17,6 +18,7 @@ import {
 import type {
   CreateTasklistPayload,
   CreateTaskPayload,
+  GoogleTasksTaskResponse,
   GoogleTasksTasksResponse,
   MoveTaskPayload,
   UpdateTaskPayload,
@@ -34,8 +36,23 @@ function invalidateGoogleTasks() {
   getQueryClient().invalidateQueries({ queryKey: googleTasksKeys.all });
 }
 
+/** move는 출발·도착 목록만 다시 불러온다 (전체 목록·tasklists 재조회 생략). */
+function invalidateMovedTasklists(payload: MoveTaskPayload) {
+  const queryClient = getQueryClient();
+  const destinationId = payload.destinationTasklistId ?? payload.tasklistId;
+  for (const tasklistId of new Set([payload.tasklistId, destinationId])) {
+    queryClient.invalidateQueries({ queryKey: googleTasksKeys.tasks(tasklistId) });
+  }
+}
+
 function mutationErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback;
+  if (error instanceof Error && error.message) {
+    if (error.message.startsWith('API error:')) {
+      return fallback;
+    }
+    return error.message;
+  }
+  return fallback;
 }
 
 function readShowCompleted(queryKey: QueryKey) {
@@ -143,6 +160,20 @@ function applyTaskPatch(
   });
 }
 
+function optimisticMovePosition(
+  destinationTasks: GoogleTask[],
+  parent: string | undefined,
+  previousId: string | undefined
+): string {
+  const siblings = destinationTasks
+    .filter((task) => (task.parent ?? undefined) === parent)
+    .sort(compareGoogleTaskPosition);
+  const previousIndex = previousId ? siblings.findIndex((task) => task.id === previousId) : -1;
+  const previousPosition = previousIndex >= 0 ? (siblings[previousIndex]?.position ?? '') : '';
+  const nextPosition = siblings[previousIndex + 1]?.position || null;
+  return googleTaskPositionBetween(previousPosition, nextPosition);
+}
+
 function applyMove(queryClient: QueryClient, payload: MoveTaskPayload) {
   const sourceId = payload.tasklistId;
   const destinationId = payload.destinationTasklistId ?? payload.tasklistId;
@@ -162,8 +193,13 @@ function applyMove(queryClient: QueryClient, payload: MoveTaskPayload) {
     const previousIndex = destinationTasks.findIndex((task) => task.id === payload.previous);
     insertAt = previousIndex >= 0 ? previousIndex + 1 : destinationTasks.length;
   }
-  const moved =
+  const reparented =
     payload.parent !== undefined ? { ...moving, parent: payload.parent || undefined } : moving;
+  // The board sorts by `position`, so the optimistic row needs one that lands between its new neighbors.
+  const moved = {
+    ...reparented,
+    position: optimisticMovePosition(destinationTasks, reparented.parent, payload.previous)
+  };
   destinationTasks.splice(insertAt, 0, moved);
   writeTaskList(queryClient, sourceId, sourceId === destinationId ? destinationTasks : sourceTasks);
   if (sourceId !== destinationId) {
@@ -301,10 +337,19 @@ export const moveGoogleTaskMutation = mutationOptions({
     applyMove(queryClient, payload);
     return { snapshot } satisfies GoogleTasksMutationContext;
   },
+  onSuccess: (response: GoogleTasksTaskResponse, payload) => {
+    const destinationId = payload.destinationTasklistId ?? payload.tasklistId;
+    applyTaskPatch(getQueryClient(), destinationId, payload.taskId, (task) => ({
+      ...task,
+      ...response.task
+    }));
+  },
   onError: (error, _variables, context) => {
     rollbackTaskMutation(context, '할 일 이동에 실패했습니다.', error);
   },
-  onSettled: invalidateGoogleTasks
+  onSettled: (_data, _error, payload) => {
+    invalidateMovedTasklists(payload);
+  }
 });
 
 export const clearCompletedGoogleTasksMutation = mutationOptions({

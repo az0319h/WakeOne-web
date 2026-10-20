@@ -214,7 +214,11 @@ export const googleTasksMockStore = {
       task.position = position;
       destTasks.splice(prevIndex + 1, 0, task);
     } else {
-      task.position = `${Date.now()}`;
+      const firstPosition = destTasks[0]?.position;
+      task.position =
+        firstPosition !== undefined && firstPosition !== ''
+          ? ` ${firstPosition}`
+          : '00000';
       destTasks.unshift(task);
     }
     store.tasksByList.set(destListId, destTasks);
