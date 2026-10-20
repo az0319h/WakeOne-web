@@ -51,7 +51,18 @@ export type ActivityAction =
   | "support.comment_update"
   | "support.comment_delete"
   | "google_tasks.connect"
-  | "google_tasks.disconnect";
+  | "google_tasks.connect_failed"
+  | "google_tasks.disconnect"
+  | "google_tasks.tasklist.create"
+  | "google_tasks.tasklist.update"
+  | "google_tasks.tasklist.delete"
+  | "google_tasks.tasklist.clear_completed"
+  | "google_tasks.task.create"
+  | "google_tasks.task.update"
+  | "google_tasks.task.delete"
+  | "google_tasks.task.complete"
+  | "google_tasks.task.uncomplete"
+  | "google_tasks.task.move";
 
 export type ActivityTargetType =
   | "user"
@@ -139,7 +150,12 @@ export type ActivityLogMetadata = {
   failed_count?: number;
   blocked_count?: number;
   skipped_count?: number;
+  deleted_count?: number;
   google_email?: string;
+  tasklist_id?: string;
+  task_id?: string;
+  parent_task_id?: string;
+  previous_tasklist_id?: string;
   approval_source?: string;
   rejection_reason?: string;
   birthday_set?: boolean;

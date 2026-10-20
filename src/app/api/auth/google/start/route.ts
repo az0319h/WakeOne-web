@@ -25,9 +25,10 @@ export async function GET(request: NextRequest) {
     provider: 'google',
     options: {
       redirectTo: callbackUrl.toString(),
+      scopes: 'https://www.googleapis.com/auth/tasks',
       queryParams: {
         access_type: 'offline',
-        prompt: 'select_account'
+        prompt: 'consent'
       }
     }
   });
