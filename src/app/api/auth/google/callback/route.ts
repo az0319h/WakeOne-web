@@ -12,6 +12,7 @@ import type { AuthProfile } from '@/features/auth/api/types';
 import { insertUserApprovalRequestAdminNotifications } from '@/features/notifications/api/fan-out.server';
 import { ACCOUNT_DISABLED_FLASH_COOKIE } from '@/lib/auth/account-disabled-flash';
 import { isUserBannedOAuthSignal } from '@/lib/auth/supabase-oauth-error';
+import { syncGoogleTasksConnectionOnLogin } from '@/features/google-tasks/api/connection.server';
 import { createClient } from '@/lib/supabase/server';
 
 const HTTP_PATH = '/api/auth/google/callback';
@@ -82,6 +83,29 @@ export async function GET(request: NextRequest) {
 
     if (isUserBannedOAuthSignal(oauthErrorCode, oauthErrorDescription)) {
       return withRequestId(redirectToSignIn(request, { accountDisabled: '1' }), requestId);
+    }
+
+    if (oauthError === 'access_denied') {
+      await recordActivityLog({
+        requestId,
+        ...ANONYMOUS_ACTOR,
+        action: 'google_tasks.connect_failed',
+        targetType: 'google_tasks',
+        targetUserId: null,
+        targetLabel: 'google_oauth',
+        httpMethod: 'GET',
+        httpPath: HTTP_PATH,
+        httpStatus: 400,
+        metadata: buildErrorMetadata(
+          'validation',
+          'Google Tasks 권한이 필요합니다. 권한을 허용하지 않으면 WakeOne을 이용할 수 없습니다.'
+        )
+      });
+
+      return withRequestId(
+        redirectToSignIn(request, { authError: 'google_tasks_scope_required' }),
+        requestId
+      );
     }
 
     await recordActivityLog({
@@ -199,18 +223,69 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles')
       .select(
-        'user_id, email, full_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, rank'
+        'user_id, email, full_name, phone, birthday, system_role, password_set_at, status, avatar_url, affiliation, rank, google_email, google_display_name'
       )
       .eq('user_id', user.id)
       .maybeSingle();
 
+    const actor =
+      profile
+        ? actorFromProfile(profile as AuthProfile)
+        : {
+            actorUserId: user.id,
+            actorEmail: googleEmail || 'unknown',
+            actorDisplayName: googleDisplayName
+          };
+
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+
+    const tasksSync = await syncGoogleTasksConnectionOnLogin({
+      userId: user.id,
+      sessionGoogleEmail: googleEmail,
+      profileGoogleEmail: profileResult.google_email,
+      providerRefreshToken: session?.provider_refresh_token ?? null
+    });
+
+    if (!tasksSync.ok) {
+      await supabase.auth.signOut();
+      await recordActivityLog({
+        requestId,
+        ...actor,
+        action: 'google_tasks.connect_failed',
+        targetType: 'google_tasks',
+        targetUserId: user.id,
+        targetLabel,
+        httpMethod: 'GET',
+        httpPath: HTTP_PATH,
+        httpStatus: 500,
+        metadata: buildErrorMetadata('internal_error', tasksSync.message, {
+          google_email: googleEmail
+        })
+      });
+      return withRequestId(
+        redirectToSignIn(request, { authError: 'google_tasks_connection_failed' }),
+        requestId
+      );
+    }
+
     await recordActivityLog({
       requestId,
-      ...(profile ? actorFromProfile(profile as AuthProfile) : {
-        actorUserId: user.id,
-        actorEmail: googleEmail || 'unknown',
-        actorDisplayName: googleDisplayName
-      }),
+      ...actor,
+      action: 'google_tasks.connect',
+      targetType: 'google_tasks',
+      targetUserId: user.id,
+      targetLabel,
+      httpMethod: 'GET',
+      httpPath: HTTP_PATH,
+      httpStatus: 302,
+      metadata: { google_email: tasksSync.googleEmail }
+    });
+
+    await recordActivityLog({
+      requestId,
+      ...actor,
       action: 'auth.sign_in',
       targetType: 'auth',
       targetUserId: user.id,
