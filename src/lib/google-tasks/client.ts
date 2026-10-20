@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { fetchGoogleAccessToken } from './oauth';
+import { fetchGoogleAccessToken, invalidateGoogleAccessToken } from './oauth';
 import { googleTasksMockStore } from './mock-store';
 import type { GoogleTask, GoogleTaskList, GoogleTaskListResponse } from './types';
 import { GoogleTasksApiError as ApiError } from './types';
@@ -76,7 +76,17 @@ async function withAccessToken<T>(
   fn: (accessToken: string) => Promise<T>
 ): Promise<T> {
   const accessToken = await fetchGoogleAccessToken(ctx.encryptedRefreshToken);
-  return fn(accessToken);
+  try {
+    return await fn(accessToken);
+  } catch (error) {
+    // Cached token was revoked or expired early: refresh once and retry.
+    if (!(error instanceof ApiError) || error.status !== 401) {
+      throw error;
+    }
+    invalidateGoogleAccessToken(ctx.encryptedRefreshToken);
+    const freshToken = await fetchGoogleAccessToken(ctx.encryptedRefreshToken);
+    return fn(freshToken);
+  }
 }
 
 export async function listTasklists(ctx: GoogleTasksClientContext): Promise<GoogleTaskList[]> {

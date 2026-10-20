@@ -1,7 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DragCancelEvent, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type {
+  DragCancelEvent,
+  DragEndEvent,
+  DragMoveEvent,
+  DragOverEvent,
+  DragStartEvent
+} from '@dnd-kit/core';
+import { KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { Kanban, KanbanBoard as KanbanBoardPrimitive, KanbanOverlay } from '@/components/ui/kanban';
 import {
@@ -17,6 +24,13 @@ import {
   resolveMovePayloadFromColumnDiff,
   type KanbanBoardTask
 } from '../utils/board-tasks';
+import { reorderColumnsForCardMove, resolveColumnByPoint } from '../utils/card-drop';
+import {
+  findTaskListPlacement,
+  measureLiveColumns,
+  resolveLiveInsertIndexFromPointer,
+  type CardLiveDrag
+} from '../utils/card-live-shift';
 import { GoogleTasksColumn } from './google-tasks-column';
 import { GoogleTaskCard } from './google-task-card';
 import { NewTasklistDialog } from './new-tasklist-dialog';
@@ -48,6 +62,12 @@ export function GoogleTasksKanbanBoard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const dragSnapshotRef = useRef<Record<string, KanbanBoardTask[]> | null>(null);
   const columnDragRef = useRef(false);
+  const cardDragRef = useRef<CardLiveDrag | null>(null);
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor)
+  );
 
   const { data: tasklistsResponse } = useSuspenseQuery(googleTasklistsQueryOptions());
   const tasklists = tasklistsResponse.tasklists;
@@ -106,13 +126,15 @@ export function GoogleTasksKanbanBoard() {
     [displayOrder, tasksByListId]
   );
 
-  const [dragColumns, setDragColumns] = useState<Record<string, KanbanBoardTask[]> | null>(null);
-  const columns = dragColumns ?? serverColumns;
+  const [dragPreviewColumns, setDragPreviewColumns] =
+    useState<Record<string, KanbanBoardTask[]> | null>(null);
+  const columns = dragPreviewColumns ?? serverColumns;
   const columnsRef = useRef(columns);
   columnsRef.current = columns;
 
   useEffect(() => {
-    setDragColumns(null);
+    setDragPreviewColumns(null);
+    cardDragRef.current = null;
   }, [tasksDataKey, apiOrderKey]);
 
   const moveMutation = useMutation({
@@ -120,30 +142,23 @@ export function GoogleTasksKanbanBoard() {
   });
 
   useEffect(() => {
-    if (moveMutation.status === 'success' || moveMutation.status === 'error') {
-      setDragColumns(null);
+    if (moveMutation.status === 'error') {
+      setDragPreviewColumns(null);
     }
   }, [moveMutation.status, moveMutation.submittedAt]);
 
   const handleColumnsChange = useCallback((next: Record<string, KanbanBoardTask[]>) => {
-    if (columnDragRef.current) {
-      const keys = Object.keys(next);
-      columnsRef.current = withColumnKeyOrder(keys, next);
-      if (keys.join('|') !== displayOrderRef.current.join('|')) {
-        saveTasklistOrderToStorage(keys);
-        setDisplayOrder(keys);
-        setDragColumns(null);
-      }
+    if (!columnDragRef.current) {
       return;
     }
 
-    if (dragSnapshotRef.current === null) {
-      return;
+    const keys = Object.keys(next);
+    columnsRef.current = withColumnKeyOrder(keys, next);
+    if (keys.join('|') !== displayOrderRef.current.join('|')) {
+      saveTasklistOrderToStorage(keys);
+      setDisplayOrder(keys);
+      setDragPreviewColumns(null);
     }
-
-    const ordered = withColumnKeyOrder(displayOrderRef.current, next);
-    columnsRef.current = ordered;
-    setDragColumns(ordered);
   }, []);
 
   const restrictToBoard = useCallback(
@@ -157,30 +172,139 @@ export function GoogleTasksKanbanBoard() {
   }, [tasklists]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    dragSnapshotRef.current = columnsRef.current;
-    columnDragRef.current = isTasklistColumnId(columnsRef.current, String(event.active.id));
+    const columnsNow = columnsRef.current;
+    dragSnapshotRef.current = columnsNow;
+    const activeId = String(event.active.id);
+    const isColumn = isTasklistColumnId(columnsNow, activeId);
+    columnDragRef.current = isColumn;
+    if (isColumn) {
+      cardDragRef.current = null;
+      setDragPreviewColumns(null);
+      return;
+    }
+
+    const placement = findTaskListPlacement(columnsNow, activeId);
+    if (!placement) {
+      return;
+    }
+
+    const card = document.querySelector<HTMLElement>(
+      `[data-kanban-task-id="${CSS.escape(activeId)}"]`
+    );
+    const nextDrag: CardLiveDrag = {
+      activeId,
+      sourceListId: placement.listId,
+      fromIndex: placement.index,
+      destListId: placement.listId,
+      toIndex: placement.index,
+      height: card?.getBoundingClientRect().height ?? 56
+    };
+    cardDragRef.current = nextDrag;
+    setDragPreviewColumns(null);
   }, []);
+
+  const updateTaskDragPreview = useCallback(
+    (event: { active: DragMoveEvent['active'] }) => {
+      const snapshot = dragSnapshotRef.current;
+      const current = cardDragRef.current;
+      if (!snapshot || !current) {
+        return;
+      }
+
+      const translated = event.active.rect.current.translated;
+      if (!translated) {
+        return;
+      }
+
+      const pointerX = translated.left + translated.width / 2;
+      const pointerY = translated.top + translated.height / 2;
+      const destListId =
+        resolveColumnByPoint(measureLiveColumns(), { x: pointerX, y: pointerY }) ??
+        current.destListId;
+      const columnsForMeasure = columnsRef.current;
+      const toIndex = resolveLiveInsertIndexFromPointer(
+        columnsForMeasure,
+        current.activeId,
+        destListId,
+        pointerY
+      );
+
+      if (current.destListId === destListId && current.toIndex === toIndex) {
+        return;
+      }
+
+      const preview = reorderColumnsForCardMove(
+        snapshot,
+        current.activeId,
+        destListId,
+        toIndex
+      );
+      if (!preview) {
+        return;
+      }
+
+      cardDragRef.current = { ...current, destListId, toIndex };
+      const ordered = withColumnKeyOrder(displayOrderRef.current, preview);
+      columnsRef.current = ordered;
+      setDragPreviewColumns(ordered);
+    },
+    []
+  );
+
+  const handleDragMove = useCallback(
+    (event: DragMoveEvent) => {
+      if (columnDragRef.current) {
+        return;
+      }
+      updateTaskDragPreview(event);
+    },
+    [updateTaskDragPreview]
+  );
+
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      if (columnDragRef.current || !cardDragRef.current) {
+        return;
+      }
+      if (event.activatorEvent.cancelable) {
+        event.activatorEvent.preventDefault();
+      }
+      updateTaskDragPreview(event);
+    },
+    [updateTaskDragPreview]
+  );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const before = dragSnapshotRef.current;
       const wasColumnDrag = columnDragRef.current;
+      const liveDrag = cardDragRef.current;
+
+      if (!wasColumnDrag && liveDrag && event.activatorEvent.cancelable) {
+        event.activatorEvent.preventDefault();
+      }
+
       dragSnapshotRef.current = null;
+      cardDragRef.current = null;
       queueMicrotask(() => {
         columnDragRef.current = false;
       });
 
-      if (!before || wasColumnDrag) {
+      if (!before || wasColumnDrag || !liveDrag) {
+        setDragPreviewColumns(null);
         return;
       }
 
-      const activeId = String(event.active.id);
-      const payload = resolveMovePayloadFromColumnDiff(before, columnsRef.current, activeId);
+      const after = withColumnKeyOrder(displayOrderRef.current, columnsRef.current);
+      const payload = resolveMovePayloadFromColumnDiff(before, after, liveDrag.activeId);
       if (!payload) {
-        setDragColumns(null);
+        setDragPreviewColumns(null);
         return;
       }
 
+      const ordered = withColumnKeyOrder(displayOrderRef.current, after);
+      columnsRef.current = ordered;
+      setDragPreviewColumns(ordered);
       moveMutation.mutate(payload);
     },
     [moveMutation]
@@ -189,7 +313,8 @@ export function GoogleTasksKanbanBoard() {
   const handleDragCancel = useCallback((_event: DragCancelEvent) => {
     dragSnapshotRef.current = null;
     columnDragRef.current = false;
-    setDragColumns(null);
+    cardDragRef.current = null;
+    setDragPreviewColumns(null);
   }, []);
 
   if (tasklists.length === 0) {
@@ -211,8 +336,10 @@ export function GoogleTasksKanbanBoard() {
         onValueChange={handleColumnsChange}
         getItemValue={(item) => item.id}
         modifiers={[restrictToBoard]}
-        autoScroll={false}
+        sensors={sensors}
         onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
@@ -229,7 +356,7 @@ export function GoogleTasksKanbanBoard() {
             ))}
           </KanbanBoardPrimitive>
         </div>
-        <KanbanOverlay>
+        <KanbanOverlay dropAnimation={null}>
           {({ value, variant }) => {
             if (variant === 'column') {
               const tasklist = tasklistById.get(String(value));
@@ -262,7 +389,7 @@ export function GoogleTasksKanbanBoard() {
               return null;
             }
 
-            return <GoogleTaskCard task={task} tasklistId={tasklistId} />;
+            return <GoogleTaskCard overlay task={task} tasklistId={tasklistId} />;
           }}
         </KanbanOverlay>
       </Kanban>
