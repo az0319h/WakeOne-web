@@ -8,10 +8,12 @@ import type * as React from 'react';
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
 
+  const showDevtools = process.env.NEXT_PUBLIC_DISABLE_RQ_DEVTOOLS !== '1';
+
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools />
+      {showDevtools ? <ReactQueryDevtools /> : null}
     </QueryClientProvider>
   );
 }

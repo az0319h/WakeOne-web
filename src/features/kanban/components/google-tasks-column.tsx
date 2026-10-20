@@ -28,6 +28,7 @@ import { notifyError, notifySuccess } from '@/lib/notify';
 import type { KanbanBoardTask } from '../utils/board-tasks';
 import { AddGoogleTaskDialog } from './add-google-task-dialog';
 import { GoogleTaskCard } from './google-task-card';
+import { GoogleTaskDraggable } from './google-task-draggable';
 import { GoogleTasksColumnEmpty } from './google-tasks-column-empty';
 import { RenameTasklistDialog } from './rename-tasklist-dialog';
 
@@ -80,6 +81,7 @@ export function GoogleTasksColumn({
       <KanbanColumn
         value={value}
         {...props}
+        data-kanban-tasklist-id={tasklist.id}
         className={cn(
           'h-auto w-[320px] min-w-[320px] max-w-[320px] shrink-0 self-start !h-auto !w-[320px] !min-w-[320px] !max-w-[320px] !shrink-0',
           className
@@ -162,7 +164,7 @@ export function GoogleTasksColumn({
         ) : (
           <div className='flex flex-col gap-2 p-0.5'>
             {activeTasks.map((task) => (
-              <GoogleTaskCard key={task.id} task={task} tasklistId={tasklist.id} />
+              <GoogleTaskDraggable key={task.id} task={task} tasklistId={tasklist.id} />
             ))}
           </div>
         )}

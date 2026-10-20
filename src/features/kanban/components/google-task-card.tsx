@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
-import { KanbanItem, KanbanItemHandle } from '@/components/ui/kanban';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
@@ -24,10 +24,18 @@ import { EditGoogleTaskDialog } from './edit-google-task-dialog';
 const googleTaskCheckboxClassName =
   '!size-5 !rounded-full !border-muted-foreground/60 !bg-transparent !shadow-none dark:!bg-transparent data-[state=checked]:!border-blue-600 data-[state=checked]:!bg-transparent data-[state=checked]:!text-blue-600 dark:data-[state=checked]:!border-blue-400 dark:data-[state=checked]:!bg-transparent dark:data-[state=checked]:!text-blue-400';
 
-interface GoogleTaskCardProps extends Omit<React.ComponentProps<typeof KanbanItem>, 'value'> {
+export interface GoogleTaskDragHandleProps {
+  setActivatorNodeRef: (element: HTMLElement | null) => void;
+  listeners?: DraggableSyntheticListeners;
+  attributes?: DraggableAttributes;
+}
+
+interface GoogleTaskCardProps {
   task: KanbanBoardTask;
   tasklistId: string;
   completed?: boolean;
+  overlay?: boolean;
+  dragHandle?: GoogleTaskDragHandleProps;
 }
 
 interface GoogleTaskEditTargetProps {
@@ -74,12 +82,78 @@ function GoogleTaskEditTarget({ task, completed, onEdit }: GoogleTaskEditTargetP
   );
 }
 
+function GoogleTaskGripVisual() {
+  return (
+    <span className='inline-flex h-7 w-7 shrink-0 items-center justify-center' aria-hidden>
+      <Icons.gripVertical className='h-4 w-4' />
+    </span>
+  );
+}
+
+function GoogleTaskCardOverlay({ task }: { task: KanbanBoardTask }) {
+  const hasSubtasks = task.subtasks.length > 0;
+
+  return (
+    <div
+      className='bg-card pointer-events-none w-[296px] rounded-md border p-3 shadow-md'
+      data-testid='kanban-task-card-overlay'
+    >
+      <div className='flex items-start gap-2'>
+        <GoogleTaskGripVisual />
+        <Checkbox
+          checked={false}
+          disabled
+          className={googleTaskCheckboxClassName}
+          aria-hidden
+        />
+        <div className='min-w-0 flex-1 space-y-1'>
+          <span className='line-clamp-2 block text-sm font-medium'>{task.title}</span>
+          {task.due ? (
+            <time className='text-muted-foreground block font-mono text-xs whitespace-nowrap'>
+              {formatAbsoluteDateKo(task.due)}
+            </time>
+          ) : null}
+          {task.notes?.trim() ? (
+            <span className='text-muted-foreground line-clamp-3 block text-xs'>{task.notes}</span>
+          ) : null}
+          {hasSubtasks ? (
+            <div className='text-muted-foreground pt-1 text-xs'>
+              하위 할 일 {task.subtasks.length}개
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function GoogleTaskCard({
   task,
   tasklistId,
   completed = false,
-  ...props
+  overlay = false,
+  dragHandle
 }: GoogleTaskCardProps) {
+  if (overlay) {
+    return <GoogleTaskCardOverlay task={task} />;
+  }
+
+  return (
+    <GoogleTaskCardInteractive
+      task={task}
+      tasklistId={tasklistId}
+      completed={completed}
+      dragHandle={dragHandle}
+    />
+  );
+}
+
+function GoogleTaskCardInteractive({
+  task,
+  tasklistId,
+  completed = false,
+  dragHandle
+}: Omit<GoogleTaskCardProps, 'overlay'>) {
   const [editOpen, setEditOpen] = useState(false);
   const completeMutation = useMutation({
     ...completeGoogleTaskMutation
@@ -95,18 +169,19 @@ export function GoogleTaskCard({
   const content = (
     <div className='flex items-start gap-2'>
       {isCompleted ? null : (
-        <KanbanItemHandle asChild>
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon'
-            className='h-7 w-7 shrink-0'
-            aria-label={`${task.title} 카드 이동`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Icons.gripVertical className='h-4 w-4' />
-          </Button>
-        </KanbanItemHandle>
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon'
+          className='h-7 w-7 shrink-0 touch-none'
+          aria-label={`${task.title} 카드 이동`}
+          ref={dragHandle?.setActivatorNodeRef}
+          {...(dragHandle?.attributes ?? {})}
+          {...(dragHandle?.listeners ?? {})}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Icons.gripVertical className='h-4 w-4' />
+        </Button>
       )}
       <Checkbox
         checked={isCompleted}
@@ -164,12 +239,16 @@ export function GoogleTaskCard({
         >
           {content}
         </div>
+      ) : dragHandle ? (
+        content
       ) : (
-        <KanbanItem value={task.id} asChild {...props}>
-          <div className='bg-card rounded-md border p-3 shadow-xs' data-testid='kanban-task-card'>
-            {content}
-          </div>
-        </KanbanItem>
+        <div
+          className='bg-card rounded-md border p-3 shadow-xs'
+          data-testid='kanban-task-card'
+          data-kanban-task-id={task.id}
+        >
+          {content}
+        </div>
       )}
       <EditGoogleTaskDialog
         open={editOpen}

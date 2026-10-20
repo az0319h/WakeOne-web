@@ -1,5 +1,8 @@
 import type { GoogleTask } from '@/lib/google-tasks/types';
 import type { MoveTaskPayload } from '@/features/google-tasks/api/types';
+import { compareGoogleTaskPosition } from '@/lib/google-tasks/position';
+
+export { compareGoogleTaskPosition };
 
 export type KanbanBoardTask = GoogleTask & {
   subtasks: GoogleTask[];
@@ -7,22 +10,6 @@ export type KanbanBoardTask = GoogleTask & {
 
 export function isVisibleGoogleTask(task: GoogleTask): boolean {
   return task.hidden !== true;
-}
-
-/** Lexicographic order per Google Tasks API `position` field. */
-export function compareGoogleTaskPosition(a: GoogleTask, b: GoogleTask): number {
-  const posA = a.position ?? '';
-  const posB = b.position ?? '';
-  if (posA === posB) {
-    return 0;
-  }
-  if (!posA) {
-    return 1;
-  }
-  if (!posB) {
-    return -1;
-  }
-  return posA < posB ? -1 : 1;
 }
 
 function sortTasksByPosition(tasks: GoogleTask[]): GoogleTask[] {

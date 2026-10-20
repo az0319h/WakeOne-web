@@ -104,6 +104,57 @@ export async function submitNewTasklistDialog(page: Page, title: string) {
   await expect(page.getByText('새 목록이 추가되었습니다.')).toBeVisible({ timeout: 15_000 });
 }
 
+export function kanbanColumnLocator(page: Page, columnTitle: string) {
+  return page
+    .locator('[data-kanban-tasklist-id]')
+    .filter({
+      has: page.getByTestId('kanban-column-title').getByText(columnTitle, { exact: true })
+    })
+    .first();
+}
+
+export async function getActiveTaskTitlesInColumn(page: Page, columnTitle: string) {
+  const column = kanbanColumnLocator(page, columnTitle);
+  const cards = column.getByTestId('kanban-task-card');
+  const count = await cards.count();
+  const titles: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const titleLine = (await cards.nth(i).getByTestId('kanban-task-edit-trigger').innerText()).trim();
+    titles.push(titleLine);
+  }
+  return titles;
+}
+
+export function taskDragHandle(page: Page, taskTitle: string) {
+  return page
+    .getByTestId('kanban-task-card')
+    .filter({ hasText: taskTitle })
+    .getByRole('button', { name: `${taskTitle} 카드 이동` });
+}
+
+/** Pointer down on grip and move past dnd-kit activation distance (8px). */
+export async function beginTaskPointerDrag(page: Page, taskTitle: string) {
+  const handle = taskDragHandle(page, taskTitle);
+  await expect(handle).toBeVisible();
+  const box = await handle.boundingBox();
+  if (!box) {
+    throw new Error(`drag handle bounding box missing: ${taskTitle}`);
+  }
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 24, { steps: 6 });
+}
+
+export async function moveTaskPointer(page: Page, x: number, y: number) {
+  await page.mouse.move(x, y, { steps: 12 });
+}
+
+export async function endTaskPointerDrag(page: Page) {
+  await page.mouse.up();
+}
+
 export async function submitAddTaskDialog(
   page: Page,
   input: { title: string; notes?: string },

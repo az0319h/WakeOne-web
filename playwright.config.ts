@@ -114,6 +114,7 @@ export default defineConfig({
           timeout: 120_000,
           env: {
             ...process.env,
+            NEXT_PUBLIC_DISABLE_RQ_DEVTOOLS: '1',
             ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {}),
             ...(isDevProvisionE2eRun
               ? {
