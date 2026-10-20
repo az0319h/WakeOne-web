@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
-import { createTasklist, deleteAllTasklists } from '../kanban/helpers';
+import { createTasklist, deleteAllTasklists, deleteNonDefaultTasklists } from '../kanban/helpers';
 
 type ActivityLog = {
   request_id?: string;
@@ -57,6 +57,46 @@ test.describe('Google Tasks activity log API', () => {
         return logs.some(
           (log) => log.request_id === requestId && log.http_status === 400
         );
+      })
+      .toBe(true);
+  });
+
+  test('AC-04: tasklist update 2xx → x-request-id + google_tasks.tasklist.update', async ({
+    request
+  }) => {
+    await deleteNonDefaultTasklists(request);
+    const list = await createTasklist(request, 'API 목록 수정');
+
+    const response = await request.patch(`/api/google-tasks/tasklists/${list.id}`, {
+      data: { title: 'API 목록 수정 후' }
+    });
+    expect(response.status()).toBe(200);
+    const requestId = response.headers()['x-request-id'];
+    expect(requestId).toBeTruthy();
+
+    await expect
+      .poll(async () => {
+        const logs = await fetchLogs(request, 'google_tasks.tasklist.update');
+        return logs.some((log) => log.request_id === requestId && log.http_status === 200);
+      })
+      .toBe(true);
+  });
+
+  test('AC-05: empty title PATCH 400 + 동일 request id 4xx 로그', async ({ request }) => {
+    await deleteNonDefaultTasklists(request);
+    const list = await createTasklist(request, 'API 빈 제목');
+
+    const response = await request.patch(`/api/google-tasks/tasklists/${list.id}`, {
+      data: { title: '' }
+    });
+    expect(response.status()).toBe(400);
+    const requestId = response.headers()['x-request-id'];
+    expect(requestId).toBeTruthy();
+
+    await expect
+      .poll(async () => {
+        const logs = await fetchLogs(request, 'google_tasks.tasklist.update');
+        return logs.some((log) => log.request_id === requestId && log.http_status === 400);
       })
       .toBe(true);
   });

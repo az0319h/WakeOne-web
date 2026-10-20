@@ -3,10 +3,13 @@ import {
   createTask,
   createTasklist,
   deleteAllTasklists,
+  deleteNonDefaultTasklists,
   fetchTasklists,
   gotoKanban,
+  openRenameTasklistDialog,
   submitAddTaskDialog,
-  submitNewTasklistDialog
+  submitNewTasklistDialog,
+  submitRenameTasklistDialog
 } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
@@ -190,5 +193,69 @@ test.describe('칸반 CUD · DnD · 완료', () => {
     await gotoKanban(page);
     await expect(page.getByTestId('kanban-subtask-row').getByText('하위 항목')).toBeVisible();
     await expect(page.getByTestId('kanban-add-subtask-trigger')).toHaveCount(0);
+  });
+});
+
+test.describe('칸반 목록 이름 바꾸기', () => {
+  test.describe.configure({ mode: 'serial' });
+  test.use({ storageState: 'e2e/.auth/user.json' });
+
+  test('AC-01: 이름 바꾸기 Dialog로 열 제목 수정 · refetch 유지', async ({ page, request }) => {
+    await deleteNonDefaultTasklists(request);
+    const lists = await fetchTasklists(request);
+    const workList = lists.find((item) => item.title === '업무') ?? (await createTasklist(request, '업무'));
+    await gotoKanban(page);
+    await expect(page.getByTestId('kanban-column-title').filter({ hasText: /^업무$/ })).toBeVisible();
+
+    await submitRenameTasklistDialog(page, workList.title, '업무-수정');
+    await expect(page.getByTestId('kanban-column-title').filter({ hasText: /^업무-수정$/ })).toBeVisible();
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: '칸반' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('kanban-column-title').filter({ hasText: /^업무-수정$/ })).toBeVisible();
+  });
+
+  test('AC-02: 빈/공백 제목은 제출 차단 · 열 제목 불변', async ({ page, request }) => {
+    await deleteNonDefaultTasklists(request);
+    const lists = await fetchTasklists(request);
+    const target = lists[0] ?? (await createTasklist(request, '검증열'));
+    await gotoKanban(page);
+    const originalTitle = target.title;
+    await expect(page.getByTestId('kanban-column-title').filter({ hasText: originalTitle })).toBeVisible();
+
+    const dialog = await openRenameTasklistDialog(page, originalTitle);
+    await dialog.getByPlaceholder('예: 업무').fill('');
+    await dialog.getByRole('button', { name: '저장' }).click();
+    await expect(dialog.getByText('목록 제목을 입력해 주세요.')).toBeVisible();
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByPlaceholder('예: 업무').fill('   ');
+    await dialog.getByRole('button', { name: '저장' }).click();
+    await expect(dialog.getByText('목록 제목을 입력해 주세요.')).toBeVisible();
+    await expect(dialog).toBeVisible();
+    await expect(page.getByText('목록 이름을 변경했습니다.')).toHaveCount(0);
+    await dialog.getByRole('button', { name: '취소' }).click();
+    await expect(page.getByTestId('kanban-column-title').filter({ hasText: originalTitle })).toBeVisible();
+  });
+
+  test('AC-03: isDefault 목록 이름 변경 허용 · 삭제는 disabled', async ({ page, request }) => {
+    await deleteNonDefaultTasklists(request);
+    const lists = await fetchTasklists(request);
+    const defaultList = lists.find((item) => item.isDefault);
+    expect(defaultList, 'mock 기본 목록이 있어야 합니다').toBeTruthy();
+    await gotoKanban(page);
+    await expect(
+      page.getByTestId('kanban-column-title').filter({ hasText: defaultList!.title })
+    ).toBeVisible();
+
+    await submitRenameTasklistDialog(page, defaultList!.title, '기본-수정');
+    await expect(page.getByTestId('kanban-column-title').filter({ hasText: '기본-수정' })).toBeVisible();
+
+    await page.getByRole('button', { name: '기본-수정 목록 메뉴' }).click();
+    const deleteItem = page.getByTestId('kanban-delete-tasklist-menu-item-disabled');
+    await expect(deleteItem).toBeVisible();
+    await expect(deleteItem).toHaveText('기본 목록은 삭제할 수 없음');
+    await expect(deleteItem).toBeDisabled();
+    await expect(page.getByTestId('kanban-rename-tasklist-menu-item')).toBeEnabled();
   });
 });

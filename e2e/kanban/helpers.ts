@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
-export type GoogleTaskList = { id: string; title: string };
+export type GoogleTaskList = { id: string; title: string; isDefault?: boolean };
 export type GoogleTask = {
   id: string;
   title: string;
@@ -66,6 +66,33 @@ export async function openKanbanFromSidebar(page: Page) {
   await page.goto('/dashboard/overview', { waitUntil: 'domcontentloaded' });
   await page.getByRole('link', { name: '칸반' }).click();
   await expect(page).toHaveURL('/dashboard/kanban');
+}
+
+export async function deleteNonDefaultTasklists(request: APIRequestContext) {
+  const tasklists = await fetchTasklists(request);
+  for (const tasklist of tasklists) {
+    if (tasklist.isDefault) {
+      continue;
+    }
+    const response = await request.delete(`/api/google-tasks/tasklists/${tasklist.id}`);
+    expect(response.status()).toBe(200);
+  }
+}
+
+export async function openRenameTasklistDialog(page: Page, currentTitle: string) {
+  await page.getByRole('button', { name: `${currentTitle} 목록 메뉴` }).click();
+  await page.getByTestId('kanban-rename-tasklist-menu-item').click();
+  const dialog = page.getByRole('dialog', { name: '이름 바꾸기' });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+export async function submitRenameTasklistDialog(page: Page, currentTitle: string, nextTitle: string) {
+  const dialog = await openRenameTasklistDialog(page, currentTitle);
+  await dialog.getByPlaceholder('예: 업무').fill(nextTitle);
+  await dialog.getByRole('button', { name: '저장' }).click();
+  await expect(page.getByText('목록 이름을 변경했습니다.')).toBeVisible({ timeout: 15_000 });
+  await expect(dialog).toBeHidden();
 }
 
 export async function submitNewTasklistDialog(page: Page, title: string) {
