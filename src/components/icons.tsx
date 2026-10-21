@@ -95,7 +95,25 @@ import {
   IconRestore,
   IconRotateClockwise,
   IconZoomIn,
-  IconZoomOut
+  IconZoomOut,
+  IconStarFilled,
+  IconCurrencyWon,
+  IconLink,
+  IconList,
+  IconListNumbers,
+  IconStrikethrough,
+  IconAlignLeft,
+  IconAlignCenter,
+  IconAlignRight,
+  IconTable,
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconPrinter,
+  IconCopy,
+  IconRefresh,
+  IconBan,
+  IconLinkOff,
+  IconArrowsSort,
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -260,5 +278,26 @@ export const Icons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
-  moreHorizontal: IconDots
+  moreHorizontal: IconDots,
+
+  // Workflow (plan 88)
+  star: IconStar,
+  starFilled: IconStarFilled,
+  currencyWon: IconCurrencyWon,
+  link: IconLink,
+  linkOff: IconLinkOff,
+  list: IconList,
+  listNumbers: IconListNumbers,
+  strikethrough: IconStrikethrough,
+  alignLeft: IconAlignLeft,
+  alignCenter: IconAlignCenter,
+  alignRight: IconAlignRight,
+  table: IconTable,
+  undo: IconArrowBackUp,
+  redo: IconArrowForwardUp,
+  printer: IconPrinter,
+  copy: IconCopy,
+  refresh: IconRefresh,
+  ban: IconBan,
+  sort: IconArrowsSort
 };

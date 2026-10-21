@@ -125,6 +125,13 @@ export function NotificationInfiniteList({
       route = `/dashboard/support?support=${notification.metadata.support_request_id}`;
     }
 
+    if (
+      actionId === 'view-workflow' &&
+      typeof notification?.metadata.workflow_document_id === 'string'
+    ) {
+      route = `/dashboard/workflow?doc=${encodeURIComponent(notification.metadata.workflow_document_id)}`;
+    }
+
     if (!route) return;
 
     if (!readOnly) {

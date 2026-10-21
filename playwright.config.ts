@@ -67,6 +67,14 @@ const isAttachmentsE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/attachments')
 );
 
+const isQuickRequestE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/quick-request')
+);
+
+const isWorkflowE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/workflow')
+);
+
 if (isDevProvisionE2eRun) {
   process.env.WAKEONE_ENV = 'development';
   process.env.NEXT_PUBLIC_WAKEONE_ENV = 'development';
@@ -74,6 +82,10 @@ if (isDevProvisionE2eRun) {
 
 if (isGoogleTasksE2eRun) {
   process.env.E2E_GOOGLE_TASKS_MOCK = '1';
+}
+
+if (isQuickRequestE2eRun) {
+  process.env.E2E_SLOW_QUICK_REQUEST = '1';
 }
 
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
@@ -93,7 +105,7 @@ export default defineConfig({
     isGoogleTasksE2eRun ||
     isGoogleAuthPendingNotifE2eRun ||
     isDevProvisionE2eRun ||
-    isAttachmentsE2eRun
+    isAttachmentsE2eRun || isQuickRequestE2eRun || isWorkflowE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -116,6 +128,7 @@ export default defineConfig({
             ...process.env,
             NEXT_PUBLIC_DISABLE_RQ_DEVTOOLS: '1',
             ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {}),
+            ...(isQuickRequestE2eRun ? { E2E_SLOW_QUICK_REQUEST: '1' } : {}),
             ...(isDevProvisionE2eRun
               ? {
                   WAKEONE_ENV: 'development',
@@ -201,6 +214,7 @@ export default defineConfig({
         /benefits\/my-benefits-url-filters\.spec\.ts$/,
         /attachments\//,
         /live-users\//,
+        /[\\/]workflow[\\/]/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
         /wallet-balance-email\/balance-email-logs-rbac\.spec\.ts$/,
@@ -273,6 +287,18 @@ export default defineConfig({
         /announcements\/notify-fanout\.spec\.ts$/
       ],
       fullyParallel: false
+    },
+    {
+      // plan 88 — 워크플로우: 여러 storageState(user·user2·hr-benefits·admin) + 전역 기본 결재선 공유 → 직렬
+      name: 'chromium-workflow',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2', 'setup-hr-benefits'],
+      testMatch: [/[\\/]workflow[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 120_000
     },
     {
       name: 'chromium-attachments',
@@ -348,6 +374,7 @@ export default defineConfig({
       testIgnore: [
         /profile-name-live-display\//,
         /^notifications\//,
+        /[\\/]workflow[\\/]/,
         ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : []),
         ...(isDevProvisionE2eRun ? [] : [/users\/dev-provision\.api\.spec\.ts$/])
       ]

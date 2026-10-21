@@ -3,7 +3,11 @@ import type { NextRequest } from "next/server";
 import {
   getAdminAccessDeniedParam,
   isAdminDashboardPath,
-  isBenefitsAdminDashboardPath
+  isBenefitsAdminDashboardPath,
+  isWorkflowAdminDashboardPath,
+  isWorkflowPrintPath,
+  WORKFLOW_ADMIN_ACCESS_DENIED_KEY,
+  WORKFLOW_ADMIN_DENIED_REDIRECT
 } from '@/config/admin-routes';
 import { canAccessBenefitsAdmin } from '@/features/auth/api/benefits-access.server';
 import { isDisabledDashboardPath } from "@/config/disabled-routes";
@@ -92,13 +96,28 @@ function jsonWithCookies(
   return jsonResponse;
 }
 
+/** plan 88 — /dashboard/workflow/settings: 시스템 관리자가 아니면 workflow_admins 본인 행(RLS: 본인 행 select 허용) 확인 */
+async function hasWorkflowAdminRow(
+  supabase: Awaited<ReturnType<typeof updateSession>>["supabase"],
+  userId: string,
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { data, error } = await supabase
+    .from("workflow_admins")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return !error && Boolean(data);
+}
+
 function redirectWithAccessDeniedFlash(
   request: NextRequest,
   sessionResponse: NextResponse,
   key: string,
+  redirectPath = "/dashboard/overview",
 ) {
   const overviewUrl = request.nextUrl.clone();
-  overviewUrl.pathname = "/dashboard/overview";
+  overviewUrl.pathname = redirectPath;
   overviewUrl.search = "";
   const redirectResponse = NextResponse.redirect(overviewUrl);
   copyCookies(sessionResponse, redirectResponse);
@@ -145,13 +164,14 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const needsSession = isDashboardPath(pathname) || isAuthPath(pathname);
+  const isPrintPath = isWorkflowPrintPath(pathname);
+  const needsSession = isDashboardPath(pathname) || isAuthPath(pathname) || isPrintPath;
 
   if (!needsSession) {
     return NextResponse.next();
   }
 
-  const { response, user, profile } = await updateSession(request);
+  const { response, user, profile, supabase } = await updateSession(request);
 
   if (profile && profile.status !== "active") {
     if (isSignInPath(pathname)) {
@@ -210,7 +230,7 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
-  if (isDashboardPath(pathname)) {
+  if (isDashboardPath(pathname) || isPrintPath) {
     if (!user) {
       const signInUrl = request.nextUrl.clone();
       signInUrl.pathname = "/auth/sign-in";
@@ -237,6 +257,20 @@ export async function middleware(request: NextRequest) {
     if (isAdminDashboardPath(pathname) && profile?.system_role !== 'admin') {
       const accessDenied = getAdminAccessDeniedParam(pathname) ?? 'users';
       return redirectWithAccessDeniedFlash(request, response, accessDenied);
+    }
+
+    if (
+      isWorkflowAdminDashboardPath(pathname) &&
+      user &&
+      profile?.system_role !== 'admin' &&
+      !(await hasWorkflowAdminRow(supabase, user.id))
+    ) {
+      return redirectWithAccessDeniedFlash(
+        request,
+        response,
+        WORKFLOW_ADMIN_ACCESS_DENIED_KEY,
+        WORKFLOW_ADMIN_DENIED_REDIRECT,
+      );
     }
   }
 

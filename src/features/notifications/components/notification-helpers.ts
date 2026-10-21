@@ -12,7 +12,8 @@ export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-contracts': '/dashboard/contracts',
   'view-my-contracts': '/dashboard/my-contracts',
   'view-benefits': '/dashboard/benefits',
-  'view-my-benefits': '/dashboard/my-benefits'
+  'view-my-benefits': '/dashboard/my-benefits',
+  'view-workflow': '/dashboard/workflow'
 };
 
 export function getNotificationActions(
@@ -119,6 +120,17 @@ export function getNotificationActions(
       {
         id: 'view-support',
         label: '문의 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (notification.type.startsWith('workflow.')) {
+    return [
+      {
+        id: 'view-workflow',
+        label: '문서 보기',
         type: 'redirect',
         style: 'primary'
       }

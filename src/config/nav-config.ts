@@ -52,6 +52,41 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: '퀵',
+    items: [
+      {
+        title: '퀵 요청하기',
+        url: '/dashboard/quick/request',
+        icon: 'send',
+        shortcut: ['q', 'r'],
+        isActive: false,
+        items: []
+      }
+    ]
+  },
+  {
+    label: '워크플로우',
+    items: [
+      {
+        title: '문서함',
+        url: '/dashboard/workflow',
+        icon: 'clipboardText',
+        shortcut: ['w', 'f'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: '워크플로우 설정',
+        url: '/dashboard/workflow/settings',
+        icon: 'settings',
+        shortcut: ['w', 's'],
+        isActive: false,
+        access: { hasWorkflowAdminNav: true },
+        items: []
+      }
+    ]
+  },
+  {
     label: 'HR (인사)',
     items: [
       {

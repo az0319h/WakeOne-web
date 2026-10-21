@@ -1,5 +1,6 @@
 'use client';
 
+import type { AttachmentId } from '../api/types';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Carousel,
@@ -22,8 +23,8 @@ type AttachmentLightboxCarouselProps = {
   initialIndex: number;
   transform: ViewerTransform;
   onActiveIndexChange: (index: number) => void;
-  blobUrlByAttachmentId: Map<number, string>;
-  onBlobUrlChange: (attachmentId: number, blobUrl: string | null) => void;
+  blobUrlByAttachmentId: Map<AttachmentId, string>;
+  onBlobUrlChange: (attachmentId: AttachmentId, blobUrl: string | null) => void;
   onPdfPageInfoChange: (info: AttachmentPdfPageInfo) => void;
 };
 
@@ -69,7 +70,7 @@ export function AttachmentLightboxCarousel({
   }, [api, initialIndex, onActiveIndexChange]);
 
   const handleBlobUrlChange = useCallback(
-    (attachmentId: number, blobUrl: string | null) => {
+    (attachmentId: AttachmentId, blobUrl: string | null) => {
       onBlobUrlChange(attachmentId, blobUrl);
     },
     [onBlobUrlChange]

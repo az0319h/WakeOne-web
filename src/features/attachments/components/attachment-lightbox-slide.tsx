@@ -1,5 +1,6 @@
 'use client';
 
+import type { AttachmentId } from '../api/types';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
@@ -33,7 +34,7 @@ type AttachmentLightboxSlideProps = {
   isActive: boolean;
   transform: ViewerTransform;
   blobUrl: string | null;
-  onBlobUrlChange: (attachmentId: number, blobUrl: string | null) => void;
+  onBlobUrlChange: (attachmentId: AttachmentId, blobUrl: string | null) => void;
   onPdfPageInfoChange: (info: AttachmentPdfPageInfo) => void;
 };
 
