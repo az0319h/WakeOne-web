@@ -55,6 +55,7 @@ export async function updateSession(request: NextRequest) {
       response: NextResponse.next({ request }),
       user: null,
       profile: null as SessionProfileFlags | null,
+      supabase: null,
     };
   }
 
@@ -87,6 +88,7 @@ export async function updateSession(request: NextRequest) {
       response: clearInvalidAuthCookies(request),
       user: null,
       profile: null as SessionProfileFlags | null,
+      supabase: null,
     };
   }
 
@@ -116,5 +118,5 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  return { response: supabaseResponse, user: sessionUser, profile };
+  return { response: supabaseResponse, user: sessionUser, profile, supabase };
 }

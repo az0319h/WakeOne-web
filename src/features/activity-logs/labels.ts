@@ -75,6 +75,21 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "quick_request.note_update": "퀵 특이사항 수정",
   "quick_request.note_delete": "퀵 특이사항 삭제",
   "quick_request.recent_address_record": "퀵 최근 주소 기록",
+  "workflow.document_create": "워크플로우 문서 작성",
+  "workflow.document_update": "워크플로우 문서 수정",
+  "workflow.document_approve": "워크플로우 승인",
+  "workflow.document_decline": "워크플로우 반려",
+  "workflow.document_cancel": "워크플로우 문서 취소",
+  "workflow.approval_line_update": "워크플로우 결재선 변경",
+  "workflow.comment_create": "워크플로우 댓글",
+  "workflow.document_star": "워크플로우 중요 표시",
+  "workflow.attachment_upload": "워크플로우 첨부 업로드",
+  "workflow.attachment_delete": "워크플로우 첨부 삭제",
+  "workflow.draft_save": "워크플로우 임시저장",
+  "workflow.draft_delete": "워크플로우 임시저장 삭제",
+  "workflow.template_policy_update": "워크플로우 기본 결재선 변경",
+  "workflow.admin_grant": "워크플로우 관리자 지정",
+  "workflow.admin_revoke": "워크플로우 관리자 해제",
 };
 
 export const METADATA_LABELS: Record<string, string> = {
@@ -130,6 +145,22 @@ export const METADATA_LABELS: Record<string, string> = {
   approval_source: "승인 출처",
   rejection_reason: "거절 사유",
   affiliation: "소속",
+  document_id: "문서 ID",
+  document_code: "문서번호",
+  template_key: "양식",
+  step: "단계",
+  starred: "중요 표시",
+  changed_field_keys: "바뀐 항목",
+  attachment_count: "첨부 개수",
+};
+
+/** plan 88 — activity target_type 한국어 라벨 */
+export const WORKFLOW_TARGET_TYPE_LABELS: Record<string, string> = {
+  workflow_document: "워크플로우 문서",
+  workflow_draft: "워크플로우 임시저장",
+  workflow_attachment: "워크플로우 첨부",
+  workflow_template: "워크플로우 양식",
+  workflow_admin: "워크플로우 관리자",
 };
 
 export function isSupportCommentAction(action: ActivityAction): boolean {

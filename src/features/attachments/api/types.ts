@@ -1,12 +1,16 @@
+/** 첨부 id — 계약·공지는 number, 워크플로우(plan 88)는 uuid string */
+export type AttachmentId = number | string;
+
 export type LightboxSource =
   | { kind: 'contract'; parentId: number }
   | { kind: 'my-contract'; parentId: number }
-  | { kind: 'announcement'; parentId: number };
+  | { kind: 'announcement'; parentId: number }
+  | { kind: 'workflow'; parentId: string };
 
 export type AttachmentLightboxItemStatus = 'active' | 'soft_deleted';
 
 export type AttachmentLightboxItem = {
-  id: number;
+  id: AttachmentId;
   file_name: string;
   content_type: string | null;
   status?: AttachmentLightboxItemStatus;
@@ -14,9 +18,9 @@ export type AttachmentLightboxItem = {
 
 export type OpenAttachmentLightboxParams = {
   source: LightboxSource;
-  parentId: number;
+  parentId: AttachmentId;
   attachments: AttachmentLightboxItem[];
-  initialAttachmentId: number;
+  initialAttachmentId: AttachmentId;
 };
 
 export type AttachmentMediaType = 'pdf' | 'image';

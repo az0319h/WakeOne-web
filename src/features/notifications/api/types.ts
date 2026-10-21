@@ -20,7 +20,13 @@ export type NotificationType =
   | 'benefit.document_cancel_operations'
   | 'benefit.document_cancel_applicant'
   | 'benefit.document_restore_operations'
-  | 'benefit.document_restore_applicant';
+  | 'benefit.document_restore_applicant'
+  | 'workflow.approval_requested'
+  | 'workflow.referrer_requested'
+  | 'workflow.completed'
+  | 'workflow.declined'
+  | 'workflow.canceled'
+  | 'workflow.comment_created';
 
 export type NotificationStatus = 'unread' | 'read';
 
@@ -48,7 +54,13 @@ export type NotificationMetadata = {
     | 'benefit.document_cancel_operations'
     | 'benefit.document_cancel_applicant'
     | 'benefit.document_restore_operations'
-    | 'benefit.document_restore_applicant';
+    | 'benefit.document_restore_applicant'
+    | 'workflow.approval_requested'
+    | 'workflow.referrer_requested'
+    | 'workflow.completed'
+    | 'workflow.declined'
+    | 'workflow.canceled'
+    | 'workflow.comment_created';
   benefit_document_id?: number;
   benefit_type?: 'book' | 'fitness' | 'education';
   applicant_user_id?: string;
@@ -80,6 +92,10 @@ export type NotificationMetadata = {
   target_user_id?: string;
   google_email?: string;
   google_display_name?: string | null;
+  /** plan 88 — 클릭 이동 `/dashboard/workflow?doc={workflow_document_id}` */
+  workflow_document_id?: string;
+  document_code?: string;
+  template_key?: string;
 };
 
 export type Notification = {

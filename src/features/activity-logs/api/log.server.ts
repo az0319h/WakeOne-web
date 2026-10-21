@@ -69,6 +69,13 @@ const METADATA_ALLOWLIST = new Set([
   "rejection_reason",
   "birthday_set",
   "affiliation",
+  "document_id",
+  "document_code",
+  "template_key",
+  "step",
+  "starred",
+  "changed_field_keys",
+  "attachment_count",
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -348,6 +355,23 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === "birthday_set" && typeof value === "boolean") {
       sanitized.birthday_set = value;
+      continue;
+    }
+
+    if ((key === "step" || key === "attachment_count") && typeof value === "number") {
+      (sanitized as Record<string, unknown>)[key] = value;
+      continue;
+    }
+
+    if (key === "starred" && typeof value === "boolean") {
+      sanitized.starred = value;
+      continue;
+    }
+
+    if (key === "changed_field_keys" && Array.isArray(value)) {
+      sanitized.changed_field_keys = value.filter(
+        (field): field is string => typeof field === "string",
+      );
       continue;
     }
 

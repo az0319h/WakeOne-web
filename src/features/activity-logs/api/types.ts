@@ -66,7 +66,22 @@ export type ActivityAction =
   | "quick_request.note_create"
   | "quick_request.note_update"
   | "quick_request.note_delete"
-  | "quick_request.recent_address_record";
+  | "quick_request.recent_address_record"
+  | "workflow.document_create"
+  | "workflow.document_update"
+  | "workflow.document_approve"
+  | "workflow.document_decline"
+  | "workflow.document_cancel"
+  | "workflow.approval_line_update"
+  | "workflow.comment_create"
+  | "workflow.document_star"
+  | "workflow.attachment_upload"
+  | "workflow.attachment_delete"
+  | "workflow.draft_save"
+  | "workflow.draft_delete"
+  | "workflow.template_policy_update"
+  | "workflow.admin_grant"
+  | "workflow.admin_revoke";
 
 export type ActivityTargetType =
   | "user"
@@ -80,7 +95,12 @@ export type ActivityTargetType =
   | "support_comment"
   | "google_tasks"
   | "quick_request_note"
-  | "quick_request_address";
+  | "quick_request_address"
+  | "workflow_document"
+  | "workflow_draft"
+  | "workflow_attachment"
+  | "workflow_template"
+  | "workflow_admin";
 
 export type ActivityLogErrorCode =
   | "unauthenticated"
@@ -100,7 +120,8 @@ export type ActivityLogErrorCode =
   | "internal_error"
   | "gone"
   | "duplicate_label"
-  | "limit_exceeded";
+  | "limit_exceeded"
+  | "conflict";
 
 export type ActivityLogMetadata = {
   error_code?: ActivityLogErrorCode;
@@ -169,6 +190,14 @@ export type ActivityLogMetadata = {
   birthday_set?: boolean;
   admin_profile?: boolean;
   affiliation?: string;
+  /** plan 88 — workflow allowlist (입력값·금액·계좌·댓글·사유·파일명 금지) */
+  document_id?: string;
+  document_code?: string;
+  template_key?: string;
+  step?: number;
+  starred?: boolean;
+  changed_field_keys?: string[];
+  attachment_count?: number;
 };
 
 export type ActivityLog = {
