@@ -10,8 +10,16 @@ interface ProfileAccountReadOnlyProps {
 export function ProfileAccountReadOnly({ profile }: ProfileAccountReadOnlyProps) {
   return (
     <div className='grid gap-4 sm:grid-cols-2'>
-      <ReadOnlyField label='이름' value={profile.full_name} />
-      <ReadOnlyField label='연락처' value={formatPhoneDisplay(profile.phone)} />
+      <ReadOnlyField
+        label='이름'
+        value={profile.full_name}
+        valueTestId='profile-readonly-full-name'
+      />
+      <ReadOnlyField
+        label='연락처'
+        value={formatPhoneDisplay(profile.phone)}
+        valueTestId='profile-readonly-phone'
+      />
       <ReadOnlyField label='생일' value={formatBirthdayDisplay(profile.birthday)} />
     </div>
   );

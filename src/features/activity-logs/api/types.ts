@@ -62,7 +62,11 @@ export type ActivityAction =
   | "google_tasks.task.delete"
   | "google_tasks.task.complete"
   | "google_tasks.task.uncomplete"
-  | "google_tasks.task.move";
+  | "google_tasks.task.move"
+  | "quick_request.note_create"
+  | "quick_request.note_update"
+  | "quick_request.note_delete"
+  | "quick_request.recent_address_record";
 
 export type ActivityTargetType =
   | "user"
@@ -74,7 +78,9 @@ export type ActivityTargetType =
   | "announcement"
   | "support_request"
   | "support_comment"
-  | "google_tasks";
+  | "google_tasks"
+  | "quick_request_note"
+  | "quick_request_address";
 
 export type ActivityLogErrorCode =
   | "unauthenticated"
@@ -92,7 +98,9 @@ export type ActivityLogErrorCode =
   | "cron_paused"
   | "safety_filter_blocked"
   | "internal_error"
-  | "gone";
+  | "gone"
+  | "duplicate_label"
+  | "limit_exceeded";
 
 export type ActivityLogMetadata = {
   error_code?: ActivityLogErrorCode;

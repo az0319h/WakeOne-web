@@ -18,6 +18,7 @@ type StepState = {
   count: number;
   goToNextStep: () => void;
   goToPrevStep: () => void;
+  goToStep: (step: number) => void;
   isCompleted: boolean;
 };
 
@@ -39,11 +40,19 @@ export function useFormStepper(schemas: ZodTypeAny[]) {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   }, []);
 
+  const goToStep = useCallback(
+    (stepNumber: number) => {
+      setCurrentStep(() => Math.min(Math.max(stepNumber, 1), stepCount));
+    },
+    [stepCount]
+  );
+
   const step: StepState = {
     value: currentStep,
     count: stepCount,
     goToNextStep,
     goToPrevStep,
+    goToStep,
     isCompleted: currentStep === stepCount
   };
 
@@ -93,6 +102,7 @@ export function useFormStepper(schemas: ZodTypeAny[]) {
     currentStep, // Current step number (1-based)
     isFirstStep, // Whether current step is the first step
     currentValidator, // Zod schema for current step
+    goToStep,
     triggerFormGroup, // Validate current step fields
     handleNextStepOrSubmit, // Handle next/submit action
     handleCancelOrBack // Handle back/cancel action

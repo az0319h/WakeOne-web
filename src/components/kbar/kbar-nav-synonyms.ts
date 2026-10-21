@@ -13,7 +13,8 @@ export const KBAR_NAV_SYNONYMS: Record<string, string> = {
   '식대 카드': 'wallet money 잔액 식대 meal wl',
   알림: 'notifications notification 알림함 nt',
   '활동 로그': 'logs activity audit 감사 log lg',
-  칸반: 'kanban tasks 할일 할 일 kb'
+  칸반: 'kanban tasks 할일 할 일 kb',
+  '퀵 요청하기': 'quick 퀵 배송 동방특송 delivery qr'
 };
 
 export function getKbarNavKeywords(title: string, groupLabel: string): string {
