@@ -266,6 +266,116 @@ async function cleanupGoogleTasksMockConnections() {
   }
 }
 
+// plan 87 — 퀵 요청 특이사항 칩 · 최근 주소 (fixture 계정 e2e 산출물)
+const FIXTURE_EMAILS = [
+  ...new Set(
+    [
+      process.env.E2E_ADMIN_EMAIL,
+      process.env.E2E_USER_EMAIL,
+      process.env.E2E_USER2_EMAIL,
+      'wakeone.ops@gmail.com',
+      '1234@naver.com',
+      '4321@naver.com'
+    ].filter(Boolean)
+  )
+];
+const QUICK_REQUEST_SEED_NOTE_LABEL = '동승 필요';
+const E2E_LABEL_PATTERN = 'E2E%';
+
+async function countRows(table, build) {
+  const { count, error } = await build(
+    admin.from(table).select('*', { count: 'exact', head: true })
+  );
+  if (error) {
+    throw new Error(`${table} count failed: ${error.message}`);
+  }
+  return count ?? 0;
+}
+
+/**
+ * fixture 계정 칩을 seed 상태(「동승 필요」 + e2e 접두 칩 0개)로 되돌리고
+ * e2e가 남긴 최근 주소(담당자 `E2E…`)를 지운다. RPC 수정 없이 service role로 처리한다.
+ */
+async function cleanupQuickRequestFixtures() {
+  const { data: profiles, error: profileError } = await admin
+    .from('profiles')
+    .select('user_id, email')
+    .in('email', FIXTURE_EMAILS);
+  if (profileError) {
+    throw new Error(`fixture profile lookup failed: ${profileError.message}`);
+  }
+  const fixtureIds = (profiles ?? []).map(({ user_id }) => user_id);
+  if (fixtureIds.length === 0) {
+    console.log('cleanup-e2e-mock-data: quick request', { fixture_users: 0 });
+    return;
+  }
+
+  const { data: deletedNotes, error: notesError } = await admin
+    .from('quick_request_notes')
+    .delete()
+    .in('user_id', fixtureIds)
+    .like('label', E2E_LABEL_PATTERN)
+    .select('id');
+  if (notesError) {
+    throw new Error(`quick_request_notes cleanup failed: ${notesError.message}`);
+  }
+
+  const { data: seeded, error: seedLookupError } = await admin
+    .from('quick_request_notes')
+    .select('user_id')
+    .in('user_id', fixtureIds)
+    .eq('label', QUICK_REQUEST_SEED_NOTE_LABEL);
+  if (seedLookupError) {
+    throw new Error(`quick_request_notes seed lookup failed: ${seedLookupError.message}`);
+  }
+  const seededIds = new Set((seeded ?? []).map(({ user_id }) => user_id));
+  const missingSeed = fixtureIds.filter((id) => !seededIds.has(id));
+  if (missingSeed.length > 0) {
+    const { error } = await admin.from('quick_request_notes').upsert(
+      missingSeed.map((user_id) => ({ user_id, label: QUICK_REQUEST_SEED_NOTE_LABEL })),
+      { onConflict: 'user_id,label', ignoreDuplicates: true }
+    );
+    if (error) {
+      throw new Error(`quick_request_notes seed restore failed: ${error.message}`);
+    }
+  }
+
+  const { data: deletedRecent, error: recentError } = await admin
+    .from('quick_request_recent_addresses')
+    .delete()
+    .in('user_id', fixtureIds)
+    .like('contact_name', E2E_LABEL_PATTERN)
+    .select('id');
+  if (recentError) {
+    throw new Error(`quick_request_recent_addresses cleanup failed: ${recentError.message}`);
+  }
+
+  const remaining = {
+    fixture_e2e_notes: await countRows('quick_request_notes', (q) =>
+      q.in('user_id', fixtureIds).like('label', E2E_LABEL_PATTERN)
+    ),
+    fixture_missing_seed:
+      fixtureIds.length -
+      (await countRows('quick_request_notes', (q) =>
+        q.in('user_id', fixtureIds).eq('label', QUICK_REQUEST_SEED_NOTE_LABEL)
+      )),
+    fixture_e2e_recent_addresses: await countRows('quick_request_recent_addresses', (q) =>
+      q.in('user_id', fixtureIds).like('contact_name', E2E_LABEL_PATTERN)
+    )
+  };
+
+  console.log('cleanup-e2e-mock-data: quick request', {
+    fixture_users: fixtureIds.length,
+    deleted_notes: deletedNotes?.length ?? 0,
+    restored_seed: missingSeed.length,
+    deleted_recent_addresses: deletedRecent?.length ?? 0,
+    remaining
+  });
+  if (Object.values(remaining).some((value) => Number(value) > 0)) {
+    throw new Error(`quick request fixture data remains: ${JSON.stringify(remaining)}`);
+  }
+}
+
 async function resetFixtureProfiles() {
   const { data, error } = await admin.rpc('reset_e2e_fixture_profiles');
   if (error) {
@@ -291,6 +401,7 @@ async function main() {
   console.log('cleanup-e2e-mock-data: storage', storageDeleted);
 
   await cleanupGoogleTasksMockConnections();
+  await cleanupQuickRequestFixtures();
 
   const { data, error } = await admin.rpc('cleanup_e2e_mock_data');
 

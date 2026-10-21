@@ -71,6 +71,10 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "google_tasks.task.complete": "Google Tasks 할 일 완료",
   "google_tasks.task.uncomplete": "Google Tasks 할 일 완료 취소",
   "google_tasks.task.move": "Google Tasks 할 일 이동",
+  "quick_request.note_create": "퀵 특이사항 추가",
+  "quick_request.note_update": "퀵 특이사항 수정",
+  "quick_request.note_delete": "퀵 특이사항 삭제",
+  "quick_request.recent_address_record": "퀵 최근 주소 기록",
 };
 
 export const METADATA_LABELS: Record<string, string> = {
