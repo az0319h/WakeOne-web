@@ -1,7 +1,7 @@
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 
 /** 방침 시행일 — 본문을 개정할 때 함께 갱신합니다. */
-const PRIVACY_EFFECTIVE_DATE = '2026-10-02';
+const PRIVACY_EFFECTIVE_DATE = '2026-10-22';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -28,13 +28,13 @@ export default function PrivacyPolicyPage() {
           <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
             <li>
               <span className='text-foreground font-medium'>계정·프로필 정보</span>: 이름, 업무용
-              이메일 주소, Google 계정 이메일·표시 이름, 휴대전화번호, 생년월일(생일), 소속,
-              직급, 부서/사업장, 프로필 이미지, 계정 권한·상태(승인 대기·활성·비활성 등), 가입
-              승인·거절 관련 일시 및 사유
+              이메일 주소, Google 계정 이메일·표시 이름, 휴대전화번호, 생년월일(생일), 소속, 직급,
+              부서/사업장, 프로필 이미지, 계정 권한·상태(승인 대기·활성·비활성 등), 가입 승인·거절
+              관련 일시 및 사유
             </li>
             <li>
-              <span className='text-foreground font-medium'>인증 정보</span>: Google OAuth 연동
-              식별 정보, Supabase 세션·쿠키 정보, 로그인 이력(활동 감사 로그 포함)
+              <span className='text-foreground font-medium'>인증 정보</span>: Google OAuth 연동 식별
+              정보, Supabase 세션·쿠키 정보, 로그인 이력(활동 감사 로그 포함)
             </li>
             <li>
               <span className='text-foreground font-medium'>업무 처리 과정에서 생성되는 정보</span>:
@@ -124,10 +124,78 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        {/* 6. 처리위탁 및 국외 이전 */}
+        {/* 6. Google 사용자 데이터 — Google API Limited Use 고지 (OAuth 앱 인증 요건) */}
+        <section id='google-user-data'>
+          <h2 className='text-foreground mb-3 text-xl font-semibold'>
+            6. Google 사용자 데이터의 처리
+          </h2>
+          <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
+            <li>
+              <span className='text-foreground font-medium'>접근하는 데이터</span>: Google 로그인 시
+              이메일 주소·이름·프로필 이미지, 이용자가 승인한 경우 Google Tasks의 할 일 목록과 할
+              일(제목·메모·기한·완료 여부)
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>이용 목적</span>: 로그인 및 본인 확인,
+              서비스의 &lsquo;할 일&rsquo; 화면에서 이용자 본인의 Google Tasks를
+              조회·추가·수정·완료·삭제하는 기능 제공. 이용자가 직접 요청한 작업만 수행합니다.
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>저장</span>: Google Tasks 연동 토큰은
+              암호화하여 저장하며, 할 일 내용은 화면 표시를 위해 Google에서 조회할 뿐 별도로
+              보관하지 않습니다.
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>공유 제한</span>: Google 사용자 데이터를
+              제3자에게 판매·제공하지 않으며, 광고, 신용 평가, 범용 AI·머신러닝 모델 학습에 사용하지
+              않습니다. 회사 직원은 이용자의 명시적 동의, 보안 목적 또는 법령상 필요한 경우를
+              제외하고 해당 데이터를 열람하지 않습니다.
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>접근 권한 철회</span>: 이용자는 언제든지{' '}
+              <a
+                href='https://myaccount.google.com/connections'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-primary font-medium hover:underline'
+              >
+                Google 계정 &gt; 타사 연결
+              </a>
+              에서 WakeOne의 접근 권한을 해제할 수 있으며, 연동 정보 삭제는 아래 문의처로 요청할 수
+              있습니다.
+            </li>
+          </ul>
+          <p className='text-muted-foreground mt-3 text-base leading-relaxed'>
+            WakeOne이 Google API로부터 받은 정보의 사용 및 다른 앱으로의 전송은{' '}
+            <a
+              href='https://developers.google.com/terms/api-services-user-data-policy'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-primary font-medium hover:underline'
+            >
+              Google API 서비스 사용자 데이터 정책
+            </a>
+            의 제한적 사용(Limited Use) 요구사항을 포함하여 해당 정책을 준수합니다.
+          </p>
+          <p className='text-muted-foreground mt-3 text-base leading-relaxed' lang='en'>
+            WakeOne&apos;s use and transfer to any other app of information received from Google
+            APIs will adhere to the{' '}
+            <a
+              href='https://developers.google.com/terms/api-services-user-data-policy'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-primary font-medium hover:underline'
+            >
+              Google API Services User Data Policy
+            </a>
+            , including the Limited Use requirements.
+          </p>
+        </section>
+
+        {/* 7. 처리위탁 및 국외 이전 */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>
-            6. 개인정보 처리의 위탁 및 국외 이전
+            7. 개인정보 처리의 위탁 및 국외 이전
           </h2>
           <p className='text-muted-foreground mb-3 text-base leading-relaxed'>
             회사는 안정적인 서비스 제공을 위해 다음과 같이 개인정보 처리 업무를 위탁하고 있으며,
@@ -136,8 +204,8 @@ export default function PrivacyPolicyPage() {
           <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
             <li>
               <span className='text-foreground font-medium'>Supabase, Inc.</span> — 데이터베이스
-              운영, 인증·세션 관리, 파일 저장(Storage), 실시간 통신(Realtime) (미국 등 서비스
-              제공 리전)
+              운영, 인증·세션 관리, 파일 저장(Storage), 실시간 통신(Realtime) (미국 등 서비스 제공
+              리전)
             </li>
             <li>
               <span className='text-foreground font-medium'>Vercel, Inc.</span> — 애플리케이션
@@ -165,10 +233,10 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        {/* 7. 파기 */}
+        {/* 8. 파기 */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>
-            7. 개인정보의 파기 절차 및 방법
+            8. 개인정보의 파기 절차 및 방법
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
             회사는 보유 기간이 경과하거나 처리 목적이 달성된 경우 지체 없이 해당 개인정보를
@@ -178,25 +246,25 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        {/* 8. 정보주체의 권리 */}
+        {/* 9. 정보주체의 권리 */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>
-            8. 정보주체의 권리·의무 및 행사 방법
+            9. 정보주체의 권리·의무 및 행사 방법
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
             정보주체는 언제든지 개인정보의 열람, 정정·삭제, 처리정지를 요구할 수 있습니다. 프로필
-            정보는 서비스 내 프로필 화면에서 조회할 수 있으며, 직접 수정은 제공하지 않습니다.
-            정정이 필요한 경우 관리자 또는 아래 문의처를 통해 요청할 수 있습니다. 그 밖의
-            열람·정정·삭제·처리정지 요구는 아래 문의처를 통해 서면·이메일 등으로 접수할 수
-            있습니다. 회사는 요구를 받은 날부터 10일 이내에 조치하고 그 결과를 통지합니다. 다만
-            법령에서 정한 사유에 해당하는 경우 요구가 제한될 수 있습니다.
+            정보는 서비스 내 프로필 화면에서 조회할 수 있으며, 직접 수정은 제공하지 않습니다. 정정이
+            필요한 경우 관리자 또는 아래 문의처를 통해 요청할 수 있습니다. 그 밖의
+            열람·정정·삭제·처리정지 요구는 아래 문의처를 통해 서면·이메일 등으로 접수할 수 있습니다.
+            회사는 요구를 받은 날부터 10일 이내에 조치하고 그 결과를 통지합니다. 다만 법령에서 정한
+            사유에 해당하는 경우 요구가 제한될 수 있습니다.
           </p>
         </section>
 
-        {/* 9. 안전성 확보 조치 */}
+        {/* 10. 안전성 확보 조치 */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>
-            9. 개인정보의 안전성 확보 조치
+            10. 개인정보의 안전성 확보 조치
           </h2>
           <ul className='text-muted-foreground list-disc space-y-2 pl-5 text-base leading-relaxed'>
             <li>
@@ -213,24 +281,24 @@ export default function PrivacyPolicyPage() {
           </ul>
         </section>
 
-        {/* 10. 쿠키 */}
+        {/* 11. 쿠키 */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>
-            10. 쿠키 등 자동 수집 장치의 운영
+            11. 쿠키 등 자동 수집 장치의 운영
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
-            회사는 로그인 상태 유지 및 보안을 위해 인증 세션 쿠키를 사용합니다. 서비스 운영 및
-            장애 대응을 위해 Sentry 등 제3자 모니터링 도구가 기술적 쿠키 또는 유사 저장 수단을
-            사용할 수 있습니다. 이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이
-            경우 로그인 등 서비스 이용에 제한이 있을 수 있습니다. 회사는 광고·행태정보 수집
-            목적의 쿠키를 사용하지 않습니다.
+            회사는 로그인 상태 유지 및 보안을 위해 인증 세션 쿠키를 사용합니다. 서비스 운영 및 장애
+            대응을 위해 Sentry 등 제3자 모니터링 도구가 기술적 쿠키 또는 유사 저장 수단을 사용할 수
+            있습니다. 이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이 경우 로그인 등
+            서비스 이용에 제한이 있을 수 있습니다. 회사는 광고·행태정보 수집 목적의 쿠키를 사용하지
+            않습니다.
           </p>
         </section>
 
-        {/* 11. 보호책임자 */}
+        {/* 12. 보호책임자 */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>
-            11. 개인정보 보호책임자 및 문의처
+            12. 개인정보 보호책임자 및 문의처
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
             회사는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의
@@ -265,10 +333,10 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        {/* 12. 방침의 변경 */}
+        {/* 13. 방침의 변경 */}
         <section>
           <h2 className='text-foreground mb-3 text-xl font-semibold'>
-            12. 개인정보처리방침의 변경
+            13. 개인정보처리방침의 변경
           </h2>
           <p className='text-muted-foreground text-base leading-relaxed'>
             본 방침은 {formatAbsoluteDateKo(PRIVACY_EFFECTIVE_DATE)}부터 적용됩니다. 법령·정책 또는
