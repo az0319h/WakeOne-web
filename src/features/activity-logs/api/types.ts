@@ -67,6 +67,14 @@ export type ActivityAction =
   | "quick_request.note_update"
   | "quick_request.note_delete"
   | "quick_request.recent_address_record"
+  | "quick_request.create"
+  | "quick_request.update"
+  | "quick_request.final_amount_set"
+  | "quick_request.accept"
+  | "quick_request.dispatch"
+  | "quick_request.approve"
+  | "quick_request.cancel"
+  | "quick_request.openchat_resend"
   | "workflow.document_create"
   | "workflow.document_update"
   | "workflow.document_approve"
@@ -81,7 +89,11 @@ export type ActivityAction =
   | "workflow.draft_delete"
   | "workflow.template_policy_update"
   | "workflow.admin_grant"
-  | "workflow.admin_revoke";
+  | "workflow.admin_revoke"
+  | "push_subscription.create"
+  | "push_subscription.delete"
+  | "push_preference.update"
+  | "push.test_send";
 
 export type ActivityTargetType =
   | "user"
@@ -96,6 +108,7 @@ export type ActivityTargetType =
   | "google_tasks"
   | "quick_request_note"
   | "quick_request_address"
+  | "quick_request"
   | "workflow_document"
   | "workflow_draft"
   | "workflow_attachment"
@@ -198,6 +211,19 @@ export type ActivityLogMetadata = {
   starred?: boolean;
   changed_field_keys?: string[];
   attachment_count?: number;
+  /** plan 89 — 퀵 요청 (주소·연락처·기사 정보·금액은 남기지 않는다) */
+  quick_request_no?: string;
+  changedFields?: string[];
+  openchat?: { event: string; status: string; attempts: number };
+  recentAddressesRecorded?: boolean;
+  /** plan 91 — 휴대폰 푸시 (endpoint 전체·p256dh·auth 키는 절대 남기지 않는다) */
+  created?: boolean;
+  device_count?: number;
+  endpoint_host?: string;
+  disabled_groups?: string[];
+  attempted?: number;
+  sent?: number;
+  removed?: number;
 };
 
 export type ActivityLog = {

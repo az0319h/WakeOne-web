@@ -1,6 +1,10 @@
 import 'server-only';
 
-import { getAffiliationLabel, type Affiliation } from '@/features/users/constants/organization';
+import {
+  EXCLUDE_DONGBANG_OR_FILTER,
+  getAffiliationLabel,
+  type Affiliation
+} from '@/features/users/constants/organization';
 import { createClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import type { WorkflowNotificationSetting } from '../lib/approval-line-rules';
@@ -135,13 +139,14 @@ function memberOf(map: Map<string, WorkflowMember>, id: string): WorkflowMember 
   return map.get(id) ?? unknownMember(id);
 }
 
-/** 결재선 Combobox용 active 구성원 */
+/** 결재선 Combobox용 active 구성원 (plan 89 — 워크플로우에 접근할 수 없는 동방특송 제외) */
 export async function listActiveMembers(): Promise<WorkflowMember[]> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from('profiles')
     .select(MEMBER_COLUMNS)
     .eq('status', 'active')
+    .or(EXCLUDE_DONGBANG_OR_FILTER)
     .order('full_name', { ascending: true });
   if (error) throw new Error(error.message);
   return ((data ?? []) as ProfileRow[]).map(toMember);

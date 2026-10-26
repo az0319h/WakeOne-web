@@ -58,51 +58,68 @@ export const quickRequestDestinationSchema = quickRequestLocationSchema.extend({
   memo: z.string().optional()
 });
 
+/** plan 89 — 등록·수정 공용 본문 필드 (요청자·요청 시각은 서버가 결정) */
+export const quickRequestPayloadFields = {
+  /** plan 87 r1 — `goodsSize === 'other'`일 때만 1자 이상 필수, 그 외 `''` */
+  itemDescription: z.string(),
+  goodsSize: z.enum(QUICK_REQUEST_GOODS_SIZES),
+  vehicleTypes: z.array(z.enum(QUICK_REQUEST_VEHICLE_TYPES)).min(1),
+  vehicleOtherText: z.string().optional(),
+  vehicleCount: z.number().int().positive().max(999),
+  origin: quickRequestOriginSchema,
+  stopovers: z.array(quickRequestLocationSchema),
+  destination: quickRequestDestinationSchema,
+  freightPayment: z.enum(['monthly', 'collect'])
+};
+
+type QuickRequestCrossFieldValues = {
+  itemDescription: string;
+  goodsSize: QuickRequestGoodsSize;
+  vehicleTypes: readonly string[];
+  vehicleOtherText?: string | null;
+};
+
+/** 기타 차량 · 기타 물품 교차 검증 (등록 본문 · PATCH 병합값 공용) */
+export function refineQuickRequestCrossFields(
+  data: QuickRequestCrossFieldValues,
+  ctx: z.RefinementCtx
+): void {
+  if (data.vehicleTypes.includes('기타')) {
+    const other = data.vehicleOtherText?.trim() ?? '';
+    if (!other) {
+      ctx.addIssue({
+        code: 'custom',
+        message: '기타 차량을 입력해 주세요.',
+        path: ['vehicleOtherText']
+      });
+    }
+  }
+
+  if (data.goodsSize === 'other') {
+    const item = data.itemDescription.trim();
+    if (!item) {
+      ctx.addIssue({
+        code: 'custom',
+        message: '물품 내용을 입력해 주세요.',
+        path: ['itemDescription']
+      });
+    } else if (item.length > QUICK_REQUEST_ITEM_DESCRIPTION_MAX_LENGTH) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${QUICK_REQUEST_ITEM_DESCRIPTION_MAX_LENGTH}자 이내로 입력해 주세요.`,
+        path: ['itemDescription']
+      });
+    }
+  }
+}
+
+/** FE 폼 → payload 매핑 결과 (미리보기 메시지용 `requesterName`·`requestedAtIso` 포함) */
 export const quickRequestNotifyBodySchema = z
   .object({
-    /** plan 87 r1 — `goodsSize === 'other'`일 때만 1자 이상 필수, 그 외 `''` */
-    itemDescription: z.string(),
-    goodsSize: z.enum(QUICK_REQUEST_GOODS_SIZES),
-    vehicleTypes: z
-      .array(z.enum(QUICK_REQUEST_VEHICLE_TYPES))
-      .min(1),
-    vehicleOtherText: z.string().optional(),
-    vehicleCount: z.number().int().positive(),
-    origin: quickRequestOriginSchema,
-    stopovers: z.array(quickRequestLocationSchema),
-    destination: quickRequestDestinationSchema,
-    freightPayment: z.enum(['monthly', 'collect']),
+    ...quickRequestPayloadFields,
     requestedAtIso: z.string().datetime(),
     requesterName: z.string().min(1)
   })
-  .superRefine((data, ctx) => {
-    if (data.vehicleTypes.includes('기타')) {
-      const other = data.vehicleOtherText?.trim() ?? '';
-      if (!other) {
-        ctx.addIssue({
-          code: 'custom',
-          message: '기타 차량을 입력해 주세요.',
-          path: ['vehicleOtherText']
-        });
-      }
-    }
-
-    if (data.goodsSize === 'other') {
-      const item = data.itemDescription.trim();
-      if (!item) {
-        ctx.addIssue({
-          code: 'custom',
-          message: '물품 내용을 입력해 주세요.',
-          path: ['itemDescription']
-        });
-      } else if (item.length > QUICK_REQUEST_ITEM_DESCRIPTION_MAX_LENGTH) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `${QUICK_REQUEST_ITEM_DESCRIPTION_MAX_LENGTH}자 이내로 입력해 주세요.`,
-          path: ['itemDescription']
-        });
-      }
-    }
-  });
+  .superRefine(refineQuickRequestCrossFields);
 
 export type QuickRequestNotifyBody = z.infer<typeof quickRequestNotifyBodySchema>;

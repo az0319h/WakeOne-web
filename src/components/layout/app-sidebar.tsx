@@ -27,16 +27,58 @@ import type { NavItem } from '@/types';
 import { NavUser } from '../nav-user';
 import { Icons } from '../icons';
 
-function isPathActive(pathname: string, url: string) {
+function matchesPath(pathname: string, url: string) {
   return pathname === url || pathname.startsWith(`${url}/`);
 }
 
-function isNavItemActive(pathname: string, item: NavItem) {
+/**
+ * plan 89 K10 — 가장 긴 URL 일치만 활성.
+ * `/dashboard/quick/request`에서 「퀵 대시보드」(`/dashboard/quick`)와 「퀵 요청하기」가 동시에 켜지지 않게 한다.
+ */
+function collectNavUrls(groups: { items: NavItem[] }[]): string[] {
+  const urls: string[] = [];
+  for (const group of groups) {
+    for (const item of group.items) {
+      urls.push(item.url);
+      for (const sub of item.items ?? []) {
+        urls.push(sub.url);
+      }
+    }
+  }
+  return urls;
+}
+
+const NavActiveUrlContext = React.createContext<string | null>(null);
+
+function resolveActiveNavUrl(pathname: string, urls: string[]): string | null {
+  let best: string | null = null;
+  for (const url of urls) {
+    if (url !== '#' && matchesPath(pathname, url) && (best === null || url.length > best.length)) {
+      best = url;
+    }
+  }
+  return best;
+}
+
+function useIsPathActive() {
+  const activeUrl = React.use(NavActiveUrlContext);
+  return React.useCallback((_pathname: string, url: string) => activeUrl === url, [activeUrl]);
+}
+
+function isNavItemActive(
+  pathname: string,
+  item: NavItem,
+  isPathActive: (pathname: string, url: string) => boolean
+) {
   const childActive = item.items?.some((subItem) => isPathActive(pathname, subItem.url)) ?? false;
   return isPathActive(pathname, item.url) || childActive;
 }
 
-function isNavItemOpen(pathname: string, item: NavItem) {
+function isNavItemOpen(
+  pathname: string,
+  item: NavItem,
+  isPathActive: (pathname: string, url: string) => boolean
+) {
   if (isPathActive(pathname, item.url)) {
     return true;
   }
@@ -50,11 +92,12 @@ interface SidebarNavCollapsibleItemProps {
 }
 
 function SidebarNavCollapsibleItem({ item, pathname }: SidebarNavCollapsibleItemProps) {
-  const routeOpen = isNavItemOpen(pathname, item);
+  const isPathActive = useIsPathActive();
+  const routeOpen = isNavItemOpen(pathname, item, isPathActive);
   const [open, setOpen] = React.useState(routeOpen);
   const prevPathnameRef = React.useRef(pathname);
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-  const isActive = isNavItemActive(pathname, item);
+  const isActive = isNavItemActive(pathname, item, isPathActive);
 
   React.useEffect(() => {
     if (pathname !== prevPathnameRef.current) {
@@ -102,6 +145,7 @@ interface SidebarNavLeafItemProps {
 }
 
 function SidebarNavLeafItem({ item, pathname }: SidebarNavLeafItemProps) {
+  const isPathActive = useIsPathActive();
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
 
   return (
@@ -121,18 +165,25 @@ function AppSidebar() {
   const { isOpen } = useMediaQuery();
   const profile = useNavAccess();
   const filteredGroups = useFilteredNavGroups(navGroups);
+  const activeUrl = resolveActiveNavUrl(pathname, collectNavUrls(filteredGroups));
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
   }, [isOpen]);
 
   return (
+    <NavActiveUrlContext value={activeUrl}>
     <Sidebar collapsible='icon'>
       <SidebarHeader />
       <SidebarContent className='overflow-x-hidden'>
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label || 'ungrouped'}>
-            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+            {group.label && (
+              // 접힘(icon) 모드에서 label이 -mt-8 · opacity-0로 이전 그룹 마지막 항목(예: 「퀵 요청하기」)을 덮어 클릭을 가로채지 않게 한다
+              <SidebarGroupLabel className='group-data-[collapsible=icon]:pointer-events-none'>
+                {group.label}
+              </SidebarGroupLabel>
+            )}
             <SidebarMenu>
               {group.items.map((item) =>
                 item.items && item.items.length > 0 ? (
@@ -148,6 +199,7 @@ function AppSidebar() {
       <SidebarFooter>{profile ? <NavUser profile={profile} /> : null}</SidebarFooter>
       <SidebarRail />
     </Sidebar>
+    </NavActiveUrlContext>
   );
 }
 

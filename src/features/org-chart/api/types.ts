@@ -1,4 +1,4 @@
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { OrgAffiliation } from '@/features/users/constants/organization';
 import type { LeaderRole } from '@/features/users/constants/organization';
 
 export type OrgChartNodeType = 'person' | 'team' | 'root';
@@ -20,7 +20,7 @@ export type OrgChartNode = {
 
 export type OrgChartResponse = {
   success: true;
-  affiliation: Affiliation;
+  affiliation: OrgAffiliation;
   nodes: OrgChartNode[];
 };
 
@@ -30,7 +30,7 @@ export type OrgChartProfile = {
   avatar_url: string | null;
   email: string | null;
   phone: string | null;
-  affiliation: Affiliation;
+  affiliation: OrgAffiliation;
   rank: string | null;
   position_level: string;
   leader_role: LeaderRole | null;

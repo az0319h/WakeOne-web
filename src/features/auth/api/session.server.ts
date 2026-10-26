@@ -2,7 +2,13 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import {
+  DONGBANG_HOME_PATH,
+  getDongbangDeniedFlashKey,
+  isDongbangAllowedPage
+} from '@/config/dongbang-routes';
 import { canAccessBenefitsAdmin } from './benefits-access.server';
+import { isDongbang } from './quick-access.server';
 import { isWorkflowAdmin, WORKFLOW_ADMIN_REQUIRED_MESSAGE } from './workflow-access.server';
 import type { AuthProfile } from './types';
 
@@ -175,6 +181,16 @@ export async function requireDashboardSession(): Promise<AuthProfile> {
         ? profile.status
         : null;
     redirect(authStatus ? `/auth/sign-in?authStatus=${authStatus}` : '/auth/sign-in?accountDisabled=1');
+  }
+
+  // plan 89 — 동방특송 2차 방어 (proxy allowlist가 1차). Server Component는 cookie를 못 쓰므로 legacy query flash
+  // x-pathname(proxy가 설정)이 없으면 판정하지 않는다 — 추정 경로로 redirect하면 /dashboard/quick 루프가 생긴다
+  if (isDongbang(profile)) {
+    const pathname = (await headers()).get('x-pathname');
+    if (pathname && !isDongbangAllowedPage(pathname)) {
+      const flashKey = getDongbangDeniedFlashKey(pathname);
+      redirect(flashKey ? `${DONGBANG_HOME_PATH}?accessDenied=${flashKey}` : DONGBANG_HOME_PATH);
+    }
   }
 
   return profile;

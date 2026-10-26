@@ -55,7 +55,7 @@ test.describe('plan22 Users 테이블 생일 · 수정 Sheet 초기값', () => {
     expect(nullBirthdayResponse.status()).toBe(200);
 
     await page.goto('/dashboard/users');
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
 
     const phoneHeader = page.getByRole('columnheader', { name: '연락처' });
     const birthdayHeader = page.getByRole('columnheader', { name: '생일' });

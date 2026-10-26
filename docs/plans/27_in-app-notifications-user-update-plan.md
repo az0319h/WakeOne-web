@@ -476,3 +476,4 @@ sequenceDiagram
 | 날짜 | 변경 내용 | 작성자 |
 |------|----------|--------|
 | 2026-07-16 | 최초 작성 (Approved) — deep-interview 확정 · admin notif_user 뷰어 · SQL 34 | planner |
+| 2026-10-22 | Out 「이메일·푸시·SMS」 중 **푸시**를 [plan 91](./91_pwa-web-push-notifications-plan.md)이 supersede(PWA + Web Push). 이메일·SMS Out은 유지. 본 plan의 테이블·Realtime·읽음 처리는 변경 없음 | planner |

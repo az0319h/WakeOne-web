@@ -1,4 +1,4 @@
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { OrgAffiliation } from '@/features/users/constants/organization';
 import type { OrgChartNode } from '../api/types';
 
 export const ORG_CHART_VIRTUAL_ROOT_ID = '__org_chart_virtual_root__';
@@ -55,7 +55,7 @@ function collectAllExpandedFolderIds(
 /** API parentId + 배열 순서 그대로 — 팀 expand 시 멤버 flat 표시 (headless-tree sync loader) */
 export function buildOrgChartTreeBundle(
   nodes: OrgChartNode[],
-  _affiliation: Affiliation
+  _affiliation: OrgAffiliation
 ): OrgChartTreeBundle {
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   const nodeOrder = nodes.map((node) => node.id);

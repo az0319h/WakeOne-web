@@ -13,9 +13,10 @@ import {
   InfobarTrigger,
   useInfobar
 } from '@/components/ui/infobar';
+import type { InfobarContent as InfobarContentData } from '@/components/ui/infobar';
 
 // Default/fallback data when no content is set
-const defaultData = {
+const defaultData: InfobarContentData = {
   title: 'Documentation',
   sections: [
     {
@@ -33,7 +34,7 @@ const defaultData = {
 
 export function InfoSidebar({ ...props }: React.ComponentProps<typeof Infobar>) {
   const { content } = useInfobar();
-  const data = content || defaultData;
+  const data: InfobarContentData = content || defaultData;
 
   return (
     <Infobar {...props}>
@@ -51,14 +52,41 @@ export function InfoSidebar({ ...props }: React.ComponentProps<typeof Infobar>) 
             <div className='flex flex-col gap-6 px-4 py-4'>
               {data.sections && data.sections.length > 0 ? (
                 data.sections.map((section) => (
-                  <div key={section.title} className='flex flex-col gap-3'>
+                  <div key={section.title} data-slot='info-section' className='flex flex-col gap-3'>
                     {section.title && (
-                      <h3 className='text-foreground text-sm font-semibold'>{section.title}</h3>
+                      <h3 className='text-foreground text-sm font-semibold break-keep wrap-break-word'>
+                        {section.title}
+                      </h3>
                     )}
                     {section.description && (
-                      <p className='text-muted-foreground text-sm leading-relaxed'>
+                      <p className='text-muted-foreground text-sm leading-relaxed break-keep wrap-break-word'>
                         {section.description}
                       </p>
+                    )}
+                    {section.items && section.items.length > 0 && (
+                      <ul
+                        data-slot='info-section-list'
+                        className='text-muted-foreground list-outside list-disc space-y-1.5 pl-4 text-sm leading-relaxed'
+                      >
+                        {section.items.map((item) => (
+                          <li key={item} className='break-keep wrap-break-word'>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {section.callout && (
+                      <div
+                        data-slot='info-section-callout'
+                        role='note'
+                        className='bg-muted text-foreground flex items-start gap-2 rounded-md border px-3 py-2.5 text-sm leading-relaxed'
+                      >
+                        <Icons.info
+                          aria-hidden='true'
+                          className='text-muted-foreground mt-0.5 size-4 shrink-0'
+                        />
+                        <p className='min-w-0 break-keep wrap-break-word'>{section.callout}</p>
+                      </div>
                     )}
                     {section.links && section.links.length > 0 && (
                       <div className='flex flex-col gap-2'>

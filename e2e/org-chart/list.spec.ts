@@ -372,7 +372,7 @@ test.describe('조직도 승인 flow (admin)', () => {
     await page.goto(
       `/dashboard/users?status=pending_approval&name=${encodeURIComponent(pending.email.split('@')[0])}`
     );
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
 

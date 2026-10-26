@@ -89,6 +89,16 @@ export type ApproveUserPayload =
       leader_role?: LeaderRole | null;
       system_role: 'user';
       birthday: string | null;
+    }
+  /** plan 89 — 동방특송: 부서·직급 생략, 리더·생일 null (서버가 null 저장) */
+  | {
+      email: string;
+      full_name: string;
+      phone: string;
+      affiliation: 'dongbang';
+      leader_role: null;
+      system_role: 'user';
+      birthday: null;
     };
 
 export type RejectUserPayload = {

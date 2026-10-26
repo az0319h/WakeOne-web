@@ -1,5 +1,6 @@
 import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
+import { ServiceWorkerRegistrar } from '@/components/pwa/service-worker-registrar';
 import { fontVariables } from '@/components/themes/font.config';
 import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
 import { ThemeColorSync, META_THEME_COLORS } from '@/components/themes/theme-color-sync';
@@ -45,6 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             enableColorScheme
           >
             <ThemeColorSync />
+            <ServiceWorkerRegistrar />
             <Providers activeThemeValue={themeToApply}>
               <Toaster />
               {children}

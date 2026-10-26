@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
-  AFFILIATIONS,
-  type Affiliation
+  ORG_AFFILIATIONS,
+  type OrgAffiliation
 } from '@/features/users/constants/organization';
 import { getOrgChartResponse } from '@/features/org-chart/api/service.server';
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   const affiliationRaw = request.nextUrl.searchParams.get('affiliation');
-  const parsed = AFFILIATIONS.includes(affiliationRaw as Affiliation);
+  const parsed = ORG_AFFILIATIONS.includes(affiliationRaw as OrgAffiliation);
 
   if (!affiliationRaw || !parsed) {
     return NextResponse.json(
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const affiliation = affiliationRaw as Affiliation;
+  const affiliation = affiliationRaw as OrgAffiliation;
 
   try {
     const response = await getOrgChartResponse(affiliation);

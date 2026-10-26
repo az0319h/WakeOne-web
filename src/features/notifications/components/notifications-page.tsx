@@ -8,6 +8,8 @@ import { parseAsString, useQueryStates } from 'nuqs';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { NotifUserCombobox } from './notif-user-combobox';
+import { PushPreferencesDialog } from './push-preferences-dialog';
+import { PushStatusBanner } from './push-status-banner';
 import {
   NotificationInfiniteList,
   useMarkAllNotificationsRead
@@ -124,6 +126,7 @@ export function NotificationsPage() {
 
   const suspenseKey = isAdmin ? (params.notif_user ?? 'self') : 'self';
   const markAllMutation = useMarkAllNotificationsRead();
+  const [pushPreferencesOpen, setPushPreferencesOpen] = useState(false);
 
   function handleNotifUserChange(nextValue: string) {
     void setParams({ notif_user: nextValue });
@@ -131,23 +134,39 @@ export function NotificationsPage() {
 
   return (
     <div data-testid='notifications-page' className='flex flex-1 flex-col gap-4'>
+      {isViewingSelf ? <PushStatusBanner /> : null}
       <div className='flex flex-wrap items-center justify-between gap-2'>
         {isAdmin ? (
           <NotifUserCombobox value={notifUser ?? 'self'} onValueChange={handleNotifUserChange} />
         ) : (
           <div />
         )}
-        {isViewingSelf && tabCounts.unread > 0 ? (
-          <Button
-            variant='outline'
-            size='sm'
-            isLoading={markAllMutation.isPending}
-            onClick={() => markAllMutation.mutate()}
-          >
-            모두 읽음
-          </Button>
+        {isViewingSelf ? (
+          <div className='flex items-center gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              data-testid='push-preferences-open'
+              onClick={() => setPushPreferencesOpen(true)}
+            >
+              휴대폰 알림 설정
+            </Button>
+            {tabCounts.unread > 0 ? (
+              <Button
+                variant='outline'
+                size='sm'
+                isLoading={markAllMutation.isPending}
+                onClick={() => markAllMutation.mutate()}
+              >
+                모두 읽음
+              </Button>
+            ) : null}
+          </div>
         ) : null}
       </div>
+      {isViewingSelf ? (
+        <PushPreferencesDialog open={pushPreferencesOpen} onOpenChange={setPushPreferencesOpen} />
+      ) : null}
 
       <Tabs defaultValue='all'>
         <TabsList>

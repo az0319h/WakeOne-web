@@ -206,7 +206,7 @@ test.describe('초기 비밀번호 강제 변경', () => {
 
       await page.goto('/dashboard/users');
       await expect(page).toHaveURL(/\/auth\/force-password-change/, { timeout: 15_000 });
-      await expect(page.getByRole('heading', { name: '사용자 관리' })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toHaveCount(0);
     });
   });
 

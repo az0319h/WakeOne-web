@@ -75,6 +75,14 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "quick_request.note_update": "퀵 특이사항 수정",
   "quick_request.note_delete": "퀵 특이사항 삭제",
   "quick_request.recent_address_record": "퀵 최근 주소 기록",
+  "quick_request.create": "퀵 요청 등록",
+  "quick_request.update": "퀵 요청 수정",
+  "quick_request.final_amount_set": "퀵 최종금액 입력",
+  "quick_request.accept": "퀵 요청 접수",
+  "quick_request.dispatch": "퀵 배차 완료",
+  "quick_request.approve": "퀵 요청 승인",
+  "quick_request.cancel": "퀵 요청 취소",
+  "quick_request.openchat_resend": "퀵 오픈채팅 재발송",
   "workflow.document_create": "워크플로우 문서 작성",
   "workflow.document_update": "워크플로우 문서 수정",
   "workflow.document_approve": "워크플로우 승인",
@@ -90,6 +98,10 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "workflow.template_policy_update": "워크플로우 기본 결재선 변경",
   "workflow.admin_grant": "워크플로우 관리자 지정",
   "workflow.admin_revoke": "워크플로우 관리자 해제",
+  "push_subscription.create": "휴대폰 알림 기기 등록",
+  "push_subscription.delete": "휴대폰 알림 기기 해제",
+  "push_preference.update": "휴대폰 알림 설정 변경",
+  "push.test_send": "휴대폰 알림 테스트 발송",
 };
 
 export const METADATA_LABELS: Record<string, string> = {
@@ -152,6 +164,17 @@ export const METADATA_LABELS: Record<string, string> = {
   starred: "중요 표시",
   changed_field_keys: "바뀐 항목",
   attachment_count: "첨부 개수",
+  quick_request_no: "퀵 요청번호",
+  changedFields: "변경된 항목",
+  openchat: "오픈채팅 발송",
+  recentAddressesRecorded: "최근 주소 기록",
+  created: "신규 등록",
+  device_count: "등록 기기 수",
+  endpoint_host: "푸시 서버",
+  disabled_groups: "끈 알림 그룹",
+  attempted: "발송 시도",
+  sent: "발송 성공",
+  removed: "만료 기기 삭제",
 };
 
 /** plan 88 — activity target_type 한국어 라벨 */
@@ -161,6 +184,11 @@ export const WORKFLOW_TARGET_TYPE_LABELS: Record<string, string> = {
   workflow_attachment: "워크플로우 첨부",
   workflow_template: "워크플로우 양식",
   workflow_admin: "워크플로우 관리자",
+};
+
+/** plan 89 — 퀵 요청 target_type 한국어 라벨 */
+export const QUICK_REQUEST_TARGET_TYPE_LABELS: Record<string, string> = {
+  quick_request: "퀵 요청",
 };
 
 export function isSupportCommentAction(action: ActivityAction): boolean {

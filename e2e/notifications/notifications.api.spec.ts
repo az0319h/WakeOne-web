@@ -285,6 +285,7 @@ test.describe('알림 API activity log', () => {
         full_name: `AC19-updated-${Date.now()}`,
         affiliation: 'wake',
         rank: '경영진',
+        position_level: 'CEO',
         phone: '01012345678'
       }
     });

@@ -35,7 +35,7 @@ test.describe('admin 프로필·Users 슬림화', () => {
     await page.goto(
       `/dashboard/users?name=${encodeURIComponent(adminTarget.fullName)}`
     );
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
 
@@ -67,7 +67,7 @@ test.describe('admin 프로필·Users 슬림화', () => {
     await page.goto(
       `/dashboard/users?status=pending_approval&name=${encodeURIComponent(pending.email.split('@')[0])}`
     );
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
     const row = page.getByRole('row').filter({ hasText: pending.email });
@@ -94,7 +94,7 @@ test.describe('admin 프로필·Users 슬림화', () => {
     await page.goto(
       `/dashboard/users?status=pending_approval&name=${encodeURIComponent(pending.email.split('@')[0])}`
     );
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
     const row = page.getByRole('row').filter({ hasText: pending.email });
@@ -127,7 +127,7 @@ test.describe('admin 프로필·Users 슬림화', () => {
     await page.goto(
       `/dashboard/users?status=pending_approval&name=${encodeURIComponent(pending.email.split('@')[0])}`
     );
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
     const row = page.getByRole('row').filter({ hasText: pending.email });
@@ -160,7 +160,7 @@ test.describe('admin 프로필·Users 슬림화', () => {
     await page.goto(
       `/dashboard/users?status=pending_approval&name=${encodeURIComponent(pending.email.split('@')[0])}`
     );
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
     const row = page.getByRole('row').filter({ hasText: pending.email });

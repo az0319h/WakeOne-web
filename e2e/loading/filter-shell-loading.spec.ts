@@ -20,7 +20,7 @@ async function delayMatchingRoutes(page: Page, pattern: RegExp, delayMs: number)
 test.describe('Filter shell loading UX', () => {
   test('AC-1: users search keeps toolbar visible during refetch', async ({ page }) => {
     await page.goto('/dashboard/users');
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: /이름/ })).toBeVisible();
 
     await delayMatchingRoutes(page, /\/api\/users/, 1_500);
@@ -49,7 +49,7 @@ test.describe('Filter shell loading UX', () => {
 
     await delayMatchingRoutes(page, /\/api\/users/, 1_500);
     const nextClick = page.getByRole('button', { name: 'Go to next page' }).click();
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
     await expect(page.getByPlaceholder('사용자 검색…')).toBeVisible();
     await expect(loadingSpinner(page)).toBeVisible({ timeout: 10_000 });
     await nextClick;

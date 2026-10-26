@@ -14,6 +14,7 @@ import { adminBanUser, adminSignOutGlobal, adminUnbanUser } from '@/lib/auth/adm
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   AFFILIATIONS,
+  DONGBANG_AFFILIATION,
   LEADER_ROLES,
   normalizeLeaderRole,
   resolveRankFromPositionLevel,
@@ -23,6 +24,7 @@ import {
   type Affiliation
 } from '@/features/users/constants/organization';
 import { insertUserUpdateNotification } from '@/features/notifications/api/fan-out.server';
+import { purgePushSubscriptionsByUser } from '@/features/notifications/api/push-subscriptions.server';
 import { birthdaySchema, refineBirthday } from '@/lib/birthday';
 import { PHONE_REGEX } from '@/lib/phone';
 import { z } from 'zod';
@@ -54,6 +56,9 @@ const updateUserSchema = z
     validatePositionFields(data, ctx);
     refineBirthday(data.birthday, ctx);
   });
+
+const DONGBANG_ROLE_MESSAGE = '동방특송은 일반 사용자 역할만 가능합니다.';
+const DONGBANG_NULL_FIELDS = ['rank', 'position_level', 'leader_role', 'birthday'] as const;
 
 const ADMIN_TARGET_ALLOWED_FIELDS = ['avatar_url', 'system_role'] as const;
 const ADMIN_TARGET_IGNORED_ORG_FIELDS = [
@@ -150,7 +155,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const { data: target, error: fetchError } = await supabase
       .from('profiles')
-      .select('status, affiliation, rank, system_role, position_level, leader_role')
+      .select('status, affiliation, rank, system_role, position_level, leader_role, birthday')
       .eq('user_id', id)
       .maybeSingle();
 
@@ -321,6 +326,36 @@ export async function PUT(request: NextRequest, { params }: Params) {
         : null;
       if (autoRank) {
         updates.rank = autoRank;
+      }
+
+      // plan 89 — 동방특송: 부서·직급·리더·생일 null, 일반 사용자 역할만
+      const effectiveAffiliationForOrg =
+        'affiliation' in updates ? (updates.affiliation as string | null) : target.affiliation;
+      if (effectiveAffiliationForOrg === DONGBANG_AFFILIATION) {
+        if (updates.system_role === 'admin') {
+          return jsonWithActivityLog(
+            requestId,
+            {
+              ...actor,
+              action: 'user.update',
+              targetType: 'user',
+              targetUserId: id,
+              targetLabel,
+              httpMethod: 'PUT',
+              httpPath,
+              metadata: buildErrorMetadata('validation', DONGBANG_ROLE_MESSAGE)
+            },
+            { success: false, message: DONGBANG_ROLE_MESSAGE },
+            400
+          );
+        }
+
+        const targetOrgValues = target as Record<string, unknown>;
+        for (const field of DONGBANG_NULL_FIELDS) {
+          if ((field in updates && updates[field] !== null) || targetOrgValues[field] != null) {
+            updates[field] = null;
+          }
+        }
       }
     }
 
@@ -841,6 +876,13 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     await adminSignOutGlobal(id);
     await adminBanUser(id);
+
+    // plan 91 — 비활성화 시 모든 기기의 푸시 구독 삭제 (파생 작업 · 실패해도 응답·로그 불변)
+    try {
+      await purgePushSubscriptionsByUser(id);
+    } catch (error) {
+      console.error('[push] purge on deactivate failed:', error instanceof Error ? error.message : error);
+    }
 
     return jsonWithActivityLog(
       requestId,

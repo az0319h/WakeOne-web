@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
-import type { Affiliation } from "@/features/users/constants/organization";
+import type { OrgAffiliation } from "@/features/users/constants/organization";
 import { parseAsBenefitsMonth } from "../lib/benefits-month-parser";
 import { normalizeBenefitsMonth, resolveBenefitsViewMonth } from "../lib/benefits-view-month";
 import type { BenefitsAdminFilters } from "../api/types";
@@ -55,7 +55,7 @@ export function useBenefitsAdminFilters() {
     [params.affiliation, params.month, params.name, params.team],
   );
 
-  function setAffiliation(affiliation: Affiliation) {
+  function setAffiliation(affiliation: OrgAffiliation) {
     setNameInput("");
     void setParams({ affiliation, team: null, name: null });
   }

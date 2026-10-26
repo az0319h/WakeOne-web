@@ -11,6 +11,9 @@ const ACCESS_DENIED_MESSAGES: Record<string, string> = {
   users: "이 페이지에 접근할 권한이 없습니다.",
   benefits: "이 페이지에 접근할 권한이 없습니다.",
   "workflow-settings": "워크플로우 관리자 권한이 필요합니다.",
+  // plan 89 — 동방특송 allowlist 밖 (키는 `src/config/dongbang-routes.ts`)
+  dongbang: "동방특송 계정은 퀵 화면만 이용할 수 있습니다.",
+  "dongbang-quick-request": "동방특송 계정은 퀵 요청을 등록할 수 없습니다.",
 };
 
 function readLegacyAccessDeniedParam(): string | null {

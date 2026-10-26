@@ -16,10 +16,8 @@ import {
   type NotificationsListFilters
 } from '../api/queries';
 import type { Notification, NotificationStatus } from '../api/types';
-import {
-  getNotificationActions,
-  NOTIFICATION_ACTION_ROUTES
-} from './notification-helpers';
+import { resolveNotificationRoute } from '../lib/notification-route';
+import { getNotificationActions } from './notification-helpers';
 
 interface NotificationInfiniteListProps {
   filters?: NotificationsListFilters;
@@ -107,32 +105,12 @@ export function NotificationInfiniteList({
     markReadMutation.mutate(Number(id));
   }
 
-  function handleAction(notifId: string, actionId: string) {
+  function handleAction(notifId: string) {
     const notification = notifications.find((item) => String(item.id) === notifId);
-    let route = NOTIFICATION_ACTION_ROUTES[actionId];
+    if (!notification) return;
 
-    if (
-      actionId === 'view-announcement' &&
-      typeof notification?.metadata.announcement_id === 'number'
-    ) {
-      route = `/dashboard/announcements?announcement=${notification.metadata.announcement_id}`;
-    }
-
-    if (
-      actionId === 'view-support' &&
-      typeof notification?.metadata.support_request_id === 'number'
-    ) {
-      route = `/dashboard/support?support=${notification.metadata.support_request_id}`;
-    }
-
-    if (
-      actionId === 'view-workflow' &&
-      typeof notification?.metadata.workflow_document_id === 'string'
-    ) {
-      route = `/dashboard/workflow?doc=${encodeURIComponent(notification.metadata.workflow_document_id)}`;
-    }
-
-    if (!route) return;
+    // plan 91 D-7 — 클릭 URL은 푸시 payload와 같은 공용 함수로 계산한다
+    const route = resolveNotificationRoute(notification);
 
     if (!readOnly) {
       markReadMutation.mutate(Number(notifId));

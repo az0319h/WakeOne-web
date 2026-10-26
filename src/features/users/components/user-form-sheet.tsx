@@ -14,6 +14,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { updateUserMutation } from '../api/mutations';
 import {
+  isDongbangAffiliation,
   normalizeLeaderRole,
   SELECT_NONE_VALUE,
   type Affiliation
@@ -87,6 +88,8 @@ function UserTargetEditForm({
       onSubmit: userUpdateSchema
     },
     onSubmit: async ({ value }) => {
+      // plan 89 — 동방특송: 부서·직급·리더·생일 null, 일반 사용자 역할 고정
+      const isDongbang = isDongbangAffiliation(value.affiliation);
       await updateMutation.mutateAsync({
         id: user.id,
         values: {
@@ -98,11 +101,11 @@ function UserTargetEditForm({
             value.affiliation && value.affiliation !== SELECT_NONE_VALUE
               ? (value.affiliation as Affiliation)
               : null,
-          rank: toPayloadValue(value.rank),
-          position_level: toPayloadValue(value.position_level),
-          leader_role: normalizeLeaderRole(value.leader_role),
-          system_role: value.system_role,
-          birthday: value.birthday ?? null,
+          rank: isDongbang ? null : toPayloadValue(value.rank),
+          position_level: isDongbang ? null : toPayloadValue(value.position_level),
+          leader_role: isDongbang ? null : normalizeLeaderRole(value.leader_role),
+          system_role: isDongbang ? 'user' : value.system_role,
+          birthday: isDongbang ? null : (value.birthday ?? null),
           phone: value.phone
         }
       });

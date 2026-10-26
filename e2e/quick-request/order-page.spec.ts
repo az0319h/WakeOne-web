@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   clickDesktopRegister,
-  confirmPreviewAndExpect501,
+  confirmPreviewAndRegister,
   desktopSummary,
   expectedAbsoluteDatetimeFromLocalInput,
   fetchUserProfileFromDashboard,
@@ -194,23 +194,18 @@ test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', 
     await expect(summary).not.toContainText('월정산');
   });
 
-  test('AC-13: 등록 → Dialog 확인 → 501 · toast · Dialog 닫힘 · form reset', async ({ page }) => {
-    const profile = await fetchUserProfileFromDashboard(page);
+  // plan 89 AC-08이 86 AC-13(501·복사·reset)을 대체 — 등록 → DB 저장 → 상세 이동
+  test('AC-13: (89 AC-08 대체) 등록 → 「등록」 → 201 · 토스트 · 상세 이동 · 신규요청', async ({ page }) => {
     await gotoQuickRequest(page);
     await fillQuickRequestOrder(page);
     await expect(quickRequestMain(page).getByTestId('quick-request-origin-contact-name')).toHaveValue(
       'E2E 출발'
     );
     await clickDesktopRegister(page);
-    await confirmPreviewAndExpect501(page);
-
-    const main = quickRequestMain(page);
-    await expect(itemDescriptionField(page)).toBeHidden();
-    await expect(itemDescriptionField(page)).toHaveValue('');
-    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
-      profile.fullName
-    );
-    await expect(main.getByTestId('quick-request-origin-road-address')).toHaveValue('');
+    await expect(previewMessage(page)).toContainText(/새 퀵 요청|퀵 요청/);
+    const { requestBody } = await confirmPreviewAndRegister(page);
+    expect((requestBody.origin as { contactName?: string }).contactName).toBe('E2E 출발');
+    await expect(page.getByTestId('quick-detail-status')).toHaveText('신규요청');
   });
 });
 
@@ -318,46 +313,36 @@ test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () =
     expect(lines.filter((line) => line.startsWith('물품:'))).toEqual([]);
     expect(lines.join('\n')).not.toContain('철판 2m');
 
-    const notifyPromise = page.waitForRequest(
-      (req) => req.url().includes('/api/quick-request/notify') && req.method() === 'POST'
-    );
-    await page.getByTestId('quick-request-confirm-button').click();
-    const payload = (await notifyPromise).postDataJSON() as {
-      goodsSize?: string;
-      itemDescription?: string;
-    };
-    expect(payload.goodsSize).toBe('s');
-    expect(payload.itemDescription).toBe('');
+    // plan 89 — notify 대신 POST /api/quick-request (등록)
+    const { requestBody } = await confirmPreviewAndRegister(page);
+    expect(requestBody.goodsSize).toBe('s');
+    expect(requestBody.itemDescription).toBe('');
   });
 
-  test('AC-22: 확인 → 501 · toast 2종 · Dialog 닫힘 · 물품 내용/크기 빈값 · 출발 담당 reset', async ({
+  // plan 89 AC-08·AC-15·D-12가 87 AC-22(501·복사·reset·FE 최근 주소 병렬 기록)를 대체
+  test('AC-22: (89 대체) 등록 → 상세 이동 · FE recent-addresses POST 0건(서버 기록) · 기타 물품 전송', async ({
     page
   }) => {
-    const profile = await fetchUserProfileFromDashboard(page);
+    const recentPosts: string[] = [];
+    page.on('request', (req) => {
+      if (req.url().includes('/api/quick-request/recent-addresses') && req.method() === 'POST') {
+        recentPosts.push(req.url());
+      }
+    });
     await gotoQuickRequest(page);
     await fillQuickRequestOrder(page, { goodsSize: 'other', item: 'E2E 기타 물품' });
     await clickDesktopRegister(page);
-    const recentPromise = page.waitForResponse(
-      (res) =>
-        res.url().includes('/api/quick-request/recent-addresses') &&
-        res.request().method() === 'POST'
-    );
-    await confirmPreviewAndExpect501(page);
-    expect((await recentPromise).status()).toBe(200);
-
-    const main = quickRequestMain(page);
-    await expect(goodsSizeGroup(page).getByRole('radio', { checked: true })).toHaveCount(0);
-    await expect(itemDescriptionField(page)).toBeHidden();
-    await expect(itemDescriptionField(page)).toHaveValue('');
-    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
-      profile.fullName
-    );
+    const { requestBody } = await confirmPreviewAndRegister(page);
+    expect(requestBody.goodsSize).toBe('other');
+    expect(requestBody.itemDescription).toBe('E2E 기타 물품');
+    expect(recentPosts).toEqual([]);
   });
 
-  test('AC-22: recent-addresses POST 500이어도 복사·reset 동일 · 오류 toast', async ({ page }) => {
-    const profile = await fetchUserProfileFromDashboard(page);
+  test('AC-22: (89 대체) recent-addresses POST가 500이어도 등록 흐름 무관 — FE 호출 0건', async ({ page }) => {
+    let recentPostHits = 0;
     await page.route('**/api/quick-request/recent-addresses', async (route) => {
       if (route.request().method() === 'POST') {
+        recentPostHits += 1;
         await route.fulfill({
           status: 500,
           contentType: 'application/json',
@@ -370,18 +355,11 @@ test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () =
     await gotoQuickRequest(page);
     await fillQuickRequestOrder(page, { goodsSize: 'other', item: 'E2E 기타 물품' });
     await clickDesktopRegister(page);
-    await confirmPreviewAndExpect501(page);
+    await confirmPreviewAndRegister(page);
     await expect(
       page.getByText('최근 이용 내역을 저장하지 못했습니다.', { exact: true })
-    ).toBeVisible({ timeout: 10_000 });
-
-    const main = quickRequestMain(page);
-    await expect(goodsSizeGroup(page).getByRole('radio', { checked: true })).toHaveCount(0);
-    await expect(itemDescriptionField(page)).toBeHidden();
-    await expect(itemDescriptionField(page)).toHaveValue('');
-    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
-      profile.fullName
-    );
+    ).toHaveCount(0);
+    expect(recentPostHits).toBe(0);
   });
 
   test('AC-24: 차량 img alt · 일정 radio 이름 · 운임 testid 유지 (shadcn 교체 후)', async ({

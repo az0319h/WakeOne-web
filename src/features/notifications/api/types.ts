@@ -26,7 +26,9 @@ export type NotificationType =
   | 'workflow.completed'
   | 'workflow.declined'
   | 'workflow.canceled'
-  | 'workflow.comment_created';
+  | 'workflow.comment_created'
+  | 'quick_request.vendor_event'
+  | 'quick_request.requester_event';
 
 export type NotificationStatus = 'unread' | 'read';
 
@@ -60,7 +62,9 @@ export type NotificationMetadata = {
     | 'workflow.completed'
     | 'workflow.declined'
     | 'workflow.canceled'
-    | 'workflow.comment_created';
+    | 'workflow.comment_created'
+    | 'quick_request.vendor_event'
+    | 'quick_request.requester_event';
   benefit_document_id?: number;
   benefit_type?: 'book' | 'fitness' | 'education';
   applicant_user_id?: string;
@@ -96,6 +100,11 @@ export type NotificationMetadata = {
   workflow_document_id?: string;
   document_code?: string;
   template_key?: string;
+  /** plan 89 — 클릭 이동 `/dashboard/quick/{quick_request_no}` */
+  quick_request_no?: string;
+  quick_request_id?: string;
+  /** created · cancelled (vendor) / accepted · dispatched · final_amount_set · approved · cancelled (requester) */
+  quick_request_event?: string;
 };
 
 export type Notification = {

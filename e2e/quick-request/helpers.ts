@@ -35,10 +35,13 @@ export function previewMessage(page: Page) {
   return page.getByTestId('quick-request-preview-message');
 }
 
+/** plan 89 U-1 — 사이드바 「퀵」 그룹: 「퀵 대시보드」(/dashboard/quick) · 「퀵 요청하기」(/dashboard/quick/request) */
+export const QUICK_DASHBOARD_PATH = '/dashboard/quick';
+
 export async function openQuickRequestNavLink(page: Page) {
   await page.setViewportSize(VIEWPORT_DESKTOP);
   await page.goto('/dashboard/overview', { waitUntil: 'domcontentloaded' });
-  const link = page.getByRole('link', { name: '퀵 요청하기' });
+  const link = page.getByRole('link', { name: '퀵 요청하기', exact: true });
   if (!(await link.isVisible())) {
     await page.getByRole('button', { name: 'Toggle Sidebar' }).click();
   }
@@ -226,22 +229,40 @@ export async function clickMobileRegister(page: Page) {
   await quickRequestMain(page).getByTestId('quick-request-mobile-register-button').click();
 }
 
-/** Dialog 확인 → notify 501 · toast 2종 · Dialog 닫힘 (AC-13·16 공통) */
-export async function confirmPreviewAndExpect501(page: Page) {
-  await expect(previewMessage(page)).toContainText(/새 퀵 요청/);
-  const notifyPromise = page.waitForResponse(
-    (res) => res.url().includes('/api/quick-request/notify') && res.request().method() === 'POST'
+/**
+ * plan 89 U-8 (82·86·87의 notify 501·클립보드 복사·reset 흐름 대체)
+ * 미리보기 「퀵 요청 미리보기」 → 「등록」 → POST /api/quick-request 201 → 성공 토스트 → `/dashboard/quick/{번호}`
+ */
+export async function confirmPreviewAndRegister(page: Page) {
+  const dialog = page.getByRole('dialog', { name: '퀵 요청 미리보기' });
+  await expect(dialog).toBeVisible();
+  const confirm = page.getByTestId('quick-request-confirm-button');
+  await expect(confirm).toHaveText(/등록/);
+
+  const responsePromise = page.waitForResponse(
+    (res) =>
+      new URL(res.url()).pathname === '/api/quick-request' && res.request().method() === 'POST'
   );
-  await page.getByTestId('quick-request-confirm-button').click();
-  const response = await notifyPromise;
-  expect(response.status()).toBe(501);
-  await expect(page.getByText('카톡 API 연동 후 자동 전송됩니다.', { exact: true })).toBeVisible({
-    timeout: 10_000
-  });
-  await expect(page.getByText('메시지가 복사되었습니다.', { exact: true })).toBeVisible({
-    timeout: 10_000
-  });
-  await expect(previewMessage(page)).toBeHidden();
+  await confirm.click();
+  const response = await responsePromise;
+  expect(response.status(), await response.text()).toBe(201);
+  const body = (await response.json()) as {
+    data: { requestNo: string; id: string; openchat: { status: string } };
+  };
+  const { requestNo } = body.data;
+  expect(requestNo).toMatch(/^\d{4}-\d{2,}$/);
+
+  await expect(
+    page.getByText(`퀵 요청이 등록되었습니다. (요청번호 ${requestNo})`, { exact: true })
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(page).toHaveURL(new RegExp(`/dashboard/quick/${requestNo}$`), { timeout: 30_000 });
+  await expect(page.getByTestId('quick-detail')).toBeVisible({ timeout: 30_000 });
+  return {
+    requestNo,
+    id: body.data.id,
+    openchat: body.data.openchat,
+    requestBody: response.request().postDataJSON() as Record<string, unknown>
+  };
 }
 
 export function expectedAbsoluteDatetimeFromLocalInput(localValue: string): string {

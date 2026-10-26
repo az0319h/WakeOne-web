@@ -4,11 +4,13 @@ import path from 'node:path';
 import type { APIRequestContext } from '@playwright/test';
 
 export type OrgChartAffiliation = 'wake' | 'sans' | 'sans_foundry';
+/** plan 89 — 테스트 계정 생성용 (동방특송 포함) */
+export type TestUserAffiliation = OrgChartAffiliation | 'dongbang';
 
 export type OrgChartUserOptions = {
   email?: string | null;
   fullName?: string;
-  affiliation?: OrgChartAffiliation | null;
+  affiliation?: TestUserAffiliation | null;
   rank?: string | null;
   position_level?: string | null;
   leader_role?: 'team_leader' | 'part_leader' | null;

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { insertNotifications } from '@/features/notifications/api/insert.server';
 
 export type WorkflowNotificationType =
   | 'workflow.approval_requested'
@@ -100,11 +100,7 @@ export async function insertWorkflowNotifications(input: {
   }));
 
   try {
-    const supabase = getServiceRoleClient();
-    const { error } = await supabase.from('notifications').insert(rows);
-    if (error) {
-      console.error('[workflow] notification insert failed:', error.message);
-    }
+    await insertNotifications(rows);
   } catch (error) {
     console.error(
       '[workflow] notification insert failed:',

@@ -1,10 +1,10 @@
 import 'server-only';
 
 import {
-  AFFILIATION_OPTIONS,
+  ORG_AFFILIATION_OPTIONS,
   EXECUTIVE_POSITION_LEVELS,
   RANK_BY_AFFILIATION,
-  type Affiliation,
+  type OrgAffiliation,
   type LeaderRole
 } from '@/features/users/constants/organization';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
@@ -89,7 +89,7 @@ const SANS_POSITION_ORDER = ['CEO', '점장', '부점장', '선임매니저', '�
 const SANS_PEER_TIER = new Set(['선임매니저', '쉐프']);
 const FOUNDRY_POSITION_ORDER = ['공장장', '팀장', '차장', '오퍼레이터'] as const;
 
-function positionSortScore(affiliation: Affiliation, positionLevel: string): number {
+function positionSortScore(affiliation: OrgAffiliation, positionLevel: string): number {
   if (affiliation === 'sans' && SANS_PEER_TIER.has(positionLevel)) {
     return SANS_POSITION_ORDER.indexOf('선임매니저');
   }
@@ -106,7 +106,7 @@ function positionSortScore(affiliation: Affiliation, positionLevel: string): num
 }
 
 export function sortOrgChartMembers(
-  affiliation: Affiliation,
+  affiliation: OrgAffiliation,
   members: OrgChartProfile[]
 ): OrgChartProfile[] {
   return [...members].sort((a, b) => {
@@ -283,7 +283,7 @@ function buildSansFoundryTree(
 }
 
 export function buildOrgChartTree(
-  affiliation: Affiliation,
+  affiliation: OrgAffiliation,
   members: OrgChartProfile[],
   groupCeo: OrgChartProfile | null = null
 ): OrgChartNode[] {
@@ -329,7 +329,7 @@ export async function fetchGroupCeoProfile(): Promise<OrgChartProfile | null> {
     avatar_url: data.avatar_url,
     email: data.email,
     phone: data.phone,
-    affiliation: data.affiliation as Affiliation,
+    affiliation: data.affiliation as OrgAffiliation,
     rank: data.rank,
     position_level: data.position_level as string,
     leader_role: data.leader_role as LeaderRole | null,
@@ -338,7 +338,7 @@ export async function fetchGroupCeoProfile(): Promise<OrgChartProfile | null> {
   };
 }
 
-export async function getOrgChartResponse(affiliation: Affiliation) {
+export async function getOrgChartResponse(affiliation: OrgAffiliation) {
   const profiles = await listOrgChartProfiles(affiliation);
   const groupCeo =
     affiliation === 'sans' || affiliation === 'sans_foundry'
@@ -353,7 +353,7 @@ export async function getOrgChartResponse(affiliation: Affiliation) {
 }
 
 export async function listOrgChartProfiles(
-  affiliation: Affiliation
+  affiliation: OrgAffiliation
 ): Promise<OrgChartProfile[]> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
@@ -376,7 +376,7 @@ export async function listOrgChartProfiles(
       avatar_url: row.avatar_url,
       email: row.email,
       phone: row.phone,
-      affiliation: row.affiliation as Affiliation,
+      affiliation: row.affiliation as OrgAffiliation,
       rank: row.rank,
       position_level: row.position_level as string,
       leader_role: row.leader_role as LeaderRole | null,
@@ -385,8 +385,8 @@ export async function listOrgChartProfiles(
     }));
 }
 
-export function getAffiliationQueryLabel(affiliation: Affiliation): string {
-  return AFFILIATION_OPTIONS.find((option) => option.value === affiliation)?.label ?? affiliation;
+export function getAffiliationQueryLabel(affiliation: OrgAffiliation): string {
+  return ORG_AFFILIATION_OPTIONS.find((option) => option.value === affiliation)?.label ?? affiliation;
 }
 
 export { EXECUTIVE_POSITION_LEVELS };

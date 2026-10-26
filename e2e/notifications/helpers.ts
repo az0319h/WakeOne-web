@@ -47,6 +47,7 @@ export async function updateUserFullName(
       full_name: fullName,
       affiliation: 'wake',
       rank: '경영진',
+      position_level: 'CEO',
       phone: E2E_TEST_PHONE
     }
   });
@@ -63,6 +64,7 @@ export async function updateUserPhone(
     data: {
       affiliation: 'wake',
       rank: '경영진',
+      position_level: 'CEO',
       system_role: 'user',
       birthday: '1990-01-01',
       phone
@@ -82,6 +84,7 @@ export async function updateUserBirthday(
       birthday,
       affiliation: 'wake',
       rank: '경영진',
+      position_level: 'CEO',
       phone: E2E_TEST_PHONE
     }
   });

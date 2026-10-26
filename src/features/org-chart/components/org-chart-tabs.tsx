@@ -2,7 +2,7 @@
 
 import { parseAsStringLiteral, useQueryStates } from 'nuqs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AFFILIATION_OPTIONS } from '@/features/users/constants/organization';
+import { ORG_AFFILIATION_OPTIONS } from '@/features/users/constants/organization';
 
 const affiliationValues = ['wake', 'sans', 'sans_foundry'] as const;
 
@@ -32,7 +32,7 @@ export function OrgChartTabs() {
       }}
     >
       <TabsList>
-        {AFFILIATION_OPTIONS.map((option) => (
+        {ORG_AFFILIATION_OPTIONS.map((option) => (
           <TabsTrigger key={option.value} value={option.value}>
             {option.label}
           </TabsTrigger>

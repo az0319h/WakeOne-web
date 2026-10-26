@@ -1,0 +1,154 @@
+'use client';
+
+import Link from 'next/link';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
+import type { QuickRequestListRow } from '../../api/types';
+import { formatQuickAmountWon } from '../../lib/format-quick-amount';
+import {
+  formatQuickGoodsLabel,
+  formatQuickRouteLabel,
+  formatQuickVehicleSummary
+} from '../../lib/quick-request-route-label';
+import { QuickRequestStatusBadge } from '../quick-request-status-badge';
+import {
+  QuickRequestRowAction,
+  type QuickRequestRowActionHandlers
+} from './quick-request-row-action';
+
+export function quickRequestDetailHref(requestNo: string): string {
+  return `/dashboard/quick/${encodeURIComponent(requestNo)}`;
+}
+
+/**
+ * 표 9열 (AC-34 헤더 텍스트 그대로) — 행 클릭 이동 없음, 링크로만 이동.
+ * `size`는 DataTable 셀 width — 1280(사이드바 접힘)에서 가로 스크롤 없이 들어가는 폭.
+ */
+export function createQuickDashboardColumns(
+  handlers: QuickRequestRowActionHandlers
+): ColumnDef<QuickRequestListRow>[] {
+  return [
+    {
+      id: 'status',
+      size: 116,
+      header: '진행 상태',
+      enableSorting: false,
+      cell: ({ row }) => <QuickRequestStatusBadge status={row.original.status} />
+    },
+    {
+      id: 'request',
+      size: 156,
+      header: '요청 정보',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className='flex flex-col gap-0.5'>
+          <span translate='no' className='font-semibold text-foreground tabular-nums'>
+            {row.original.requestNo}
+          </span>
+          <time
+            dateTime={row.original.requestedAt}
+            className='text-xs whitespace-nowrap text-muted-foreground tabular-nums'
+          >
+            {formatAbsoluteDateTimeKo(row.original.requestedAt)}
+          </time>
+        </div>
+      )
+    },
+    {
+      id: 'requester',
+      size: 96,
+      header: '요청자',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className='block max-w-24 truncate'>{row.original.requester.name}</span>
+      )
+    },
+    {
+      id: 'route',
+      size: 184,
+      header: '이동 경로',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className='flex flex-col items-start gap-1'>
+          <span className='line-clamp-2 break-keep whitespace-normal'>
+            {formatQuickRouteLabel(row.original.route)}
+          </span>
+          {row.original.route.stopoverCount > 0 ? (
+            <Badge variant='secondary' className='font-normal'>
+              경유 {row.original.route.stopoverCount}
+            </Badge>
+          ) : null}
+        </div>
+      )
+    },
+    {
+      id: 'goods',
+      size: 136,
+      header: '물품·차량',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className='flex flex-col gap-0.5'>
+          <span>{formatQuickGoodsLabel(row.original.goodsSize)}</span>
+          <span className='text-xs text-muted-foreground'>
+            {formatQuickVehicleSummary(row.original)}
+          </span>
+        </div>
+      )
+    },
+    {
+      id: 'estimatedAmount',
+      size: 96,
+      header: () => <span className='block text-right'>예상금액</span>,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className='block text-right tabular-nums'>
+          {formatQuickAmountWon(row.original.estimatedAmount)}
+        </span>
+      )
+    },
+    {
+      id: 'finalAmount',
+      size: 96,
+      header: () => <span className='block text-right'>최종금액</span>,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className='block text-right tabular-nums'>
+          {formatQuickAmountWon(row.original.finalAmount)}
+        </span>
+      )
+    },
+    {
+      id: 'detail',
+      size: 84,
+      header: '상세 보기',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Button variant='outline' size='sm' className='h-9' asChild>
+          <Link
+            href={quickRequestDetailHref(row.original.requestNo)}
+            aria-label={`${row.original.requestNo} 상세 보기`}
+            data-testid={`quick-row-detail-${row.original.requestNo}`}
+          >
+            상세
+          </Link>
+        </Button>
+      )
+    },
+    {
+      id: 'actions',
+      size: 136,
+      header: '업무 처리',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <QuickRequestRowAction
+          row={row.original}
+          layout='table'
+          testId={`quick-row-action-${row.original.requestNo}`}
+          {...handlers}
+        />
+      )
+    }
+  ];
+}

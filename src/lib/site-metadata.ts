@@ -88,9 +88,20 @@ export const siteMetadata: Metadata = {
   alternates: {
     canonical: SITE_URL
   },
+  // plan 91 — PWA
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'WakeOne',
+    statusBarStyle: 'default'
+  },
+  // Next 16은 `mobile-web-app-capable`만 출력 — iOS Safari 홈 화면 standalone 판정용 apple 메타를 명시 (AC-03)
+  other: {
+    'apple-mobile-web-app-capable': 'yes'
+  },
   icons: {
     icon: [{ url: '/assets/favicon.ico', type: 'image/x-icon' }],
     shortcut: [{ url: '/assets/favicon.ico', type: 'image/x-icon' }],
-    apple: [{ url: '/assets/favicon.ico', type: 'image/x-icon' }]
+    apple: [{ url: '/icons/apple-touch-icon-180.png', sizes: '180x180', type: 'image/png' }]
   }
 };

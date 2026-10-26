@@ -11,6 +11,14 @@ import {
 } from '@/config/admin-routes';
 import { canAccessBenefitsAdmin } from '@/features/auth/api/benefits-access.server';
 import { isDisabledDashboardPath } from "@/config/disabled-routes";
+import {
+  DONGBANG_FORBIDDEN_JSON,
+  DONGBANG_HOME_PATH,
+  getDongbangDeniedFlashKey,
+  isDongbangAllowedApi,
+  isDongbangAllowedPage,
+} from "@/config/dongbang-routes";
+import { isDongbang } from "@/features/auth/api/quick-access.server";
 import { ACCESS_DENIED_FLASH_COOKIE } from "@/lib/auth/access-denied-flash";
 import { ACCOUNT_DISABLED_FLASH_COOKIE } from "@/lib/auth/account-disabled-flash";
 import { updateSession } from "@/lib/supabase/middleware";
@@ -161,6 +169,11 @@ export async function middleware(request: NextRequest) {
       return jsonWithCookies(response, UNAUTHORIZED_JSON, 401);
     }
 
+    // plan 89 — 동방특송 allowlist (기본 거부). proxy.ts와 동일 규칙 · Route 진입 전 차단이라 activity log 대상 아님
+    if (isDongbang(profile) && !isDongbangAllowedApi(pathname, request.method)) {
+      return jsonWithCookies(response, DONGBANG_FORBIDDEN_JSON, 403);
+    }
+
     return response;
   }
 
@@ -171,7 +184,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // plan 89 — layout 2차 방어(requireDashboardSession)가 현재 경로를 읽을 수 있게 전달
+  request.headers.set("x-pathname", pathname);
+
   const { response, user, profile, supabase } = await updateSession(request);
+  const userIsDongbang = Boolean(user) && isDongbang(profile);
 
   if (profile && profile.status !== "active") {
     if (isSignInPath(pathname)) {
@@ -215,7 +232,7 @@ export async function middleware(request: NextRequest) {
 
     if (isSignInPath(pathname)) {
       const dashboardUrl = request.nextUrl.clone();
-      dashboardUrl.pathname = "/dashboard/overview";
+      dashboardUrl.pathname = userIsDongbang ? DONGBANG_HOME_PATH : "/dashboard/overview";
       dashboardUrl.search = "";
       const redirectResponse = NextResponse.redirect(dashboardUrl);
       copyCookies(response, redirectResponse);
@@ -223,7 +240,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard/overview";
+    dashboardUrl.pathname = userIsDongbang ? DONGBANG_HOME_PATH : "/dashboard/overview";
     dashboardUrl.search = "";
     const redirectResponse = NextResponse.redirect(dashboardUrl);
     copyCookies(response, redirectResponse);
@@ -238,6 +255,20 @@ export async function middleware(request: NextRequest) {
       const redirectResponse = NextResponse.redirect(signInUrl);
       copyCookies(response, redirectResponse);
       return redirectResponse;
+    }
+
+    // plan 89 — 동방특송 allowlist: 그 밖의 페이지는 /dashboard/quick + access-denied flash
+    if (userIsDongbang && (isPrintPath || !isDongbangAllowedPage(pathname))) {
+      const flashKey = getDongbangDeniedFlashKey(pathname);
+      if (!flashKey) {
+        const homeUrl = request.nextUrl.clone();
+        homeUrl.pathname = DONGBANG_HOME_PATH;
+        homeUrl.search = "";
+        const redirectResponse = NextResponse.redirect(homeUrl);
+        copyCookies(response, redirectResponse);
+        return redirectResponse;
+      }
+      return redirectWithAccessDeniedFlash(request, response, flashKey, DONGBANG_HOME_PATH);
     }
 
     if (isDisabledDashboardPath(pathname)) {

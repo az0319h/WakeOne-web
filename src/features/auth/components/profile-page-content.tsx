@@ -4,6 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import type { AuthProfile } from '@/features/auth/api/types';
 import { formatLeaderRoleLabel } from '@/features/org-chart/lib/format-person-label';
 import { getAffiliationLabel } from '@/features/users/constants/organization';
+import { PushNotificationSettingsSection } from '@/features/notifications/components/push-notification-settings-section';
 import { ProfileAdminPageContent } from './profile-admin-page-content';
 import { ProfileAvatar, ReadOnlyField } from './profile-display';
 import { ProfileAccountReadOnly } from './profile-account-read-only';
@@ -72,6 +73,10 @@ export function ProfilePageContent({ profile }: ProfilePageContentProps) {
       >
         <ProfileAccountReadOnly profile={profile} />
       </ProfileSection>
+
+      <Separator />
+
+      <PushNotificationSettingsSection />
     </div>
   );
 }

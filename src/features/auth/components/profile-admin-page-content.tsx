@@ -1,6 +1,8 @@
 'use client';
 
+import { Separator } from '@/components/ui/separator';
 import type { AuthProfile } from '@/features/auth/api/types';
+import { PushNotificationSettingsSection } from '@/features/notifications/components/push-notification-settings-section';
 import { ProfileAvatar, ReadOnlyField } from './profile-display';
 
 interface ProfileAdminPageContentProps {
@@ -29,6 +31,10 @@ export function ProfileAdminPageContent({ profile }: ProfileAdminPageContentProp
           </div>
         </div>
       </section>
+
+      <Separator />
+
+      <PushNotificationSettingsSection />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/client';
+import { unsubscribePushOnThisDevice } from '@/features/notifications/lib/push-client';
 import type {
   AuthProfile,
   ForcePasswordChangePayload,
@@ -103,6 +104,8 @@ export async function forcePasswordChange(
 }
 
 export async function signOut() {
+  // plan 91 — 로그아웃 전에 이 기기의 푸시 구독을 먼저 해제한다(2초 timeout · 실패 무시)
+  await unsubscribePushOnThisDevice();
   const supabase = createClient();
   await supabase.auth.signOut();
 }

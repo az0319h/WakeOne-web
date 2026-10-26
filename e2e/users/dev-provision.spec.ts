@@ -10,7 +10,7 @@ test.describe('dev 사용자 사전 등록 UI (plan 70)', () => {
     page
   }) => {
     await page.goto('/dashboard/users');
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
     await expect(page.getByRole('button', { name: '사용자 추가' })).toBeVisible();
@@ -96,7 +96,7 @@ test.describe('dev 사용자 사전 등록 UI (plan 70)', () => {
     page
   }) => {
     await page.goto('/dashboard/users');
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
     await waitForDashboardPresenceReady(page);

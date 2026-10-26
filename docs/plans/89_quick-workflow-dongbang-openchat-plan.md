@@ -1,10 +1,11 @@
 # 퀵 업무 흐름 리뉴얼 · 동방특송 소속 · 오픈채팅 webhook 자동 발송 기획서
 
 > Date: 2026-10-21
-> Status: Approved
+> Status: In Progress
 > Author: planner
 > **Supersedes:** [82](./82_quick-request-plan.md)의 notify 501·「DB 저장 없음」·「대시보드/내역 Out」·「activity log 해당 없음」, [86](./86_quick-request-kakao-redesign-plan.md) AC-13·AC-16·AC-22(501·복사·reset), [87](./87_quick-request-goods-notes-address-picker-plan.md) AC-22(복사 흐름)·「최근 주소 FE 병렬 기록」, `e2e/quick-request/notify.api.spec.ts` 전체
 > **상속(변경 없음):** 86·87의 요청 폼 UI·테마·반응형, 물품 크기, 특이사항 칩(SQL `85`), 주소 검색 모달, 최근 주소 테이블
+> **부분 superseded by:** [92](./92_quick-web-only-notifications-plan.md) — 오픈채팅 webhook 전체(D-1·2·3·13·16·17, U-7, resend Route, AC-11~14·35 등)를 삭제하고 웹 알림으로 일원화. 건별 대화는 [93](./93_quick-request-chat-plan.md)
 > **선행:** [07](./07_auth-route-guard-plan.md), [08](./08_activity-audit-log-plan.md), [14](./14_delete-confirm-dialog-plan.md), [27](./27_in-app-notifications-user-update-plan.md), [39](./39_announcements-plan.md), [49](./49_live-users-presence-plan.md), [57](./57_google-auth-approval-migration-plan.md), [63](./63_org-chart-admin-profile-plan.md), [76](./76_hr-benefits-manager-access-plan.md)
 
 ## 선행 plan 참조 (Phase 0)
@@ -105,7 +106,7 @@
 | AC-03 | Playwright | `dongbang.json` | 사이드바·kbar 확인 | 노출 메뉴는 **「퀵 대시보드」·「알림」·「활동 로그」·프로필(사용자 메뉴)**뿐 · 「퀵 요청하기」·「대시보드(overview)」·「조직도」·「공지사항」 등 **0건** |
 | AC-04 | Playwright | `dongbang.json` | `/dashboard`, `/dashboard/overview`, `/dashboard/org-chart`, `/dashboard/announcements`, `/dashboard/my-benefits`, `/dashboard/kanban`, `/dashboard/quick/request`, `/dashboard/support` 직접 입력 | 모두 **`/dashboard/quick`**로 이동 · overview를 제외한 경로는 access-denied 토스트 표시 |
 | AC-05 | API | `dongbang.json` 세션 | `GET /api/org-chart?affiliation=wake`, `GET /api/announcements`, `GET /api/users`, `GET /api/my-benefits`, `GET /api/google-tasks/lists`, `POST /api/quick-request`, `GET /api/quick-request/notes` | 모두 **403** · body `{"success":false,"message":"접근 권한이 없습니다."}` |
-| AC-06 | API | `dongbang.json` 세션 | `GET /api/profile`, `GET /api/notifications`, `GET /api/activity-logs`, `GET /api/quick-request` | 모두 **200** |
+| AC-06 | API | `dongbang.json` 세션 | ① `GET /api/notifications`, `GET /api/activity-logs`, `GET /api/quick-request`, `GET /api/quick-request/summary` ② `GET /api/profile`, `PATCH /api/profile` | ① 모두 **200** ② proxy 403 본문 `{"success":false,"message":"접근 권한이 없습니다."}`이 **아님** — Route 자체 응답(GET은 핸들러가 없어 **405**, PATCH는 Route의 기존 응답)이면 통과. 의도: 동방특송 허용 API는 proxy가 막지 않는다 |
 | AC-07 | Playwright·DB | 동방특송 active 1명 존재 | `user.json`으로 `/dashboard/org-chart` 각 탭 · admin `/dashboard/benefits` 명단 · 공지 1건 발행 | 동방특송 사용자가 조직도·복지비 명단에 **0건** · 공지 발행 알림 수신자에 동방특송 **0건** · Supabase client로 `announcements` select 시 동방 세션은 **0행**(RLS) |
 
 ### B. 등록·번호·발송
@@ -431,3 +432,6 @@ plan은 **하나로 유지**한다. 이유는 두 가지다.
 | 날짜 | 변경 내용 | 작성자 |
 |------|----------|--------|
 | 2026-10-21 | 최초 작성(번호 88 → **89**: 병행 plan 88 workflow-expense와 충돌해 변경, SQL도 89 이상). deep-interview Q1~Q6 답변과 root 확정 반영. 82·86·87 일부 supersede. Status Approved(/root 단일 게이트 규칙) | planner |
+| 2026-10-22 | verifier 피드백(기획 문제) 반영: **AC-06** 정정 — `/api/profile`에는 GET 핸들러가 없어(PATCH만) `GET 200`이 성립하지 않으므로, profile은 「proxy 403 본문이 아님(Route 자체 응답 405/PATCH 기존 응답)」으로 바꾸고 notifications·activity-logs·quick-request·quick-request/summary는 200 유지. verifier가 수정한 사이드바 버그 기록: 접힌 상태에서 그룹 label이 메뉴 클릭을 가로챔 → `app-sidebar.tsx` `SidebarGroupLabel`에 `group-data-[collapsible=icon]:pointer-events-none` 추가. 구현·자동 검증(AC 39/39 PASS) 완료, 실제 봇 연결·사용자 수동 QA 남음 → Status **In Progress** | planner |
+| 2026-10-22 | plan **92**가 오픈채팅 관련 결정을 supersede: D-1·D-2·D-3(webhook·재시도·미설정), D-13(메시지 복사), D-16(인앱 알림 수신자 → 92 §수신자 매트릭스), D-17, U-7, §webhook 계약·§env, `POST …/openchat/resend`, AC-11·12·13·14·35 폐기, AC-16·18·19·21·23·26·38의 webhook 판정 제거, Out 「Realtime 목록 자동 갱신」 번복(92 D-7), OQ-1 종료. 요청자가 접수 후 취소·변경을 부탁하던 오픈채팅 용도는 plan **93**(건별 채팅)이 대체. 상태 흐름·권한·allowlist·번호 발급은 유지 | planner |
+| 2026-10-26 | 커밋 전 최종 확인(89·90·91 묶음): Status **In Progress 유지** — 오픈채팅 봇은 아직 미연결이며, webhook 잔여 항목은 plan 92(웹 알림 일원화)에서 정리 예정. 회귀 검증(build·tsc·lint·`e2e/quick-workflow`·`quick-info`·`quick-request`) 결과는 plan 91 수정 이력 참조 | verifier |

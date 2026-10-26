@@ -2,11 +2,10 @@ import { expect, test } from '@playwright/test';
 import {
   applyThemeBeforeNavigation,
   clickMobileRegister,
-  confirmPreviewAndExpect501,
+  confirmPreviewAndRegister,
   expectNoHorizontalScroll,
   expectNoInnerHorizontalOverflow,
   expectThemeApplied,
-  fetchUserProfileFromDashboard,
   fillQuickRequestOrder,
   gotoQuickRequest,
   noteChip,
@@ -104,19 +103,14 @@ test.describe('퀵 배송 요청 모바일 375 (plan 86 AC-15~18)', () => {
     await expect(drawer).toBeHidden();
   });
 
-  test('AC-16: 모바일 등록 → Dialog 확인 → 501 · 복사 · reset', async ({ page }) => {
-    const profile = await fetchUserProfileFromDashboard(page);
+  // plan 89 AC-09가 86 AC-16(501·복사·reset)을 대체
+  test('AC-16: (89 AC-09 대체) 모바일 등록 → 「등록」 → 201 · 상세 이동', async ({ page }) => {
     await gotoQuickRequest(page, VIEWPORT_MOBILE);
     await fillQuickRequestOrder(page);
     await clickMobileRegister(page);
-    await confirmPreviewAndExpect501(page);
-
-    const main = quickRequestMain(page);
-    await expect(main.getByTestId('quick-request-item-description')).toBeHidden();
-    await expect(main.getByTestId('quick-request-item-description')).toHaveValue('');
-    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
-      profile.fullName
-    );
+    await confirmPreviewAndRegister(page);
+    await expect(page.getByTestId('quick-detail-status')).toHaveText('신규요청');
+    await expectNoHorizontalScroll(page);
   });
 
   // plan 87 r1 — 물품 내용 필수는 「기타」 선택 시에만

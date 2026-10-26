@@ -9,11 +9,33 @@ export const LEADER_ROLE_OPTIONS = [
   { value: 'part_leader' as const, label: '파트장 (P)' }
 ] as const;
 
-export const AFFILIATIONS = ['wake', 'sans', 'sans_foundry'] as const;
+/** 조직도·부서·직급 체계가 있는 소속 (plan 89 — 동방특송 제외) */
+export const ORG_AFFILIATIONS = ['wake', 'sans', 'sans_foundry'] as const;
+
+export type OrgAffiliation = (typeof ORG_AFFILIATIONS)[number];
+
+/** plan 89 — 외부 업체 동방특송 (퀵 화면 전용 · 부서/직급/리더 null) */
+export const DONGBANG_AFFILIATION = 'dongbang' as const;
+
+export const AFFILIATIONS = [...ORG_AFFILIATIONS, DONGBANG_AFFILIATION] as const;
 
 export type Affiliation = (typeof AFFILIATIONS)[number];
 
-export const POSITION_LEVEL_BY_AFFILIATION: Record<Affiliation, readonly string[]> = {
+export function isOrgAffiliation(value: string | null | undefined): value is OrgAffiliation {
+  return Boolean(value && (ORG_AFFILIATIONS as readonly string[]).includes(value));
+}
+
+export function isDongbangAffiliation(value: string | null | undefined): boolean {
+  return value === DONGBANG_AFFILIATION;
+}
+
+/**
+ * plan 89 — PostgREST `.or()` 필터: 동방특송을 명단(생일·복지비·공지 fan-out 등)에서 제외.
+ * `neq`만 쓰면 affiliation null(관리자) 행도 빠지므로 null을 함께 허용한다.
+ */
+export const EXCLUDE_DONGBANG_OR_FILTER = 'affiliation.is.null,affiliation.neq.dongbang';
+
+export const POSITION_LEVEL_BY_AFFILIATION: Record<OrgAffiliation, readonly string[]> = {
   wake: ['CEO', 'COO', '부장', '차장', '과장', '대리', '주임', '사원'],
   sans: ['CEO', '점장', '부점장', '선임매니저', '매니저', '쉐프'],
   sans_foundry: ['CEO', '공장장', '팀장', '차장', '오퍼레이터']
@@ -28,13 +50,20 @@ export const SELECT_NONE_OPTION = {
   label: '선택 안 함'
 } as const;
 
-export const AFFILIATION_OPTIONS = [
+/** 조직도 탭 등 조직 체계 소속만 */
+export const ORG_AFFILIATION_OPTIONS = [
   { value: 'wake' as const, label: '웨이크' },
   { value: 'sans' as const, label: '산스' },
   { value: 'sans_foundry' as const, label: '산스파운드리' }
 ] as const;
 
-export const RANK_BY_AFFILIATION: Record<Affiliation, readonly string[]> = {
+/** 사용자 승인·수정 소속 Select (plan 89 — 「동방특송」 추가) */
+export const AFFILIATION_OPTIONS = [
+  ...ORG_AFFILIATION_OPTIONS,
+  { value: 'dongbang' as const, label: '동방특송' }
+] as const;
+
+export const RANK_BY_AFFILIATION: Record<OrgAffiliation, readonly string[]> = {
   wake: [
     '경영진',
     '사업기획팀',
@@ -58,6 +87,9 @@ export function getAffiliationLabel(
 
 /** user rank Select — 경영진(웨이크)·공장장(산스파운드리) 제외 */
 export function ranksForUserSelect(affiliation: Affiliation): readonly string[] {
+  if (!isOrgAffiliation(affiliation)) {
+    return [];
+  }
   const ranks = RANK_BY_AFFILIATION[affiliation];
   if (affiliation === 'wake') {
     return ranks.filter((rank) => rank !== '경영진');
@@ -103,6 +135,15 @@ export function validateOrganizationFields(
 
   if (rank == null || rank === '') return;
 
+  if (affiliation === DONGBANG_AFFILIATION) {
+    ctx.addIssue({
+      code: 'custom',
+      message: '동방특송은 부서/사업장을 설정할 수 없습니다.',
+      path: ['rank']
+    });
+    return;
+  }
+
   if (
     affiliation === 'wake' &&
     rank === '경영진' &&
@@ -142,6 +183,15 @@ export function validatePositionFields(
     ctx.addIssue({
       code: 'custom',
       message: '직급을 설정하려면 소속을 먼저 선택해 주세요.',
+      path: ['position_level']
+    });
+    return;
+  }
+
+  if (!isOrgAffiliation(affiliation)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: '동방특송은 직급을 설정할 수 없습니다.',
       path: ['position_level']
     });
     return;

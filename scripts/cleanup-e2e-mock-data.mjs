@@ -596,6 +596,129 @@ async function cleanupWorkflowFixtures() {
   }
 }
 
+// plan 89 — 퀵 업무 흐름 e2e 산출물 (quick_requests · 발송 기록 · 알림 · 연도 카운터)
+// `quick_requests.requester_user_id`가 on delete restrict라 cleanup_e2e_mock_data RPC(일회용 사용자 삭제) 전에 지운다.
+// 대상: 일회용 계정이 요청한 건 전부 + fixture 계정이 요청한 건 중 출발 담당자 `E2E…` 표식 건
+async function quickWorkflowTargetRows(userIds, fixtureIds) {
+  const rows = new Map();
+  const collect = (data) => (data ?? []).forEach((row) => rows.set(row.id, row));
+
+  for (let offset = 0; offset < userIds.length; offset += 100) {
+    const batch = userIds.slice(offset, offset + 100);
+    const { data, error } = await admin
+      .from('quick_requests')
+      .select('id, request_no, request_year, requester_user_id')
+      .in('requester_user_id', batch);
+    if (error) {
+      throw new Error(`quick_requests disposable lookup failed: ${error.message}`);
+    }
+    collect(data);
+  }
+  if (fixtureIds.length > 0) {
+    const { data, error } = await admin
+      .from('quick_requests')
+      .select('id, request_no, request_year, requester_user_id')
+      .in('requester_user_id', fixtureIds)
+      .like('origin->>contactName', E2E_LABEL_PATTERN);
+    if (error) {
+      throw new Error(`quick_requests fixture lookup failed: ${error.message}`);
+    }
+    collect(data);
+  }
+  return [...rows.values()];
+}
+
+async function cleanupQuickWorkflowFixtures() {
+  const userIds = await workflowFixtureUserIds();
+  const { data: stableProfiles, error: stableError } = await admin
+    .from('profiles')
+    .select('user_id')
+    .in('email', FIXTURE_EMAILS);
+  if (stableError) {
+    throw new Error(`quick workflow fixture lookup failed: ${stableError.message}`);
+  }
+  const fixtureIds = (stableProfiles ?? []).map(({ user_id }) => user_id);
+  const fixtureSet = new Set(fixtureIds);
+  const disposableIds = userIds.filter((id) => !fixtureSet.has(id));
+
+  const targets = await quickWorkflowTargetRows(disposableIds, fixtureIds);
+  const requestNos = targets.map(({ request_no }) => request_no);
+  const years = [...new Set(targets.map(({ request_year }) => request_year))];
+
+  // 1) 알림 (metadata.quick_request_no)
+  let deletedNotifications = 0;
+  for (let offset = 0; offset < requestNos.length; offset += 100) {
+    const batch = requestNos.slice(offset, offset + 100);
+    const { data, error } = await admin
+      .from('notifications')
+      .delete()
+      .like('type', 'quick_request.%')
+      .in('metadata->>quick_request_no', batch)
+      .select('id');
+    if (error) {
+      throw new Error(`quick request notification cleanup failed: ${error.message}`);
+    }
+    deletedNotifications += data?.length ?? 0;
+  }
+
+  // 2) quick_requests (발송 기록 dispatches는 on delete cascade)
+  const ids = targets.map(({ id }) => id);
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    const { error } = await admin.from('quick_requests').delete().in('id', ids.slice(offset, offset + 100));
+    if (error) {
+      throw new Error(`quick_requests cleanup failed: ${error.message}`);
+    }
+  }
+
+  // 3) 최근 주소 — 일회용 계정 분 (fixture `E2E…`분은 cleanupQuickRequestFixtures가 처리)
+  let deletedRecent = 0;
+  for (let offset = 0; offset < disposableIds.length; offset += 100) {
+    const { data, error } = await admin
+      .from('quick_request_recent_addresses')
+      .delete()
+      .in('user_id', disposableIds.slice(offset, offset + 100))
+      .select('id');
+    if (error) {
+      throw new Error(`quick_request_recent_addresses disposable cleanup failed: ${error.message}`);
+    }
+    deletedRecent += data?.length ?? 0;
+  }
+
+  // 4) 연도 카운터 — 해당 연도에 요청이 0건이면 행 삭제(다음 번호 01부터)
+  const resetCounters = [];
+  for (const year of years) {
+    const remainingInYear = await countRows('quick_requests', (q) => q.eq('request_year', year));
+    if (remainingInYear === 0) {
+      const { error } = await admin.from('quick_request_counters').delete().eq('year', year);
+      if (error) {
+        throw new Error(`quick_request_counters reset failed: ${error.message}`);
+      }
+      resetCounters.push(year);
+    }
+  }
+
+  const remainingTargets = await quickWorkflowTargetRows(disposableIds, fixtureIds);
+  const remaining = {
+    quick_requests: remainingTargets.length,
+    quick_notifications: requestNos.length
+      ? await countRows('notifications', (q) =>
+          q.like('type', 'quick_request.%').in('metadata->>quick_request_no', requestNos.slice(0, 100))
+        )
+      : 0
+  };
+
+  console.log('cleanup-e2e-mock-data: quick workflow', {
+    deleted_quick_requests: ids.length,
+    deleted_notifications: deletedNotifications,
+    deleted_disposable_recent_addresses: deletedRecent,
+    reset_counter_years: resetCounters,
+    remaining
+  });
+  if (Object.values(remaining).some((value) => Number(value) > 0)) {
+    throw new Error(`quick workflow e2e data remains: ${JSON.stringify(remaining)}`);
+  }
+}
+
 async function resetFixtureProfiles() {
   const { data, error } = await admin.rpc('reset_e2e_fixture_profiles');
   if (error) {
@@ -621,6 +744,7 @@ async function main() {
   console.log('cleanup-e2e-mock-data: storage', storageDeleted);
 
   await cleanupGoogleTasksMockConnections();
+  await cleanupQuickWorkflowFixtures();
   await cleanupQuickRequestFixtures();
   await cleanupWorkflowFixtures();
 
