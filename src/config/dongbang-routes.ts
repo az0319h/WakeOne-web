@@ -26,6 +26,8 @@ export const DONGBANG_ALLOWED_PAGE_PREFIXES = [
 
 const QUICK_DASHBOARD_PATH = '/dashboard/quick';
 const QUICK_REQUEST_FORM_PATH = '/dashboard/quick/request';
+/** plan 93 — 「퀵 대화」 (AC-09 명시 등록 · 상세 패턴에 우연히 걸리던 것을 명시) */
+const QUICK_CHAT_PATH = '/dashboard/quick/chat';
 /** `/dashboard/quick/{YYYY-NN}` — 형식이 틀린 번호도 상세 페이지가 404 화면을 그리므로 세그먼트 1개면 허용 */
 const QUICK_DETAIL_PATH_PATTERN = /^\/dashboard\/quick\/[^/]+\/?$/;
 
@@ -46,6 +48,7 @@ export function isDongbangAllowedPage(pathname: string): boolean {
   const path = stripTrailingSlash(pathname);
 
   if (path === QUICK_DASHBOARD_PATH) return true;
+  if (path === QUICK_CHAT_PATH) return true;
   if (isQuickRequestFormPath(path)) return false;
   if (QUICK_DETAIL_PATH_PATTERN.test(path)) return true;
 
@@ -55,6 +58,7 @@ export function isDongbangAllowedPage(pathname: string): boolean {
 /**
  * 동방특송이 호출할 수 있는 API인지.
  * - `/api/quick-request/**` 허용. 단 등록 `POST /api/quick-request`, `notes/**`, `recent-addresses`는 거부
+ *   (plan 93 `conversations` · `[no]/messages` GET/POST · `[no]/messages/read` PUT · `unread-total`은 이 규칙으로 통과)
  * - `/api/profile/**`, `/api/notifications/**`, `/api/activity-logs/**`, `/api/auth/**` 허용
  */
 export function isDongbangAllowedApi(pathname: string, method: string): boolean {

@@ -1,13 +1,15 @@
 import { expect, test } from '@playwright/test';
-import { listOpenchatMockRequests, openchatRequestsFor, setOpenchatMockMode } from '../helpers/openchat-mock';
 import {
   DISPATCH_BODY,
   dbNotifications,
+  dbNotificationsByEvent,
   expectDetailStatus,
   expectLogFor,
   fixtureUser,
   gotoDetail,
   MSG,
+  NOTIFY_TITLE,
+  NOTIFY_TYPE,
   readAccountMeta,
   readJson,
   seedQuickRequest,
@@ -15,14 +17,10 @@ import {
   withApi
 } from './helpers';
 
-// plan 89 §D 요청자·승인·취소·잠금 — docs/plans/89_quick-workflow-dongbang-openchat-plan.md
+// plan 89 §D 요청자·승인·취소·잠금 — docs/plans/89 · plan 92가 webhook 판정을 알림(DB) 판정으로 바꿨다
 test.describe('plan 89 D. 요청자 · 승인 · 취소 · 잠금', () => {
   test.describe.configure({ timeout: 120_000 });
   test.use({ storageState: 'e2e/.auth/user.json' });
-
-  test.beforeEach(async () => {
-    await setOpenchatMockMode('ok');
-  });
 
   test('AC-22: 요청자 본인 requested 건 — 「수정」 없음 · PATCH 403 「요청자는 등록 후 내용을 수정할 수 없습니다.」', async ({
     page
@@ -43,7 +41,7 @@ test.describe('plan 89 D. 요청자 · 승인 · 취소 · 잠금', () => {
     await expectLogFor('quick_request.update', requestNo, 403);
   });
 
-  test('AC-23: 요청자 requested 건 「요청 취소」 → AlertModal 「퀵 요청을 취소할까요?」 → 「취소」 · webhook · 동방 알림 · cancel 로그', async ({
+  test('AC-23: 요청자 requested 건 「요청 취소」 → AlertModal 「퀵 요청을 취소할까요?」 → 「취소」 · 동방 알림(92 문구) · cancel 로그', async ({
     page
   }) => {
     const { requestNo } = await seedQuickRequest('requested');
@@ -59,20 +57,12 @@ test.describe('plan 89 D. 요청자 · 승인 · 취소 · 잠금', () => {
     await expect(page.getByTestId('quick-detail-cancelled-banner')).toContainText('사유: E2E 일정 변경');
     await expect(page.getByTestId('quick-detail-actions')).toHaveCount(0);
 
-    const cancelled = await openchatRequestsFor(requestNo, 'cancelled');
-    expect(cancelled).toHaveLength(1);
-    const lines = String(cancelled[0].body.text).split('\n');
-    expect(lines[0]).toBe(`🚫퀵요청 취소 - ${requestNo}`);
     const user = await fixtureUser('user');
-    expect(lines[1]).toBe(`"${user.fullName}"님이 퀵 요청을 취소하였습니다.`);
-    expect(lines).toContain('사유: E2E 일정 변경');
-
     const dongbang = readAccountMeta('dongbang');
     const vendorNotifications = await dbNotifications(dongbang.userId, requestNo);
-    expect(vendorNotifications.map((item) => item.type)).toEqual(
-      expect.arrayContaining(['quick_request.vendor_event'])
-    );
-    expect(vendorNotifications.map((item) => item.title)).toContain('퀵 요청이 취소되었습니다');
+    const cancelled = vendorNotifications.find((item) => item.title === NOTIFY_TITLE.cancelled(requestNo));
+    expect(cancelled?.type).toBe(NOTIFY_TYPE.vendor);
+    expect(cancelled?.body).toBe(`${user.fullName}님이 취소했습니다. 사유: E2E 일정 변경`);
     await expectLogFor('quick_request.cancel', requestNo, 200);
   });
 
@@ -106,11 +96,10 @@ test.describe('plan 89 D. 요청자 · 승인 · 취소 · 잠금', () => {
     expect(response.body.message).toBe(MSG.finalAmountRequired);
   });
 
-  test('AC-26: 요청자 dispatched · 최종금액 있음 — 「승인」 → AlertModal → 「승인」 · webhook 없음 · approve 로그', async ({
+  test('AC-26: 요청자 dispatched · 최종금액 있음 — 「승인」 → AlertModal → 「승인」 · 요청자(행위자) 승인 알림 0건 · 동방 1건 · approve 로그', async ({
     page
   }) => {
     const { requestNo } = await seedQuickRequest('dispatchedWithFinal');
-    const before = (await listOpenchatMockRequests()).filter((e) => e.body.requestNo === requestNo).length;
     await gotoDetail(page, requestNo);
     const approve = page.getByTestId('quick-detail-approve');
     await expect(approve).toBeEnabled();
@@ -123,8 +112,13 @@ test.describe('plan 89 D. 요청자 · 승인 · 취소 · 잠금', () => {
     await expectDetailStatus(page, 'approved');
     await expect(page.getByTestId('quick-detail-actions')).toHaveCount(0);
 
-    const after = (await listOpenchatMockRequests()).filter((e) => e.body.requestNo === requestNo).length;
-    expect(after).toBe(before);
+    const user = await fixtureUser('user');
+    const dongbang = readAccountMeta('dongbang');
+    const approved = await dbNotificationsByEvent(requestNo, 'approved');
+    expect(approved.filter((row) => row.recipient_user_id === user.userId), '행위자 본인 제외').toHaveLength(0);
+    const vendorRow = approved.find((row) => row.recipient_user_id === dongbang.userId);
+    expect(vendorRow?.title).toBe(NOTIFY_TITLE.approved(requestNo));
+    expect(vendorRow?.body).toBe(`최종금액 23,000원 · ${user.fullName}님이 승인했습니다.`);
     await expectLogFor('quick_request.approve', requestNo, 200);
   });
 

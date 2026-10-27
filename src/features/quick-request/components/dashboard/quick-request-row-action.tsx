@@ -7,10 +7,7 @@ import { notifySuccess } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { acceptQuickRequestMutation } from '../../api/mutations';
 import type { QuickRequestListRow } from '../../api/types';
-import {
-  notifyQuickOpenchatOutcome,
-  notifyQuickRequestError
-} from '../../lib/quick-request-mutation-feedback';
+import { notifyQuickRequestError } from '../../lib/quick-request-mutation-feedback';
 
 export type QuickRequestRowActionHandlers = {
   onDispatch: (row: QuickRequestListRow) => void;
@@ -81,9 +78,8 @@ export function QuickRequestRowAction({
         aria-label={`${row.requestNo} 접수`}
         onClick={() =>
           acceptMutation.mutate(row.requestNo, {
-            onSuccess: (result) => {
+            onSuccess: () => {
               notifySuccess('퀵 요청을 접수했습니다.');
-              notifyQuickOpenchatOutcome(result.openchat);
             },
             onError: (error) => {
               notifyQuickRequestError(error);

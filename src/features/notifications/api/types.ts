@@ -28,7 +28,9 @@ export type NotificationType =
   | 'workflow.canceled'
   | 'workflow.comment_created'
   | 'quick_request.vendor_event'
-  | 'quick_request.requester_event';
+  | 'quick_request.requester_event'
+  /** plan 93 — 퀵 대화 메시지 (보낸 사람을 뺀 참여자 전원) */
+  | 'quick_request.chat_message';
 
 export type NotificationStatus = 'unread' | 'read';
 
@@ -64,7 +66,8 @@ export type NotificationMetadata = {
     | 'workflow.canceled'
     | 'workflow.comment_created'
     | 'quick_request.vendor_event'
-    | 'quick_request.requester_event';
+    | 'quick_request.requester_event'
+    | 'quick_request.chat_message';
   benefit_document_id?: number;
   benefit_type?: 'book' | 'fitness' | 'education';
   applicant_user_id?: string;
@@ -103,8 +106,10 @@ export type NotificationMetadata = {
   /** plan 89 — 클릭 이동 `/dashboard/quick/{quick_request_no}` */
   quick_request_no?: string;
   quick_request_id?: string;
-  /** created · cancelled (vendor) / accepted · dispatched · final_amount_set · approved · cancelled (requester) */
+  /** created · cancelled (vendor) / accepted · dispatched · final_amount_set · approved · cancelled (requester) / chat_message (plan 93) */
   quick_request_event?: string;
+  /** plan 93 — 클릭 이동 `/dashboard/quick/chat?request={quick_request_no}` · 자동 읽음은 `quick_request_id`로 매칭 */
+  quick_request_message_id?: number;
 };
 
 export type Notification = {

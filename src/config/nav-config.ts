@@ -63,6 +63,16 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        // plan 93 — 「퀵 대화」 (안 읽은 대화 수 배지 · `nav-badges.tsx`)
+        title: '퀵 대화',
+        url: '/dashboard/quick/chat',
+        icon: 'chat',
+        shortcut: ['q', 'c'],
+        isActive: false,
+        badge: 'quick-chat-unread',
+        items: []
+      },
+      {
         title: '퀵 요청하기',
         url: '/dashboard/quick/request',
         icon: 'send',

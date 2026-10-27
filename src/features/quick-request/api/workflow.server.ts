@@ -9,25 +9,17 @@ import {
 } from '@/features/auth/api/quick-access.server';
 import { getKstTodayDateString } from '@/lib/kst';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
-import { buildQuickRouteSummary } from '../lib/openchat-message';
+import { buildQuickRouteSummary } from '../lib/quick-request-route-label';
 import {
-  isQuickOpenchatConfigured,
-  type QuickOpenchatSource
-} from '../lib/openchat-webhook.server';
-import {
-  QUICK_OPENCHAT_EVENTS,
   QUICK_REQUEST_DASHBOARD_DAYS,
   QUICK_REQUEST_EDITABLE_STATUSES,
   QUICK_REQUEST_LIST_DEFAULT_LIMIT,
   QUICK_REQUEST_LIST_MAX_LIMIT,
   QUICK_REQUEST_STATUSES,
-  type QuickOpenchatEvent,
-  type QuickOpenchatStatus,
   type QuickRequestCreateBody,
   type QuickRequestStatus
 } from '../schemas/quick-request-workflow';
 import type {
-  QuickOpenchatDispatchView,
   QuickRequestActorRef,
   QuickRequestDestinationDetail,
   QuickRequestDetail,
@@ -48,7 +40,6 @@ import type {
  */
 
 const TABLE = 'quick_requests';
-const DISPATCHES_TABLE = 'quick_request_openchat_dispatches';
 /** 7일 window 안전 상한 (in-memory 검색·페이지) */
 const WINDOW_ROW_LIMIT = 2_000;
 
@@ -148,7 +139,7 @@ export function buildQuickRequestPermissions(
     canSetFinal: operate && row.status === 'dispatched',
     canApprove: canApproveRole(profile, row) && row.status === 'dispatched',
     canCancel: (operate && editable) || (isRequester && row.status === 'requested'),
-    canResend: operate
+    canOperate: operate
   };
 }
 
@@ -207,10 +198,12 @@ function toDestinationDetail(value: JsonLocation): QuickRequestDestinationDetail
 
 export function toQuickRequestListRow(
   profile: QuickViewerProfile,
-  row: QuickRequestRow
+  row: QuickRequestRow,
+  unreadMessageCount = 0
 ): QuickRequestListRow {
   return {
     id: row.id,
+    unreadMessageCount,
     requestNo: row.request_no,
     status: row.status,
     requestedAt: row.requested_at,
@@ -224,33 +217,6 @@ export function toQuickRequestListRow(
     estimatedAmount: row.estimated_amount,
     finalAmount: row.final_amount,
     actions: buildRowActions(profile, row)
-  };
-}
-
-/** webhook 발송 원본 */
-export function toQuickOpenchatSource(row: QuickRequestRow): QuickOpenchatSource {
-  const hasDispatch =
-    row.estimated_amount != null &&
-    Boolean(row.dispatch_vehicle_info) &&
-    Boolean(row.driver_name) &&
-    Boolean(row.driver_phone);
-
-  return {
-    id: row.id,
-    requestNo: row.request_no,
-    status: row.status,
-    requesterName: row.requester_name,
-    origin: row.origin,
-    destination: row.destination,
-    stopovers: row.stopovers,
-    dispatch: hasDispatch
-      ? {
-          estimatedAmount: row.estimated_amount as number,
-          vehicleInfo: row.dispatch_vehicle_info as string,
-          driverName: row.driver_name as string,
-          driverPhone: row.driver_phone as string
-        }
-      : null
   };
 }
 
@@ -289,7 +255,8 @@ export async function getQuickRequestByNo(requestNo: string): Promise<QuickReque
   return (data as QuickRequestRow | null) ?? null;
 }
 
-async function listWindowRows(profile: QuickViewerProfile): Promise<QuickRequestRow[]> {
+/** 최근 7일(KST) window 행 (plan 93 대화 목록도 같은 범위를 쓴다) */
+export async function listWindowRows(profile: QuickViewerProfile): Promise<QuickRequestRow[]> {
   const { fromIso } = getQuickDashboardRange();
   const supabase = getServiceRoleClient();
   let query = supabase
@@ -324,11 +291,12 @@ function countByStatus(rows: QuickRequestRow[]): QuickRequestStatusCounts {
   return counts;
 }
 
-function normalizeSearch(value: string): string {
+export function normalizeQuickRequestSearch(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-function matchesSearch(row: QuickRequestRow, keyword: string): boolean {
+/** 요청번호·요청자 이름·출발/경유/도착 주소 부분 일치 (plan 93 대화 목록 `q`도 같은 규칙) */
+export function matchesQuickRequestSearch(row: QuickRequestRow, keyword: string): boolean {
   const locations = [row.origin, row.destination, ...(Array.isArray(row.stopovers) ? row.stopovers : [])];
   const haystack = [
     row.request_no,
@@ -338,10 +306,6 @@ function matchesSearch(row: QuickRequestRow, keyword: string): boolean {
     .join('\n')
     .toLowerCase();
   return haystack.includes(keyword);
-}
-
-function resolveOpenchatConfiguredForViewer(profile: QuickViewerProfile): boolean | null {
-  return canOperateQuickRequests(profile) ? isQuickOpenchatConfigured() : null;
 }
 
 export async function listQuickRequestsForViewer(
@@ -354,16 +318,15 @@ export async function listQuickRequestsForViewer(
   limit: number;
   counts: QuickRequestStatusCounts;
   viewer: QuickRequestViewer;
-  openchatConfigured: boolean | null;
 }> {
   const windowRows = await listWindowRows(profile);
   const counts = countByStatus(windowRows);
 
-  const keyword = filters.search ? normalizeSearch(filters.search) : '';
+  const keyword = filters.search ? normalizeQuickRequestSearch(filters.search) : '';
   const filtered = windowRows.filter(
     (row) =>
       (!filters.status || row.status === filters.status) &&
-      (!keyword || matchesSearch(row, keyword))
+      (!keyword || matchesQuickRequestSearch(row, keyword))
   );
 
   const limit = Math.min(
@@ -372,15 +335,20 @@ export async function listQuickRequestsForViewer(
   );
   const page = Math.max(filters.page ?? 1, 1);
   const start = (page - 1) * limit;
+  const pageRows = filtered.slice(start, start + limit);
+  // plan 93 — 화면에 있는 건 id만 RPC 1회 (안 읽은 수 집계 비용 완화 ②)
+  const unread = await fetchQuickRequestUnreadCounts(
+    profile.user_id,
+    pageRows.map((row) => row.id)
+  );
 
   return {
-    rows: filtered.slice(start, start + limit).map((row) => toQuickRequestListRow(profile, row)),
+    rows: pageRows.map((row) => toQuickRequestListRow(profile, row, unread.get(row.id) ?? 0)),
     total: filtered.length,
     page,
     limit,
     counts,
-    viewer: buildQuickRequestViewer(profile),
-    openchatConfigured: resolveOpenchatConfiguredForViewer(profile)
+    viewer: buildQuickRequestViewer(profile)
   };
 }
 
@@ -392,8 +360,7 @@ export async function getQuickRequestSummaryForViewer(
   return {
     counts: countByStatus(windowRows),
     range: { fromDate, toDate },
-    viewer: buildQuickRequestViewer(profile),
-    openchatConfigured: resolveOpenchatConfiguredForViewer(profile)
+    viewer: buildQuickRequestViewer(profile)
   };
 }
 
@@ -419,43 +386,6 @@ async function fetchProfileNames(userIds: string[]): Promise<Map<string, string>
   return names;
 }
 
-type DispatchRow = {
-  event: QuickOpenchatEvent;
-  status: QuickOpenchatStatus;
-  attempt_count: number;
-  http_status: number | null;
-  error_message: string | null;
-  last_attempt_at: string | null;
-  sent_at: string | null;
-  payload: { text?: unknown } | null;
-};
-
-async function listDispatchViews(quickRequestId: string): Promise<QuickOpenchatDispatchView[]> {
-  const supabase = getServiceRoleClient();
-  const { data, error } = await supabase
-    .from(DISPATCHES_TABLE)
-    .select('event, status, attempt_count, http_status, error_message, last_attempt_at, sent_at, payload')
-    .eq('quick_request_id', quickRequestId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const order = new Map(QUICK_OPENCHAT_EVENTS.map((event, index) => [event, index]));
-  return ((data ?? []) as DispatchRow[])
-    .sort((a, b) => (order.get(a.event) ?? 0) - (order.get(b.event) ?? 0))
-    .map((row) => ({
-      event: row.event,
-      status: row.status,
-      attemptCount: row.attempt_count,
-      httpStatus: row.http_status,
-      errorMessage: row.error_message,
-      lastAttemptAt: row.last_attempt_at,
-      sentAt: row.sent_at,
-      text: typeof row.payload?.text === 'string' ? row.payload.text : ''
-    }));
-}
-
 export async function buildQuickRequestDetail(
   profile: QuickViewerProfile,
   row: QuickRequestRow
@@ -472,10 +402,6 @@ export async function buildQuickRequestDetail(
   );
   const ref = (id: string | null): QuickRequestActorRef =>
     id ? { name: names.get(id) ?? '알 수 없음' } : null;
-
-  const openchat = permissions.canResend
-    ? { configured: isQuickOpenchatConfigured(), dispatches: await listDispatchViews(row.id) }
-    : null;
 
   return {
     id: row.id,
@@ -516,8 +442,7 @@ export async function buildQuickRequestDetail(
       cancelledBy: ref(row.cancelled_by),
       cancelReason: row.cancel_reason
     },
-    permissions,
-    openchat
+    permissions
   };
 }
 
@@ -602,17 +527,64 @@ export async function updateQuickRequestIfStatus(
   return (data as QuickRequestRow | null) ?? null;
 }
 
-export async function listActiveDongbangUserIds(): Promise<string[]> {
+// ---------------------------------------------------------------------------
+// 알림 수신자 (plan 92 D-4 · active만)
+// ---------------------------------------------------------------------------
+
+async function listActiveUserIds(match: Record<string, string>): Promise<string[]> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from('profiles')
     .select('user_id')
     .eq('status', 'active')
-    .eq('affiliation', 'dongbang');
+    .match(match);
 
   if (error) {
     throw new Error(error.message);
   }
 
   return (data ?? []).map((row) => row.user_id as string);
+}
+
+/** 동방특송 전원 (`affiliation='dongbang'`) */
+export function listActiveDongbangUserIds(): Promise<string[]> {
+  return listActiveUserIds({ affiliation: 'dongbang' });
+}
+
+/** admin 전원 (`system_role='admin'` · OQ-2) */
+export function listActiveQuickAdminUserIds(): Promise<string[]> {
+  return listActiveUserIds({ system_role: 'admin' });
+}
+
+/** 웨이크 구매물류팀 (89 D-11 `isLogisticsViewer`와 동일 판별) */
+export function listActiveLogisticsUserIds(): Promise<string[]> {
+  return listActiveUserIds({ affiliation: 'wake', rank: '구매물류팀', system_role: 'user' });
+}
+
+// ---------------------------------------------------------------------------
+// plan 93 — 안 읽은 대화 수 (지정한 건 목록 · SQL 92 `quick_request_unread_counts`)
+// ---------------------------------------------------------------------------
+
+/** 건 id → 내가 안 읽은 메시지 수 (작성자≠본인 · id > 내 읽음 위치). 없는 건은 0 */
+export async function fetchQuickRequestUnreadCounts(
+  userId: string,
+  requestIds: string[]
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (requestIds.length === 0) return map;
+
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase.rpc('quick_request_unread_counts', {
+    p_user: userId,
+    p_request_ids: requestIds
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  for (const row of (data ?? []) as { quick_request_id: string; unread_count: number }[]) {
+    map.set(row.quick_request_id, Number(row.unread_count));
+  }
+  return map;
 }

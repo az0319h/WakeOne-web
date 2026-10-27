@@ -69,19 +69,20 @@ const isAttachmentsE2eRun = process.argv.some((arg) =>
 
 const isQuickRequestE2eRun = process.argv.some((arg) => {
   const normalized = arg.replace(/\\/g, '/');
-  // plan 89 — 퀵 업무 흐름(e2e/quick-workflow)도 같은 env(지연 page · webhook mock)로 직렬 실행
+  // plan 89·92 — 퀵 업무 흐름(e2e/quick-workflow)도 같은 env(지연 page)로 직렬 실행. 외부 mock 서버 없음
   return (
     normalized.includes('e2e/quick-request') ||
     normalized.includes('e2e/quick-workflow') ||
-    normalized.includes('e2e/quick-info')
+    normalized.includes('e2e/quick-info') ||
+    // plan 93 — 퀵 대화(e2e/quick-chat): 2 context 실시간·계정 공유 → 직렬
+    normalized.includes('e2e/quick-chat')
   );
 });
 
-/** plan 89 — 퀵 run은 오픈채팅 webhook을 globalSetup mock(127.0.0.1:4599)으로 보낸다 */
-const QUICK_OPENCHAT_E2E_ENV = {
-  QUICK_OPENCHAT_WEBHOOK_URL: 'http://127.0.0.1:4599/openchat',
-  QUICK_OPENCHAT_WEBHOOK_SECRET: 'e2e-openchat-secret'
-};
+/** plan 92 AC-27 — 가드 parity(dev): user.json·dongbang.json 둘 다 필요해 별도 project로 돌린다 */
+const isGuardParityE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/auth')
+);
 
 const isWorkflowE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/workflow')
@@ -150,9 +151,7 @@ export default defineConfig({
             NEXT_PUBLIC_DISABLE_RQ_DEVTOOLS: '1',
             ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {}),
             ...(isPushE2eRun ? { E2E_WEB_PUSH_MOCK: '1' } : {}),
-            ...(isQuickRequestE2eRun
-              ? { E2E_SLOW_QUICK_REQUEST: '1', ...QUICK_OPENCHAT_E2E_ENV }
-              : {}),
+            ...(isQuickRequestE2eRun ? { E2E_SLOW_QUICK_REQUEST: '1' } : {}),
             ...(isDevProvisionE2eRun
               ? {
                   WAKEONE_ENV: 'development',
@@ -253,6 +252,7 @@ export default defineConfig({
         /[\\/]workflow[\\/]/,
         /quick-workflow[\\/]/,
         /quick-info[\\/]/,
+        /quick-chat[\\/]/,
         /push-notifications[\\/]/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
@@ -340,7 +340,15 @@ export default defineConfig({
       timeout: 120_000
     },
     {
-      // plan 89 — 퀵 업무 흐름: user·user2·admin·동방특송·구매물류팀 + 공유 webhook mock → 직렬
+      // plan 92 AC-27 — 가드 parity(dev): 쿠키 없음·user.json·dongbang.json 3값
+      name: 'guard-parity-api',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup-user', 'setup-dongbang'],
+      testMatch: isGuardParityE2eRun ? [/auth[\\/]guard-parity\.api\.spec\.ts$/] : [/^\b$/],
+      fullyParallel: false
+    },
+    {
+      // plan 89·92 — 퀵 업무 흐름: user·user2·admin·동방특송·구매물류팀 storageState 공유 → 직렬
       name: 'chromium-quick-workflow',
       use: {
         ...devices['Desktop Chrome'],
@@ -360,6 +368,18 @@ export default defineConfig({
       },
       dependencies: ['setup', 'setup-user', 'setup-dongbang', 'setup-logistics'],
       testMatch: [/quick-info[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 120_000
+    },
+    {
+      // plan 93 — 퀵 대화: user·user2·admin·동방특송·구매물류팀 storageState + 2 context 실시간 → 직렬
+      name: 'chromium-quick-chat',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2', 'setup-dongbang', 'setup-logistics'],
+      testMatch: [/quick-chat[\\/].*\.spec\.ts$/],
       fullyParallel: false,
       timeout: 120_000
     },
@@ -451,7 +471,9 @@ export default defineConfig({
         /^notifications\//,
         /[\\/]workflow[\\/]/,
         /quick-workflow[\\/]/,
+        /quick-chat[\\/]/,
         /push-notifications[\\/]/,
+        /auth[\\/]guard-parity\.api\.spec\.ts$/,
         ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : []),
         ...(isDevProvisionE2eRun ? [] : [/users\/dev-provision\.api\.spec\.ts$/])
       ]

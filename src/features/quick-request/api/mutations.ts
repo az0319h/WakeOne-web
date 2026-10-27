@@ -1,5 +1,20 @@
-import { mutationOptions } from '@tanstack/react-query';
+import { mutationOptions, type QueryKey } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
+import { notificationKeys } from '@/features/notifications/api/keys';
+import {
+  applyMarkNotificationReadOptimistic,
+  restoreNotificationQueries,
+  snapshotNotificationQueries,
+  type NotificationInfiniteData,
+  type NotificationQueriesSnapshot
+} from '@/features/notifications/api/optimistic';
+import {
+  getMessagesCache,
+  mergeServerMessage,
+  sortChatMessages,
+  updateMessagesCache,
+  type QuickChatMessagesCache
+} from '../lib/quick-chat-cache';
 import { quickRequestKeys } from './keys';
 import {
   acceptQuickRequest,
@@ -9,16 +24,19 @@ import {
   createQuickRequestNote,
   deleteQuickRequestNote,
   dispatchQuickRequest,
-  resendQuickRequestOpenchat,
+  markQuickRequestMessagesRead,
+  sendQuickRequestMessage,
   setQuickRequestFinalAmount,
   updateQuickRequest,
   updateQuickRequestNote
 } from './service';
 import type {
-  QuickOpenchatEvent,
   QuickRequestCancelPayload,
+  QuickRequestChatViewer,
+  QuickRequestConversationsData,
   QuickRequestCreatePayload,
   QuickRequestDispatchPayload,
+  QuickRequestListResponse,
   QuickRequestNoteMutationPayload,
   QuickRequestPatchPayload
 } from './types';
@@ -103,8 +121,237 @@ export const cancelQuickRequestMutation = mutationOptions({
   onSettled: invalidateQuickRequestWorkflow
 });
 
-export const resendQuickRequestOpenchatMutation = mutationOptions({
-  mutationFn: (params: { requestNo: string; event: QuickOpenchatEvent }) =>
-    resendQuickRequestOpenchat(params),
-  onSettled: invalidateQuickRequestWorkflow
+// ---------------------------------------------------------------------------
+// plan 93 — 퀵 대화 (전송 optimistic · 읽음 위치 갱신 optimistic). 캐시 무효화는 onSettled에서만
+// ---------------------------------------------------------------------------
+
+export type SendQuickRequestMessageVariables = {
+  requestNo: string;
+  /** optimistic 말풍선 id (`temp-{uuid}`) — 재시도는 같은 tempId로 다시 호출한다 */
+  tempId: string;
+  body: string;
+  /** 임시 말풍선 작성자 (messages 응답 `viewer`) */
+  viewer: QuickRequestChatViewer;
+};
+
+function invalidateQuickChatLists() {
+  const queryClient = getQueryClient();
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.conversationsAll() });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.lists() });
+}
+
+/**
+ * 전송 — `onMutate`에서 임시 말풍선(pending) 추가 → 201이면 서버 행으로 교체(Realtime 수신분은 id dedupe) →
+ * 실패면 `failed`로 표시(입력 복원·토스트는 UI `useSendMessage`). 내 읽음 위치는 서버가 올리므로 캐시도 맞춘다.
+ */
+export const sendQuickRequestMessageMutation = mutationOptions({
+  mutationFn: (variables: SendQuickRequestMessageVariables) =>
+    sendQuickRequestMessage({
+      requestNo: variables.requestNo,
+      payload: { body: variables.body }
+    }),
+  onMutate: (variables) => {
+    const queryClient = getQueryClient();
+    const authorRole = variables.viewer.role === 'logistics' ? 'requester' : variables.viewer.role;
+    updateMessagesCache(queryClient, variables.requestNo, (current) => {
+      const existing = current.messages.find((message) => message.id === variables.tempId);
+      const temp = existing
+        ? { ...existing, clientState: 'pending' as const, createdAt: new Date().toISOString() }
+        : {
+            id: variables.tempId,
+            authorUserId: variables.viewer.userId,
+            authorName: variables.viewer.name,
+            authorRole,
+            body: variables.body,
+            createdAt: new Date().toISOString(),
+            clientState: 'pending' as const
+          };
+      const rest = current.messages.filter((message) => message.id !== variables.tempId);
+      return { ...current, messages: sortChatMessages([...rest, temp]) };
+    });
+  },
+  onSuccess: (data, variables) => {
+    const queryClient = getQueryClient();
+    updateMessagesCache(queryClient, variables.requestNo, (current) => ({
+      ...current,
+      messages: mergeServerMessage(current.messages, data.message, {
+        myUserId: variables.viewer.userId,
+        replaceTempId: variables.tempId
+      }),
+      myLastReadMessageId: Math.max(current.myLastReadMessageId, data.message.id)
+    }));
+  },
+  onError: (_error, variables) => {
+    const queryClient = getQueryClient();
+    updateMessagesCache(queryClient, variables.requestNo, (current) => ({
+      ...current,
+      messages: current.messages.map((message) =>
+        message.id === variables.tempId ? { ...message, clientState: 'failed' as const } : message
+      )
+    }));
+  },
+  onSettled: () => {
+    invalidateQuickChatLists();
+  }
+});
+
+export type MarkQuickRequestMessagesReadVariables = {
+  requestNo: string;
+  lastMessageId: number;
+};
+
+type MarkReadContext = {
+  conversations: Array<[QueryKey, QuickRequestConversationsData | undefined]>;
+  lists: Array<[QueryKey, QuickRequestListResponse['data'] | undefined]>;
+  unreadTotal: number | undefined;
+  messages: QuickChatMessagesCache | null | undefined;
+  notifications: NotificationQueriesSnapshot;
+};
+
+/** 알림 캐시에서 그 건의 `chat_message` · unread 알림 id (C-21 optimistic 대상) */
+function collectUnreadChatNotificationIds(
+  snapshot: Array<[QueryKey, NotificationInfiniteData | undefined]>,
+  requestNo: string
+): number[] {
+  const ids = new Set<number>();
+  for (const [, data] of snapshot) {
+    for (const page of data?.pages ?? []) {
+      for (const notification of page.notifications) {
+        if (
+          notification.status === 'unread' &&
+          notification.type === 'quick_request.chat_message' &&
+          notification.metadata?.quick_request_no === requestNo
+        ) {
+          ids.add(notification.id);
+        }
+      }
+    }
+  }
+  return [...ids];
+}
+
+/**
+ * 읽음 위치 갱신 (C-11 · C-21) — `onMutate`: 그 건 unreadCount 0 · unreadTotal 감산 · 알림 optimistic read(벨 즉시 감소) ·
+ * `onError`: 되돌림 · `onSettled`: lists·conversations·unreadTotal·notifications invalidate. 로그 Out(자동 동작).
+ */
+export const markQuickRequestMessagesReadMutation = mutationOptions({
+  mutationFn: (variables: MarkQuickRequestMessagesReadVariables) =>
+    markQuickRequestMessagesRead({
+      requestNo: variables.requestNo,
+      payload: { lastMessageId: variables.lastMessageId }
+    }),
+  onMutate: (variables): MarkReadContext => {
+    const queryClient = getQueryClient();
+    const context: MarkReadContext = {
+      conversations: queryClient.getQueriesData<QuickRequestConversationsData>({
+        queryKey: quickRequestKeys.conversationsAll()
+      }),
+      lists: queryClient.getQueriesData<QuickRequestListResponse['data']>({
+        queryKey: quickRequestKeys.lists()
+      }),
+      unreadTotal: queryClient.getQueryData<number>(quickRequestKeys.unreadTotal()),
+      messages: getMessagesCache(queryClient, variables.requestNo),
+      notifications: snapshotNotificationQueries(queryClient)
+    };
+
+    // 감산할 수 — 대화 캐시(남이 쓴 메시지 중 읽음 위치 < id ≤ lastMessageId) → 없으면 목록 캐시의 unreadCount
+    let unreadBefore = 0;
+    const messages = context.messages;
+    if (messages) {
+      unreadBefore = messages.messages.filter(
+        (message) =>
+          typeof message.id === 'number' &&
+          message.authorUserId !== messages.viewer.userId &&
+          message.id > messages.myLastReadMessageId &&
+          message.id <= variables.lastMessageId
+      ).length;
+    } else {
+      for (const [, data] of context.conversations) {
+        const found = data?.conversations.find((item) => item.requestNo === variables.requestNo);
+        if (found) {
+          unreadBefore = found.unreadCount;
+          break;
+        }
+      }
+    }
+
+    queryClient.setQueriesData<QuickRequestConversationsData>(
+      { queryKey: quickRequestKeys.conversationsAll() },
+      (current) => {
+        if (!current) return current;
+        const target = current.conversations.find((item) => item.requestNo === variables.requestNo);
+        if (!target || target.unreadCount === 0) return current;
+        return {
+          conversations: current.conversations.map((item) =>
+            item.requestNo === variables.requestNo ? { ...item, unreadCount: 0 } : item
+          ),
+          totals: {
+            conversations: current.totals.conversations,
+            unreadConversations: Math.max(0, current.totals.unreadConversations - 1)
+          }
+        };
+      }
+    );
+
+    queryClient.setQueriesData<QuickRequestListResponse['data']>(
+      { queryKey: quickRequestKeys.lists() },
+      (current) =>
+        current
+          ? {
+              ...current,
+              rows: current.rows.map((row) =>
+                row.requestNo === variables.requestNo ? { ...row, unreadMessageCount: 0 } : row
+              )
+            }
+          : current
+    );
+
+    if (unreadBefore > 0) {
+      queryClient.setQueryData<number>(quickRequestKeys.unreadTotal(), (current) =>
+        typeof current === 'number' ? Math.max(0, current - unreadBefore) : current
+      );
+    }
+
+    updateMessagesCache(queryClient, variables.requestNo, (current) => {
+      const readAt = new Date().toISOString();
+      const nextId = Math.max(current.myLastReadMessageId, variables.lastMessageId);
+      return {
+        ...current,
+        myLastReadMessageId: nextId,
+        reads: current.reads.map((read) =>
+          read.userId === current.viewer.userId
+            ? { ...read, lastReadMessageId: Math.max(read.lastReadMessageId, nextId), lastReadAt: readAt }
+            : read
+        )
+      };
+    });
+
+    for (const id of collectUnreadChatNotificationIds(context.notifications, variables.requestNo)) {
+      applyMarkNotificationReadOptimistic(queryClient, id);
+    }
+
+    return context;
+  },
+  onError: (_error, _variables, context) => {
+    if (!context) return;
+    const queryClient = getQueryClient();
+    for (const [queryKey, data] of context.conversations) {
+      queryClient.setQueryData(queryKey, data);
+    }
+    for (const [queryKey, data] of context.lists) {
+      queryClient.setQueryData(queryKey, data);
+    }
+    queryClient.setQueryData(quickRequestKeys.unreadTotal(), context.unreadTotal);
+    if (context.messages !== undefined) {
+      queryClient.setQueryData(quickRequestKeys.messages(_variables.requestNo), context.messages);
+    }
+    restoreNotificationQueries(queryClient, context.notifications);
+  },
+  onSettled: () => {
+    const queryClient = getQueryClient();
+    void queryClient.invalidateQueries({ queryKey: quickRequestKeys.lists() });
+    void queryClient.invalidateQueries({ queryKey: quickRequestKeys.conversationsAll() });
+    void queryClient.invalidateQueries({ queryKey: quickRequestKeys.unreadTotal() });
+    void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+  }
 });

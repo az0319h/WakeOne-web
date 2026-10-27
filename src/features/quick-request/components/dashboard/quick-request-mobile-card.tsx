@@ -12,7 +12,7 @@ import {
 } from '../../lib/quick-request-route-label';
 import { QuickRequestRouteDot } from '../quick-request-summary-content';
 import { QuickRequestStatusBadge } from '../quick-request-status-badge';
-import { quickRequestDetailHref } from './quick-dashboard-columns';
+import { QuickUnreadChatBadge, quickRequestDetailHref } from './quick-dashboard-columns';
 import {
   QuickRequestRowAction,
   resolveQuickRowAction,
@@ -34,9 +34,16 @@ export function QuickRequestMobileCard({ row, ...handlers }: QuickRequestMobileC
     >
       <div className='flex min-w-0 items-start justify-between gap-2'>
         <QuickRequestStatusBadge status={row.status} />
-        <span translate='no' className='text-base font-semibold tabular-nums'>
-          {row.requestNo}
-        </span>
+        <div className='flex min-w-0 items-center gap-2'>
+          <QuickUnreadChatBadge
+            requestNo={row.requestNo}
+            count={row.unreadMessageCount}
+            className='min-h-7 px-2'
+          />
+          <span translate='no' className='text-base font-semibold tabular-nums'>
+            {row.requestNo}
+          </span>
+        </div>
       </div>
       <p className='flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground'>
         <time dateTime={row.requestedAt} className='tabular-nums'>

@@ -74,6 +74,9 @@ export type ActivityAction =
   | "quick_request.dispatch"
   | "quick_request.approve"
   | "quick_request.cancel"
+  /** plan 93 — 퀵 대화 메시지 전송 (본문은 남기지 않는다 · 읽음 갱신은 로그 Out) */
+  | "quick_request.message_create"
+  /** legacy — plan 92에서 Route 삭제. 과거 로그 표시용으로만 유지(신규 기록 없음) */
   | "quick_request.openchat_resend"
   | "workflow.document_create"
   | "workflow.document_update"
@@ -214,8 +217,10 @@ export type ActivityLogMetadata = {
   /** plan 89 — 퀵 요청 (주소·연락처·기사 정보·금액은 남기지 않는다) */
   quick_request_no?: string;
   changedFields?: string[];
-  openchat?: { event: string; status: string; attempts: number };
   recentAddressesRecorded?: boolean;
+  /** plan 93 — 퀵 대화 (본문 `body` 금지 · `body_length`는 기존 키) */
+  message_id?: number;
+  recipient_count?: number;
   /** plan 91 — 휴대폰 푸시 (endpoint 전체·p256dh·auth 키는 절대 남기지 않는다) */
   created?: boolean;
   device_count?: number;

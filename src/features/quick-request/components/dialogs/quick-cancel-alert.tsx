@@ -7,22 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { notifySuccess } from '@/lib/notify';
 import { cancelQuickRequestMutation } from '../../api/mutations';
-import {
-  notifyQuickOpenchatOutcome,
-  notifyQuickRequestError
-} from '../../lib/quick-request-mutation-feedback';
+import { notifyQuickRequestError } from '../../lib/quick-request-mutation-feedback';
 import { QUICK_REQUEST_CANCEL_REASON_MAX_LENGTH } from '../../schemas/quick-request-cancel';
 
 type QuickCancelAlertProps = {
   /** null이면 닫힘 */
   requestNo: string | null;
   onOpenChange: (open: boolean) => void;
-  /** 동방·admin만 오픈채팅 발송 실패 경고를 본다 */
-  canOperate: boolean;
 };
 
-/** 요청 취소 확인 — 사유(선택 · 200자) 입력 (AC-23) */
-export function QuickCancelAlert({ requestNo, onOpenChange, canOperate }: QuickCancelAlertProps) {
+/** 요청 취소 확인 — 사유(선택 · 200자) 입력 (AC-23). 취소 알림은 서버가 보낸다(plan 92) */
+export function QuickCancelAlert({ requestNo, onOpenChange }: QuickCancelAlertProps) {
   const [reason, setReason] = useState('');
   const reasonId = useId();
   const counterId = useId();
@@ -39,11 +34,8 @@ export function QuickCancelAlert({ requestNo, onOpenChange, canOperate }: QuickC
     mutation.mutate(
       { requestNo, payload: trimmed ? { reason: trimmed } : {} },
       {
-        onSuccess: (result) => {
+        onSuccess: () => {
           notifySuccess('퀵 요청을 취소했습니다.');
-          if (canOperate) {
-            notifyQuickOpenchatOutcome(result.openchat);
-          }
           close();
         },
         onError: (error) => {

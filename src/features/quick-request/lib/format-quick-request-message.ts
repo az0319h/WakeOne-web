@@ -53,7 +53,8 @@ function formatVehicleLine(values: QuickRequestFormValues): string {
   return `차량: ${types}${other} · ${count}대`;
 }
 
-export function formatQuickRequestKakaoMessage(
+/** plan 92 D-9 — 등록 전 미리보기 Dialog 본문 전용 텍스트 (외부 발송 없음) */
+export function formatQuickRequestPreviewText(
   values: QuickRequestFormValues,
   requesterName: string,
   requestedAt: Date

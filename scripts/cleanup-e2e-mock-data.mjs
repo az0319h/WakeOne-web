@@ -596,7 +596,7 @@ async function cleanupWorkflowFixtures() {
   }
 }
 
-// plan 89 — 퀵 업무 흐름 e2e 산출물 (quick_requests · 발송 기록 · 알림 · 연도 카운터)
+// plan 89·92 — 퀵 업무 흐름 e2e 산출물 (quick_requests · 알림 · 연도 카운터)
 // `quick_requests.requester_user_id`가 on delete restrict라 cleanup_e2e_mock_data RPC(일회용 사용자 삭제) 전에 지운다.
 // 대상: 일회용 계정이 요청한 건 전부 + fixture 계정이 요청한 건 중 출발 담당자 `E2E…` 표식 건
 async function quickWorkflowTargetRows(userIds, fixtureIds) {
@@ -661,7 +661,7 @@ async function cleanupQuickWorkflowFixtures() {
     deletedNotifications += data?.length ?? 0;
   }
 
-  // 2) quick_requests (발송 기록 dispatches는 on delete cascade)
+  // 2) quick_requests
   const ids = targets.map(({ id }) => id);
   for (let offset = 0; offset < ids.length; offset += 100) {
     const { error } = await admin.from('quick_requests').delete().in('id', ids.slice(offset, offset + 100));
@@ -698,12 +698,26 @@ async function cleanupQuickWorkflowFixtures() {
   }
 
   const remainingTargets = await quickWorkflowTargetRows(disposableIds, fixtureIds);
+  // plan 93 — 대화·읽음 위치는 quick_requests on delete cascade로 지워진다. 잔존 0 확인 (일회용 작성자 분 포함)
+  const idsForChatCheck = ids.slice(0, 100);
   const remaining = {
     quick_requests: remainingTargets.length,
     quick_notifications: requestNos.length
       ? await countRows('notifications', (q) =>
           q.like('type', 'quick_request.%').in('metadata->>quick_request_no', requestNos.slice(0, 100))
         )
+      : 0,
+    quick_request_messages: idsForChatCheck.length
+      ? await countRows('quick_request_messages', (q) => q.in('quick_request_id', idsForChatCheck))
+      : 0,
+    quick_request_message_reads: idsForChatCheck.length
+      ? await countRows('quick_request_message_reads', (q) => q.in('quick_request_id', idsForChatCheck))
+      : 0,
+    disposable_author_messages: disposableIds.length
+      ? await countRows('quick_request_messages', (q) => q.in('author_user_id', disposableIds.slice(0, 100)))
+      : 0,
+    disposable_reads: disposableIds.length
+      ? await countRows('quick_request_message_reads', (q) => q.in('user_id', disposableIds.slice(0, 100)))
       : 0
   };
 

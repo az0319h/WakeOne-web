@@ -25,6 +25,8 @@ function createUserPayload(email: string, fullName = 'E2E SignIn API') {
     full_name: fullName,
     affiliation: 'wake',
     rank: '경영진',
+    // plan 63 이후 position_level 필수 (경영진은 CEO/COO만 유효) — 누락 시 POST /api/users 400
+    position_level: 'CEO',
     system_role: 'user',
     birthday: '1990-01-01',
     phone: E2E_TEST_PHONE

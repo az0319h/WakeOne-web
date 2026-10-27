@@ -1,8 +1,13 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { parseAsString, useQueryStates } from 'nuqs';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
+import { QUICK_CHAT_DETAIL_ASIDE_MEDIA_QUERY, QUICK_CHAT_TEXT } from '../chat/quick-chat-constants';
+import { QuickRequestConversation } from '../chat/quick-request-conversation';
+import { useMatchMedia } from '../chat/use-match-media';
+import { QuickRequestDetailChatView } from './quick-request-detail-chat-view';
 import { quickRequestDetailQueryOptions } from '../../api/queries';
 import type { QuickRequestDetail } from '../../api/types';
 import { formatQuickAmountWon } from '../../lib/format-quick-amount';
@@ -17,7 +22,7 @@ import { QuickDispatchDialog } from '../dialogs/quick-dispatch-dialog';
 import { QuickFinalAmountDialog } from '../dialogs/quick-final-amount-dialog';
 import { QuickRequestEditSheet } from '../edit/quick-request-edit-sheet';
 import { QuickRequestQueryBoundary } from '../quick-request-query-boundary';
-import { QuickOpenchatPanel } from './quick-openchat-panel';
+import { QuickRequestRealtime } from '../quick-request-realtime';
 import { QuickRequestActionBar } from './quick-request-action-bar';
 import { QUICK_DETAIL_DL_CLASS, QuickDetailRow, QuickDetailSection } from './quick-detail-section';
 import { QuickRequestDetailHero } from './quick-request-detail-hero';
@@ -40,12 +45,31 @@ function AmountRow({ label, amount, testId }: { label: string; amount: number | 
   );
 }
 
+const chatParamParsers = {
+  /** plan 93 — `?chat=1` (xl 미만 전체 대화 뷰 · xl은 aside 카드로 스크롤+포커스) · 뒤로가기로 상세 복귀 */
+  chat: parseAsString.withOptions({ history: 'push' })
+};
+
 function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
   const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
+  const [{ chat }, setChatParam] = useQueryStates(chatParamParsers, { shallow: true });
+  const isXl = useMatchMedia(QUICK_CHAT_DETAIL_ASIDE_MEDIA_QUERY);
+  const chatCardRef = useRef<HTMLDivElement>(null);
+  const chatOpen = chat !== null;
   const close = () => setOpenDialog(null);
   const isOtherGoods = detail.goodsSize === 'other';
   const hasDispatch =
     detail.dispatch.vehicleInfo || detail.dispatch.driverName || detail.dispatch.driverPhone;
+
+  // xl + `?chat=1` (알림 착지 호환) — aside 카드로 스크롤 (입력창 포커스는 대화 본문이 뜬 뒤 `autoFocus`) (designer §4.3)
+  useEffect(() => {
+    if (!isXl || !chatOpen) return;
+    chatCardRef.current?.scrollIntoView({ block: 'start' });
+  }, [chatOpen, isXl]);
+
+  if (!isXl && chatOpen) {
+    return <QuickRequestDetailChatView detail={detail} onBack={() => void setChatParam({ chat: null })} />;
+  }
 
   return (
     <>
@@ -85,7 +109,21 @@ function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
               </dl>
             </QuickDetailSection>
           </div>
-          <aside aria-label='금액 · 배차 · 이력' className='flex min-w-0 flex-col gap-4'>
+          <aside aria-label='요청 대화 · 금액 · 배차 · 이력' className='flex min-w-0 flex-col gap-4'>
+            {isXl ? (
+              <div ref={chatCardRef} className='scroll-mt-4'>
+                <QuickDetailSection title={QUICK_CHAT_TEXT.detailChatTitle} data-testid='quick-detail-chat'>
+                  <div className='-mx-5 -mb-5 flex h-[32rem] min-h-0 flex-col overflow-hidden rounded-b-xl border-t'>
+                    <QuickRequestConversation
+                      requestNo={detail.requestNo}
+                      variant='detail'
+                      autoFocus={chatOpen}
+                      notFound={<QuickRequestNotFound />}
+                    />
+                  </div>
+                </QuickDetailSection>
+              </div>
+            ) : null}
             <QuickDetailSection title='금액' data-testid='quick-detail-section-amount'>
               <dl className='flex flex-col gap-2'>
                 <AmountRow
@@ -116,11 +154,11 @@ function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
             <QuickDetailSection title='처리 이력' data-testid='quick-detail-section-history'>
               <QuickRequestHistoryList detail={detail} />
             </QuickDetailSection>
-            {detail.permissions.canResend ? <QuickOpenchatPanel detail={detail} /> : null}
           </aside>
         </div>
         <QuickRequestActionBar
           detail={detail}
+          onOpenChat={() => void setChatParam({ chat: '1' })}
           onEdit={() => setOpenDialog('edit')}
           onCancel={() => setOpenDialog('cancel')}
           onDispatch={() => setOpenDialog('dispatch')}
@@ -164,7 +202,6 @@ function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
       />
       <QuickCancelAlert
         requestNo={openDialog === 'cancel' ? detail.requestNo : null}
-        canOperate={detail.permissions.canResend}
         onOpenChange={(open) => {
           if (!open) close();
         }}
@@ -195,12 +232,17 @@ type QuickRequestDetailPageProps = {
   requestNo: string;
 };
 
-/** 상세 client 셸 — hydration 뒤 클라이언트에서 조회 (서버 상대 URL fetch 방지) */
+/**
+ * 상세 client 셸 — hydration 뒤 클라이언트에서 조회 (서버 상대 URL fetch 방지).
+ * plan 92 U-2 — aside는 금액 → 배차 정보 → 처리 이력 3카드.
+ * plan 93 — xl에서는 aside 상단에 「요청 대화」 카드, xl 미만은 액션바 「대화 N」 → `?chat=1` 전체 뷰 (designer §4.3).
+ */
 export function QuickRequestDetailPage({ requestNo }: QuickRequestDetailPageProps) {
   const isHydrated = useIsHydrated();
 
   return (
     <div data-testid='quick-detail' className='flex min-w-0 flex-1 flex-col'>
+      <QuickRequestRealtime requestNo={requestNo} />
       {isHydrated ? (
         <QuickRequestQueryBoundary
           errorMessage='퀵 요청을 불러오지 못했습니다.'

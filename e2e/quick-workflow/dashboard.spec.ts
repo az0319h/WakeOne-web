@@ -1,5 +1,4 @@
 import { expect, test, type Page } from '@playwright/test';
-import { setOpenchatMockMode } from '../helpers/openchat-mock';
 import {
   ABSOLUTE_DATETIME_RE,
   buildCreateBody,
@@ -20,7 +19,7 @@ import {
   withApi
 } from './helpers';
 
-// plan 89 §E 대시보드·조회 범위 — docs/plans/89_quick-workflow-dongbang-openchat-plan.md
+// plan 89 §E 대시보드·조회 범위 — docs/plans/89 · plan 92가 옛 AC-35(발송 배지)를 제거했다(92 AC-06은 removal.spec)
 
 function pageTitle(page: Page, name: string) {
   return page.getByRole('heading', { name, exact: true }).first();
@@ -32,10 +31,6 @@ function tableRowLink(page: Page, requestNo: string) {
 
 test.describe('plan 89 E. 퀵 대시보드 · 조회 범위', () => {
   test.describe.configure({ timeout: 120_000 });
-
-  test.beforeEach(async () => {
-    await setOpenchatMockMode('ok');
-  });
 
   test('AC-29: user 「나의 퀵 내역」 본인 건만 · user2 건 0건 · user2 상세 URL → 「퀵 요청을 찾을 수 없습니다.」(API 404)', async ({
     browser
@@ -91,7 +86,6 @@ test.describe('plan 89 E. 퀵 대시보드 · 조회 범위', () => {
             await expect(page.getByTestId('quick-detail-dispatch')).toHaveCount(0);
             await expect(page.getByTestId('quick-detail-edit')).toHaveCount(0);
             await expect(page.getByTestId('quick-detail-cancel')).toHaveCount(0);
-            await expect(page.getByTestId('quick-openchat-panel')).toHaveCount(0);
           }
         } else {
           await expect(table.getByTestId(`quick-row-action-${first.requestNo}`)).toHaveText(/접수/);
@@ -242,31 +236,6 @@ test.describe('plan 89 E. 퀵 대시보드 · 조회 범위', () => {
       await expect(row).not.toContainText(/전$|방금/);
     } finally {
       await context.close();
-    }
-  });
-
-  test('AC-35: 「오픈채팅 자동 발송: 연결됨」(admin·동방) · 일반 직원·구매물류팀 미노출 (미설정은 unconfigured.spec)', async ({
-    browser
-  }) => {
-    for (const account of ['admin', 'dongbang'] as const) {
-      const { context, page } = await pageAs(browser, account);
-      try {
-        await gotoDashboard(page);
-        await expect(page.getByTestId('quick-openchat-status')).toHaveText(/오픈채팅 자동 발송: 연결됨/);
-      } finally {
-        await context.close();
-      }
-    }
-    for (const account of ['user', 'logistics'] as const) {
-      const { context, page } = await pageAs(browser, account);
-      try {
-        await gotoDashboard(page);
-        await expect(page.getByTestId('quick-dashboard-footnote')).toBeVisible();
-        await expect(page.getByTestId('quick-openchat-status')).toHaveCount(0);
-        await expect(page.getByText(/오픈채팅 자동 발송/)).toHaveCount(0);
-      } finally {
-        await context.close();
-      }
     }
   });
 

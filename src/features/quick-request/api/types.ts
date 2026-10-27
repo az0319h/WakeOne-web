@@ -4,10 +4,12 @@ import type {
   QuickRequestVehicleType
 } from '../schemas/quick-request-notify';
 import type {
-  QuickOpenchatEvent,
-  QuickOpenchatStatus,
-  QuickRequestStatus
-} from '../schemas/quick-request-workflow';
+  QuickChatAuthorRole,
+  QuickChatConversationTab,
+  QuickChatReadOnlyReason,
+  QuickChatViewerRole
+} from '../schemas/quick-request-chat';
+import type { QuickRequestStatus } from '../schemas/quick-request-workflow';
 
 export type { QuickRequestFormValues } from '../schemas/quick-request-form';
 
@@ -91,14 +93,10 @@ export type QuickRequestRecentAddressesRecordResponse = {
 };
 
 // ---------------------------------------------------------------------------
-// plan 89 — 퀵 업무 흐름 (등록·목록·요약·상세·수정·접수·배차·승인·취소·재발송)
+// plan 89 — 퀵 업무 흐름 (등록·목록·요약·상세·수정·접수·배차·승인·취소)
 // ---------------------------------------------------------------------------
 
-export type {
-  QuickOpenchatEvent,
-  QuickOpenchatStatus,
-  QuickRequestStatus
-} from '../schemas/quick-request-workflow';
+export type { QuickRequestStatus } from '../schemas/quick-request-workflow';
 
 export type QuickRequestOriginSchedule =
   | { mode: 'immediate' }
@@ -152,6 +150,8 @@ export type QuickRequestListRow = {
   estimatedAmount: number | null;
   finalAmount: number | null;
   actions: QuickRequestRowActions;
+  /** plan 93 — 내가 안 읽은 대화 메시지 수 (「새 대화 N」 배지 · 0이면 숨김) */
+  unreadMessageCount: number;
 };
 
 export type QuickRequestStatusCounts = Record<QuickRequestStatus, number>;
@@ -179,8 +179,6 @@ export type QuickRequestListResponse = {
     limit: number;
     counts: QuickRequestStatusCounts;
     viewer: QuickRequestViewer;
-    /** 동방·admin만 boolean, 그 외 null */
-    openchatConfigured: boolean | null;
   };
 };
 
@@ -189,7 +187,6 @@ export type QuickRequestSummary = {
   /** KST `yyyy-MM-dd` */
   range: { fromDate: string; toDate: string };
   viewer: QuickRequestViewer;
-  openchatConfigured: boolean | null;
 };
 
 /** GET /api/quick-request/summary — status·search 무시 */
@@ -221,19 +218,8 @@ export type QuickRequestPermissions = {
   canSetFinal: boolean;
   canApprove: boolean;
   canCancel: boolean;
-  canResend: boolean;
-};
-
-export type QuickOpenchatDispatchView = {
-  event: QuickOpenchatEvent;
-  status: QuickOpenchatStatus;
-  attemptCount: number;
-  httpStatus: number | null;
-  errorMessage: string | null;
-  lastAttemptAt: string | null;
-  sentAt: string | null;
-  /** 저장된 payload.text — 「메시지 복사」용 */
-  text: string;
+  /** 동방·admin (운영 권한). 취소 Alert 등 FE 분기용 (plan 92에서 이름 변경) */
+  canOperate: boolean;
 };
 
 export type QuickRequestDetail = {
@@ -260,11 +246,6 @@ export type QuickRequestDetail = {
   finalAmount: number | null;
   history: QuickRequestHistory;
   permissions: QuickRequestPermissions;
-  /** 동방·admin(canResend)만. 그 외 null */
-  openchat: null | {
-    configured: boolean;
-    dispatches: QuickOpenchatDispatchView[];
-  };
 };
 
 /** GET /api/quick-request/[requestNo] */
@@ -276,7 +257,7 @@ export type QuickRequestDetailResponse = {
 /** POST /api/quick-request — 201 */
 export type QuickRequestCreateResponse = {
   success: true;
-  data: { requestNo: string; id: string; openchat: { status: QuickOpenchatStatus } };
+  data: { requestNo: string; id: string };
 };
 
 /** 변경 API 공통 200 (PATCH · accept · dispatch · approve · cancel) */
@@ -285,14 +266,7 @@ export type QuickRequestMutationResponse = {
   data: {
     requestNo: string;
     status: QuickRequestStatus;
-    openchat?: { event: QuickOpenchatEvent; status: QuickOpenchatStatus };
   };
-};
-
-/** POST …/openchat/resend — 200 */
-export type QuickRequestResendResponse = {
-  success: true;
-  data: { event: QuickOpenchatEvent; status: QuickOpenchatStatus; attemptCount: number };
 };
 
 export type {
@@ -300,5 +274,126 @@ export type {
   QuickRequestCreateBody as QuickRequestCreatePayload,
   QuickRequestDispatchBody as QuickRequestDispatchPayload,
   QuickRequestPatchBody as QuickRequestPatchPayload,
-  QuickRequestResendBody as QuickRequestResendPayload
 } from '../schemas/quick-request-workflow';
+
+// ---------------------------------------------------------------------------
+// plan 93 — 퀵 요청 건별 대화 (messages · read · conversations · unread-total)
+// ---------------------------------------------------------------------------
+
+export type {
+  QuickChatAuthorRole,
+  QuickChatConversationTab,
+  QuickChatReadOnlyReason,
+  QuickChatViewerRole
+} from '../schemas/quick-request-chat';
+
+export type QuickRequestMessage = {
+  /** bigint identity — 읽음 위치·안 읽은 수는 id 비교 */
+  id: number;
+  authorUserId: string;
+  authorName: string;
+  authorRole: QuickChatAuthorRole;
+  body: string;
+  createdAt: string;
+};
+
+/** 읽음 위치 (본인 포함 전원 · FE가 C-12 상대편만 골라 ✓✓ 판정) */
+export type QuickRequestMessageRead = {
+  userId: string;
+  name: string;
+  role: QuickChatViewerRole;
+  lastReadMessageId: number;
+  lastReadAt: string;
+};
+
+/** 대화 헤더·Realtime 필터(`id`)·typing 채널명(`quick-chat-{id}`)용 */
+export type QuickRequestChatRequestSummary = {
+  id: string;
+  requestNo: string;
+  status: QuickRequestStatus;
+  requesterUserId: string;
+  requesterName: string;
+  route: QuickRequestRouteSummary;
+  requestedAt: string;
+};
+
+/** isMine · ✓✓ 상대편 · 칩 세트 · optimistic authorName/authorRole */
+export type QuickRequestChatViewer = {
+  userId: string;
+  name: string;
+  role: QuickChatViewerRole;
+};
+
+export type QuickRequestMessagesData = {
+  request: QuickRequestChatRequestSummary;
+  viewer: QuickRequestChatViewer;
+  /** 오름차순 · 최근 500 */
+  messages: QuickRequestMessage[];
+  /** 읽음 위치 없으면 0 */
+  myLastReadMessageId: number;
+  reads: QuickRequestMessageRead[];
+  canWrite: boolean;
+  readOnlyReason: QuickChatReadOnlyReason | null;
+  /** 역할별 3/4개 · 읽기 전용이면 [] */
+  quickReplies: string[];
+};
+
+/** GET /api/quick-request/[requestNo]/messages */
+export type QuickRequestMessagesResponse = {
+  success: true;
+  data: QuickRequestMessagesData;
+};
+
+export type QuickRequestMessageCreatePayload = { body: string };
+
+/** POST …/messages — 201 */
+export type QuickRequestMessageCreateResponse = {
+  success: true;
+  data: { message: QuickRequestMessage };
+};
+
+export type QuickRequestMarkReadPayload = { lastMessageId: number };
+
+/** PUT …/messages/read — 200 (greatest 유지 · 그 건 chat_message 알림 본인 unread → read) */
+export type QuickRequestMarkReadResponse = {
+  success: true;
+  data: { lastReadMessageId: number; notificationsMarkedRead: number };
+};
+
+export type QuickRequestConversationLastMessage = {
+  id: number;
+  authorName: string;
+  authorRole: QuickChatAuthorRole;
+  /** 120자 trim */
+  body: string;
+  createdAt: string;
+};
+
+export type QuickRequestConversation = QuickRequestChatRequestSummary & {
+  lastMessage: QuickRequestConversationLastMessage | null;
+  unreadCount: number;
+};
+
+export type QuickRequestConversationsFilters = {
+  q?: string | null;
+  tab?: QuickChatConversationTab;
+};
+
+export type QuickRequestConversationsData = {
+  /** 마지막 메시지 시각 desc → 메시지 없는 건 requestedAt desc · 최대 100 */
+  conversations: QuickRequestConversation[];
+  /** tab 무관 (q 적용 후) */
+  totals: { conversations: number; unreadConversations: number };
+};
+
+/** GET /api/quick-request/conversations?q=&tab=all|unread */
+export type QuickRequestConversationsResponse = {
+  success: true;
+  data: QuickRequestConversationsData;
+};
+
+/** GET /api/quick-request/unread-total — 90일 상한 */
+export type QuickRequestUnreadTotalResponse = {
+  success: true;
+  data: { total: number };
+};

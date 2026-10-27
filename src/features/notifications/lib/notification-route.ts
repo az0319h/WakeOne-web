@@ -35,5 +35,10 @@ export function resolveNotificationRoute(notification: RoutableNotification): st
     route = `/dashboard/quick/${encodeURIComponent(metadata.quick_request_no)}`;
   }
 
+  // plan 93 append — 「채팅 보기」: 「퀵 대화」에서 그 건이 선택된 상태 (C-7)
+  if (actionId === 'view-quick-request-chat' && typeof metadata.quick_request_no === 'string') {
+    route = `/dashboard/quick/chat?request=${encodeURIComponent(metadata.quick_request_no)}`;
+  }
+
   return route ?? NOTIFICATIONS_PAGE_ROUTE;
 }

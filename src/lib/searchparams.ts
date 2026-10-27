@@ -33,7 +33,12 @@ export const searchParams = {
   support: parseAsString,
   support_status: parseAsString,
   support_user: parseAsString,
-  affiliation: parseAsString
+  affiliation: parseAsString,
+  // plan 93 — 「퀵 대화」(request · q · tab) · 퀵 상세 모바일 대화 뷰(chat)
+  request: parseAsString,
+  q: parseAsString,
+  tab: parseAsString,
+  chat: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')

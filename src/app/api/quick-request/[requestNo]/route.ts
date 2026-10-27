@@ -4,7 +4,7 @@ import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/ap
 import { canOperateQuickRequests } from '@/features/auth/api/quick-access.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
-  insertQuickRequestRequesterNotification,
+  notifyQuickRequestEvent,
   safeNotify
 } from '@/features/quick-request/api/notifications.server';
 import {
@@ -41,7 +41,7 @@ type Params = { params: Promise<{ requestNo: string }> };
 const UPDATE_ACTION = 'quick_request.update' as const;
 const FINAL_AMOUNT_ACTION = 'quick_request.final_amount_set' as const;
 
-/** Read — 상세 + permissions + (동방·admin) 발송 기록. 권한 없음·미존재는 같은 404 */
+/** Read — 상세 + permissions. 권한 없음·미존재는 같은 404 */
 export async function GET(_request: Request, { params }: Params) {
   const session = await requireSession();
   if (!session.ok) {
@@ -305,8 +305,8 @@ export async function PATCH(request: Request, { params }: Params) {
   if (finalAmountChanged) {
     const actorName = profile.full_name?.trim() || profile.email;
     const latest = updated;
-    await safeNotify('requester final_amount_set', () =>
-      insertQuickRequestRequesterNotification({
+    await safeNotify('final_amount_set', () =>
+      notifyQuickRequestEvent({
         row: latest,
         event: 'final_amount_set',
         actorUserId: profile.user_id,

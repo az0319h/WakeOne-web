@@ -1,8 +1,4 @@
-import type {
-  QuickOpenchatEvent,
-  QuickOpenchatStatus,
-  QuickRequestStatus
-} from '../schemas/quick-request-workflow';
+import type { QuickRequestStatus } from '../schemas/quick-request-workflow';
 
 /**
  * plan 89 — 퀵 상태 라벨·카드 설명·Badge 톤 (designer K1).
@@ -55,26 +51,6 @@ export const QUICK_REQUEST_STATUS_DOT_CLASS: Record<QuickRequestStatus, string> 
   dispatched: 'bg-violet-500',
   approved: 'bg-green-500',
   cancelled: 'bg-muted-foreground'
-};
-
-export const QUICK_OPENCHAT_EVENT_LABELS: Record<QuickOpenchatEvent, string> = {
-  created: '등록',
-  accepted: '접수',
-  dispatched: '배차완료',
-  cancelled: '취소'
-};
-
-export const QUICK_OPENCHAT_STATUS_LABELS: Record<QuickOpenchatStatus, string> = {
-  sent: '발송됨',
-  failed: '실패',
-  not_configured: '미설정'
-};
-
-/** 오픈채팅 발송 상태 Badge 톤 (발송됨 = K1 초록 예외) */
-export const QUICK_OPENCHAT_STATUS_TONE_CLASS: Record<QuickOpenchatStatus, string> = {
-  sent: 'bg-green-500/10 text-green-700 hover:bg-green-500/10 dark:text-green-400',
-  failed: 'bg-destructive/10 text-destructive hover:bg-destructive/10',
-  not_configured: 'bg-muted text-muted-foreground hover:bg-muted'
 };
 
 export function getQuickRequestStatusLabel(status: QuickRequestStatus): string {

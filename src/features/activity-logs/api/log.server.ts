@@ -78,8 +78,9 @@ const METADATA_ALLOWLIST = new Set([
   "attachment_count",
   "quick_request_no",
   "changedFields",
-  "openchat",
   "recentAddressesRecorded",
+  "message_id",
+  "recipient_count",
   "created",
   "device_count",
   "endpoint_host",
@@ -257,6 +258,17 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       continue;
     }
 
+    // plan 93 — 퀵 대화 (본문은 allowlist에 없어 자동 제거)
+    if (key === "message_id" && typeof value === "number") {
+      sanitized.message_id = value;
+      continue;
+    }
+
+    if (key === "recipient_count" && typeof value === "number") {
+      sanitized.recipient_count = value;
+      continue;
+    }
+
     if (key === "parent_id" && (typeof value === "number" || value === null)) {
       sanitized.parent_id = value;
       continue;
@@ -420,22 +432,6 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === "disabled_groups" && Array.isArray(value)) {
       sanitized.disabled_groups = value.filter((item): item is string => typeof item === "string");
-      continue;
-    }
-
-    if (key === "openchat" && typeof value === "object" && !Array.isArray(value)) {
-      const openchat = value as { event?: unknown; status?: unknown; attempts?: unknown };
-      if (
-        typeof openchat.event === "string" &&
-        typeof openchat.status === "string" &&
-        typeof openchat.attempts === "number"
-      ) {
-        sanitized.openchat = {
-          event: openchat.event,
-          status: openchat.status,
-          attempts: openchat.attempts,
-        };
-      }
       continue;
     }
 

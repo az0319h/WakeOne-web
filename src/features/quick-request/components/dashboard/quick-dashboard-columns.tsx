@@ -4,8 +4,12 @@ import Link from 'next/link';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
+import { cn } from '@/lib/utils';
 import type { QuickRequestListRow } from '../../api/types';
+import { formatUnreadBadge } from '../chat/format-unread-badge';
+import { quickChatHref, quickChatText } from '../chat/quick-chat-constants';
 import { formatQuickAmountWon } from '../../lib/format-quick-amount';
 import {
   formatQuickGoodsLabel,
@@ -21,6 +25,35 @@ import {
 export function quickRequestDetailHref(requestNo: string): string {
   return `/dashboard/quick/${encodeURIComponent(requestNo)}`;
 }
+
+type QuickUnreadChatBadgeProps = {
+  requestNo: string;
+  count: number;
+  className?: string;
+};
+
+/**
+ * plan 93 U-9 · AC-16 — 「새 대화 N」 Badge Link → 「퀵 대화」 그 건. 0이면 렌더 안 함.
+ * 표·모바일 카드 둘 다 DOM에 있으므로 같은 testid가 2개 (verifier는 `.filter({ visible: true })`).
+ */
+export function QuickUnreadChatBadge({ requestNo, count, className }: QuickUnreadChatBadgeProps) {
+  if (count <= 0) {
+    return null;
+  }
+  return (
+    <Badge asChild className={cn('h-5 gap-1 rounded-full px-1.5 text-[11px] tabular-nums', className)}>
+      <Link
+        href={quickChatHref(requestNo)}
+        aria-label={quickChatText.newConversationsLink(requestNo, count)}
+        data-testid={`quick-unread-${requestNo}`}
+      >
+        <Icons.chat aria-hidden />
+        {quickChatText.newConversations(formatUnreadBadge(count))}
+      </Link>
+    </Badge>
+  );
+}
+
 
 /**
  * 표 9열 (AC-34 헤더 텍스트 그대로) — 행 클릭 이동 없음, 링크로만 이동.
@@ -47,6 +80,10 @@ export function createQuickDashboardColumns(
           <span translate='no' className='font-semibold text-foreground tabular-nums'>
             {row.original.requestNo}
           </span>
+          <QuickUnreadChatBadge
+            requestNo={row.original.requestNo}
+            count={row.original.unreadMessageCount}
+          />
           <time
             dateTime={row.original.requestedAt}
             className='text-xs whitespace-nowrap text-muted-foreground tabular-nums'

@@ -2,16 +2,14 @@ import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/ap
 import { canOperateQuickRequests } from '@/features/auth/api/quick-access.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
-  insertQuickRequestRequesterNotification,
+  notifyQuickRequestEvent,
   safeNotify
 } from '@/features/quick-request/api/notifications.server';
 import {
   isQuickRequestLocked,
-  toQuickOpenchatSource,
   updateQuickRequestIfStatus,
   type QuickRequestRow
 } from '@/features/quick-request/api/workflow.server';
-import { dispatchQuickOpenchatEvent } from '@/features/quick-request/lib/openchat-webhook.server';
 import { QUICK_REQUEST_MESSAGES } from '@/features/quick-request/schemas/quick-request-workflow';
 import {
   createQuickRouteLogger,
@@ -27,7 +25,7 @@ type Params = { params: Promise<{ requestNo: string }> };
 
 const ACTION = 'quick_request.accept' as const;
 
-/** 동방·admin: requested → dispatching, webhook `accepted`, 요청자 알림. 경합 409 (AC-21) */
+/** 동방·admin: requested → dispatching, 인앱 알림 `accepted`(동방 전원·요청자). 경합 409 (AC-21) */
 export async function POST(_request: Request, { params }: Params) {
   const requestId = createRequestId();
   const { requestNo: rawRequestNo } = await params;
@@ -104,36 +102,21 @@ export async function POST(_request: Request, { params }: Params) {
     });
   }
 
-  // webhook은 update 성공 후에만 (경합 시 1회만 발송)
-  const openchat = await dispatchQuickOpenchatEvent(toQuickOpenchatSource(updated), 'accepted');
-
+  // 알림은 update 성공 후에만 (경합 시 1회만)
   const actorName = profile.full_name?.trim() || profile.email;
   const latest = updated;
-  await safeNotify('requester accepted', () =>
-    insertQuickRequestRequesterNotification({
-      row: latest,
-      event: 'accepted',
-      actorUserId: profile.user_id,
-      actorName
-    })
+  await safeNotify('accepted', () =>
+    notifyQuickRequestEvent({ row: latest, event: 'accepted', actorUserId: profile.user_id, actorName })
   );
 
   return logger.respond(
-    {
-      success: true,
-      data: {
-        requestNo,
-        status: updated.status,
-        openchat: { event: openchat.event, status: openchat.status }
-      }
-    },
+    { success: true, data: { requestNo, status: updated.status } },
     200,
     {
       targetLabel: requestNo,
       metadata: quickLogMetadata(requestNo, {
         previous_status: 'requested',
-        new_status: updated.status,
-        openchat
+        new_status: updated.status
       })
     }
   );
