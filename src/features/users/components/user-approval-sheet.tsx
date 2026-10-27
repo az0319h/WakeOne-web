@@ -16,6 +16,7 @@ import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { approveUserMutation } from '../api/mutations';
 import {
+  isDongbangAffiliation,
   normalizeLeaderRole,
   SELECT_NONE_VALUE,
   type Affiliation
@@ -80,6 +81,23 @@ export function UserApprovalSheet({
             full_name: value.full_name.trim(),
             phone: value.phone,
             system_role: 'admin',
+            birthday: null
+          }
+        });
+        return;
+      }
+
+      // plan 89 — 동방특송: 부서·직급·리더·생일 없음, 일반 사용자
+      if (isDongbangAffiliation(value.affiliation)) {
+        await approveMutation.mutateAsync({
+          id: user.id,
+          values: {
+            email: value.email.trim().toLowerCase(),
+            full_name: value.full_name.trim(),
+            phone: value.phone,
+            affiliation: 'dongbang',
+            leader_role: null,
+            system_role: 'user',
             birthday: null
           }
         });

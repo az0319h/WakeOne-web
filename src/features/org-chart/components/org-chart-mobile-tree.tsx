@@ -6,7 +6,7 @@ import { useTree } from '@headless-tree/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tree, TreeItem, TreeItemLabel } from '@/components/reui/tree';
 import { getInitials } from '@/features/auth/components/profile-display';
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { OrgAffiliation } from '@/features/users/constants/organization';
 import { formatPersonLabel } from '../lib/format-person-label';
 import { isOrgChartDisplayEmpty } from '../lib/is-chart-empty';
 import {
@@ -20,7 +20,7 @@ const TREE_INDENT = 16;
 
 interface OrgChartMobileTreeProps {
   nodes: OrgChartNode[];
-  affiliation: Affiliation;
+  affiliation: OrgAffiliation;
 }
 
 function OrgChartTreeEmptyState() {

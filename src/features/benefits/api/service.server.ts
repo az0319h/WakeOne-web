@@ -5,7 +5,11 @@ import {
   isEligibleOrgChartMember,
 } from "@/features/org-chart/api/service.server";
 import type { OrgChartProfile } from "@/features/org-chart/api/types";
-import { AFFILIATIONS, type Affiliation } from "@/features/users/constants/organization";
+import {
+  EXCLUDE_DONGBANG_OR_FILTER,
+  ORG_AFFILIATIONS,
+  type OrgAffiliation,
+} from "@/features/users/constants/organization";
 import { normalizePersonName } from "@/lib/normalize-person-name";
 import { getServiceRoleClient } from "@/lib/supabase/service-role";
 import type {
@@ -150,7 +154,8 @@ export async function listBenefitsAdmin(
   const { data, error } = await supabase
     .from("profiles")
     .select(PROFILE_ROSTER_SELECT)
-    .eq("system_role", "user");
+    .eq("system_role", "user")
+    .or(EXCLUDE_DONGBANG_OR_FILTER);
 
   if (error) throw new Error(error.message);
 
@@ -160,7 +165,7 @@ export async function listBenefitsAdmin(
     avatar_url: string | null;
     email: string | null;
     phone: string | null;
-    affiliation: Affiliation;
+    affiliation: OrgAffiliation;
     rank: string | null;
     position_level: string;
     leader_role: OrgChartProfile["leader_role"];
@@ -282,6 +287,7 @@ async function findUniqueApplicantUserId(applicantName: string): Promise<string>
     .select("user_id, full_name")
     .eq("status", "active")
     .eq("system_role", "user")
+    .or(EXCLUDE_DONGBANG_OR_FILTER)
     .not("full_name", "is", null);
   if (error) throw new Error(error.message);
 
@@ -404,8 +410,8 @@ export async function importBenefitDocument(
   return { status: "created", document: mapDocument(data as Record<string, unknown>) };
 }
 
-export function isAffiliation(value: string | null): value is Affiliation {
-  return Boolean(value && (AFFILIATIONS as readonly string[]).includes(value));
+export function isAffiliation(value: string | null): value is OrgAffiliation {
+  return Boolean(value && (ORG_AFFILIATIONS as readonly string[]).includes(value));
 }
 
 async function getBenefitDocumentById(id: number): Promise<BenefitDocument | null> {

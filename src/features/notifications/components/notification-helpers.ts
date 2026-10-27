@@ -13,7 +13,8 @@ export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-my-contracts': '/dashboard/my-contracts',
   'view-benefits': '/dashboard/benefits',
   'view-my-benefits': '/dashboard/my-benefits',
-  'view-workflow': '/dashboard/workflow'
+  'view-workflow': '/dashboard/workflow',
+  'view-quick-request': '/dashboard/quick'
 };
 
 export function getNotificationActions(
@@ -120,6 +121,17 @@ export function getNotificationActions(
       {
         id: 'view-support',
         label: '문의 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  if (notification.type.startsWith('quick_request.')) {
+    return [
+      {
+        id: 'view-quick-request',
+        label: '퀵 요청 보기',
         type: 'redirect',
         style: 'primary'
       }

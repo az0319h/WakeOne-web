@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { OrgAffiliation } from '@/features/users/constants/organization';
 import { orgChartQueryOptions } from '../api/queries';
 import { OrgChartMobileTree } from './org-chart-mobile-tree';
 
@@ -15,7 +15,7 @@ const OrgChartD3Canvas = dynamic(
 );
 
 interface OrgChartDataBodyProps {
-  affiliation: Affiliation;
+  affiliation: OrgAffiliation;
 }
 
 const DESKTOP_MEDIA_QUERY = '(min-width: 768px)';

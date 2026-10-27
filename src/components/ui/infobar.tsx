@@ -32,7 +32,11 @@ export type HelpfulLink = {
 
 export type DescriptiveSection = {
   title: string;
-  description: string;
+  description?: string;
+  /** 글머리표 목록 (plan 90) */
+  items?: string[];
+  /** 강조 상자 본문 · 평문 1개 (plan 90) */
+  callout?: string;
   links?: HelpfulLink[];
 };
 

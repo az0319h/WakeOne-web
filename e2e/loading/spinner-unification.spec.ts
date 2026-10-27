@@ -68,7 +68,7 @@ test.describe('Dashboard loading spinner unification', () => {
     await expect(page.getByPlaceholder('사용자 검색…')).toBeVisible();
     await nextClick;
 
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: /이름/ })).toBeVisible({
       timeout: 15_000
     });

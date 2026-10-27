@@ -1,0 +1,80 @@
+import * as z from 'zod';
+import { PHONE_REGEX } from '@/lib/phone';
+import { parseQuickAmountInput } from '../lib/format-quick-amount';
+import { QUICK_REQUEST_AMOUNT_MAX } from './quick-request-workflow';
+
+/**
+ * plan 89 — 배차완료 Dialog 폼 검증 (입력 문자열 기준).
+ * 서버 본문 스키마는 `quickRequestDispatchBodySchema`(quick-request-workflow.ts)와 같은 규칙이다.
+ */
+export {
+  quickRequestDispatchBodySchema,
+  type QuickRequestDispatchBody
+} from './quick-request-workflow';
+
+export const QUICK_REQUEST_DISPATCH_MESSAGES = {
+  estimatedAmountRequired: '예상금액을 입력해 주세요.',
+  vehicleInfoRequired: '차량정보를 입력해 주세요.',
+  driverNameRequired: '기사 이름을 입력해 주세요.',
+  driverPhoneRequired: '기사 연락처를 입력해 주세요.',
+  driverPhoneInvalid: '연락처는 11자리 숫자만 입력할 수 있습니다.',
+  finalAmountRequired: '최종금액을 입력해 주세요.',
+  amountInvalid: '금액을 확인해 주세요.'
+} as const;
+
+export const QUICK_REQUEST_VEHICLE_INFO_MAX_LENGTH = 100;
+export const QUICK_REQUEST_DRIVER_NAME_MAX_LENGTH = 50;
+
+/** 금액 입력 문자열 (콤마 허용) — 필수 */
+export function requiredAmountInputSchema(requiredMessage: string) {
+  return z.string().superRefine((value, ctx) => {
+    const amount = parseQuickAmountInput(value);
+    if (amount == null) {
+      ctx.addIssue({ code: 'custom', message: requiredMessage });
+      return;
+    }
+    if (amount > QUICK_REQUEST_AMOUNT_MAX) {
+      ctx.addIssue({ code: 'custom', message: QUICK_REQUEST_DISPATCH_MESSAGES.amountInvalid });
+    }
+  });
+}
+
+export const quickRequestVehicleInfoInputSchema = z
+  .string()
+  .trim()
+  .min(1, QUICK_REQUEST_DISPATCH_MESSAGES.vehicleInfoRequired)
+  .max(QUICK_REQUEST_VEHICLE_INFO_MAX_LENGTH, '차량정보는 100자 이내로 입력해 주세요.');
+
+export const quickRequestDriverNameInputSchema = z
+  .string()
+  .trim()
+  .min(1, QUICK_REQUEST_DISPATCH_MESSAGES.driverNameRequired)
+  .max(QUICK_REQUEST_DRIVER_NAME_MAX_LENGTH, '기사 이름은 50자 이내로 입력해 주세요.');
+
+export const quickRequestDriverPhoneInputSchema = z
+  .string()
+  .trim()
+  .min(1, QUICK_REQUEST_DISPATCH_MESSAGES.driverPhoneRequired)
+  .regex(PHONE_REGEX, QUICK_REQUEST_DISPATCH_MESSAGES.driverPhoneInvalid);
+
+export const quickRequestDispatchFormSchema = z.object({
+  estimatedAmount: requiredAmountInputSchema(QUICK_REQUEST_DISPATCH_MESSAGES.estimatedAmountRequired),
+  vehicleInfo: quickRequestVehicleInfoInputSchema,
+  driverName: quickRequestDriverNameInputSchema,
+  driverPhone: quickRequestDriverPhoneInputSchema
+});
+
+export type QuickRequestDispatchFormValues = z.infer<typeof quickRequestDispatchFormSchema>;
+
+export const QUICK_REQUEST_DISPATCH_FORM_DEFAULTS: QuickRequestDispatchFormValues = {
+  estimatedAmount: '',
+  vehicleInfo: '',
+  driverName: '',
+  driverPhone: ''
+};
+
+export const quickRequestFinalAmountFormSchema = z.object({
+  finalAmount: requiredAmountInputSchema(QUICK_REQUEST_DISPATCH_MESSAGES.finalAmountRequired)
+});
+
+export type QuickRequestFinalAmountFormValues = z.infer<typeof quickRequestFinalAmountFormSchema>;

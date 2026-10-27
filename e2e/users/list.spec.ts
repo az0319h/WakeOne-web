@@ -27,13 +27,13 @@ test.describe('사용자 목록', () => {
   test('admin can view the users list', async ({ page }) => {
     await page.goto('/dashboard/users');
 
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: '이름' })).toBeVisible();
   });
 
   test('AC-05 plan58: 사용자 추가 버튼이 없다', async ({ page }) => {
     await page.goto('/dashboard/users');
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
       timeout: 30_000
     });
     await expect(page.getByRole('button', { name: '사용자 추가' })).toHaveCount(0);

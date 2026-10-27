@@ -2,26 +2,28 @@ import { mutationOptions } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { quickRequestKeys } from './keys';
 import {
+  acceptQuickRequest,
+  approveQuickRequest,
+  cancelQuickRequest,
+  createQuickRequest,
   createQuickRequestNote,
   deleteQuickRequestNote,
-  notifyQuickRequest,
-  recordQuickRequestRecentAddresses,
+  dispatchQuickRequest,
+  resendQuickRequestOpenchat,
+  setQuickRequestFinalAmount,
+  updateQuickRequest,
   updateQuickRequestNote
 } from './service';
 import type {
-  QuickRequestLocation,
+  QuickOpenchatEvent,
+  QuickRequestCancelPayload,
+  QuickRequestCreatePayload,
+  QuickRequestDispatchPayload,
   QuickRequestNoteMutationPayload,
-  QuickRequestNotifyPayload
+  QuickRequestPatchPayload
 } from './types';
 
 export { quickRequestKeys };
-
-export const notifyQuickRequestMutation = mutationOptions({
-  mutationFn: (payload: QuickRequestNotifyPayload) => notifyQuickRequest(payload),
-  onSettled: () => {
-    // 501 placeholder — 목록 캐시 없음
-  }
-});
 
 // plan 87 — 특이사항 칩 CUD · 캐시 갱신은 onSettled에서만
 
@@ -47,11 +49,62 @@ export const deleteQuickRequestNoteMutation = mutationOptions({
   }
 });
 
-// plan 87 — 최근 주소 기록 (확인 시 notify와 병렬)
+// ---------------------------------------------------------------------------
+// plan 89 — 퀵 업무 흐름 · 성공/실패(409 포함) 모두 목록·카드·상세를 다시 읽는다
+// ---------------------------------------------------------------------------
 
-export const recordQuickRequestRecentAddressesMutation = mutationOptions({
-  mutationFn: (locations: QuickRequestLocation[]) => recordQuickRequestRecentAddresses(locations),
+function invalidateQuickRequestWorkflow() {
+  const queryClient = getQueryClient();
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.lists() });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.summary() });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.details() });
+}
+
+/** 등록 — 최근 주소는 서버가 기록하므로 recent-addresses도 갱신한다 (plan 89 D-12) */
+export const createQuickRequestMutation = mutationOptions({
+  mutationFn: (payload: QuickRequestCreatePayload) => createQuickRequest(payload),
   onSettled: () => {
+    invalidateQuickRequestWorkflow();
     void getQueryClient().invalidateQueries({ queryKey: quickRequestKeys.recentAddresses() });
   }
+});
+
+export const updateQuickRequestMutation = mutationOptions({
+  mutationFn: (params: { requestNo: string; payload: QuickRequestPatchPayload }) =>
+    updateQuickRequest(params),
+  onSettled: invalidateQuickRequestWorkflow
+});
+
+export const setQuickRequestFinalAmountMutation = mutationOptions({
+  mutationFn: (params: { requestNo: string; finalAmount: number }) =>
+    setQuickRequestFinalAmount(params),
+  onSettled: invalidateQuickRequestWorkflow
+});
+
+export const acceptQuickRequestMutation = mutationOptions({
+  mutationFn: (requestNo: string) => acceptQuickRequest(requestNo),
+  onSettled: invalidateQuickRequestWorkflow
+});
+
+export const dispatchQuickRequestMutation = mutationOptions({
+  mutationFn: (params: { requestNo: string; payload: QuickRequestDispatchPayload }) =>
+    dispatchQuickRequest(params),
+  onSettled: invalidateQuickRequestWorkflow
+});
+
+export const approveQuickRequestMutation = mutationOptions({
+  mutationFn: (requestNo: string) => approveQuickRequest(requestNo),
+  onSettled: invalidateQuickRequestWorkflow
+});
+
+export const cancelQuickRequestMutation = mutationOptions({
+  mutationFn: (params: { requestNo: string; payload?: QuickRequestCancelPayload }) =>
+    cancelQuickRequest(params),
+  onSettled: invalidateQuickRequestWorkflow
+});
+
+export const resendQuickRequestOpenchatMutation = mutationOptions({
+  mutationFn: (params: { requestNo: string; event: QuickOpenchatEvent }) =>
+    resendQuickRequestOpenchat(params),
+  onSettled: invalidateQuickRequestWorkflow
 });

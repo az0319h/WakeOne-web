@@ -2,9 +2,12 @@ import 'server-only';
 
 import { getProfileDisplayName } from '@/features/auth/lib/display-name';
 import type { BenefitType } from '@/features/benefits/api/types';
+import { EXCLUDE_DONGBANG_OR_FILTER } from '@/features/users/constants/organization';
 import { WALLET_BALANCE_EMAIL_SLOT_COPY } from '@/features/wallet/constants/wallet-balance-email-slot-copy';
 import { normalizePersonName } from '@/lib/normalize-person-name';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { insertNotifications } from './insert.server';
+import type { NotificationType } from './types';
 import {
   filterMonitoredFields,
   formatUserUpdateBody,
@@ -163,12 +166,14 @@ function formatSupportPreview(value: string): string {
   return `${normalized.slice(0, SUPPORT_PREVIEW_MAX_LENGTH)}…`;
 }
 
+/** 전사 fan-out 대상 (공지 등). plan 89 — 외부 업체 동방특송은 제외 */
 export async function listActiveUserIds(): Promise<string[]> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase
     .from('profiles')
     .select('user_id')
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .or(EXCLUDE_DONGBANG_OR_FILTER);
 
   if (error) {
     throw new Error(error.message);
@@ -185,7 +190,6 @@ export async function insertAnnouncementPublishedNotifications(
     return;
   }
 
-  const supabase = getServiceRoleClient();
   const title = '새 공지가 등록되었습니다';
   const body = input.title;
 
@@ -202,10 +206,7 @@ export async function insertAnnouncementPublishedNotifications(
       }
     }));
 
-    const { error } = await supabase.from('notifications').insert(rows);
-    if (error) {
-      throw new Error(error.message);
-    }
+    await insertNotifications(rows);
   }
 }
 
@@ -236,6 +237,7 @@ export async function listMatchedAuthorUserIds(authorName: string): Promise<stri
     .select('user_id, full_name')
     .eq('system_role', 'user')
     .eq('status', 'active')
+    .or(EXCLUDE_DONGBANG_OR_FILTER)
     .not('full_name', 'is', null);
 
   if (error) {
@@ -262,7 +264,6 @@ export async function insertUserApprovalRequestAdminNotifications(
     input.googleEmail,
     input.googleDisplayName
   );
-  const supabase = getServiceRoleClient();
 
   for (let offset = 0; offset < adminUserIds.length; offset += FAN_OUT_BATCH_SIZE) {
     const batch = adminUserIds.slice(offset, offset + FAN_OUT_BATCH_SIZE);
@@ -279,10 +280,7 @@ export async function insertUserApprovalRequestAdminNotifications(
       }
     }));
 
-    const { error } = await supabase.from('notifications').insert(rows);
-    if (error) {
-      throw new Error(error.message);
-    }
+    await insertNotifications(rows);
   }
 }
 
@@ -296,7 +294,6 @@ export async function insertContractImportAdminNotifications(
 
   const title = '계약서가 import되었습니다';
   const body = `문서번호 ${input.documentNumber} · 작성자 ${input.authorName}`;
-  const supabase = getServiceRoleClient();
 
   for (let offset = 0; offset < adminUserIds.length; offset += FAN_OUT_BATCH_SIZE) {
     const batch = adminUserIds.slice(offset, offset + FAN_OUT_BATCH_SIZE);
@@ -314,10 +311,7 @@ export async function insertContractImportAdminNotifications(
       }
     }));
 
-    const { error } = await supabase.from('notifications').insert(rows);
-    if (error) {
-      throw new Error(error.message);
-    }
+    await insertNotifications(rows);
   }
 }
 
@@ -331,7 +325,6 @@ export async function insertContractImportAuthorNotifications(
 
   const title = '계약서가 등록되었습니다';
   const body = `문서번호 ${input.documentNumber}가 등록되었습니다. 내 계약서에서 확인하세요.`;
-  const supabase = getServiceRoleClient();
   const rows = authorUserIds.map((recipientUserId) => ({
     recipient_user_id: recipientUserId,
     type: 'contract.import_author' as const,
@@ -346,10 +339,7 @@ export async function insertContractImportAuthorNotifications(
     }
   }));
 
-  const { error } = await supabase.from('notifications').insert(rows);
-  if (error) {
-    throw new Error(error.message);
-  }
+  await insertNotifications(rows);
 }
 
 export async function insertUserUpdateNotification(
@@ -365,8 +355,7 @@ export async function insertUserUpdateNotification(
     return;
   }
 
-  const supabase = getServiceRoleClient();
-  const { error } = await supabase.from('notifications').insert({
+  await insertNotifications({
     recipient_user_id: input.recipientUserId,
     type: 'user.update',
     title: USER_UPDATE_NOTIFICATION_TITLE,
@@ -376,10 +365,6 @@ export async function insertUserUpdateNotification(
       kind: 'user.update'
     }
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
 }
 
 export async function insertContractReminderAdminNotifications(
@@ -392,7 +377,6 @@ export async function insertContractReminderAdminNotifications(
 
   const title = buildContractReminderAdminTitle(input);
   const body = buildContractReminderAdminBody(input);
-  const supabase = getServiceRoleClient();
   const rows = adminUserIds.map((recipientUserId) => ({
     recipient_user_id: recipientUserId,
     type: 'contract.reminder_admin' as const,
@@ -410,19 +394,14 @@ export async function insertContractReminderAdminNotifications(
     }
   }));
 
-  const { error } = await supabase.from('notifications').insert(rows);
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  await insertNotifications(rows);
 }
 
 export async function insertContractReminderRecipientNotification(
   input: InsertContractReminderRecipientNotificationInput
 ): Promise<void> {
   const documentCount = input.documentNumbers.length;
-  const supabase = getServiceRoleClient();
-  const { error } = await supabase.from('notifications').insert({
+  await insertNotifications({
     recipient_user_id: input.recipientUserId,
     type: 'contract.reminder_recipient',
     title: '계약서 독촉 이메일 안내',
@@ -435,10 +414,6 @@ export async function insertContractReminderRecipientNotification(
       kind: 'contract.reminder_recipient'
     }
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
 }
 
 function buildWalletBalanceEmailAdminTitle(input: {
@@ -481,7 +456,6 @@ export async function insertWalletBalanceEmailAdminNotifications(
 
   const title = buildWalletBalanceEmailAdminTitle(input);
   const body = buildWalletBalanceEmailAdminBody(input);
-  const supabase = getServiceRoleClient();
   const rows = adminUserIds.map((recipientUserId) => ({
     recipient_user_id: recipientUserId,
     type: 'wallet.balance_email_admin' as const,
@@ -501,39 +475,26 @@ export async function insertWalletBalanceEmailAdminNotifications(
     }
   }));
 
-  const { error } = await supabase.from('notifications').insert(rows);
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  await insertNotifications(rows);
 }
 
 export async function insertWalletBalanceEmailNotification(
   input: InsertWalletBalanceEmailNotificationInput
 ): Promise<number | null> {
-  const supabase = getServiceRoleClient();
   const copy = WALLET_BALANCE_EMAIL_SLOT_COPY[input.slot];
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert({
-      recipient_user_id: input.recipientUserId,
-      type: 'wallet.balance_email',
-      title: copy.inAppTitle,
-      body: copy.inAppBody,
-      metadata: {
-        kind: 'wallet.balance_email',
-        run_id: input.runId,
-        slot: input.slot
-      }
-    })
-    .select('id')
-    .single();
+  const [inserted] = await insertNotifications({
+    recipient_user_id: input.recipientUserId,
+    type: 'wallet.balance_email',
+    title: copy.inAppTitle,
+    body: copy.inAppBody,
+    metadata: {
+      kind: 'wallet.balance_email',
+      run_id: input.runId,
+      slot: input.slot
+    }
+  });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return typeof data?.id === 'number' ? data.id : null;
+  return typeof inserted?.id === 'number' ? inserted.id : null;
 }
 
 export async function insertWalletSyncNotifications(
@@ -577,12 +538,7 @@ export async function insertWalletSyncNotifications(
     }
   }));
 
-  const supabase = getServiceRoleClient();
-  const { error } = await supabase.from('notifications').insert([...adminRows, ...recipientRows]);
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  await insertNotifications([...adminRows, ...recipientRows]);
 }
 
 export async function insertSupportAdminNotifications(
@@ -599,7 +555,6 @@ export async function insertSupportAdminNotifications(
   const notificationTitle =
     input.type === 'support.created' ? '새 CS 문의가 등록되었습니다' : 'CS 문의가 수정되었습니다';
   const body = `${input.title} · ${formatSupportPreview(input.preview)}`;
-  const supabase = getServiceRoleClient();
 
   for (let offset = 0; offset < adminUserIds.length; offset += FAN_OUT_BATCH_SIZE) {
     const batch = adminUserIds.slice(offset, offset + FAN_OUT_BATCH_SIZE);
@@ -614,10 +569,7 @@ export async function insertSupportAdminNotifications(
       }
     }));
 
-    const { error } = await supabase.from('notifications').insert(rows);
-    if (error) {
-      throw new Error(error.message);
-    }
+    await insertNotifications(rows);
   }
 }
 
@@ -628,8 +580,7 @@ export async function insertSupportStatusChangedNotification(
     return;
   }
 
-  const supabase = getServiceRoleClient();
-  const { error } = await supabase.from('notifications').insert({
+  await insertNotifications({
     recipient_user_id: input.recipientUserId,
     type: 'support.status_changed',
     title: 'CS 문의 상태가 변경되었습니다',
@@ -641,10 +592,6 @@ export async function insertSupportStatusChangedNotification(
       new_status: input.newStatus
     }
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
 }
 
 export async function insertSupportCommentNotification(
@@ -653,14 +600,13 @@ export async function insertSupportCommentNotification(
   const type = input.parentId === null ? 'support.comment_created' : 'support.reply_created';
   const title = input.parentId === null ? 'CS 문의에 새 댓글이 달렸습니다' : 'CS 문의에 새 답글이 달렸습니다';
   const body = formatSupportPreview(input.preview);
-  const supabase = getServiceRoleClient();
 
   if (input.actorRole === 'admin') {
     if (input.actorUserId === input.supportOwnerUserId) {
       return;
     }
 
-    const { error } = await supabase.from('notifications').insert({
+    await insertNotifications({
       recipient_user_id: input.supportOwnerUserId,
       type,
       title,
@@ -672,10 +618,6 @@ export async function insertSupportCommentNotification(
         parent_id: input.parentId
       }
     });
-
-    if (error) {
-      throw new Error(error.message);
-    }
     return;
   }
 
@@ -689,7 +631,7 @@ export async function insertSupportCommentNotification(
 
   const rows = adminUserIds.map((recipientUserId) => ({
     recipient_user_id: recipientUserId,
-    type,
+    type: type as NotificationType,
     title,
     body,
     metadata: {
@@ -700,10 +642,7 @@ export async function insertSupportCommentNotification(
     }
   }));
 
-  const { error } = await supabase.from('notifications').insert(rows);
-  if (error) {
-    throw new Error(error.message);
-  }
+  await insertNotifications(rows);
 }
 
 const BENEFIT_TYPE_LABEL: Record<BenefitType, string> = {
@@ -818,13 +757,9 @@ async function insertBenefitNotificationRows(
     return;
   }
 
-  const supabase = getServiceRoleClient();
   for (let offset = 0; offset < rows.length; offset += FAN_OUT_BATCH_SIZE) {
     const batch = rows.slice(offset, offset + FAN_OUT_BATCH_SIZE);
-    const { error } = await supabase.from('notifications').insert(batch);
-    if (error) {
-      throw new Error(error.message);
-    }
+    await insertNotifications(batch);
   }
 }
 

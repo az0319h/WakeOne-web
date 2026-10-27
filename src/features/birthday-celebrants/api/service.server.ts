@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { EXCLUDE_DONGBANG_OR_FILTER } from '@/features/users/constants/organization';
 import {
   BIRTHDAY_UPCOMING_WINDOW_DAYS,
   getDaysUntilBirthday,
@@ -37,6 +38,7 @@ export async function getBirthdayCelebrantsServer(): Promise<BirthdayCelebrantsR
     .from('profiles')
     .select(CELEBRANT_COLUMNS)
     .eq('status', 'active')
+    .or(EXCLUDE_DONGBANG_OR_FILTER)
     .not('birthday', 'is', null);
 
   if (error) {

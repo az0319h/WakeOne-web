@@ -67,13 +67,34 @@ const isAttachmentsE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/attachments')
 );
 
-const isQuickRequestE2eRun = process.argv.some((arg) =>
-  arg.replace(/\\/g, '/').includes('e2e/quick-request')
-);
+const isQuickRequestE2eRun = process.argv.some((arg) => {
+  const normalized = arg.replace(/\\/g, '/');
+  // plan 89 — 퀵 업무 흐름(e2e/quick-workflow)도 같은 env(지연 page · webhook mock)로 직렬 실행
+  return (
+    normalized.includes('e2e/quick-request') ||
+    normalized.includes('e2e/quick-workflow') ||
+    normalized.includes('e2e/quick-info')
+  );
+});
+
+/** plan 89 — 퀵 run은 오픈채팅 webhook을 globalSetup mock(127.0.0.1:4599)으로 보낸다 */
+const QUICK_OPENCHAT_E2E_ENV = {
+  QUICK_OPENCHAT_WEBHOOK_URL: 'http://127.0.0.1:4599/openchat',
+  QUICK_OPENCHAT_WEBHOOK_SECRET: 'e2e-openchat-secret'
+};
 
 const isWorkflowE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/workflow')
 );
+
+/** plan 91 — 휴대폰 웹 푸시: mock 전송기(E2E_WEB_PUSH_MOCK=1) · user.json 직렬 */
+const isPushE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/push-notifications')
+);
+
+if (isPushE2eRun) {
+  process.env.E2E_WEB_PUSH_MOCK = '1';
+}
 
 if (isDevProvisionE2eRun) {
   process.env.WAKEONE_ENV = 'development';
@@ -105,7 +126,7 @@ export default defineConfig({
     isGoogleTasksE2eRun ||
     isGoogleAuthPendingNotifE2eRun ||
     isDevProvisionE2eRun ||
-    isAttachmentsE2eRun || isQuickRequestE2eRun || isWorkflowE2eRun
+    isAttachmentsE2eRun || isQuickRequestE2eRun || isWorkflowE2eRun || isPushE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -128,7 +149,10 @@ export default defineConfig({
             ...process.env,
             NEXT_PUBLIC_DISABLE_RQ_DEVTOOLS: '1',
             ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {}),
-            ...(isQuickRequestE2eRun ? { E2E_SLOW_QUICK_REQUEST: '1' } : {}),
+            ...(isPushE2eRun ? { E2E_WEB_PUSH_MOCK: '1' } : {}),
+            ...(isQuickRequestE2eRun
+              ? { E2E_SLOW_QUICK_REQUEST: '1', ...QUICK_OPENCHAT_E2E_ENV }
+              : {}),
             ...(isDevProvisionE2eRun
               ? {
                   WAKEONE_ENV: 'development',
@@ -157,6 +181,18 @@ export default defineConfig({
     {
       name: 'setup-hr-benefits',
       testMatch: /auth\.hr-benefits\.setup\.ts/,
+      timeout: 90_000
+    },
+    {
+      // plan 89 — 동방특송 일회용 계정 (e2e/.auth/dongbang.json)
+      name: 'setup-dongbang',
+      testMatch: /auth\.dongbang\.setup\.ts/,
+      timeout: 90_000
+    },
+    {
+      // plan 89 — 구매물류팀 일회용 계정 (e2e/.auth/logistics.json)
+      name: 'setup-logistics',
+      testMatch: /auth\.logistics\.setup\.ts/,
       timeout: 90_000
     },
     {
@@ -215,6 +251,9 @@ export default defineConfig({
         /attachments\//,
         /live-users\//,
         /[\\/]workflow[\\/]/,
+        /quick-workflow[\\/]/,
+        /quick-info[\\/]/,
+        /push-notifications[\\/]/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
         /wallet-balance-email\/balance-email-logs-rbac\.spec\.ts$/,
@@ -301,6 +340,42 @@ export default defineConfig({
       timeout: 120_000
     },
     {
+      // plan 89 — 퀵 업무 흐름: user·user2·admin·동방특송·구매물류팀 + 공유 webhook mock → 직렬
+      name: 'chromium-quick-workflow',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2', 'setup-dongbang', 'setup-logistics'],
+      testMatch: [/quick-workflow[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 120_000
+    },
+    {
+      // plan 90 — 퀵 권한 안내 ⓘ 패널: admin·user·동방특송·구매물류팀 storageState → 직렬
+      name: 'chromium-quick-info',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/admin.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-dongbang', 'setup-logistics'],
+      testMatch: [/quick-info[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 120_000
+    },
+    {
+      // plan 91 — 휴대폰 웹 푸시: user.json 기본 + admin·동방특송 request 컨텍스트 · 공유 구독 상태 → 직렬
+      name: 'chromium-push',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2', 'setup-dongbang'],
+      testMatch: [/push-notifications[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 120_000
+    },
+    {
       name: 'chromium-attachments',
       use: {
         ...devices['Desktop Chrome'],
@@ -375,6 +450,8 @@ export default defineConfig({
         /profile-name-live-display\//,
         /^notifications\//,
         /[\\/]workflow[\\/]/,
+        /quick-workflow[\\/]/,
+        /push-notifications[\\/]/,
         ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : []),
         ...(isDevProvisionE2eRun ? [] : [/users\/dev-provision\.api\.spec\.ts$/])
       ]

@@ -29,7 +29,7 @@ async function waitForUsersPage(page: Page) {
 }
 
 async function expectUsersPageReady(page: Page) {
-  await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: /이름/ })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: '부서/사업장' })).toBeVisible();
   await expect
@@ -160,7 +160,7 @@ test.describe('사용자 목록 읽기 전용 필터/정렬 회귀', () => {
     await fillSearch(page, 'no-such-user-filter-sort-regression');
 
     await expect(page.getByText('No results.')).toBeVisible();
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
     await expect(page.getByText(/500|Application error|Internal Server Error/i)).toHaveCount(0);
   });
 
@@ -223,7 +223,7 @@ test.describe('사용자 목록 읽기 전용 필터/정렬 회귀', () => {
     page
   }) => {
     await page.goto(`${USERS_PATH}?page=999&perPage=10`);
-    await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible();
     await expect(page.getByText(/Page 999 of/)).toHaveCount(0);
 
     const label = await firstPageLabel(page).textContent();

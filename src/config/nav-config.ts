@@ -55,6 +55,14 @@ export const navGroups: NavGroup[] = [
     label: '퀵',
     items: [
       {
+        title: '퀵 대시보드',
+        url: '/dashboard/quick',
+        icon: 'list',
+        shortcut: ['q', 'd'],
+        isActive: false,
+        items: []
+      },
+      {
         title: '퀵 요청하기',
         url: '/dashboard/quick/request',
         icon: 'send',

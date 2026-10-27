@@ -1,19 +1,20 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { revalidateLogic, useStore } from '@tanstack/react-form';
 import { scrollToFirstError } from '@/components/ui/form-context';
 import { useAppForm } from '@/components/ui/tanstack-form';
-import { notifyError, notifyInfo, notifySuccess } from '@/lib/notify';
-import {
-  notifyQuickRequestMutation,
-  recordQuickRequestRecentAddressesMutation
-} from '../api/mutations';
-import type { QuickRequestLocation } from '../api/types';
+import { notifyError, notifySuccess } from '@/lib/notify';
+import { createQuickRequestMutation } from '../api/mutations';
 import { buildQuickRequestDefaultValues } from '../lib/default-form-values';
 import { formatQuickRequestKakaoMessage } from '../lib/format-quick-request-message';
 import { mapFormValuesToNotifyPayload } from '../lib/map-quick-request-notify';
+import {
+  getQuickRequestErrorMessage,
+  notifyQuickOpenchatOutcome
+} from '../lib/quick-request-mutation-feedback';
 import { quickRequestFormSchema } from '../schemas/quick-request-form';
 import { QuickRequestConfirmBoard } from './quick-request-confirm-board';
 import type { QuickRequestOrderForm } from './quick-request-form-api';
@@ -70,67 +71,37 @@ export function QuickRequestOrderPage({
   const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
   const orderForm = form as unknown as QuickRequestOrderForm;
 
-  const notifyMutation = useMutation({
-    ...notifyQuickRequestMutation,
-    onSuccess: async (result) => {
-      try {
-        await navigator.clipboard.writeText(previewMessage);
-        notifySuccess('메시지가 복사되었습니다.');
-      } catch {
-        notifyError('클립보드 복사에 실패했습니다. 미리보기에서 직접 복사해 주세요.');
-      }
+  const router = useRouter();
+  // 등록 성공 후 상세로 이동이 끝날 때까지 Dialog·Spinner 유지 (재클릭 중복 등록 방지)
+  const [isNavigating, startNavigation] = React.useTransition();
 
-      if (result.httpStatus === 501 || !result.success) {
-        notifyInfo(result.message || '카톡 API 연동 후 자동 전송됩니다.');
-      } else if (result.success) {
-        notifySuccess('퀵 요청이 전송되었습니다.');
-      }
-
-      if (result.redirectUrl) {
-        window.open(result.redirectUrl, '_blank', 'noopener,noreferrer');
-      }
-
-      setPreviewOpen(false);
-      form.reset(emptyDefaults);
+  // plan 89 — 등록 = DB 저장 + 서버가 오픈채팅 발송·최근 주소 기록 (클립보드 복사·reset 없음)
+  const createMutation = useMutation({
+    ...createQuickRequestMutation,
+    onSuccess: (result) => {
+      notifySuccess(`퀵 요청이 등록되었습니다. (요청번호 ${result.requestNo})`);
+      notifyQuickOpenchatOutcome(result.openchat);
+      startNavigation(() => {
+        router.push(`/dashboard/quick/${encodeURIComponent(result.requestNo)}`);
+      });
     },
-    onError: () => {
-      notifyError('퀵 요청 전송에 실패했습니다.');
+    onError: (error) => {
+      notifyError(getQuickRequestErrorMessage(error));
     }
   });
 
-  // 최근 주소 기록 실패는 복사·reset 흐름과 무관 — toast 1회만 (plan 87 AC-22)
-  const recordRecentMutation = useMutation({
-    ...recordQuickRequestRecentAddressesMutation,
-    onError: () => {
-      notifyError('최근 이용 내역을 저장하지 못했습니다.');
-    }
-  });
+  const isRegistering = createMutation.isPending || createMutation.isSuccess || isNavigating;
 
-  function handleConfirmNotify() {
+  function handleConfirmCreate() {
+    if (isRegistering) return;
     const parsed = quickRequestFormSchema.safeParse(form.state.values);
     if (!parsed.success) {
       notifyError('필수 항목을 확인해 주세요.');
       return;
     }
-    const payload = mapFormValuesToNotifyPayload(
-      parsed.data,
-      requesterName,
-      requestedAt.toISOString()
+    createMutation.mutate(
+      mapFormValuesToNotifyPayload(parsed.data, requesterName, requestedAt.toISOString())
     );
-    const locations: QuickRequestLocation[] = [
-      payload.origin,
-      ...payload.stopovers,
-      payload.destination
-    ].map(({ roadAddress, detailAddress, contactName, contactPhone }) => ({
-      roadAddress,
-      detailAddress,
-      contactName,
-      contactPhone
-    }));
-
-    // notify(501 placeholder)와 최근 주소 기록을 병렬로 보낸다
-    notifyMutation.mutate(payload);
-    recordRecentMutation.mutate(locations);
   }
 
   // 데스크톱 aside · 모바일 바 · Drawer 공용 — 검증 실패 시 onSubmitInvalid
@@ -174,8 +145,8 @@ export function QuickRequestOrderPage({
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         message={previewMessage}
-        onConfirm={handleConfirmNotify}
-        isPending={notifyMutation.isPending}
+        onConfirm={handleConfirmCreate}
+        isPending={isRegistering}
       />
     </>
   );

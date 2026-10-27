@@ -29,6 +29,7 @@ import {
   IconCommand,
   IconCreditCard,
   IconDeviceLaptop,
+  IconDeviceMobile,
   IconDots,
   IconDotsVertical,
   IconDownload,
@@ -237,6 +238,7 @@ export const Icons = {
   moon: IconMoon,
   brightness: IconBrightness,
   laptop: IconDeviceLaptop,
+  smartphone: IconDeviceMobile,
   palette: IconPalette,
 
   // Commerce / Plans

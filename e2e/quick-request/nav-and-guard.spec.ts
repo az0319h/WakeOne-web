@@ -25,9 +25,30 @@ test.describe('퀵 배송 요청 nav · guard · kbar (plan 86)', () => {
 
   test('AC-01: 사이드바 퀵 → 퀵 요청하기 → /dashboard/quick/request', async ({ page }) => {
     await openQuickRequestNavLink(page);
-    await expect(page).toHaveURL(QUICK_REQUEST_PATH);
+    await expect(page).toHaveURL(QUICK_REQUEST_PATH, { timeout: 30_000 });
     await expect(quickRequestHeading(page)).toBeVisible({ timeout: 30_000 });
     await expect(quickRequestOrderPage(page)).toBeVisible({ timeout: 30_000 });
+  });
+
+  // plan 89 U-1 — 퀵 그룹은 「퀵 대시보드」(/dashboard/quick) + 「퀵 요청하기」 2개 · 최장 일치만 활성(K10)
+  test('AC-01: (89 U-1) 퀵 그룹 2개 · 퀵 대시보드 → /dashboard/quick · 요청 화면에서 퀵 요청하기만 활성', async ({
+    page
+  }) => {
+    await openQuickRequestNavLink(page);
+    await expect(page).toHaveURL(QUICK_REQUEST_PATH, { timeout: 30_000 });
+    const dashboardLink = page.getByRole('link', { name: '퀵 대시보드', exact: true });
+    const requestLink = page.getByRole('link', { name: '퀵 요청하기', exact: true });
+    await expect(dashboardLink).toBeVisible();
+    await expect(requestLink).toHaveAttribute('data-active', 'true');
+    await expect(dashboardLink).toHaveAttribute('data-active', 'false');
+
+    await dashboardLink.click();
+    await expect(page).toHaveURL(/\/dashboard\/quick$/, { timeout: 30_000 });
+    await expect(page.getByTestId('quick-dashboard')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('link', { name: '퀵 대시보드', exact: true })).toHaveAttribute(
+      'data-active',
+      'true'
+    );
   });
 
   test('AC-01: active user 직접 URL 접근 허용', async ({ page }) => {

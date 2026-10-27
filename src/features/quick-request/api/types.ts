@@ -1,7 +1,13 @@
 import type {
+  QuickRequestGoodsSize as GoodsSize,
   QuickRequestNotifyBody,
   QuickRequestVehicleType
 } from '../schemas/quick-request-notify';
+import type {
+  QuickOpenchatEvent,
+  QuickOpenchatStatus,
+  QuickRequestStatus
+} from '../schemas/quick-request-workflow';
 
 export type { QuickRequestFormValues } from '../schemas/quick-request-form';
 
@@ -13,12 +19,6 @@ export type QuickRequestLocation = {
 };
 
 export type QuickRequestNotifyPayload = QuickRequestNotifyBody;
-
-export type QuickRequestNotifyResponse = {
-  success: boolean;
-  message: string;
-  redirectUrl?: string;
-};
 
 export type { QuickRequestVehicleType };
 
@@ -89,3 +89,216 @@ export type QuickRequestRecentAddressesRecordResponse = {
   success: true;
   data: { count: number };
 };
+
+// ---------------------------------------------------------------------------
+// plan 89 — 퀵 업무 흐름 (등록·목록·요약·상세·수정·접수·배차·승인·취소·재발송)
+// ---------------------------------------------------------------------------
+
+export type {
+  QuickOpenchatEvent,
+  QuickOpenchatStatus,
+  QuickRequestStatus
+} from '../schemas/quick-request-workflow';
+
+export type QuickRequestOriginSchedule =
+  | { mode: 'immediate' }
+  | { mode: 'scheduled'; datetimeIso: string };
+
+export type QuickRequestDestinationSchedule =
+  | { mode: 'asap' }
+  | { mode: 'scheduled'; datetimeIso: string };
+
+export type QuickRequestOriginDetail = QuickRequestLocation & {
+  schedule: QuickRequestOriginSchedule;
+  notes: string[];
+  memo: string | null;
+};
+
+export type QuickRequestDestinationDetail = QuickRequestLocation & {
+  schedule: QuickRequestDestinationSchedule;
+  notes: string[];
+  memo: string | null;
+};
+
+/** 표·카드 경로 문자열 — 도로명주소 앞 두 토큰 (예: `서울 용산구`) */
+export type QuickRequestRouteSummary = {
+  from: string;
+  to: string;
+  stopoverCount: number;
+};
+
+/** 목록 행 업무 처리 버튼 (서버가 역할·상태로 계산) */
+export type QuickRequestRowActions = {
+  accept: boolean;
+  dispatch: boolean;
+  /** dispatched · 동방/admin · 최종금액 없음 */
+  setFinal: boolean;
+  /** dispatched · 요청자/admin (최종금액 유무와 무관 — 없으면 FE가 「최종금액 대기」) */
+  approve: boolean;
+};
+
+export type QuickRequestListRow = {
+  id: string;
+  requestNo: string;
+  status: QuickRequestStatus;
+  requestedAt: string;
+  requester: { userId: string; name: string };
+  route: QuickRequestRouteSummary;
+  goodsSize: GoodsSize;
+  itemDescription: string;
+  vehicleTypes: string[];
+  vehicleOtherText: string | null;
+  vehicleCount: number;
+  estimatedAmount: number | null;
+  finalAmount: number | null;
+  actions: QuickRequestRowActions;
+};
+
+export type QuickRequestStatusCounts = Record<QuickRequestStatus, number>;
+
+export type QuickRequestViewer = {
+  scope: 'own' | 'all';
+  canOperate: boolean;
+  canCreate: boolean;
+};
+
+export type QuickRequestListFilters = {
+  status?: QuickRequestStatus | null;
+  search?: string | null;
+  page?: number;
+  limit?: number;
+};
+
+/** GET /api/quick-request */
+export type QuickRequestListResponse = {
+  success: true;
+  data: {
+    rows: QuickRequestListRow[];
+    total: number;
+    page: number;
+    limit: number;
+    counts: QuickRequestStatusCounts;
+    viewer: QuickRequestViewer;
+    /** 동방·admin만 boolean, 그 외 null */
+    openchatConfigured: boolean | null;
+  };
+};
+
+export type QuickRequestSummary = {
+  counts: QuickRequestStatusCounts;
+  /** KST `yyyy-MM-dd` */
+  range: { fromDate: string; toDate: string };
+  viewer: QuickRequestViewer;
+  openchatConfigured: boolean | null;
+};
+
+/** GET /api/quick-request/summary — status·search 무시 */
+export type QuickRequestSummaryResponse = {
+  success: true;
+  data: QuickRequestSummary;
+};
+
+export type QuickRequestActorRef = { name: string } | null;
+
+export type QuickRequestHistory = {
+  acceptedAt: string | null;
+  acceptedBy: QuickRequestActorRef;
+  dispatchedAt: string | null;
+  dispatchedBy: QuickRequestActorRef;
+  finalAmountSetAt: string | null;
+  finalAmountSetBy: QuickRequestActorRef;
+  approvedAt: string | null;
+  approvedBy: QuickRequestActorRef;
+  cancelledAt: string | null;
+  cancelledBy: QuickRequestActorRef;
+  cancelReason: string | null;
+};
+
+export type QuickRequestPermissions = {
+  canEdit: boolean;
+  canAccept: boolean;
+  canDispatch: boolean;
+  canSetFinal: boolean;
+  canApprove: boolean;
+  canCancel: boolean;
+  canResend: boolean;
+};
+
+export type QuickOpenchatDispatchView = {
+  event: QuickOpenchatEvent;
+  status: QuickOpenchatStatus;
+  attemptCount: number;
+  httpStatus: number | null;
+  errorMessage: string | null;
+  lastAttemptAt: string | null;
+  sentAt: string | null;
+  /** 저장된 payload.text — 「메시지 복사」용 */
+  text: string;
+};
+
+export type QuickRequestDetail = {
+  id: string;
+  requestNo: string;
+  status: QuickRequestStatus;
+  requestedAt: string;
+  requester: { userId: string; name: string; phone: string | null };
+  goodsSize: GoodsSize;
+  itemDescription: string;
+  vehicleTypes: string[];
+  vehicleOtherText: string | null;
+  vehicleCount: number;
+  freightPayment: 'monthly' | 'collect';
+  origin: QuickRequestOriginDetail;
+  stopovers: QuickRequestLocation[];
+  destination: QuickRequestDestinationDetail;
+  dispatch: {
+    estimatedAmount: number | null;
+    vehicleInfo: string | null;
+    driverName: string | null;
+    driverPhone: string | null;
+  };
+  finalAmount: number | null;
+  history: QuickRequestHistory;
+  permissions: QuickRequestPermissions;
+  /** 동방·admin(canResend)만. 그 외 null */
+  openchat: null | {
+    configured: boolean;
+    dispatches: QuickOpenchatDispatchView[];
+  };
+};
+
+/** GET /api/quick-request/[requestNo] */
+export type QuickRequestDetailResponse = {
+  success: true;
+  data: QuickRequestDetail;
+};
+
+/** POST /api/quick-request — 201 */
+export type QuickRequestCreateResponse = {
+  success: true;
+  data: { requestNo: string; id: string; openchat: { status: QuickOpenchatStatus } };
+};
+
+/** 변경 API 공통 200 (PATCH · accept · dispatch · approve · cancel) */
+export type QuickRequestMutationResponse = {
+  success: true;
+  data: {
+    requestNo: string;
+    status: QuickRequestStatus;
+    openchat?: { event: QuickOpenchatEvent; status: QuickOpenchatStatus };
+  };
+};
+
+/** POST …/openchat/resend — 200 */
+export type QuickRequestResendResponse = {
+  success: true;
+  data: { event: QuickOpenchatEvent; status: QuickOpenchatStatus; attemptCount: number };
+};
+
+export type {
+  QuickRequestCancelBody as QuickRequestCancelPayload,
+  QuickRequestCreateBody as QuickRequestCreatePayload,
+  QuickRequestDispatchBody as QuickRequestDispatchPayload,
+  QuickRequestPatchBody as QuickRequestPatchPayload,
+  QuickRequestResendBody as QuickRequestResendPayload
+} from '../schemas/quick-request-workflow';

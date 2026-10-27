@@ -76,6 +76,17 @@ const METADATA_ALLOWLIST = new Set([
   "starred",
   "changed_field_keys",
   "attachment_count",
+  "quick_request_no",
+  "changedFields",
+  "openchat",
+  "recentAddressesRecorded",
+  "created",
+  "device_count",
+  "endpoint_host",
+  "disabled_groups",
+  "attempted",
+  "sent",
+  "removed",
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -372,6 +383,59 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       sanitized.changed_field_keys = value.filter(
         (field): field is string => typeof field === "string",
       );
+      continue;
+    }
+
+    if (key === "changedFields" && Array.isArray(value)) {
+      sanitized.changedFields = value.filter(
+        (field): field is string =>
+          typeof field === "string" && !SENSITIVE_FIELD_PATTERN.test(field),
+      );
+      continue;
+    }
+
+    if (key === "recentAddressesRecorded" && typeof value === "boolean") {
+      sanitized.recentAddressesRecorded = value;
+      continue;
+    }
+
+    // plan 91 — 휴대폰 푸시
+    if (key === "created" && typeof value === "boolean") {
+      sanitized.created = value;
+      continue;
+    }
+
+    if (
+      (key === "device_count" || key === "attempted" || key === "sent" || key === "removed") &&
+      typeof value === "number"
+    ) {
+      (sanitized as Record<string, unknown>)[key] = value;
+      continue;
+    }
+
+    if (key === "endpoint_host" && typeof value === "string") {
+      sanitized.endpoint_host = value;
+      continue;
+    }
+
+    if (key === "disabled_groups" && Array.isArray(value)) {
+      sanitized.disabled_groups = value.filter((item): item is string => typeof item === "string");
+      continue;
+    }
+
+    if (key === "openchat" && typeof value === "object" && !Array.isArray(value)) {
+      const openchat = value as { event?: unknown; status?: unknown; attempts?: unknown };
+      if (
+        typeof openchat.event === "string" &&
+        typeof openchat.status === "string" &&
+        typeof openchat.attempts === "number"
+      ) {
+        sanitized.openchat = {
+          event: openchat.event,
+          status: openchat.status,
+          attempts: openchat.attempts,
+        };
+      }
       continue;
     }
 

@@ -11,12 +11,15 @@ type QuickRequestLocationSectionProps = {
   fieldPrefix: 'origin' | 'destination' | `stopovers[${number}]`;
   /** e.g. `quick-request-origin` · `quick-request-stopover-0` */
   idPrefix: string;
+  /** 주소 검색 Dialog의 「최근 이용 내역」 탭 (기본 true · plan 89 수정 Sheet는 false) */
+  showRecent?: boolean;
 };
 
 export function QuickRequestLocationSection({
   form,
   fieldPrefix,
-  idPrefix
+  idPrefix,
+  showRecent = true
 }: QuickRequestLocationSectionProps) {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   // 선택으로 닫히면 상세 주소로, Esc·닫기는 「주소 검색」 버튼으로 포커스 복귀
@@ -108,6 +111,7 @@ export function QuickRequestLocationSection({
         onOpenChange={setPickerOpen}
         onRoadSelect={handleRoadSelect}
         onRecentSelect={handleRecentSelect}
+        showRecent={showRecent}
         getReturnFocusElement={() =>
           document.getElementById(selectedRef.current ? detailInputId : searchButtonId)
         }

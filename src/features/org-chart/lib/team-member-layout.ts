@@ -1,4 +1,4 @@
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { OrgAffiliation } from '@/features/users/constants/organization';
 import type { OrgChartNode } from '../api/types';
 
 /** 점장 > 부점장 > 선임매니저 == 쉐프 > 매니저 */
@@ -22,7 +22,7 @@ function sansMemberTierKey(positionLevel: string | undefined): string {
 /** 팀 멤버 d3 parent 연결 — wake/foundry: 세로 체인, sans: 선임매니저·쉐프만 형제 가로 */
 export function toD3TeamMemberLayout(
   nodes: OrgChartNode[],
-  affiliation: Affiliation
+  affiliation: OrgAffiliation
 ): D3ChartDatum[] {
   const parentOverride = new Map<string, string>();
 

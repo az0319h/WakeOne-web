@@ -54,11 +54,14 @@ function buildTrackPayload(profile: AuthProfile): LiveUserTrackPayload {
 
 interface DashboardPresenceProviderProps {
   profile: AuthProfile;
+  /** false면 presence 채널에 접속·track하지 않는다 (plan 89 — 동방특송) */
+  trackEnabled?: boolean;
   children: ReactNode;
 }
 
 export function DashboardPresenceProvider({
   profile,
+  trackEnabled = true,
   children
 }: DashboardPresenceProviderProps) {
   const liveProfile = useNavAccess();
@@ -101,7 +104,7 @@ export function DashboardPresenceProvider({
   }, []);
 
   useEffect(() => {
-    if (profile.status === 'inactive') {
+    if (profile.status === 'inactive' || !trackEnabled) {
       return;
     }
 
@@ -235,7 +238,7 @@ export function DashboardPresenceProvider({
       window.removeEventListener('pagehide', handleLeave);
       teardownChannel();
     };
-  }, [profile.status, profile.user_id, syncPresenceState]);
+  }, [profile.status, profile.user_id, syncPresenceState, trackEnabled]);
 
   useEffect(() => {
     const channel = channelRef.current;

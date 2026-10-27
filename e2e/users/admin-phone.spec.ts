@@ -39,7 +39,7 @@ async function setProfilePhoneNull(userId: string) {
 
 async function openUserEditDialog(page: Page, email: string) {
   await page.goto('/dashboard/users');
-  await expect(page.getByRole('heading', { name: '사용자 관리' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: '사용자 관리', exact: true })).toBeVisible({
     timeout: 30_000
   });
   const targetRow = page.getByRole('row', {

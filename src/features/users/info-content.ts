@@ -1,41 +1,46 @@
 import type { InfobarContent } from '@/components/ui/infobar';
 
+/** plan 90 — 사용자 관리 ⓘ 안내 (admin만 봄 · 링크 없음) */
 export const usersInfoContent: InfobarContent = {
-  title: 'Users — React Query + nuqs Pattern',
+  title: '사용자 관리 안내',
   sections: [
     {
-      title: 'Overview',
+      title: '이 화면에서 하는 일',
       description:
-        'This page demonstrates client-side data fetching with React Query combined with nuqs URL search params — as an alternative to the Products page which uses server-side RSC fetching. Both patterns use the same DataTable, useDataTable hook, and nuqs URL state.',
-      links: [
-        {
-          title: 'TanStack Query SSR Docs',
-          url: 'https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr'
-        }
+        'Google 계정으로 가입을 신청한 사람을 승인하고, 직원 정보와 계정 상태를 관리합니다. 관리자만 이 화면을 볼 수 있습니다.'
+    },
+    {
+      title: '가입 승인·거절',
+      items: [
+        '처음 Google로 로그인한 사람은 「승인 대기」 상태로 표에 나타납니다.',
+        '「승인」을 누르면 소속·부서/사업장·직급·리더 역할·시스템 역할을 정한 뒤 승인합니다. 생일은 비워 둘 수 있습니다.',
+        '「거절」하면 「거절됨」 상태가 됩니다. 이메일 알림은 보내지 않습니다.'
       ]
     },
     {
-      title: 'Server Prefetch + Client Hydration',
-      description:
-        'The server component reads search params via searchParamsCache, builds filters, and calls queryClient.prefetchQuery(). The dehydrated state is passed to HydrationBoundary so the client starts with cached data. The client component reads the same search params via useQueryState and calls useSuspenseQuery with matching filters.',
-      links: []
-    },
-    {
-      title: 'URL State with nuqs',
-      description:
-        'Pagination, search, and auth filters (system role, organization, department, org role) are synced to the URL via nuqs. The useDataTable hook manages TanStack Table state and debounces filter changes before updating the URL. When the URL changes, React Query refetches because the query key includes the filters.',
-      links: [
-        {
-          title: 'nuqs Documentation',
-          url: 'https://nuqs.47ng.com'
-        }
+      title: '사용자 정보 수정',
+      items: [
+        '「활성」 상태인 다른 사용자만 수정할 수 있습니다. 내 계정은 여기서 고칠 수 없습니다.',
+        '관리자 계정은 아바타 URL과 시스템 역할만 바꿀 수 있습니다.'
       ]
     },
     {
-      title: 'Products vs Users Pattern',
-      description:
-        'Products: searchParams → RSC fetch → pass data as props to client table. Users: searchParams → server prefetch → HydrationBoundary → client useSuspenseQuery. The Users pattern enables background refetching, cache sharing across components, and optimistic mutations.',
-      links: []
+      title: '소속을 「동방특송」으로 고를 때',
+      description: '동방특송은 퀵 배송을 맡는 외부 업체 직원입니다.',
+      callout:
+        '「동방특송」을 고르면 부서·직급·리더 역할·생일 칸이 사라지고 값이 비워집니다. 동방특송 직원은 퀵 화면과 프로필·알림·활동 로그만 이용할 수 있습니다.',
+      items: [
+        '시스템 역할은 일반 사용자만 고를 수 있습니다.',
+        '조직도, 생일 안내, 접속자 목록, 공지 알림, 복지비 명단에는 나타나지 않습니다.'
+      ]
+    },
+    {
+      title: '비활성화와 다시 활성화',
+      items: [
+        '비활성화하면 그 사람은 바로 로그아웃되고 다시 로그인할 수 없습니다.',
+        '「활성화」를 누르면 다시 Google 로그인으로 들어올 수 있습니다.',
+        '내 계정은 비활성화할 수 없습니다.'
+      ]
     }
   ]
 };

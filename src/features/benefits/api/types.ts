@@ -1,4 +1,4 @@
-import type { Affiliation } from "@/features/users/constants/organization";
+import type { OrgAffiliation } from "@/features/users/constants/organization";
 
 export type BenefitType = "book" | "fitness" | "education";
 export type BenefitStatus = "정상" | "한도 초과";
@@ -53,7 +53,7 @@ export interface BenefitCategoryTotals {
 export interface BenefitMemberSummary {
   user_id: string;
   full_name: string;
-  affiliation: Affiliation;
+  affiliation: OrgAffiliation;
   team: string | null;
   position_level: string;
   /** 복지비 관리(admin) UI: 비활성 프로필이 조회 월에 노출될 때 true */
@@ -68,7 +68,7 @@ export interface BenefitMemberSummary {
 
 export interface BenefitsAdminFilters {
   month: string;
-  affiliation?: Affiliation;
+  affiliation?: OrgAffiliation;
   team?: string;
   name?: string;
 }

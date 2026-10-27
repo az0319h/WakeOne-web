@@ -25,6 +25,8 @@ interface SelectFieldProps {
   required?: boolean;
   options: Option[];
   placeholder?: string;
+  /** 선택 불가 (예: plan 89 동방특송 시스템 역할 고정) */
+  disabled?: boolean;
 }
 
 export function SelectField({
@@ -32,7 +34,8 @@ export function SelectField({
   description,
   required,
   options,
-  placeholder = 'Select an option'
+  placeholder = 'Select an option',
+  disabled
 }: SelectFieldProps) {
   const field = useFieldContext();
   const isTouched = useStore(field.store, (s) => s.meta.isTouched);
@@ -48,6 +51,7 @@ export function SelectField({
         </FieldLabel>
         <Select
           value={value}
+          disabled={disabled}
           onValueChange={field.handleChange}
           onOpenChange={(open) => {
             if (!open) field.handleBlur();

@@ -11,6 +11,7 @@ import {
 } from '@/features/activity-logs/api/log.server';
 import { requireAdminSession } from '@/features/auth/api/admin.server';
 import {
+  DONGBANG_AFFILIATION,
   normalizeLeaderRole,
   resolveRankFromPositionLevel,
   type Affiliation
@@ -190,10 +191,13 @@ export async function POST(request: NextRequest, { params }: Params) {
     };
 
     const isAdminTarget = payload.system_role === 'admin';
+    // plan 89 — 동방특송: 부서·직급·리더·생일 null, system_role user
+    const isDongbangTarget = !isAdminTarget && payload.affiliation === DONGBANG_AFFILIATION;
 
-    const userRank = !isAdminTarget
-      ? resolveRankFromPositionLevel(payload.position_level!) ?? payload.rank!
-      : null;
+    const userRank =
+      !isAdminTarget && !isDongbangTarget
+        ? resolveRankFromPositionLevel(payload.position_level!) ?? payload.rank!
+        : null;
 
     const profileUpdate = isAdminTarget
       ? {
@@ -219,10 +223,10 @@ export async function POST(request: NextRequest, { params }: Params) {
           full_name: payload.full_name,
           affiliation: payload.affiliation as Affiliation,
           rank: userRank,
-          position_level: payload.position_level!,
-          leader_role: normalizeLeaderRole(payload.leader_role),
+          position_level: isDongbangTarget ? null : payload.position_level!,
+          leader_role: isDongbangTarget ? null : normalizeLeaderRole(payload.leader_role),
           system_role: 'user' as const,
-          birthday: payload.birthday ?? null,
+          birthday: isDongbangTarget ? null : payload.birthday ?? null,
           phone: payload.phone,
           status: 'active' as const,
           deactivated_at: null,

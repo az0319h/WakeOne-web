@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { createActiveTestUser, signInWithSupabasePassword } from '../helpers/supabase-direct-auth';
 import {
   clickDesktopRegister,
-  confirmPreviewAndExpect501,
+  confirmPreviewAndRegister,
   expectNoHorizontalScroll,
   fillLocationByPrefix,
   fillQuickRequestOrder,
@@ -79,13 +80,9 @@ test.describe('퀵 요청 주소 검색 Dialog (plan 87)', () => {
     await fillQuickRequestOrder(page);
     await fillLocationByPrefix(page, 'quick-request-origin', RECENT_ORIGIN);
     await clickDesktopRegister(page);
-    const recentPromise = page.waitForResponse(
-      (res) =>
-        res.url().includes('/api/quick-request/recent-addresses') &&
-        res.request().method() === 'POST'
-    );
-    await confirmPreviewAndExpect501(page);
-    expect((await recentPromise).status()).toBe(200);
+    // plan 89 D-12 — 최근 주소는 등록 Route가 서버에서 기록한다 (FE POST 없음) → 등록 후 요청 화면 재진입
+    await confirmPreviewAndRegister(page);
+    await gotoQuickRequest(page, VIEWPORT_DESKTOP);
 
     const main = quickRequestMain(page);
     await expect(main.getByTestId('quick-request-origin-road-address')).toHaveValue('');
@@ -112,37 +109,36 @@ test.describe('퀵 요청 주소 검색 Dialog (plan 87)', () => {
     expect(phone.replace(/\D/g, '')).toBe(RECENT_ORIGIN.phone);
   });
 
-  test('AC-21: GET recent-addresses 빈 배열(page.route) → 「최근 이용 내역이 없습니다.」', async ({
-    page
+  test('AC-21: 최근 주소 0건 사용자(일회용) · GET 빈 배열(page.route) → 「최근 이용 내역이 없습니다.」', async ({
+    browser
   }) => {
-    // 최근 주소는 서버 prefetch(HydrationBoundary)로 시작하므로, 클라이언트 재조회가 일어나도록
-    // 확인 흐름(recent POST onSettled invalidate)을 거친다. GET·POST 모두 mock → DB 기록 없음.
-    await page.route('**/api/quick-request/recent-addresses', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ success: true, data: { addresses: [] } })
-        });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, data: { count: 2 } })
+    // plan 89 — 등록 후 화면 reset 흐름이 없어졌으므로, 최근 주소가 없는 일회용 계정으로 빈 상태를 확인한다
+    const fresh = await createActiveTestUser('quick-p87-ac21', { fullName: `E2E 최근주소없음 ${Date.now()}` });
+    const { storageState } = await signInWithSupabasePassword(fresh.email, fresh.password);
+    const context = await browser.newContext({ storageState });
+    const page = await context.newPage();
+    try {
+      await page.route('**/api/quick-request/recent-addresses', async (route) => {
+        if (route.request().method() === 'GET') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ success: true, data: { addresses: [] } })
+          });
+          return;
+        }
+        await route.continue();
       });
-    });
 
-    await gotoQuickRequest(page, VIEWPORT_DESKTOP);
-    await fillQuickRequestOrder(page);
-    await clickDesktopRegister(page);
-    await confirmPreviewAndExpect501(page);
-
-    const dialog = await openAddressPicker(page);
-    await dialog.getByRole('tab', { name: '최근 이용 내역' }).click();
-    await expect(dialog.getByText('최근 이용 내역이 없습니다.', { exact: true })).toBeVisible({
-      timeout: 15_000
-    });
-    await expect(dialog.getByTestId('quick-request-recent-address-0')).toHaveCount(0);
+      await gotoQuickRequest(page, VIEWPORT_DESKTOP);
+      const dialog = await openAddressPicker(page);
+      await dialog.getByRole('tab', { name: '최근 이용 내역' }).click();
+      await expect(dialog.getByText('최근 이용 내역이 없습니다.', { exact: true })).toBeVisible({
+        timeout: 15_000
+      });
+      await expect(dialog.getByTestId('quick-request-recent-address-0')).toHaveCount(0);
+    } finally {
+      await context.close();
+    }
   });
 });

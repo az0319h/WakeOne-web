@@ -33,13 +33,14 @@ type FormProps = {
   form: QuickRequestOrderForm;
 };
 
-type DriverNotesColumnsProps = FormProps & {
+export type QuickRequestDriverNotesColumnsProps = FormProps & {
   /** 출발·도착 칩 group (로딩·오류 시 null — 메모 칸은 항상 사용 가능) */
   originNotes?: React.ReactNode;
   destinationNotes?: React.ReactNode;
 };
 
-function DriverNotesColumns({ form, originNotes, destinationNotes }: DriverNotesColumnsProps) {
+/** 출발·도착 메모 칸 + 칩 슬롯 — plan 89 수정 Sheet(`QuickRequestEditNotesSection`)도 재사용 */
+export function QuickRequestDriverNotesColumns({ form, originNotes, destinationNotes }: QuickRequestDriverNotesColumnsProps) {
   return (
     <div className='@container min-w-0'>
       <div className='grid gap-6 @2xl:grid-cols-2'>
@@ -178,7 +179,7 @@ function DriverNotesLoaded({ form }: FormProps) {
           />
         ) : null}
 
-        <DriverNotesColumns
+        <QuickRequestDriverNotesColumns
           form={form}
           originNotes={
             isEditing ? null : (
@@ -245,7 +246,7 @@ function DriverNotesFrame({ form, status }: FormProps & { status: React.ReactNod
     <QuickRequestSectionShell id={SECTION_ID} title={SECTION_TITLE} optional>
       <div className='space-y-6'>
         {status}
-        <DriverNotesColumns form={form} />
+        <QuickRequestDriverNotesColumns form={form} />
       </div>
     </QuickRequestSectionShell>
   );

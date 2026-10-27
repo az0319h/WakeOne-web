@@ -78,6 +78,11 @@ type QuickRequestAddressPickerDialogProps = {
   onRecentSelect: (address: QuickRequestRecentAddress) => void;
   /** 닫힌 뒤 포커스를 보낼 요소 (상세 주소 입력) */
   getReturnFocusElement?: () => HTMLElement | null;
+  /**
+   * 「최근 이용 내역」 탭 표시 (기본 true). plan 89 수정 Sheet는 false —
+   * recent-addresses는 본인 주소라 동방·admin에게 의미가 없다 (designer K8)
+   */
+  showRecent?: boolean;
 };
 
 /** 주소 검색 Dialog — lg 미만 전체화면 · lg↑ 가운데 (plan 87 D3) */
@@ -86,7 +91,8 @@ export function QuickRequestAddressPickerDialog({
   onOpenChange,
   onRoadSelect,
   onRecentSelect,
-  getReturnFocusElement
+  getReturnFocusElement,
+  showRecent = true
 }: QuickRequestAddressPickerDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,7 +119,9 @@ export function QuickRequestAddressPickerDialog({
             <div className='min-w-0 flex-1 space-y-1'>
               <DialogTitle className='text-base font-semibold'>주소 검색</DialogTitle>
               <DialogDescription id={DESCRIPTION_ID} className='text-sm text-muted-foreground'>
-                도로명·건물명·지번으로 검색하거나 최근 이용 내역에서 선택하세요.
+                {showRecent
+                  ? '도로명·건물명·지번으로 검색하거나 최근 이용 내역에서 선택하세요.'
+                  : '도로명·건물명·지번으로 검색하세요.'}
               </DialogDescription>
             </div>
             <DialogClose asChild>
@@ -129,6 +137,12 @@ export function QuickRequestAddressPickerDialog({
             </DialogClose>
           </header>
 
+          {showRecent ? null : (
+            <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 lg:px-6'>
+              <QuickRequestDaumPostcodeEmbed onComplete={onRoadSelect} />
+            </div>
+          )}
+          {showRecent ? (
           <Tabs defaultValue='search' className='flex min-h-0 flex-1 flex-col gap-0'>
             <TabsList className='mx-4 mt-3 grid h-auto w-auto grid-cols-2 lg:mx-6'>
               <TabsTrigger value='search' className='min-h-11'>
@@ -154,6 +168,7 @@ export function QuickRequestAddressPickerDialog({
               </QuickRequestQueryBoundary>
             </TabsContent>
           </Tabs>
+          ) : null}
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

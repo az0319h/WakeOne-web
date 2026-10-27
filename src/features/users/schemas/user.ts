@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import {
   AFFILIATIONS,
+  DONGBANG_AFFILIATION,
   LEADER_ROLES,
   SELECT_NONE_VALUE,
   validateOrganizationFields,
@@ -106,6 +107,11 @@ export const approveUserSchema = z
       });
     }
 
+    // plan 89 — 동방특송은 부서·직급·리더·생일 입력 없음 (서버가 null 저장)
+    if (data.affiliation === DONGBANG_AFFILIATION) {
+      return;
+    }
+
     if (!data.rank) {
       ctx.addIssue({
         code: 'custom',
@@ -192,6 +198,11 @@ export const userUpdateSchema = z
     const affiliation = emptyToNull(data.affiliation) as
       | (typeof AFFILIATIONS)[number]
       | null;
+
+    // plan 89 — 동방특송은 조직 필드를 서버가 null로 저장하므로 검증하지 않는다
+    if (affiliation === DONGBANG_AFFILIATION) {
+      return;
+    }
 
     validateOrganizationFields(
       {

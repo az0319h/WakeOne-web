@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { OrgAffiliation } from '@/features/users/constants/organization';
 import { useOrgChartPersonHover } from '../hooks/use-org-chart-person-hover';
 import { isOrgChartDisplayEmpty } from '../lib/is-chart-empty';
 import { toD3TeamMemberLayout, type D3ChartDatum } from '../lib/team-member-layout';
@@ -32,7 +32,7 @@ const RESIZE_FIT_DEBOUNCE_MS = 75;
 
 interface OrgChartD3CanvasProps {
   nodes: OrgChartNode[];
-  affiliation: Affiliation;
+  affiliation: OrgAffiliation;
   className?: string;
 }
 

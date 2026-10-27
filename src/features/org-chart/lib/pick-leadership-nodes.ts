@@ -1,7 +1,7 @@
-import type { Affiliation } from '@/features/users/constants/organization';
+import type { OrgAffiliation } from '@/features/users/constants/organization';
 import type { OrgChartNode } from '../api/types';
 
-const LEADERSHIP_POSITION_ORDER: Record<Affiliation, readonly string[]> = {
+const LEADERSHIP_POSITION_ORDER: Record<OrgAffiliation, readonly string[]> = {
   wake: ['CEO', 'COO'],
   sans: ['CEO'],
   sans_foundry: ['CEO', '공장장']
@@ -22,7 +22,7 @@ function isPersonUnderTeam(
 
 export function pickLeadershipNodes(
   nodes: OrgChartNode[],
-  affiliation: Affiliation
+  affiliation: OrgAffiliation
 ): OrgChartNode[] {
   const byId = nodeById(nodes);
   const order = LEADERSHIP_POSITION_ORDER[affiliation];
