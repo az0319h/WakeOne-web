@@ -19,7 +19,16 @@ import type {
   QuickRequestNoteUpdateResponse,
   QuickRequestNotesListResponse,
   QuickRequestRecentAddress,
-  QuickRequestRecentAddressesListResponse
+  QuickRequestRecentAddressesListResponse,
+  QuickRequestConversationsFilters,
+  QuickRequestConversationsResponse,
+  QuickRequestMarkReadPayload,
+  QuickRequestMarkReadResponse,
+  QuickRequestMessageCreatePayload,
+  QuickRequestMessageCreateResponse,
+  QuickRequestMessagesData,
+  QuickRequestMessagesResponse,
+  QuickRequestUnreadTotalResponse
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -197,4 +206,72 @@ export async function fetchQuickRequestRecentAddresses(): Promise<QuickRequestRe
   const res =
     await apiClientWithMessage<QuickRequestRecentAddressesListResponse>(RECENT_ADDRESSES_PATH);
   return res.data.addresses;
+}
+
+// ---------------------------------------------------------------------------
+// plan 93 — 퀵 요청 건별 대화 (오류 시 서버 message를 그대로 Error.message로 던진다 → notifyError)
+// ---------------------------------------------------------------------------
+
+function buildConversationsQuery(filters: QuickRequestConversationsFilters): string {
+  const params = new URLSearchParams();
+  if (filters.q?.trim()) params.set('q', filters.q.trim());
+  if (filters.tab && filters.tab !== 'all') params.set('tab', filters.tab);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function fetchQuickRequestConversations(
+  filters: QuickRequestConversationsFilters = {}
+): Promise<QuickRequestConversationsResponse['data']> {
+  const res = await apiClientWithMessage<QuickRequestConversationsResponse>(
+    `${QUICK_REQUEST_PATH}/conversations${buildConversationsQuery(filters)}`
+  );
+  return res.data;
+}
+
+/** 404(권한 없음 포함)는 `null` — 「대화를 찾을 수 없습니다.」 (AC-06) */
+export async function fetchQuickRequestMessages(
+  requestNo: string
+): Promise<QuickRequestMessagesData | null> {
+  const response = await fetch(quickRequestPath(requestNo, '/messages'), { credentials: 'include' });
+  if (response.status === 404) {
+    return null;
+  }
+
+  const data = (await response.json()) as QuickRequestMessagesResponse & { message?: string };
+  if (!response.ok) {
+    throw new Error(data.message ?? `API error: ${response.status}`);
+  }
+  return data.data;
+}
+
+/** POST …/messages — 201. 400/403/404/409/500 message는 그대로 표시 */
+export async function sendQuickRequestMessage(params: {
+  requestNo: string;
+  payload: QuickRequestMessageCreatePayload;
+}): Promise<QuickRequestMessageCreateResponse['data']> {
+  const res = await apiClientWithMessage<QuickRequestMessageCreateResponse>(
+    quickRequestPath(params.requestNo, '/messages'),
+    { method: 'POST', body: JSON.stringify(params.payload) }
+  );
+  return res.data;
+}
+
+/** PUT …/messages/read — 읽음 위치(greatest) + 그 건 채팅 알림 자동 읽음 (C-21) */
+export async function markQuickRequestMessagesRead(params: {
+  requestNo: string;
+  payload: QuickRequestMarkReadPayload;
+}): Promise<QuickRequestMarkReadResponse['data']> {
+  const res = await apiClientWithMessage<QuickRequestMarkReadResponse>(
+    quickRequestPath(params.requestNo, '/messages/read'),
+    { method: 'PUT', body: JSON.stringify(params.payload) }
+  );
+  return res.data;
+}
+
+export async function fetchQuickRequestUnreadTotal(): Promise<number> {
+  const res = await apiClientWithMessage<QuickRequestUnreadTotalResponse>(
+    `${QUICK_REQUEST_PATH}/unread-total`
+  );
+  return res.data.total;
 }

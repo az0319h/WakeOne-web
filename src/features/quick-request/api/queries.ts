@@ -1,13 +1,16 @@
 import { queryOptions } from '@tanstack/react-query';
 import { quickRequestKeys } from './keys';
 import {
+  fetchQuickRequestConversations,
   fetchQuickRequestDetail,
   fetchQuickRequestList,
+  fetchQuickRequestMessages,
   fetchQuickRequestNotes,
   fetchQuickRequestRecentAddresses,
-  fetchQuickRequestSummary
+  fetchQuickRequestSummary,
+  fetchQuickRequestUnreadTotal
 } from './service';
-import type { QuickRequestListFilters } from './types';
+import type { QuickRequestConversationsFilters, QuickRequestListFilters } from './types';
 
 export { quickRequestKeys };
 
@@ -47,5 +50,32 @@ export function quickRequestDetailQueryOptions(requestNo: string) {
   return queryOptions({
     queryKey: quickRequestKeys.detail(requestNo),
     queryFn: () => fetchQuickRequestDetail(requestNo)
+  });
+}
+
+// plan 93 — 퀵 대화
+
+export function quickRequestConversationsQueryOptions(filters: QuickRequestConversationsFilters) {
+  return queryOptions({
+    queryKey: quickRequestKeys.conversations(filters),
+    queryFn: () => fetchQuickRequestConversations(filters)
+  });
+}
+
+/** 404(권한 없음 포함)는 `null` → 「대화를 찾을 수 없습니다.」 */
+export function quickRequestMessagesQueryOptions(requestNo: string) {
+  return queryOptions({
+    queryKey: quickRequestKeys.messages(requestNo),
+    queryFn: () => fetchQuickRequestMessages(requestNo)
+  });
+}
+
+/** 사이드바 배지 — non-suspense `useQuery` (staleTime 30s · refetchOnWindowFocus) */
+export function quickRequestUnreadTotalQueryOptions() {
+  return queryOptions({
+    queryKey: quickRequestKeys.unreadTotal(),
+    queryFn: () => fetchQuickRequestUnreadTotal(),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true
   });
 }

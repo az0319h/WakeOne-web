@@ -3,6 +3,12 @@ import 'server-only';
 import { insertNotifications, type NotificationInsertRow } from '@/features/notifications/api/insert.server';
 import { formatQuickAmountWon } from '../lib/format-quick-amount';
 import { buildQuickRouteSummary } from '../lib/quick-request-route-label';
+import { resolveChatRecipients } from '../lib/resolve-chat-recipients';
+import {
+  listChatAdminParticipantIds,
+  listInactiveUserIds,
+  type QuickRequestMessageRow
+} from './messages.server';
 import {
   listActiveDongbangUserIds,
   listActiveLogisticsUserIds,
@@ -160,4 +166,72 @@ export async function safeNotify(label: string, task: () => Promise<void>): Prom
     const message = error instanceof Error ? error.message : 'unknown error';
     console.error(`[quick-request/notifications] ${label} failed:`, message);
   }
+}
+
+// ---------------------------------------------------------------------------
+// plan 93 r3 — 채팅 메시지 알림 (`quick_request.chat_message`)
+// ---------------------------------------------------------------------------
+
+const CHAT_BODY_MAX_LENGTH = 200;
+const CHAT_SENDER_NAME_MAX_LENGTH = 20;
+
+/** C-6 — 원문 그대로(앞뒤 공백만 제거), 200자 초과면 199자 + `…`, 줄바꿈 유지 */
+export function clipChatNotificationBody(body: string): string {
+  const trimmed = body.trim();
+  return trimmed.length > CHAT_BODY_MAX_LENGTH ? `${trimmed.slice(0, CHAT_BODY_MAX_LENGTH - 1)}…` : trimmed;
+}
+
+/** C-6 — 제목 `{요청번호} · {보낸 사람 이름} 메시지` (이름 20자) */
+export function buildChatNotificationTitle(requestNo: string, senderName: string): string {
+  return `${requestNo} · ${senderName.trim().slice(0, CHAT_SENDER_NAME_MAX_LENGTH)} 메시지`;
+}
+
+/**
+ * 수신자 = 참여자(요청자 + active 동방 전원 + 그 건에 글 쓴 admin) − 보낸 사람 − 비활성, 중복 제거 (§알림 수신 규칙).
+ * 접수 전/후·`accepted_by`·상태 분기 없음. 반환 = 실제 insert한 수신자 수 (activity log `recipient_count`).
+ */
+export async function notifyQuickRequestChatMessage(input: {
+  row: QuickRequestRow;
+  message: QuickRequestMessageRow;
+  senderUserId: string;
+  senderName: string;
+}): Promise<number> {
+  const { row, message, senderUserId, senderName } = input;
+  const [activeDongbangIds, adminParticipantIds] = await Promise.all([
+    listActiveDongbangUserIds(),
+    listChatAdminParticipantIds(row.id)
+  ]);
+  // 동방 목록은 이미 active만. 요청자·admin 참여자의 활성 여부만 추가 확인
+  const inactiveIds = await listInactiveUserIds([row.requester_user_id, ...adminParticipantIds]);
+
+  const recipients = resolveChatRecipients({
+    requesterId: row.requester_user_id,
+    activeDongbangIds,
+    adminParticipantIds,
+    senderId: senderUserId,
+    inactiveIds
+  });
+  if (recipients.length === 0) return 0;
+
+  const title = buildChatNotificationTitle(row.request_no, senderName);
+  const body = clipChatNotificationBody(message.body);
+  const metadata = {
+    kind: 'quick_request.chat_message' as const,
+    quick_request_no: row.request_no,
+    quick_request_id: row.id,
+    quick_request_event: 'chat_message',
+    quick_request_message_id: Number(message.id),
+    actor_user_id: senderUserId
+  };
+
+  await insertNotifications(
+    recipients.map((recipientUserId) => ({
+      recipient_user_id: recipientUserId,
+      type: 'quick_request.chat_message',
+      title,
+      body,
+      metadata
+    }))
+  );
+  return recipients.length;
 }

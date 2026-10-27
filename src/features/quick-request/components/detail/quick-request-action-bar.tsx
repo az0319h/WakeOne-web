@@ -9,8 +9,13 @@ import { cn } from '@/lib/utils';
 import { acceptQuickRequestMutation } from '../../api/mutations';
 import type { QuickRequestDetail } from '../../api/types';
 import { notifyQuickRequestError } from '../../lib/quick-request-mutation-feedback';
+import { QUICK_CHAT_DETAIL_ASIDE_MEDIA_QUERY } from '../chat/quick-chat-constants';
+import { useMatchMedia } from '../chat/use-match-media';
+import { QuickRequestChatLauncher } from './quick-request-chat-launcher';
 
 export type QuickRequestDetailActionHandlers = {
+  /** plan 93 — 「대화 N」 (xl 미만) */
+  onOpenChat: () => void;
   onEdit: () => void;
   onCancel: () => void;
   onDispatch: () => void;
@@ -44,9 +49,13 @@ type QuickRequestActionBarProps = QuickRequestDetailActionHandlers & {
 
 const BUTTON_CLASS = 'h-11 lg:h-10';
 
-/** 하단 고정 액션바 — 최대 3버튼 (요청 취소 · 수정 · 주 동작) */
+/**
+ * 하단 고정 액션바 — 최대 3버튼 (요청 취소 · 수정 · 주 동작) + plan 93 「대화 N」(xl 미만).
+ * 액션이 없어도 xl 미만에서는 「대화」 때문에 렌더한다 (모든 역할 · 읽기 전용은 뷰 안에서 안내).
+ */
 export function QuickRequestActionBar({
   detail,
+  onOpenChat,
   onEdit,
   onCancel,
   onDispatch,
@@ -58,10 +67,10 @@ export function QuickRequestActionBar({
   const primary = resolveQuickDetailPrimaryAction(detail);
   const { canEdit, canCancel } = detail.permissions;
   const approveBlocked = primary === 'approve' && detail.finalAmount == null;
-
-  if (!hasQuickDetailActions(detail)) {
-    return null;
-  }
+  const hasActions = hasQuickDetailActions(detail);
+  // xl 이상은 대화가 aside 카드에 있으므로 액션이 없으면 액션바 자체를 그리지 않는다 (plan 89 AC-23·26 「액션바 사라짐」 유지).
+  // hydration 전(false)에는 `xl:hidden`이 같은 결과를 낸다.
+  const isXl = useMatchMedia(QUICK_CHAT_DETAIL_ASIDE_MEDIA_QUERY);
 
   function handleAccept() {
     acceptMutation.mutate(detail.requestNo, {
@@ -74,10 +83,17 @@ export function QuickRequestActionBar({
     });
   }
 
+  if (!hasActions && isXl) {
+    return null;
+  }
+
   return (
     <div
       data-testid='quick-detail-actions'
-      className='sticky bottom-0 z-10 -mx-4 mt-6 flex flex-col gap-2 border-t bg-background px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6'
+      className={cn(
+        'sticky bottom-0 z-10 -mx-4 mt-6 flex flex-col gap-2 border-t bg-background px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6',
+        !hasActions && 'xl:hidden'
+      )}
     >
       {approveBlocked ? (
         <p
@@ -90,6 +106,7 @@ export function QuickRequestActionBar({
         </p>
       ) : null}
       <div className='flex min-w-0 items-center gap-2'>
+        <QuickRequestChatLauncher requestNo={detail.requestNo} onOpen={onOpenChat} className='xl:hidden' />
         {canCancel ? (
           <Button
             type='button'

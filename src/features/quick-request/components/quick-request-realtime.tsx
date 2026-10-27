@@ -75,8 +75,30 @@ export function QuickRequestRealtime({ requestNo }: QuickRequestRealtimeProps) {
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'quick_requests', filter },
           scheduleInvalidate
-        )
-        .subscribe();
+        );
+
+      // plan 93 — 대시보드(필터 없음)에서는 메시지·읽음 이벤트로 「새 대화 N」(lists)도 갱신한다.
+      // 상세는 대화 컴포넌트가 자기 채널(`quick-chat-{id}`)로 받으므로 여기서는 구독하지 않는다.
+      if (!requestNo) {
+        channel
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'quick_request_messages' },
+            scheduleInvalidate
+          )
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'quick_request_message_reads' },
+            scheduleInvalidate
+          )
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'quick_request_message_reads' },
+            scheduleInvalidate
+          );
+      }
+
+      channel.subscribe();
     };
 
     void setup();

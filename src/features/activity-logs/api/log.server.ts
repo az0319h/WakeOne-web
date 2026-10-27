@@ -79,6 +79,8 @@ const METADATA_ALLOWLIST = new Set([
   "quick_request_no",
   "changedFields",
   "recentAddressesRecorded",
+  "message_id",
+  "recipient_count",
   "created",
   "device_count",
   "endpoint_host",
@@ -253,6 +255,17 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === "comment_id" && typeof value === "number") {
       sanitized.comment_id = value;
+      continue;
+    }
+
+    // plan 93 — 퀵 대화 (본문은 allowlist에 없어 자동 제거)
+    if (key === "message_id" && typeof value === "number") {
+      sanitized.message_id = value;
+      continue;
+    }
+
+    if (key === "recipient_count" && typeof value === "number") {
+      sanitized.recipient_count = value;
       continue;
     }
 

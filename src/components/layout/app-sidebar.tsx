@@ -26,6 +26,7 @@ import { useNavAccess } from '@/contexts/nav-access';
 import type { NavItem } from '@/types';
 import { NavUser } from '../nav-user';
 import { Icons } from '../icons';
+import { NavItemBadge } from './nav-badges';
 
 function matchesPath(pathname: string, url: string) {
   return pathname === url || pathname.startsWith(`${url}/`);
@@ -156,6 +157,8 @@ function SidebarNavLeafItem({ item, pathname }: SidebarNavLeafItemProps) {
           <span>{item.title}</span>
         </Link>
       </SidebarMenuButton>
+      {/* plan 93 — 배지는 Link 밖 형제 (`SidebarMenuBadge` · 접힘 모드 숨김 내장) */}
+      {item.badge ? <NavItemBadge badgeKey={item.badge} /> : null}
     </SidebarMenuItem>
   );
 }

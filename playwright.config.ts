@@ -73,7 +73,9 @@ const isQuickRequestE2eRun = process.argv.some((arg) => {
   return (
     normalized.includes('e2e/quick-request') ||
     normalized.includes('e2e/quick-workflow') ||
-    normalized.includes('e2e/quick-info')
+    normalized.includes('e2e/quick-info') ||
+    // plan 93 — 퀵 대화(e2e/quick-chat): 2 context 실시간·계정 공유 → 직렬
+    normalized.includes('e2e/quick-chat')
   );
 });
 
@@ -250,6 +252,7 @@ export default defineConfig({
         /[\\/]workflow[\\/]/,
         /quick-workflow[\\/]/,
         /quick-info[\\/]/,
+        /quick-chat[\\/]/,
         /push-notifications[\\/]/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
@@ -369,6 +372,18 @@ export default defineConfig({
       timeout: 120_000
     },
     {
+      // plan 93 — 퀵 대화: user·user2·admin·동방특송·구매물류팀 storageState + 2 context 실시간 → 직렬
+      name: 'chromium-quick-chat',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2', 'setup-dongbang', 'setup-logistics'],
+      testMatch: [/quick-chat[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 120_000
+    },
+    {
       // plan 91 — 휴대폰 웹 푸시: user.json 기본 + admin·동방특송 request 컨텍스트 · 공유 구독 상태 → 직렬
       name: 'chromium-push',
       use: {
@@ -456,6 +471,7 @@ export default defineConfig({
         /^notifications\//,
         /[\\/]workflow[\\/]/,
         /quick-workflow[\\/]/,
+        /quick-chat[\\/]/,
         /push-notifications[\\/]/,
         /auth[\\/]guard-parity\.api\.spec\.ts$/,
         ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : []),

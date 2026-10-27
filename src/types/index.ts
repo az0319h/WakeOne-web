@@ -19,6 +19,9 @@ export interface PermissionCheck {
   requireOrg?: boolean;
 }
 
+/** plan 93 — 사이드바 배지 레지스트리 키 (`src/components/layout/nav-badges.tsx`) */
+export type NavBadgeKey = 'quick-chat-unread';
+
 export interface NavItem {
   title: string;
   url: string;
@@ -31,6 +34,8 @@ export interface NavItem {
   isActive?: boolean;
   items?: NavItem[];
   access?: PermissionCheck;
+  /** plan 93 — 메뉴 오른쪽 숫자 배지 (사이드바 전용 · kbar 미표시) */
+  badge?: NavBadgeKey;
 }
 
 export interface NavGroup {

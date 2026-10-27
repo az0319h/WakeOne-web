@@ -698,12 +698,26 @@ async function cleanupQuickWorkflowFixtures() {
   }
 
   const remainingTargets = await quickWorkflowTargetRows(disposableIds, fixtureIds);
+  // plan 93 — 대화·읽음 위치는 quick_requests on delete cascade로 지워진다. 잔존 0 확인 (일회용 작성자 분 포함)
+  const idsForChatCheck = ids.slice(0, 100);
   const remaining = {
     quick_requests: remainingTargets.length,
     quick_notifications: requestNos.length
       ? await countRows('notifications', (q) =>
           q.like('type', 'quick_request.%').in('metadata->>quick_request_no', requestNos.slice(0, 100))
         )
+      : 0,
+    quick_request_messages: idsForChatCheck.length
+      ? await countRows('quick_request_messages', (q) => q.in('quick_request_id', idsForChatCheck))
+      : 0,
+    quick_request_message_reads: idsForChatCheck.length
+      ? await countRows('quick_request_message_reads', (q) => q.in('quick_request_id', idsForChatCheck))
+      : 0,
+    disposable_author_messages: disposableIds.length
+      ? await countRows('quick_request_messages', (q) => q.in('author_user_id', disposableIds.slice(0, 100)))
+      : 0,
+    disposable_reads: disposableIds.length
+      ? await countRows('quick_request_message_reads', (q) => q.in('user_id', disposableIds.slice(0, 100)))
       : 0
   };
 

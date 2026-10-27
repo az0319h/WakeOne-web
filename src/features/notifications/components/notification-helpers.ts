@@ -14,7 +14,8 @@ export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-benefits': '/dashboard/benefits',
   'view-my-benefits': '/dashboard/my-benefits',
   'view-workflow': '/dashboard/workflow',
-  'view-quick-request': '/dashboard/quick'
+  'view-quick-request': '/dashboard/quick',
+  'view-quick-request-chat': '/dashboard/quick/chat'
 };
 
 export function getNotificationActions(
@@ -121,6 +122,18 @@ export function getNotificationActions(
       {
         id: 'view-support',
         label: '문의 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  // plan 93 — 채팅 알림은 「퀵 대화」로 (다른 퀵 알림은 「퀵 요청 보기」 유지)
+  if (notification.type === 'quick_request.chat_message') {
+    return [
+      {
+        id: 'view-quick-request-chat',
+        label: '채팅 보기',
         type: 'redirect',
         style: 'primary'
       }

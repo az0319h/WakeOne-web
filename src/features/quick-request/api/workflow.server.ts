@@ -198,10 +198,12 @@ function toDestinationDetail(value: JsonLocation): QuickRequestDestinationDetail
 
 export function toQuickRequestListRow(
   profile: QuickViewerProfile,
-  row: QuickRequestRow
+  row: QuickRequestRow,
+  unreadMessageCount = 0
 ): QuickRequestListRow {
   return {
     id: row.id,
+    unreadMessageCount,
     requestNo: row.request_no,
     status: row.status,
     requestedAt: row.requested_at,
@@ -253,7 +255,8 @@ export async function getQuickRequestByNo(requestNo: string): Promise<QuickReque
   return (data as QuickRequestRow | null) ?? null;
 }
 
-async function listWindowRows(profile: QuickViewerProfile): Promise<QuickRequestRow[]> {
+/** 최근 7일(KST) window 행 (plan 93 대화 목록도 같은 범위를 쓴다) */
+export async function listWindowRows(profile: QuickViewerProfile): Promise<QuickRequestRow[]> {
   const { fromIso } = getQuickDashboardRange();
   const supabase = getServiceRoleClient();
   let query = supabase
@@ -288,11 +291,12 @@ function countByStatus(rows: QuickRequestRow[]): QuickRequestStatusCounts {
   return counts;
 }
 
-function normalizeSearch(value: string): string {
+export function normalizeQuickRequestSearch(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-function matchesSearch(row: QuickRequestRow, keyword: string): boolean {
+/** 요청번호·요청자 이름·출발/경유/도착 주소 부분 일치 (plan 93 대화 목록 `q`도 같은 규칙) */
+export function matchesQuickRequestSearch(row: QuickRequestRow, keyword: string): boolean {
   const locations = [row.origin, row.destination, ...(Array.isArray(row.stopovers) ? row.stopovers : [])];
   const haystack = [
     row.request_no,
@@ -318,11 +322,11 @@ export async function listQuickRequestsForViewer(
   const windowRows = await listWindowRows(profile);
   const counts = countByStatus(windowRows);
 
-  const keyword = filters.search ? normalizeSearch(filters.search) : '';
+  const keyword = filters.search ? normalizeQuickRequestSearch(filters.search) : '';
   const filtered = windowRows.filter(
     (row) =>
       (!filters.status || row.status === filters.status) &&
-      (!keyword || matchesSearch(row, keyword))
+      (!keyword || matchesQuickRequestSearch(row, keyword))
   );
 
   const limit = Math.min(
@@ -331,9 +335,15 @@ export async function listQuickRequestsForViewer(
   );
   const page = Math.max(filters.page ?? 1, 1);
   const start = (page - 1) * limit;
+  const pageRows = filtered.slice(start, start + limit);
+  // plan 93 — 화면에 있는 건 id만 RPC 1회 (안 읽은 수 집계 비용 완화 ②)
+  const unread = await fetchQuickRequestUnreadCounts(
+    profile.user_id,
+    pageRows.map((row) => row.id)
+  );
 
   return {
-    rows: filtered.slice(start, start + limit).map((row) => toQuickRequestListRow(profile, row)),
+    rows: pageRows.map((row) => toQuickRequestListRow(profile, row, unread.get(row.id) ?? 0)),
     total: filtered.length,
     page,
     limit,
@@ -549,4 +559,32 @@ export function listActiveQuickAdminUserIds(): Promise<string[]> {
 /** 웨이크 구매물류팀 (89 D-11 `isLogisticsViewer`와 동일 판별) */
 export function listActiveLogisticsUserIds(): Promise<string[]> {
   return listActiveUserIds({ affiliation: 'wake', rank: '구매물류팀', system_role: 'user' });
+}
+
+// ---------------------------------------------------------------------------
+// plan 93 — 안 읽은 대화 수 (지정한 건 목록 · SQL 92 `quick_request_unread_counts`)
+// ---------------------------------------------------------------------------
+
+/** 건 id → 내가 안 읽은 메시지 수 (작성자≠본인 · id > 내 읽음 위치). 없는 건은 0 */
+export async function fetchQuickRequestUnreadCounts(
+  userId: string,
+  requestIds: string[]
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (requestIds.length === 0) return map;
+
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase.rpc('quick_request_unread_counts', {
+    p_user: userId,
+    p_request_ids: requestIds
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  for (const row of (data ?? []) as { quick_request_id: string; unread_count: number }[]) {
+    map.set(row.quick_request_id, Number(row.unread_count));
+  }
+  return map;
 }

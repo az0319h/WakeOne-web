@@ -82,6 +82,7 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "quick_request.dispatch": "퀵 배차 완료",
   "quick_request.approve": "퀵 요청 승인",
   "quick_request.cancel": "퀵 요청 취소",
+  "quick_request.message_create": "퀵 대화 메시지 전송",
   // legacy — plan 92에서 Route 삭제. 과거 로그 행 표시용
   "quick_request.openchat_resend": "퀵 오픈채팅 재발송",
   "workflow.document_create": "워크플로우 문서 작성",

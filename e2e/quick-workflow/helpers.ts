@@ -217,6 +217,30 @@ export async function createDisposableDongbang(label = 'dongbang2'): Promise<Acc
   return { userId: created.userId, email, password, fullName };
 }
 
+/** plan 93 — 채팅 알림 type */
+export const CHAT_NOTIFY_TYPE = 'quick_request.chat_message' as const;
+
+/**
+ * plan 93 — 요청번호(+ 메시지 id)로 `quick_request.chat_message` 알림 전 수신자 행을 읽는다.
+ * `metadata.quick_request_message_id`로 메시지 1건의 수신자를 판정한다 (AC-22~26).
+ */
+export async function dbChatNotifications(
+  requestNo: string,
+  messageId?: number
+): Promise<(QuickNotificationRow & { status: string })[]> {
+  let query = serviceClient()
+    .from('notifications')
+    .select('id, recipient_user_id, type, title, body, metadata, status')
+    .eq('type', CHAT_NOTIFY_TYPE)
+    .eq('metadata->>quick_request_no', requestNo);
+  if (messageId !== undefined) {
+    query = query.eq('metadata->>quick_request_message_id', String(messageId));
+  }
+  const { data, error } = await query.order('id', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as (QuickNotificationRow & { status: string })[];
+}
+
 export async function dbNotifications(recipientUserId: string, requestNo: string) {
   const { data, error } = await serviceClient()
     .from('notifications')

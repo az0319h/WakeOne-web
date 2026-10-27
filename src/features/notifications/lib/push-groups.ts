@@ -48,12 +48,12 @@ export const PUSH_GROUP_CATALOG: readonly PushGroupCatalogItem[] = [
   {
     key: 'quick_request',
     label: '퀵 요청',
-    description: '퀵 요청 접수·배차·진행 변경',
+    description: '퀵 요청 접수·배차·진행 변경·대화 메시지',
     admin_only: false
   }
 ];
 
-/** 30종 → 9그룹 exhaustive 매핑. type을 추가하는 plan은 여기에도 그룹을 지정해야 한다(누락 시 tsc 실패) */
+/** 31종(plan 93 +1) → 9그룹 exhaustive 매핑. type을 추가하는 plan은 여기에도 그룹을 지정해야 한다(누락 시 tsc 실패) */
 export const PUSH_NOTIFICATION_GROUPS: Record<NotificationType, PushGroupKey> = {
   'user.update': 'profile',
   'user.approval_request_admin': 'users',
@@ -84,7 +84,9 @@ export const PUSH_NOTIFICATION_GROUPS: Record<NotificationType, PushGroupKey> = 
   'workflow.canceled': 'workflow',
   'workflow.comment_created': 'workflow',
   'quick_request.vendor_event': 'quick_request',
-  'quick_request.requester_event': 'quick_request'
+  'quick_request.requester_event': 'quick_request',
+  // plan 93 append — 채팅 원문이 그대로 OS 알림이 된다. 끄려면 「퀵 요청」 그룹 OFF
+  'quick_request.chat_message': 'quick_request'
 };
 
 export function isPushGroupKey(value: unknown): value is PushGroupKey {
