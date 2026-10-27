@@ -1,0 +1,403 @@
+import { expect, test } from '@playwright/test';
+import {
+  clickDesktopRegister,
+  confirmPreviewAndExpect501,
+  desktopSummary,
+  expectedAbsoluteDatetimeFromLocalInput,
+  fetchUserProfileFromDashboard,
+  fillLocationByPrefix,
+  fillQuickRequestOrder,
+  gotoQuickRequest,
+  ORIGIN_PHONE,
+  previewMessage,
+  quickRequestMain,
+  quickRequestOrderPage,
+  resetNotesToSeed,
+  SEED_NOTE_LABEL,
+  goodsSizeGroup,
+  itemDescriptionField,
+  selectGoodsSize,
+  vehicleCard
+} from './helpers';
+
+// plan 86 — docs/plans/86_quick-request-kakao-redesign-plan.md (1280 데스크톱 단일 화면)
+test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', () => {
+  test.use({
+    storageState: 'e2e/.auth/user.json',
+    permissions: ['clipboard-read', 'clipboard-write']
+  });
+  test.describe.configure({ timeout: 90_000 });
+
+  test('AC-06: 폼 + 요약 동시 노출 · wizard testid 0건 · 출발 담당/연락 프로필 기본값', async ({
+    page
+  }) => {
+    const profile = await fetchUserProfileFromDashboard(page);
+    await gotoQuickRequest(page);
+
+    const orderPage = quickRequestOrderPage(page);
+    await expect(orderPage.getByRole('heading', { name: '주소 정보' })).toBeVisible();
+    await expect(orderPage.getByTestId('quick-request-origin-road-address')).toBeVisible();
+    await expect(orderPage.getByTestId('quick-request-summary')).toBeVisible();
+    await expect(orderPage.getByTestId('quick-request-register-button')).toBeVisible();
+    await expect(orderPage.getByTestId('quick-request-mobile-bar')).toBeHidden();
+
+    await expect(page.getByTestId('quick-request-step-indicator')).toHaveCount(0);
+    await expect(page.getByTestId('quick-request-next-button')).toHaveCount(0);
+
+    const main = quickRequestMain(page);
+    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
+      profile.fullName
+    );
+    const phoneInput = main.getByTestId('quick-request-origin-contact-phone');
+    const phoneValue = await phoneInput.inputValue();
+    if (profile.phone) {
+      expect(phoneValue.replace(/\D/g, '')).toBe(profile.phone);
+    } else {
+      expect(phoneValue).toBe('');
+    }
+  });
+
+  // plan 87 r1 supersede — 물품 내용 필수는 「기타」 선택 시에만
+  test('AC-07: (87 r1) 기타 + 물품 비움 → 한국어 에러 · Dialog 미오픈', async ({ page }) => {
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { goodsSize: 'other', item: '' });
+    await clickDesktopRegister(page);
+    await expect(quickRequestMain(page).getByText('물품 내용을 입력해 주세요.')).toBeVisible();
+    await expect(previewMessage(page)).toHaveCount(0);
+  });
+
+  test('AC-08: 5톤 + 오토바이 + 기타 · 기타 비움 차단 → 입력 후 Dialog 반영', async ({ page }) => {
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { vehicles: ['5톤', '오토바이', '기타'] });
+    await clickDesktopRegister(page);
+    await expect(quickRequestMain(page).getByText('기타 차량을 입력해 주세요.')).toBeVisible();
+    await expect(previewMessage(page)).toHaveCount(0);
+
+    await quickRequestMain(page).getByTestId('quick-request-vehicle-other').fill('특수 윙바디');
+    await clickDesktopRegister(page);
+    const preview = previewMessage(page);
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText('5톤');
+    await expect(preview).toContainText('오토바이');
+    await expect(preview).toContainText('기타');
+    await expect(preview).toContainText('특수 윙바디');
+  });
+
+  test('AC-09: 차량 카드 img alt=차량명 · 2.5톤/5톤 톤수 · 기타 아이콘(이미지 없음)', async ({
+    page
+  }) => {
+    await gotoQuickRequest(page);
+    const main = quickRequestMain(page);
+    const withImage = [
+      '오토바이',
+      '다마스',
+      '라보',
+      '1톤 탑차(윙바디)',
+      '1톤 오픈형',
+      '1톤 냉장(냉동)',
+      '2.5톤',
+      '5톤'
+    ];
+    for (const type of withImage) {
+      const card = vehicleCard(page, type);
+      await expect(card).toBeVisible();
+      await expect(card.getByRole('img', { name: type, exact: true })).toHaveCount(1);
+    }
+    await expect(main.getByRole('img', { name: '5톤', exact: true })).toHaveCount(1);
+    await expect(vehicleCard(page, '2.5톤')).toContainText('2.5톤');
+    await expect(vehicleCard(page, '5톤')).toContainText('5톤');
+
+    const other = vehicleCard(page, '기타');
+    await expect(other).toBeVisible();
+    await expect(other.getByRole('img')).toHaveCount(0);
+    await expect(main.getByRole('button', { name: '기타', exact: true })).toBeVisible();
+  });
+
+  test('AC-10: 대수 3대 → 요약·Dialog 3대', async ({ page }) => {
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { count: { preset: 3 } });
+    await expect(desktopSummary(page)).toContainText('3대');
+    await clickDesktopRegister(page);
+    await expect(previewMessage(page)).toContainText('3대');
+  });
+
+  test('AC-10: 대수 직접 7 → 요약·Dialog 7대', async ({ page }) => {
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { count: { custom: 7 } });
+    await expect(desktopSummary(page)).toContainText('7대');
+    await clickDesktopRegister(page);
+    await expect(previewMessage(page)).toContainText('7대');
+  });
+
+  test('AC-11: 경유 3회 추가 → remove-1 → 2블록 · 상한 없음 · 요약/Dialog 순서 반영', async ({
+    page
+  }) => {
+    await gotoQuickRequest(page);
+    const main = quickRequestMain(page);
+    const addStopover = main.getByTestId('quick-request-add-stopover');
+    for (let i = 0; i < 3; i++) {
+      await addStopover.click();
+    }
+    await expect(addStopover).toBeEnabled();
+    await expect(main.getByTestId('quick-request-stopover-remove-2')).toBeVisible();
+
+    const stops = ['경유 A 테스트로 1', '경유 B 테스트로 2', '경유 C 테스트로 3'];
+    for (const [index, road] of stops.entries()) {
+      await fillLocationByPrefix(page, `quick-request-stopover-${index}`, {
+        road,
+        detail: `${index + 1}층`,
+        name: `E2E 경유${index + 1}`,
+        phone: ORIGIN_PHONE
+      });
+    }
+
+    await main.getByTestId('quick-request-stopover-remove-1').click();
+    await expect(main.getByTestId('quick-request-stopover-remove-0')).toBeVisible();
+    await expect(main.getByTestId('quick-request-stopover-remove-1')).toBeVisible();
+    await expect(main.getByTestId('quick-request-stopover-remove-2')).toHaveCount(0);
+    await expect(addStopover).toBeEnabled();
+    await expect(main.getByTestId('quick-request-stopover-0-road-address')).toHaveValue(stops[0]);
+    await expect(main.getByTestId('quick-request-stopover-1-road-address')).toHaveValue(stops[2]);
+
+    const summaryText = await desktopSummary(page).innerText();
+    expect(summaryText).not.toContain(stops[1]);
+    expect(summaryText.indexOf(stops[0])).toBeGreaterThan(-1);
+    expect(summaryText.indexOf(stops[2])).toBeGreaterThan(summaryText.indexOf(stops[0]));
+
+    await fillQuickRequestOrder(page);
+    await clickDesktopRegister(page);
+    const preview = previewMessage(page);
+    await expect(preview).toBeVisible();
+    const previewText = await preview.innerText();
+    expect(previewText).not.toContain(stops[1]);
+    expect(previewText.indexOf(stops[0])).toBeGreaterThan(-1);
+    expect(previewText.indexOf(stops[2])).toBeGreaterThan(previewText.indexOf(stops[0]));
+  });
+
+  // plan 87 supersede — 칩은 사용자별 DB seed 「동승 필요」 (group + role 셀렉터)
+  // mobile-ux #1 (2026-10-21) — 요약의 고정 「💳 결제: 월정산」 줄 제거 → 착불이면 요약에 월정산 없음
+  test('AC-12: 픽업 예약 절대시각 · 최대한 빠르게 · 특이 칩 · 착불 요약', async ({ page }) => {
+    const local = '2026-12-25T14:30';
+    const note = SEED_NOTE_LABEL;
+    await resetNotesToSeed(page.request);
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, {
+      pickupDatetime: local,
+      originNotes: [note],
+      freight: 'collect'
+    });
+    const summary = desktopSummary(page);
+    await expect(summary).toContainText(expectedAbsoluteDatetimeFromLocalInput(local));
+    await expect(summary).toContainText('최대한 빠르게');
+    await expect(summary).toContainText(note);
+    await expect(summary).toContainText('착불');
+    await expect(summary).not.toContainText('월정산');
+  });
+
+  test('AC-13: 등록 → Dialog 확인 → 501 · toast · Dialog 닫힘 · form reset', async ({ page }) => {
+    const profile = await fetchUserProfileFromDashboard(page);
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page);
+    await expect(quickRequestMain(page).getByTestId('quick-request-origin-contact-name')).toHaveValue(
+      'E2E 출발'
+    );
+    await clickDesktopRegister(page);
+    await confirmPreviewAndExpect501(page);
+
+    const main = quickRequestMain(page);
+    await expect(itemDescriptionField(page)).toBeHidden();
+    await expect(itemDescriptionField(page)).toHaveValue('');
+    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
+      profile.fullName
+    );
+    await expect(main.getByTestId('quick-request-origin-road-address')).toHaveValue('');
+  });
+});
+
+// plan 87 — docs/plans/87_quick-request-goods-notes-address-picker-plan.md (물품 크기 · 확인 흐름 · shadcn)
+test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () => {
+  test.use({
+    storageState: 'e2e/.auth/user.json',
+    permissions: ['clipboard-read', 'clipboard-write']
+  });
+  test.describe.configure({ timeout: 90_000 });
+
+  test('AC-01: radiogroup 물품 크기 — radio 4개 · 초소형/소형/중형 img alt · 대형 0건', async ({
+    page
+  }) => {
+    await gotoQuickRequest(page);
+    const group = goodsSizeGroup(page);
+    await expect(group).toBeVisible();
+    await expect(group.getByRole('radio')).toHaveCount(4);
+    for (const name of ['초소형', '소형', '중형', '기타']) {
+      await expect(group.getByRole('radio', { name, exact: true })).toHaveCount(1);
+    }
+    for (const name of ['초소형', '소형', '중형']) {
+      await expect(group.getByRole('img', { name, exact: true })).toHaveCount(1);
+    }
+    await expect(group.getByRole('img', { name: '기타', exact: true })).toHaveCount(0);
+    await expect(quickRequestMain(page).getByText('대형', { exact: true })).toHaveCount(0);
+    await expect(quickRequestMain(page).getByRole('radio', { name: '대형' })).toHaveCount(0);
+    // r1 — 크기 미선택: 물품 내용 미노출 · 「물품 크기 (기타)」 입력칸 0건
+    await expect(itemDescriptionField(page)).toBeHidden();
+    await expect(page.getByTestId('quick-request-goods-size-other-input')).toHaveCount(0);
+  });
+
+  test('AC-02: 크기 미선택 → 「물품 크기를 선택해 주세요.」 · 미리보기 미노출', async ({ page }) => {
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { goodsSize: null });
+    await clickDesktopRegister(page);
+    await expect(quickRequestMain(page).getByText('물품 크기를 선택해 주세요.')).toBeVisible();
+    await expect(previewMessage(page)).toHaveCount(0);
+  });
+
+  test('AC-03: (r1) 기타 → 물품 내용 노출 · 비움 에러 → 「철판 2m」 미리보기 크기/물품 두 줄 · 요약', async ({
+    page
+  }) => {
+    await gotoQuickRequest(page);
+    await expect(itemDescriptionField(page)).toBeHidden();
+    await fillQuickRequestOrder(page, { goodsSize: 'other', item: '' });
+    await expect(itemDescriptionField(page)).toBeVisible();
+    await clickDesktopRegister(page);
+    await expect(quickRequestMain(page).getByText('물품 내용을 입력해 주세요.')).toBeVisible();
+    await expect(previewMessage(page)).toHaveCount(0);
+
+    await itemDescriptionField(page).fill('철판 2m');
+    const summary = desktopSummary(page);
+    await expect(summary.getByText('물품 크기', { exact: true })).toBeVisible();
+    await expect(summary.getByText('기타', { exact: true })).toBeVisible();
+    await expect(summary.getByText('물품', { exact: true })).toBeVisible();
+    await expect(summary.getByText('철판 2m', { exact: true })).toBeVisible();
+
+    await clickDesktopRegister(page);
+    const preview = previewMessage(page);
+    await expect(preview).toBeVisible();
+    const lines = (await preview.innerText()).split('\n').map((line) => line.trim());
+    const sizeIndex = lines.indexOf('크기: 기타');
+    expect(sizeIndex, lines.join(' | ')).toBeGreaterThan(-1);
+    expect(lines[sizeIndex + 1]).toBe('물품: 철판 2m');
+  });
+
+  test('AC-04: (r1) 소형 → 물품 내용 미노출·검증 없음 · 미리보기 「크기: 소형」 · 물품 줄/행 0건', async ({
+    page
+  }) => {
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { goodsSize: 's' });
+    await expect(itemDescriptionField(page)).toBeHidden();
+
+    const summary = desktopSummary(page);
+    await expect(summary.getByText('물품 크기', { exact: true })).toBeVisible();
+    await expect(summary.getByText('소형', { exact: true })).toBeVisible();
+    await expect(summary.getByText('물품', { exact: true })).toHaveCount(0);
+
+    await clickDesktopRegister(page);
+    await expect(quickRequestMain(page).getByText('물품 내용을 입력해 주세요.')).toHaveCount(0);
+    const preview = previewMessage(page);
+    await expect(preview).toBeVisible();
+    const lines = (await preview.innerText()).split('\n').map((line) => line.trim());
+    expect(lines).toContain('크기: 소형');
+    expect(lines.filter((line) => line.startsWith('물품:'))).toEqual([]);
+    // Dialog 열림 중 main은 aria-hidden — 요약은 page 기준 testid
+    await expect(page.getByTestId('quick-request-summary').getByText('물품', { exact: true })).toHaveCount(0);
+  });
+
+  test('AC-04: (r1) 기타에서 「철판 2m」 입력 → 소형 변경 후 등록 → 물품 줄 0건(값 미전송)', async ({
+    page
+  }) => {
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { goodsSize: 'other', item: '철판 2m' });
+    await selectGoodsSize(page, 's');
+    await expect(itemDescriptionField(page)).toBeHidden();
+    await expect(desktopSummary(page).getByText('철판 2m')).toHaveCount(0);
+
+    await clickDesktopRegister(page);
+    const preview = previewMessage(page);
+    await expect(preview).toBeVisible();
+    const lines = (await preview.innerText()).split('\n').map((line) => line.trim());
+    expect(lines).toContain('크기: 소형');
+    expect(lines.filter((line) => line.startsWith('물품:'))).toEqual([]);
+    expect(lines.join('\n')).not.toContain('철판 2m');
+
+    const notifyPromise = page.waitForRequest(
+      (req) => req.url().includes('/api/quick-request/notify') && req.method() === 'POST'
+    );
+    await page.getByTestId('quick-request-confirm-button').click();
+    const payload = (await notifyPromise).postDataJSON() as {
+      goodsSize?: string;
+      itemDescription?: string;
+    };
+    expect(payload.goodsSize).toBe('s');
+    expect(payload.itemDescription).toBe('');
+  });
+
+  test('AC-22: 확인 → 501 · toast 2종 · Dialog 닫힘 · 물품 내용/크기 빈값 · 출발 담당 reset', async ({
+    page
+  }) => {
+    const profile = await fetchUserProfileFromDashboard(page);
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { goodsSize: 'other', item: 'E2E 기타 물품' });
+    await clickDesktopRegister(page);
+    const recentPromise = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/quick-request/recent-addresses') &&
+        res.request().method() === 'POST'
+    );
+    await confirmPreviewAndExpect501(page);
+    expect((await recentPromise).status()).toBe(200);
+
+    const main = quickRequestMain(page);
+    await expect(goodsSizeGroup(page).getByRole('radio', { checked: true })).toHaveCount(0);
+    await expect(itemDescriptionField(page)).toBeHidden();
+    await expect(itemDescriptionField(page)).toHaveValue('');
+    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
+      profile.fullName
+    );
+  });
+
+  test('AC-22: recent-addresses POST 500이어도 복사·reset 동일 · 오류 toast', async ({ page }) => {
+    const profile = await fetchUserProfileFromDashboard(page);
+    await page.route('**/api/quick-request/recent-addresses', async (route) => {
+      if (route.request().method() === 'POST') {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: false, message: '처리 중 오류가 발생했습니다.' })
+        });
+        return;
+      }
+      await route.continue();
+    });
+    await gotoQuickRequest(page);
+    await fillQuickRequestOrder(page, { goodsSize: 'other', item: 'E2E 기타 물품' });
+    await clickDesktopRegister(page);
+    await confirmPreviewAndExpect501(page);
+    await expect(
+      page.getByText('최근 이용 내역을 저장하지 못했습니다.', { exact: true })
+    ).toBeVisible({ timeout: 10_000 });
+
+    const main = quickRequestMain(page);
+    await expect(goodsSizeGroup(page).getByRole('radio', { checked: true })).toHaveCount(0);
+    await expect(itemDescriptionField(page)).toBeHidden();
+    await expect(itemDescriptionField(page)).toHaveValue('');
+    await expect(main.getByTestId('quick-request-origin-contact-name')).toHaveValue(
+      profile.fullName
+    );
+  });
+
+  test('AC-24: 차량 img alt · 일정 radio 이름 · 운임 testid 유지 (shadcn 교체 후)', async ({
+    page
+  }) => {
+    await gotoQuickRequest(page);
+    const main = quickRequestMain(page);
+    for (const type of ['오토바이', '다마스', '5톤']) {
+      await expect(vehicleCard(page, type).getByRole('img', { name: type, exact: true })).toHaveCount(1);
+    }
+    await expect(vehicleCard(page, '오토바이')).toHaveAttribute('aria-pressed', /true|false/);
+    await expect(main.getByRole('radio', { name: '즉시 요청' })).toHaveCount(1);
+    await expect(main.getByRole('radio', { name: '날짜/시간 선택' })).toHaveCount(2);
+    await expect(main.getByRole('radio', { name: '최대한 빠르게' })).toHaveCount(1);
+    await expect(main.getByTestId('quick-request-freight-monthly')).toBeVisible();
+    await expect(main.getByTestId('quick-request-freight-collect')).toBeVisible();
+    await selectGoodsSize(page, 'm');
+  });
+});

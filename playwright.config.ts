@@ -67,6 +67,10 @@ const isAttachmentsE2eRun = process.argv.some((arg) =>
   arg.replace(/\\/g, '/').includes('e2e/attachments')
 );
 
+const isQuickRequestE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/quick-request')
+);
+
 if (isDevProvisionE2eRun) {
   process.env.WAKEONE_ENV = 'development';
   process.env.NEXT_PUBLIC_WAKEONE_ENV = 'development';
@@ -74,6 +78,10 @@ if (isDevProvisionE2eRun) {
 
 if (isGoogleTasksE2eRun) {
   process.env.E2E_GOOGLE_TASKS_MOCK = '1';
+}
+
+if (isQuickRequestE2eRun) {
+  process.env.E2E_SLOW_QUICK_REQUEST = '1';
 }
 
 const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(
@@ -93,7 +101,7 @@ export default defineConfig({
     isGoogleTasksE2eRun ||
     isGoogleAuthPendingNotifE2eRun ||
     isDevProvisionE2eRun ||
-    isAttachmentsE2eRun
+    isAttachmentsE2eRun || isQuickRequestE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -116,6 +124,7 @@ export default defineConfig({
             ...process.env,
             NEXT_PUBLIC_DISABLE_RQ_DEVTOOLS: '1',
             ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {}),
+            ...(isQuickRequestE2eRun ? { E2E_SLOW_QUICK_REQUEST: '1' } : {}),
             ...(isDevProvisionE2eRun
               ? {
                   WAKEONE_ENV: 'development',

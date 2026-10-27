@@ -28,17 +28,22 @@ export function getInitials(profile: ProfileNameFields) {
 
 export function ReadOnlyField({
   label,
-  value
+  value,
+  valueTestId
 }: {
   label: string;
   value: string | null | undefined;
+  valueTestId?: string;
 }) {
   const displayValue = value?.trim() ? value : null;
 
   return (
     <div className='space-y-1'>
       <p className='text-muted-foreground text-sm'>{label}</p>
-      <p className={cn('text-sm', !displayValue && 'text-muted-foreground')}>
+      <p
+        data-testid={valueTestId}
+        className={cn('text-sm', !displayValue && 'text-muted-foreground')}
+      >
         {displayValue ?? '미설정'}
       </p>
     </div>
