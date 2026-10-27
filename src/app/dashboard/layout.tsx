@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { isWakeHrBenefitsManager } from "@/features/auth/api/benefits-access.server";
+import { isWorkflowAdmin } from "@/features/auth/api/workflow-access.server";
 import { requireDashboardSession } from "@/features/auth/api/session.server";
 import { countMyContracts } from "@/features/contracts/api/service.server";
 import { NavAccessProvider } from "@/contexts/nav-access";
@@ -49,6 +50,9 @@ export default async function DashboardLayout({
       ? (await countMyContracts(profile.full_name)) >= 1
       : false;
   const hasHrBenefitsNav = isWakeHrBenefitsManager(profile);
+  const hasWorkflowAdminNav = await isWorkflowAdmin(profile).catch(
+    () => false,
+  );
 
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
@@ -68,6 +72,7 @@ export default async function DashboardLayout({
       profile={profile}
       hasMyContracts={hasMyContracts}
       hasHrBenefitsNav={hasHrBenefitsNav}
+      hasWorkflowAdminNav={hasWorkflowAdminNav}
     >
       <DashboardPresenceTrack profile={profile}>
         <HydrationBoundary state={dehydrate(queryClient)}>

@@ -1,5 +1,6 @@
 'use client';
 
+import type { AttachmentId } from '../api/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Icons } from '@/components/icons';
@@ -86,7 +87,7 @@ export function AttachmentLightboxDialog({
     numPages: 0
   });
   const [blobUrlByAttachmentId, setBlobUrlByAttachmentId] = useState<
-    Map<number, string>
+    Map<AttachmentId, string>
   >(() => new Map());
   const [viewerTransform, setViewerTransform] = useState<ViewerTransform>(
     DEFAULT_VIEWER_TRANSFORM
@@ -122,7 +123,7 @@ export function AttachmentLightboxDialog({
   }, [open]);
 
   const handleBlobUrlChange = useCallback(
-    (attachmentId: number, blobUrl: string | null) => {
+    (attachmentId: AttachmentId, blobUrl: string | null) => {
       setBlobUrlByAttachmentId((current) => {
         const next = new Map(current);
         const existing = next.get(attachmentId);

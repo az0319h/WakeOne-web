@@ -376,6 +376,226 @@ async function cleanupQuickRequestFixtures() {
   }
 }
 
+// plan 88 — 워크플로우 e2e 산출물: `E2E-WF-` 표식 문서·임시저장·첨부(Storage 포함) + e2e가 바꾼 관리자·기본 결재선 원복
+const WORKFLOW_MARKER = 'E2E-WF-';
+const WORKFLOW_BUCKET = 'workflow-attachments';
+const WORKFLOW_TEMPLATE_DEFAULTS = { expense: { approval_step_edit_enabled: true } };
+
+async function workflowFixtureUserIds() {
+  const ids = new Set();
+  const { data: profiles, error } = await admin
+    .from('profiles')
+    .select('user_id')
+    .in('email', FIXTURE_EMAILS);
+  if (error) {
+    throw new Error(`workflow fixture lookup failed: ${error.message}`);
+  }
+  (profiles ?? []).forEach(({ user_id }) => ids.add(user_id));
+
+  const { data: disposable, error: disposableError } = await admin.rpc('e2e_disposable_user_ids');
+  if (disposableError) {
+    throw new Error(`workflow disposable lookup failed: ${disposableError.message}`);
+  }
+  for (const row of disposable ?? []) {
+    const id = typeof row === 'string' ? row : row?.e2e_disposable_user_ids ?? Object.values(row ?? {})[0];
+    if (typeof id === 'string') ids.add(id);
+  }
+  return [...ids];
+}
+
+async function workflowStorageUnderUsers(userIds) {
+  const files = [];
+  for (const userId of userIds) {
+    files.push(...(await listStorageFiles(WORKFLOW_BUCKET, `staged/${userId}`)));
+  }
+  return files;
+}
+
+async function cleanupWorkflowFixtures() {
+  const userIds = await workflowFixtureUserIds();
+
+  // 1) 표식 문서 + e2e 일회용 계정이 작성한 문서
+  const docIds = new Set();
+  const { data: markedDocs, error: markedError } = await admin
+    .from('workflow_documents')
+    .select('id')
+    .ilike('search_text', `%${WORKFLOW_MARKER}%`);
+  if (markedError) {
+    throw new Error(`workflow marked documents lookup failed: ${markedError.message}`);
+  }
+  (markedDocs ?? []).forEach(({ id }) => docIds.add(id));
+
+  const { data: stableProfiles, error: stableError } = await admin
+    .from('profiles')
+    .select('user_id')
+    .in('email', FIXTURE_EMAILS);
+  if (stableError) {
+    throw new Error(`workflow fixture lookup failed: ${stableError.message}`);
+  }
+  const stableIds = new Set((stableProfiles ?? []).map(({ user_id }) => user_id));
+  const disposableIds = userIds.filter((id) => !stableIds.has(id));
+  if (disposableIds.length > 0) {
+    const { data: disposableDocs, error } = await admin
+      .from('workflow_documents')
+      .select('id')
+      .in('writer_id', disposableIds);
+    if (error) {
+      throw new Error(`workflow disposable documents lookup failed: ${error.message}`);
+    }
+    (disposableDocs ?? []).forEach(({ id }) => docIds.add(id));
+  }
+
+  const docIdList = [...docIds];
+  let removedDocObjects = 0;
+  for (let offset = 0; offset < docIdList.length; offset += 100) {
+    const batch = docIdList.slice(offset, offset + 100);
+    const { data: attachments, error } = await admin
+      .from('workflow_attachments')
+      .select('storage_path')
+      .in('document_id', batch);
+    if (error) {
+      throw new Error(`workflow attachment lookup failed: ${error.message}`);
+    }
+    removedDocObjects += await removeStorageObjects(
+      WORKFLOW_BUCKET,
+      (attachments ?? []).map(({ storage_path }) => storage_path)
+    );
+
+    const { error: notificationError } = await admin
+      .from('notifications')
+      .delete()
+      .like('type', 'workflow.%')
+      .in('metadata->>workflow_document_id', batch);
+    if (notificationError) {
+      throw new Error(`workflow notification cleanup failed: ${notificationError.message}`);
+    }
+
+    const { error: deleteError } = await admin.from('workflow_documents').delete().in('id', batch);
+    if (deleteError) {
+      throw new Error(`workflow document cleanup failed: ${deleteError.message}`);
+    }
+  }
+
+  // 2) fixture·일회용 계정의 표식 임시저장 + 붙지 않은 staged 첨부
+  let deletedDrafts = 0;
+  let deletedStaged = 0;
+  if (userIds.length > 0) {
+    const { data: drafts, error: draftError } = await admin
+      .from('workflow_drafts')
+      .select('id, payload')
+      .in('writer_id', userIds);
+    if (draftError) {
+      throw new Error(`workflow drafts lookup failed: ${draftError.message}`);
+    }
+    const markedDraftIds = (drafts ?? [])
+      .filter(({ payload }) => JSON.stringify(payload ?? {}).includes(WORKFLOW_MARKER))
+      .map(({ id }) => id);
+    if (markedDraftIds.length > 0) {
+      const { data: draftAttachments } = await admin
+        .from('workflow_attachments')
+        .select('storage_path')
+        .in('draft_id', markedDraftIds);
+      await removeStorageObjects(
+        WORKFLOW_BUCKET,
+        (draftAttachments ?? []).map(({ storage_path }) => storage_path)
+      );
+      const { error } = await admin.from('workflow_drafts').delete().in('id', markedDraftIds);
+      if (error) {
+        throw new Error(`workflow drafts cleanup failed: ${error.message}`);
+      }
+      deletedDrafts = markedDraftIds.length;
+    }
+
+    const { data: staged, error: stagedError } = await admin
+      .from('workflow_attachments')
+      .select('id, storage_path')
+      .in('owner_user_id', userIds)
+      .eq('status', 'staged')
+      .is('draft_id', null);
+    if (stagedError) {
+      throw new Error(`workflow staged lookup failed: ${stagedError.message}`);
+    }
+    if ((staged ?? []).length > 0) {
+      await removeStorageObjects(WORKFLOW_BUCKET, staged.map(({ storage_path }) => storage_path));
+      const { error } = await admin
+        .from('workflow_attachments')
+        .delete()
+        .in('id', staged.map(({ id }) => id));
+      if (error) {
+        throw new Error(`workflow staged cleanup failed: ${error.message}`);
+      }
+      deletedStaged = staged.length;
+    }
+
+    // DB 행이 없는 업로드 잔여 객체 (prepare 후 complete 전 실패 등)
+    const { data: referenced } = await admin
+      .from('workflow_attachments')
+      .select('storage_path')
+      .in('owner_user_id', userIds);
+    const referencedPaths = new Set((referenced ?? []).map(({ storage_path }) => storage_path));
+    const orphanFiles = (await workflowStorageUnderUsers(userIds)).filter(
+      (storagePath) => !referencedPaths.has(storagePath)
+    );
+    await removeStorageObjects(WORKFLOW_BUCKET, orphanFiles);
+
+    // 3) e2e가 지정한 워크플로우 관리자 · 기본 결재선 원복 (seed 초기값 = 비어 있음)
+    const { error: adminsError } = await admin.from('workflow_admins').delete().in('user_id', userIds);
+    if (adminsError) {
+      throw new Error(`workflow admins cleanup failed: ${adminsError.message}`);
+    }
+    const { error: approversError } = await admin
+      .from('workflow_template_default_approvers')
+      .delete()
+      .in('user_id', userIds);
+    if (approversError) {
+      throw new Error(`workflow default approvers cleanup failed: ${approversError.message}`);
+    }
+    const { error: referrersError } = await admin
+      .from('workflow_template_default_referrers')
+      .delete()
+      .in('user_id', userIds);
+    if (referrersError) {
+      throw new Error(`workflow default referrers cleanup failed: ${referrersError.message}`);
+    }
+  }
+
+  for (const [templateKey, defaults] of Object.entries(WORKFLOW_TEMPLATE_DEFAULTS)) {
+    const { error } = await admin
+      .from('workflow_templates')
+      .update(defaults)
+      .eq('template_key', templateKey);
+    if (error) {
+      throw new Error(`workflow template reset failed: ${error.message}`);
+    }
+  }
+
+  const remaining = {
+    marked_documents: await countRows('workflow_documents', (q) =>
+      q.ilike('search_text', `%${WORKFLOW_MARKER}%`)
+    ),
+    fixture_admins: userIds.length
+      ? await countRows('workflow_admins', (q) => q.in('user_id', userIds))
+      : 0,
+    fixture_default_approvers: userIds.length
+      ? await countRows('workflow_template_default_approvers', (q) => q.in('user_id', userIds))
+      : 0,
+    fixture_default_referrers: userIds.length
+      ? await countRows('workflow_template_default_referrers', (q) => q.in('user_id', userIds))
+      : 0
+  };
+
+  console.log('cleanup-e2e-mock-data: workflow', {
+    deleted_documents: docIdList.length,
+    removed_document_objects: removedDocObjects,
+    deleted_drafts: deletedDrafts,
+    deleted_staged: deletedStaged,
+    remaining
+  });
+  if (Object.values(remaining).some((value) => Number(value) > 0)) {
+    throw new Error(`workflow e2e data remains: ${JSON.stringify(remaining)}`);
+  }
+}
+
 async function resetFixtureProfiles() {
   const { data, error } = await admin.rpc('reset_e2e_fixture_profiles');
   if (error) {
@@ -402,6 +622,7 @@ async function main() {
 
   await cleanupGoogleTasksMockConnections();
   await cleanupQuickRequestFixtures();
+  await cleanupWorkflowFixtures();
 
   const { data, error } = await admin.rpc('cleanup_e2e_mock_data');
 

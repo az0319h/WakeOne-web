@@ -8,6 +8,7 @@ interface NavAccessContextValue {
   profile: AuthProfile | null;
   hasMyContracts: boolean;
   hasHrBenefitsNav: boolean;
+  hasWorkflowAdminNav: boolean;
   patchProfile: (patch: Partial<AuthProfile>) => void;
 }
 
@@ -17,11 +18,13 @@ export function NavAccessProvider({
   profile,
   hasMyContracts = false,
   hasHrBenefitsNav = false,
+  hasWorkflowAdminNav = false,
   children,
 }: {
   profile: AuthProfile | null;
   hasMyContracts?: boolean;
   hasHrBenefitsNav?: boolean;
+  hasWorkflowAdminNav?: boolean;
   children: React.ReactNode;
 }) {
   const [liveProfile, setLiveProfile] = useState(profile);
@@ -40,6 +43,7 @@ export function NavAccessProvider({
         profile: liveProfile,
         hasMyContracts,
         hasHrBenefitsNav,
+        hasWorkflowAdminNav,
         patchProfile,
       }}
     >
@@ -57,6 +61,7 @@ export function useNavAccessFlags() {
   return {
     hasMyContracts: context?.hasMyContracts ?? false,
     hasHrBenefitsNav: context?.hasHrBenefitsNav ?? false,
+    hasWorkflowAdminNav: context?.hasWorkflowAdminNav ?? false,
   };
 }
 
@@ -67,7 +72,11 @@ export function useNavProfilePatch() {
 export function checkNavAccess(
   access: PermissionCheck | undefined,
   profile: AuthProfile | null,
-  flags?: { hasMyContracts?: boolean; hasHrBenefitsNav?: boolean },
+  flags?: {
+    hasMyContracts?: boolean;
+    hasHrBenefitsNav?: boolean;
+    hasWorkflowAdminNav?: boolean;
+  },
 ): boolean {
   if (!access) {
     return true;
@@ -79,6 +88,12 @@ export function checkNavAccess(
 
   if (access.hasHrBenefitsNav !== undefined) {
     return (flags?.hasHrBenefitsNav ?? false) === access.hasHrBenefitsNav;
+  }
+
+  if (access.hasWorkflowAdminNav !== undefined) {
+    return (
+      (flags?.hasWorkflowAdminNav ?? false) === access.hasWorkflowAdminNav
+    );
   }
 
   if (access.systemRole !== undefined) {

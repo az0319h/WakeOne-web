@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { canAccessBenefitsAdmin } from './benefits-access.server';
+import { isWorkflowAdmin, WORKFLOW_ADMIN_REQUIRED_MESSAGE } from './workflow-access.server';
 import type { AuthProfile } from './types';
 
 export type SessionResult =
@@ -231,6 +232,50 @@ export async function requireBenefitsAdminSession(): Promise<SessionResult> {
       ok: false,
       response: NextResponse.json(
         { success: false, message: '복지비 관리 권한이 필요합니다.' },
+        { status: 403 }
+      )
+    };
+  }
+
+  return session;
+}
+
+/** 워크플로우 설정 페이지 가드 (plan 88) — 미권한이면 /dashboard/workflow + 접근 거부 flash */
+export async function requireWorkflowAdminPage(): Promise<AuthProfile> {
+  const profile = await requireDashboardSession();
+
+  if (!(await isWorkflowAdmin(profile))) {
+    // middleware·proxy가 flash cookie로 먼저 막는다. 여기는 방어선 — Server Component에서는 cookie를 쓸 수 없어 legacy query로 toast
+    redirect('/dashboard/workflow?accessDenied=workflow-settings');
+  }
+
+  return profile;
+}
+
+/** 워크플로우 관리자 API 가드 (plan 88) — 403 「워크플로우 관리자 권한이 필요합니다.」 */
+export async function requireWorkflowAdminSession(): Promise<SessionResult> {
+  const session = await requireSession();
+
+  if (!session.ok) {
+    return session;
+  }
+
+  let allowed = false;
+  try {
+    allowed = await isWorkflowAdmin(session.profile);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '권한 확인 중 오류가 발생했습니다.';
+    return {
+      ok: false,
+      response: NextResponse.json({ success: false, message }, { status: 500 })
+    };
+  }
+
+  if (!allowed) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { success: false, message: WORKFLOW_ADMIN_REQUIRED_MESSAGE, error: WORKFLOW_ADMIN_REQUIRED_MESSAGE },
         { status: 403 }
       )
     };

@@ -10,6 +10,7 @@ import { notifyError } from "@/lib/notify";
 const ACCESS_DENIED_MESSAGES: Record<string, string> = {
   users: "이 페이지에 접근할 권한이 없습니다.",
   benefits: "이 페이지에 접근할 권한이 없습니다.",
+  "workflow-settings": "워크플로우 관리자 권한이 필요합니다.",
 };
 
 function readLegacyAccessDeniedParam(): string | null {

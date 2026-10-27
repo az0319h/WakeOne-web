@@ -9,6 +9,8 @@ export interface PermissionCheck {
   hasMyContracts?: boolean;
   /** wake 인사팀(user) — 「복지비 관리」 HR nav (UX only, 서버 가드 별도). */
   hasHrBenefitsNav?: boolean;
+  /** 워크플로우 관리자(시스템 관리자 포함) — 「워크플로우 설정」 nav (UX only, 서버 가드 별도). */
+  hasWorkflowAdminNav?: boolean;
   /** @deprecated Clerk-era fields — ignored by `checkNavAccess`. */
   permission?: string;
   plan?: string;

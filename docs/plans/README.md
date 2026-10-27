@@ -120,6 +120,7 @@
 | 85 | [85_kanban-task-live-reorder-plan.md](./85_kanban-task-live-reorder-plan.md) | **Approved** · 미완료 task DnD만 리얼타임(같은/다른 목록) · drop 시 move 1회 · plan 81 follow-up · SQL 없음 |
 | 86 | [86_quick-request-kakao-redesign-plan.md](./86_quick-request-kakao-redesign-plan.md) | **Approved** · 퀵 요청 카카오 스타일 단일 화면(PC 좌폼+우요약 · 모바일 하단바+Drawer) · THEMES 10종×light/dark · 83 UI/AC supersede · BE·SQL 없음 · 일부 AC·Out superseded by [87](./87_quick-request-goods-notes-address-picker-plan.md) |
 | 87 | [87_quick-request-goods-notes-address-picker-plan.md](./87_quick-request-goods-notes-address-picker-plan.md) | **Approved** · 퀵 물품 크기 카드 · 사용자별 특이사항 칩 CRUD(10개·「동승 필요」 seed) · Daum embed 주소 검색 Dialog · 최근 주소 10개 · shadcn 5곳 · activity log 4 action · SQL `85` 예정 · 86 일부 supersede · r1: 물품 내용은 「기타」 선택 시에만 입력·필수 |
+| 88 | [88_workflow-expense-plan.md](./88_workflow-expense-plan.md) | **Approved** · flex 워크플로우(전자결재) 대체 1단계 · 공통 양식 틀 + 지출결의서 seed · **조건부 필수**(클라이언트·서버 공유 규칙) · 문서함·결재·임시저장·중요·복제·PDF 인쇄 · 워크플로우 설정 · 앱 내 알림 6종 · RLS 강제 · SQL `86`~`88` 예정 |
 | 89 | [89_quick-workflow-dongbang-openchat-plan.md](./89_quick-workflow-dongbang-openchat-plan.md) | **Approved** · 퀵 업무 흐름 리뉴얼 · DB 저장·요청번호 `YYYY-NN` · 신규요청→접수→배차완료→승인·취소 · 소속 `dongbang`(동방특송) allowlist 서버 차단 · 오픈채팅 webhook 자동 발송(Bearer·재시도·다시 보내기) · `/dashboard/quick` 대시보드(최근 7일)·상세 · 구매물류팀 전체 조회 · SQL `89`(예정) · 82 notify 501·86 AC-13/16/22·87 AC-22 supersede |
 
 ## 에이전트 참조
