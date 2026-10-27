@@ -2,16 +2,14 @@ import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/ap
 import { canOperateQuickRequests } from '@/features/auth/api/quick-access.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
-  insertQuickRequestRequesterNotification,
+  notifyQuickRequestEvent,
   safeNotify
 } from '@/features/quick-request/api/notifications.server';
 import {
   isQuickRequestLocked,
-  toQuickOpenchatSource,
   updateQuickRequestIfStatus,
   type QuickRequestRow
 } from '@/features/quick-request/api/workflow.server';
-import { dispatchQuickOpenchatEvent } from '@/features/quick-request/lib/openchat-webhook.server';
 import {
   QUICK_REQUEST_MESSAGES,
   quickRequestDispatchBodySchema
@@ -32,7 +30,7 @@ type Params = { params: Promise<{ requestNo: string }> };
 
 const ACTION = 'quick_request.dispatch' as const;
 
-/** 동방·admin: dispatching → dispatched (예상금액·차량정보·기사이름·기사연락처 필수), webhook `dispatched` */
+/** 동방·admin: dispatching → dispatched (예상금액·차량정보·기사이름·기사연락처 필수), 인앱 알림 `dispatched` */
 export async function POST(request: Request, { params }: Params) {
   const requestId = createRequestId();
   const { requestNo: rawRequestNo } = await params;
@@ -137,35 +135,20 @@ export async function POST(request: Request, { params }: Params) {
     });
   }
 
-  const openchat = await dispatchQuickOpenchatEvent(toQuickOpenchatSource(updated), 'dispatched');
-
   const actorName = profile.full_name?.trim() || profile.email;
   const latest = updated;
-  await safeNotify('requester dispatched', () =>
-    insertQuickRequestRequesterNotification({
-      row: latest,
-      event: 'dispatched',
-      actorUserId: profile.user_id,
-      actorName
-    })
+  await safeNotify('dispatched', () =>
+    notifyQuickRequestEvent({ row: latest, event: 'dispatched', actorUserId: profile.user_id, actorName })
   );
 
   return logger.respond(
-    {
-      success: true,
-      data: {
-        requestNo,
-        status: updated.status,
-        openchat: { event: openchat.event, status: openchat.status }
-      }
-    },
+    { success: true, data: { requestNo, status: updated.status } },
     200,
     {
       targetLabel: requestNo,
       metadata: quickLogMetadata(requestNo, {
         previous_status: 'dispatching',
-        new_status: updated.status,
-        openchat
+        new_status: updated.status
       })
     }
   );

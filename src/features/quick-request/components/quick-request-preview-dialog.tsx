@@ -39,7 +39,7 @@ export function QuickRequestPreviewDialog({
         <DialogHeader>
           <DialogTitle>퀵 요청 미리보기</DialogTitle>
           <DialogDescription>
-            등록하면 요청번호가 발급되고 동방특송 오픈채팅방에 자동으로 안내됩니다.
+            등록하면 요청번호가 발급되고 동방특송 담당자에게 WakeOne 알림이 갑니다.
           </DialogDescription>
         </DialogHeader>
         <p className='text-xs text-muted-foreground'>요청번호는 등록 후 발급됩니다.</p>

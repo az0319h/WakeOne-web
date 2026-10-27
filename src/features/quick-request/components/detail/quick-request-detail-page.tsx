@@ -17,7 +17,7 @@ import { QuickDispatchDialog } from '../dialogs/quick-dispatch-dialog';
 import { QuickFinalAmountDialog } from '../dialogs/quick-final-amount-dialog';
 import { QuickRequestEditSheet } from '../edit/quick-request-edit-sheet';
 import { QuickRequestQueryBoundary } from '../quick-request-query-boundary';
-import { QuickOpenchatPanel } from './quick-openchat-panel';
+import { QuickRequestRealtime } from '../quick-request-realtime';
 import { QuickRequestActionBar } from './quick-request-action-bar';
 import { QUICK_DETAIL_DL_CLASS, QuickDetailRow, QuickDetailSection } from './quick-detail-section';
 import { QuickRequestDetailHero } from './quick-request-detail-hero';
@@ -116,7 +116,6 @@ function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
             <QuickDetailSection title='처리 이력' data-testid='quick-detail-section-history'>
               <QuickRequestHistoryList detail={detail} />
             </QuickDetailSection>
-            {detail.permissions.canResend ? <QuickOpenchatPanel detail={detail} /> : null}
           </aside>
         </div>
         <QuickRequestActionBar
@@ -164,7 +163,6 @@ function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
       />
       <QuickCancelAlert
         requestNo={openDialog === 'cancel' ? detail.requestNo : null}
-        canOperate={detail.permissions.canResend}
         onOpenChange={(open) => {
           if (!open) close();
         }}
@@ -195,12 +193,16 @@ type QuickRequestDetailPageProps = {
   requestNo: string;
 };
 
-/** 상세 client 셸 — hydration 뒤 클라이언트에서 조회 (서버 상대 URL fetch 방지) */
+/**
+ * 상세 client 셸 — hydration 뒤 클라이언트에서 조회 (서버 상대 URL fetch 방지).
+ * plan 92 U-2 — aside는 금액 → 배차 정보 → 처리 이력 3카드(plan 93 채팅 카드는 이력 다음 자리).
+ */
 export function QuickRequestDetailPage({ requestNo }: QuickRequestDetailPageProps) {
   const isHydrated = useIsHydrated();
 
   return (
     <div data-testid='quick-detail' className='flex min-w-0 flex-1 flex-col'>
+      <QuickRequestRealtime requestNo={requestNo} />
       {isHydrated ? (
         <QuickRequestQueryBoundary
           errorMessage='퀵 요청을 불러오지 못했습니다.'

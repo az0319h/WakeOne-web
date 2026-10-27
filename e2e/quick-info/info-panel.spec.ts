@@ -1,6 +1,5 @@
 import { expect, test, type Browser } from '@playwright/test';
 import { DEFAULT_THEME } from '../../src/components/themes/theme.config';
-import { setOpenchatMockMode } from '../helpers/openchat-mock';
 import {
   applyThemeBeforeNavigation,
   expectThemeApplied,
@@ -64,7 +63,6 @@ test.describe('plan 90 퀵 권한 안내 ⓘ 패널', () => {
   let requestNo = '';
 
   test.beforeAll(async ({ browser }) => {
-    await setOpenchatMockMode('ok').catch(() => undefined);
     adminText = await dashboardPanelText(browser, 'admin');
     const created = await createAs('user', uniqueTag('E2E90'));
     requestNo = created.requestNo;

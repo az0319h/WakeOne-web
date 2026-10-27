@@ -9,12 +9,9 @@ import { useAppForm } from '@/components/ui/tanstack-form';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { createQuickRequestMutation } from '../api/mutations';
 import { buildQuickRequestDefaultValues } from '../lib/default-form-values';
-import { formatQuickRequestKakaoMessage } from '../lib/format-quick-request-message';
+import { formatQuickRequestPreviewText } from '../lib/format-quick-request-message';
 import { mapFormValuesToNotifyPayload } from '../lib/map-quick-request-notify';
-import {
-  getQuickRequestErrorMessage,
-  notifyQuickOpenchatOutcome
-} from '../lib/quick-request-mutation-feedback';
+import { getQuickRequestErrorMessage } from '../lib/quick-request-mutation-feedback';
 import { quickRequestFormSchema } from '../schemas/quick-request-form';
 import { QuickRequestConfirmBoard } from './quick-request-confirm-board';
 import type { QuickRequestOrderForm } from './quick-request-form-api';
@@ -59,7 +56,7 @@ export function QuickRequestOrderPage({
       }
       const at = new Date();
       setRequestedAt(at);
-      setPreviewMessage(formatQuickRequestKakaoMessage(parsed.data, requesterName, at));
+      setPreviewMessage(formatQuickRequestPreviewText(parsed.data, requesterName, at));
       setPreviewOpen(true);
     },
     onSubmitInvalid: () => {
@@ -75,12 +72,11 @@ export function QuickRequestOrderPage({
   // 등록 성공 후 상세로 이동이 끝날 때까지 Dialog·Spinner 유지 (재클릭 중복 등록 방지)
   const [isNavigating, startNavigation] = React.useTransition();
 
-  // plan 89 — 등록 = DB 저장 + 서버가 오픈채팅 발송·최근 주소 기록 (클립보드 복사·reset 없음)
+  // plan 89·92 — 등록 = DB 저장 + 서버가 WakeOne 알림 발송·최근 주소 기록 (클립보드 복사·reset 없음)
   const createMutation = useMutation({
     ...createQuickRequestMutation,
     onSuccess: (result) => {
       notifySuccess(`퀵 요청이 등록되었습니다. (요청번호 ${result.requestNo})`);
-      notifyQuickOpenchatOutcome(result.openchat);
       startNavigation(() => {
         router.push(`/dashboard/quick/${encodeURIComponent(result.requestNo)}`);
       });

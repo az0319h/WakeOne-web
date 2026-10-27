@@ -2,17 +2,14 @@ import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/ap
 import { canOperateQuickRequests } from '@/features/auth/api/quick-access.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
-  insertQuickRequestRequesterNotification,
-  insertQuickRequestVendorNotifications,
+  notifyQuickRequestEvent,
   safeNotify
 } from '@/features/quick-request/api/notifications.server';
 import {
   isQuickRequestLocked,
-  toQuickOpenchatSource,
   updateQuickRequestIfStatus,
   type QuickRequestRow
 } from '@/features/quick-request/api/workflow.server';
-import { dispatchQuickOpenchatEvent } from '@/features/quick-request/lib/openchat-webhook.server';
 import {
   QUICK_REQUEST_MESSAGES,
   quickRequestCancelBodySchema
@@ -35,7 +32,7 @@ const ACTION = 'quick_request.cancel' as const;
 
 /**
  * 취소 — 요청자는 requested만(그 외 403 AC-24), 동방·admin은 requested·dispatching·dispatched.
- * webhook `cancelled` · 동방특송 전원 알림 · (동방/admin 취소 시) 요청자 알림.
+ * 인앱 알림 `cancelled` — 동방 전원·admin·구매물류팀·요청자(행위자 제외 · plan 92).
  * 사유(최대 200자)는 DB에만 저장하고 감사 로그 metadata에는 남기지 않는다.
  */
 export async function POST(request: Request, { params }: Params) {
@@ -145,45 +142,19 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   const actorName = profile.full_name?.trim() || profile.email;
-  const openchat = await dispatchQuickOpenchatEvent(toQuickOpenchatSource(updated), 'cancelled', {
-    actorName,
-    cancelReason: reason
-  });
-
   const latest = updated;
-  await safeNotify('vendor cancelled', () =>
-    insertQuickRequestVendorNotifications({
-      row: latest,
-      event: 'cancelled',
-      actorUserId: profile.user_id,
-      actorName
-    })
-  );
-  await safeNotify('requester cancelled', () =>
-    insertQuickRequestRequesterNotification({
-      row: latest,
-      event: 'cancelled',
-      actorUserId: profile.user_id,
-      actorName
-    })
+  await safeNotify('cancelled', () =>
+    notifyQuickRequestEvent({ row: latest, event: 'cancelled', actorUserId: profile.user_id, actorName })
   );
 
   return logger.respond(
-    {
-      success: true,
-      data: {
-        requestNo,
-        status: updated.status,
-        openchat: { event: openchat.event, status: openchat.status }
-      }
-    },
+    { success: true, data: { requestNo, status: updated.status } },
     200,
     {
       targetLabel: requestNo,
       metadata: quickLogMetadata(requestNo, {
         previous_status: previousStatus,
-        new_status: updated.status,
-        openchat
+        new_status: updated.status
       })
     }
   );

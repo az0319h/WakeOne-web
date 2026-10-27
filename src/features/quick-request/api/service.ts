@@ -1,6 +1,5 @@
 import { apiClientWithMessage } from '@/lib/api-client';
 import type {
-  QuickOpenchatEvent,
   QuickRequestCancelPayload,
   QuickRequestCreatePayload,
   QuickRequestCreateResponse,
@@ -11,7 +10,6 @@ import type {
   QuickRequestListResponse,
   QuickRequestMutationResponse,
   QuickRequestPatchPayload,
-  QuickRequestResendResponse,
   QuickRequestSummary,
   QuickRequestSummaryResponse,
   QuickRequestNote,
@@ -145,17 +143,6 @@ export async function cancelQuickRequest(params: {
   const res = await apiClientWithMessage<QuickRequestMutationResponse>(
     quickRequestPath(params.requestNo, '/cancel'),
     { method: 'POST', body: JSON.stringify(params.payload ?? {}) }
-  );
-  return res.data;
-}
-
-export async function resendQuickRequestOpenchat(params: {
-  requestNo: string;
-  event: QuickOpenchatEvent;
-}): Promise<QuickRequestResendResponse['data']> {
-  const res = await apiClientWithMessage<QuickRequestResendResponse>(
-    quickRequestPath(params.requestNo, '/openchat/resend'),
-    { method: 'POST', body: JSON.stringify({ event: params.event }) }
   );
   return res.data;
 }

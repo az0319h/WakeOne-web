@@ -82,6 +82,7 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "quick_request.dispatch": "퀵 배차 완료",
   "quick_request.approve": "퀵 요청 승인",
   "quick_request.cancel": "퀵 요청 취소",
+  // legacy — plan 92에서 Route 삭제. 과거 로그 행 표시용
   "quick_request.openchat_resend": "퀵 오픈채팅 재발송",
   "workflow.document_create": "워크플로우 문서 작성",
   "workflow.document_update": "워크플로우 문서 수정",
@@ -166,6 +167,7 @@ export const METADATA_LABELS: Record<string, string> = {
   attachment_count: "첨부 개수",
   quick_request_no: "퀵 요청번호",
   changedFields: "변경된 항목",
+  // legacy — plan 92 이후 신규 기록 없음. 과거 metadata 표시용
   openchat: "오픈채팅 발송",
   recentAddressesRecorded: "최근 주소 기록",
   created: "신규 등록",

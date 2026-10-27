@@ -6,7 +6,6 @@ import { requireDashboardSession } from '@/features/auth/api/session.server';
 import { buildQuickRequestViewer } from '@/features/quick-request/api/workflow.server';
 import { QuickDashboardPage } from '@/features/quick-request/components/dashboard/quick-dashboard-page';
 import { quickInfoContent } from '@/features/quick-request/info-content';
-import { isQuickOpenchatConfigured } from '@/features/quick-request/lib/openchat-webhook.server';
 
 const QUICK_DASHBOARD_DESCRIPTION = '최근 7일 기준 · 한국 시간, 오늘 포함';
 
@@ -14,7 +13,6 @@ const QUICK_DASHBOARD_DESCRIPTION = '최근 7일 기준 · 한국 시간, 오늘
 export default async function QuickDashboardRoute() {
   const profile = await requireDashboardSession();
   const viewer = buildQuickRequestViewer(profile);
-  const openchatConfigured = viewer.canOperate ? isQuickOpenchatConfigured() : null;
 
   return (
     <PageContainer
@@ -32,11 +30,7 @@ export default async function QuickDashboardRoute() {
         ) : undefined
       }
     >
-      <QuickDashboardPage
-        canOperate={viewer.canOperate}
-        canCreate={viewer.canCreate}
-        openchatConfigured={openchatConfigured}
-      />
+      <QuickDashboardPage canCreate={viewer.canCreate} />
     </PageContainer>
   );
 }

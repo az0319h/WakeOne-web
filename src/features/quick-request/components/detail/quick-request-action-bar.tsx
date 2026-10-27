@@ -8,10 +8,7 @@ import { notifySuccess } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { acceptQuickRequestMutation } from '../../api/mutations';
 import type { QuickRequestDetail } from '../../api/types';
-import {
-  notifyQuickOpenchatOutcome,
-  notifyQuickRequestError
-} from '../../lib/quick-request-mutation-feedback';
+import { notifyQuickRequestError } from '../../lib/quick-request-mutation-feedback';
 
 export type QuickRequestDetailActionHandlers = {
   onEdit: () => void;
@@ -68,9 +65,8 @@ export function QuickRequestActionBar({
 
   function handleAccept() {
     acceptMutation.mutate(detail.requestNo, {
-      onSuccess: (result) => {
+      onSuccess: () => {
         notifySuccess('퀵 요청을 접수했습니다.');
-        notifyQuickOpenchatOutcome(result.openchat);
       },
       onError: (error) => {
         notifyQuickRequestError(error);

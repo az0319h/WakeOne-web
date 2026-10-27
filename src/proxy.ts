@@ -28,7 +28,8 @@ import {
 import { hasMustChangeInitialPasswordCookieFromRequest } from "@/lib/auth/must-change-cookie";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const LOCAL_ALLOWED_ORIGIN = "http://localhost:3000";
+/** plan 92 r1 G-1 — 로컬은 localhost·127.0.0.1 둘 다 허용 (구 middleware.ts와 합집합) */
+const LOCAL_ALLOWED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"] as const;
 
 const UNAUTHORIZED_JSON = {
   success: false,
@@ -50,7 +51,7 @@ function getAllowedOrigins(): string[] {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (!isProduction) {
-    return [LOCAL_ALLOWED_ORIGIN];
+    return [...LOCAL_ALLOWED_ORIGINS];
   }
 
   const productionOrigin = process.env.NEXT_PUBLIC_APP_URL;
@@ -75,15 +76,17 @@ function isServiceTokenApiPath(pathname: string): boolean {
   );
 }
 
+/**
+ * 세션 없이 통과하는 공개 API — 경로별 method 판정 (plan 92 r1 G-2·G-3 합집합).
+ * plan 34 로그인 · plan 36 비밀번호 재설정(POST) · plan 57 Google 로그인(GET)
+ */
 function isPublicAuthApiPath(pathname: string, method: string): boolean {
-  if (method !== "POST") {
-    return false;
-  }
-
   return (
-    pathname === "/api/auth/sign-in" ||
-    pathname === "/api/auth/forgot-password/request" ||
-    pathname === "/api/auth/forgot-password/verify"
+    (pathname === "/api/auth/sign-in" && method === "POST") ||
+    (pathname === "/api/auth/forgot-password/request" && method === "POST") ||
+    (pathname === "/api/auth/forgot-password/verify" && method === "POST") ||
+    (pathname === "/api/auth/google/start" && method === "GET") ||
+    (pathname === "/api/auth/google/callback" && method === "GET")
   );
 }
 
@@ -190,7 +193,8 @@ export async function proxy(request: NextRequest) {
     const mustChange =
       mustChangeBeforeSession || hasMustChangeInitialPasswordCookieFromRequest(request);
 
-    if (profile?.status === "inactive") {
+    // plan 57 · plan 92 r1 G-4 — pending_approval·rejected·inactive 모두 API 403
+    if (profile && profile.status !== "active") {
       return jsonWithCookies(response, INACTIVE_JSON, 403);
     }
 
@@ -227,26 +231,39 @@ export async function proxy(request: NextRequest) {
   const mustChange = hasMustChangeInitialPasswordCookieFromRequest(request);
   const userIsDongbang = Boolean(user) && isDongbang(profile);
 
-  if (profile?.status === "inactive") {
-    const alreadyOnNotice =
-      isSignInPath(pathname) && request.nextUrl.searchParams.get("accountDisabled") === "1";
+  // plan 57 · plan 92 r1 G-4 — 비활성 상태 전체: pending_approval·rejected → ?authStatus= · inactive → ?accountDisabled=1 + flash 쿠키
+  if (profile && profile.status !== "active") {
+    if (isSignInPath(pathname)) {
+      const authStatus = request.nextUrl.searchParams.get("authStatus");
+      const accountDisabled = request.nextUrl.searchParams.get("accountDisabled");
+      const alreadyOnSignInNotice =
+        (profile.status === "pending_approval" && authStatus === "pending_approval") ||
+        (profile.status === "rejected" && authStatus === "rejected") ||
+        (profile.status === "inactive" && accountDisabled === "1");
 
-    if (alreadyOnNotice) {
-      return response;
+      if (alreadyOnSignInNotice) {
+        return response;
+      }
     }
 
     const signInUrl = request.nextUrl.clone();
     signInUrl.pathname = "/auth/sign-in";
     signInUrl.search = "";
-    signInUrl.searchParams.set("accountDisabled", "1");
+    if (profile.status === "pending_approval" || profile.status === "rejected") {
+      signInUrl.searchParams.set("authStatus", profile.status);
+    } else {
+      signInUrl.searchParams.set("accountDisabled", "1");
+    }
     const redirectResponse = NextResponse.redirect(signInUrl);
     copyCookies(response, redirectResponse);
-    redirectResponse.cookies.set(ACCOUNT_DISABLED_FLASH_COOKIE, "1", {
-      maxAge: 60,
-      path: "/",
-      sameSite: "lax",
-      httpOnly: false,
-    });
+    if (profile.status === "inactive") {
+      redirectResponse.cookies.set(ACCOUNT_DISABLED_FLASH_COOKIE, "1", {
+        maxAge: 60,
+        path: "/",
+        sameSite: "lax",
+        httpOnly: false,
+      });
+    }
     return redirectResponse;
   }
 

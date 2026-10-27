@@ -25,6 +25,8 @@ const baseConfig: NextConfig = {
   },
   transpilePackages: ['geist', 'react-pdf', 'pdfjs-dist'],
   turbopack: {
+    // plan 92 r1 — 워크스페이스 루트(../package-lock.json)로 root가 추론되면 dev에서 루트 proxy.ts를 찾지 못한다(가드 미실행)
+    root: projectRoot,
     resolveAlias: {
       canvas: path.join(projectRoot, 'src/lib/empty-module.ts')
     }

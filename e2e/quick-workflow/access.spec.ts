@@ -18,7 +18,7 @@ import {
   withApi
 } from './helpers';
 
-// plan 89 §A 소속·접근 차단 — docs/plans/89_quick-workflow-dongbang-openchat-plan.md
+// plan 89 §A 소속·접근 차단 — docs/plans/89 (퀵 업무 흐름 plan) · plan 92 AC-29 재실행 대상
 test.describe('plan 89 A. 동방특송 소속 · 접근 차단', () => {
   test.describe.configure({ timeout: 120_000 });
 

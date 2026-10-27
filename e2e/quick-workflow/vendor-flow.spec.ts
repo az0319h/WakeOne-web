@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { listOpenchatMockRequests, openchatRequestsFor, setOpenchatMockMode } from '../helpers/openchat-mock';
 import {
-  APP_URL,
   dbNotifications,
+  dbNotificationsByEvent,
   dbQuickRequest,
   expectDetailStatus,
   expectLogFor,
@@ -10,21 +9,19 @@ import {
   gotoDashboard,
   gotoDetail,
   MSG,
+  NOTIFY_TITLE,
+  NOTIFY_TYPE,
   pageAs,
   seedQuickRequest,
   STATUS_LABEL,
   callManyAs
 } from './helpers';
 
-// plan 89 §C 동방특송 처리 흐름 — docs/plans/89_quick-workflow-dongbang-openchat-plan.md
+// plan 89 §C 동방특송 처리 흐름 — docs/plans/89 · plan 92가 webhook 판정을 알림(DB) 판정으로 바꿨다
 test.describe('plan 89 C. 동방특송 처리 흐름', () => {
   test.describe.configure({ timeout: 120_000 });
 
-  test.beforeEach(async () => {
-    await setOpenchatMockMode('ok');
-  });
-
-  test('AC-16: 대시보드 표 「접수」 → 「접수 및 배차중」 · accepted webhook · 요청자 알림 · accept 로그', async ({
+  test('AC-16: 대시보드 표 「접수」 → 「접수 및 배차중」 · 요청자 알림(92 문구) · accept 로그', async ({
     browser
   }) => {
     const { requestNo } = await seedQuickRequest('requested');
@@ -47,22 +44,16 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
       await context.close();
     }
 
-    const accepted = await openchatRequestsFor(requestNo, 'accepted');
-    expect(accepted).toHaveLength(1);
-    expect(accepted[0].headers['x-wakeone-event']).toBe('quick_request.accepted');
-    const lines = String(accepted[0].body.text).split('\n');
-    expect(lines[0]).toBe(`✅접수완료 및 배차중 - ${requestNo}`);
-    expect(accepted[0].body.text).toContain(`상세 확인: ${APP_URL}/dashboard/quick/${requestNo}`);
-
     const user = await fixtureUser('user');
     const notifications = await dbNotifications(user.userId, requestNo);
-    const requesterEvents = notifications.filter((item) => item.type === 'quick_request.requester_event');
+    const requesterEvents = notifications.filter((item) => item.type === NOTIFY_TYPE.requester);
     expect(requesterEvents).toHaveLength(1);
-    expect(requesterEvents[0].title).toBe('퀵 요청이 접수되었습니다');
+    expect(requesterEvents[0].title).toBe(NOTIFY_TITLE.accepted(requestNo));
+    expect(requesterEvents[0].body).toBe('동방특송이 접수해 배차를 진행하고 있습니다.');
     await expectLogFor('quick_request.accept', requestNo, 200);
   });
 
-  test('AC-17 · AC-18: 배차완료 Dialog 필수 4필드 에러·미전송 → 입력 저장 → 「배차완료 및 결과」 · 상세 표시 · webhook · dispatch 로그', async ({
+  test('AC-17 · AC-18: 배차완료 Dialog 필수 4필드 에러·미전송 → 입력 저장 → 「배차완료 및 결과」 · 상세 표시 · 요청자 알림 · dispatch 로그', async ({
     browser
   }) => {
     const { requestNo } = await seedQuickRequest('dispatching');
@@ -121,27 +112,23 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
       await context.close();
     }
 
-    const dispatched = await openchatRequestsFor(requestNo, 'dispatched');
+    const user = await fixtureUser('user');
+    const dispatched = (await dbNotificationsByEvent(requestNo, 'dispatched')).filter(
+      (row) => row.recipient_user_id === user.userId
+    );
     expect(dispatched).toHaveLength(1);
-    const text = String(dispatched[0].body.text);
-    const lines = text.split('\n');
-    expect(lines[0]).toBe(`🚚배차등록 완료 - ${requestNo}`);
-    for (const line of [
-      '예상금액: 20,000원(부가세 별도)',
-      '차량정보: 오토바이 8514',
-      '기사이름: 홍길동',
-      '기사 연락처: 010-1234-5678'
-    ]) {
-      expect(lines).toContain(line);
-    }
+    expect(dispatched[0].title).toBe(NOTIFY_TITLE.dispatched(requestNo));
+    expect(dispatched[0].body).toBe('오토바이 8514 · 기사 홍길동 · 예상 20,000원');
+    expect(dispatched[0].body).not.toContain('010');
     await expectLogFor('quick_request.dispatch', requestNo, 200);
   });
 
-  test('AC-19: 수정 Sheet 도착 상세주소·도착 연락처·차량 종류 변경 → 즉시 반영 · update 로그 changedFields · webhook 없음', async ({
+  test('AC-19: 수정 Sheet 도착 상세주소·도착 연락처·차량 종류 변경 → 즉시 반영 · update 로그 changedFields · 알림 없음', async ({
     browser
   }) => {
     const { requestNo } = await seedQuickRequest('dispatching');
-    const before = (await listOpenchatMockRequests()).filter((e) => e.body.requestNo === requestNo).length;
+    const user = await fixtureUser('user');
+    const before = (await dbNotifications(user.userId, requestNo)).length;
     const { context, page } = await pageAs(browser, 'dongbang');
     const newDetail = `E2E89 수정 도착 ${Date.now()}`;
     try {
@@ -185,11 +172,10 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
     const log = await expectLogFor('quick_request.update', requestNo, 200);
     const changed = (log.metadata?.changedFields ?? []) as string[];
     expect(changed).toEqual(expect.arrayContaining(['destination', 'vehicleTypes']));
-    const after = (await listOpenchatMockRequests()).filter((e) => e.body.requestNo === requestNo).length;
-    expect(after).toBe(before);
+    expect((await dbNotifications(user.userId, requestNo)).length, '수정은 알림을 만들지 않는다').toBe(before);
   });
 
-  test('AC-20: dispatched 최종금액 23000 → 상세·표 23,000원 · 요청자 알림 「최종금액이 입력되었습니다. 확인 후 승인해 주세요.」', async ({
+  test('AC-20: dispatched 최종금액 23000 → 상세·표 23,000원 · 요청자 알림 「퀵 {번호} 최종금액 입력」 · 「확인 후 승인해 주세요.」', async ({
     browser
   }) => {
     const { requestNo } = await seedQuickRequest('dispatched');
@@ -218,14 +204,14 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
 
     const user = await fixtureUser('user');
     const notifications = await dbNotifications(user.userId, requestNo);
-    expect(notifications.map((item) => item.title)).toContain(
-      '최종금액이 입력되었습니다. 확인 후 승인해 주세요.'
-    );
+    const finalAmount = notifications.find((item) => item.title === NOTIFY_TITLE.final_amount_set(requestNo));
+    expect(finalAmount?.type).toBe(NOTIFY_TYPE.requester);
+    expect(finalAmount?.body).toBe('최종금액 23,000원 · 확인 후 승인해 주세요.');
     expect((await dbQuickRequest(requestNo)).final_amount).toBe(23000);
     await expectLogFor('quick_request.final_amount_set', requestNo, 200);
   });
 
-  test('AC-21: 같은 requested 건 accept 동시 2회 → 200 1건 · 409 1건(메시지) · webhook 1회', async () => {
+  test('AC-21: 같은 requested 건 accept 동시 2회 → 200 1건 · 409 1건(메시지) · 요청자 접수 알림 1건', async () => {
     const { requestNo } = await seedQuickRequest('requested');
     const responses = await callManyAs('dongbang', (api) =>
       Promise.all([
@@ -237,6 +223,10 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
     expect(statuses).toEqual([200, 409]);
     const conflict = responses.find((res) => res.status === 409)!;
     expect(conflict.body.message).toBe(MSG.stale);
-    expect(await openchatRequestsFor(requestNo, 'accepted')).toHaveLength(1);
+    const user = await fixtureUser('user');
+    const accepted = (await dbNotificationsByEvent(requestNo, 'accepted')).filter(
+      (row) => row.recipient_user_id === user.userId
+    );
+    expect(accepted, '요청자 접수 알림은 1건(409는 알림 없음)').toHaveLength(1);
   });
 });

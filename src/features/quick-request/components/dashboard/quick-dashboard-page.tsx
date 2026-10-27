@@ -12,6 +12,7 @@ import {
   type QuickFinalAmountTarget
 } from '../dialogs/quick-final-amount-dialog';
 import { QuickRequestQueryBoundary } from '../quick-request-query-boundary';
+import { QuickRequestRealtime } from '../quick-request-realtime';
 import { QuickDashboardBody } from './quick-dashboard-body';
 import { QuickDashboardMetaBar } from './quick-dashboard-meta-bar';
 import { QuickDashboardToolbar } from './quick-dashboard-toolbar';
@@ -30,14 +31,11 @@ function useIsHydrated() {
 }
 
 type QuickDashboardPageProps = {
-  canOperate: boolean;
   canCreate: boolean;
-  /** 동방·admin만 boolean (서버 초기값) */
-  openchatConfigured: boolean | null;
 };
 
 /** 퀵 대시보드 client 셸 — 메타바·카드·툴바(Suspense 밖) + 목록 본문 + Dialog 1벌 */
-export function QuickDashboardPage({ canOperate, canCreate, openchatConfigured }: QuickDashboardPageProps) {
+export function QuickDashboardPage({ canCreate }: QuickDashboardPageProps) {
   const { filters, setStatus, setSearch, resetFilters } = useQuickDashboardParams();
   const [, setPageParams] = useQueryStates({ page: parseAsInteger }, { shallow: true });
   const isHydrated = useIsHydrated();
@@ -63,8 +61,9 @@ export function QuickDashboardPage({ canOperate, canCreate, openchatConfigured }
 
   return (
     <>
+      <QuickRequestRealtime />
       <div data-testid='quick-dashboard' className='flex min-w-0 flex-1 flex-col gap-4'>
-        <QuickDashboardMetaBar canOperate={canOperate} openchatConfigured={openchatConfigured} />
+        <QuickDashboardMetaBar />
         <QuickStatusCards selected={filters.status} onSelect={setStatus} />
         <QuickDashboardToolbar
           filters={filters}

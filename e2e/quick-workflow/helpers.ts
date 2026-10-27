@@ -9,11 +9,13 @@ import {
   type BrowserContext,
   type Page
 } from '@playwright/test';
+import { createOrgChartTestUser, uniqueOrgChartEmail } from '../helpers/org-chart';
 
 /**
- * plan 89 — 퀵 업무 흐름 e2e 공용 (docs/plans/89_quick-workflow-dongbang-openchat-plan.md)
+ * plan 89 · 92 — 퀵 업무 흐름 e2e 공용 (docs/plans/89 · docs/plans/92_quick-web-only-notifications-plan.md)
  * - 계정: user.json(일반) · user2.json(타 일반) · admin.json · dongbang.json · logistics.json
  * - 데이터 표식: 출발·도착 담당자 이름 `E2E…` → scripts/cleanup-e2e-mock-data.mjs가 퀵 요청을 지운다
+ * - plan 92: 알림은 WakeOne 인앱 알림(`notifications`)만. 수신자 판정은 service role로 DB를 직접 읽는다
  */
 
 export const AUTH = {
@@ -30,9 +32,6 @@ export const BASE_URL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').re
   '127.0.0.1',
   'localhost'
 );
-/** 서버 빌드 시 NEXT_PUBLIC_APP_URL (webhook link 비교) */
-export const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? BASE_URL).replace(/\/$/, '');
-
 export const MSG = {
   forbidden: '접근 권한이 없습니다.',
   requesterCannotEdit: '요청자는 등록 후 내용을 수정할 수 없습니다.',
@@ -40,8 +39,23 @@ export const MSG = {
   notFound: '퀵 요청을 찾을 수 없습니다.',
   stale: '이미 다른 사용자가 처리한 요청입니다. 새로고침해 주세요.',
   locked: '완료되었거나 취소된 요청은 변경할 수 없습니다.',
-  finalAmountRequired: '최종금액이 입력되면 승인할 수 있습니다.',
-  openchatFailedWarning: '오픈채팅 자동 발송에 실패했습니다. 상세 화면에서 다시 보낼 수 있습니다.'
+  finalAmountRequired: '최종금액이 입력되면 승인할 수 있습니다.'
+} as const;
+
+/** plan 92 §문구표 — 제목 */
+export const NOTIFY_TITLE = {
+  created: (no: string) => `새 퀵 요청 ${no}`,
+  accepted: (no: string) => `퀵 ${no} 접수됨`,
+  dispatched: (no: string) => `퀵 ${no} 배차완료`,
+  final_amount_set: (no: string) => `퀵 ${no} 최종금액 입력`,
+  approved: (no: string) => `퀵 ${no} 승인됨`,
+  cancelled: (no: string) => `퀵 ${no} 취소됨`
+} as const;
+
+export type QuickNotifyEvent = keyof typeof NOTIFY_TITLE;
+export const NOTIFY_TYPE = {
+  vendor: 'quick_request.vendor_event',
+  requester: 'quick_request.requester_event'
 } as const;
 
 export const STATUS_LABEL = {
@@ -139,23 +153,68 @@ export async function dbQuickRequest(requestNo: string): Promise<QuickRequestDbR
   return data as QuickRequestDbRow;
 }
 
-export async function dbDispatch(requestNo: string, event: string) {
-  const row = await dbQuickRequest(requestNo);
+export type QuickNotificationRow = {
+  id: string;
+  recipient_user_id: string;
+  type: string;
+  title: string;
+  body: string;
+  metadata: Record<string, unknown>;
+};
+
+/** plan 92 — 요청번호 + 사건(metadata.quick_request_event)으로 모든 수신자의 알림 행을 읽는다 */
+export async function dbNotificationsByEvent(
+  requestNo: string,
+  event: QuickNotifyEvent
+): Promise<QuickNotificationRow[]> {
   const { data, error } = await serviceClient()
-    .from('quick_request_openchat_dispatches')
-    .select('event, status, attempt_count, http_status, error_message, payload')
-    .eq('quick_request_id', row.id)
-    .eq('event', event)
-    .maybeSingle();
+    .from('notifications')
+    .select('id, recipient_user_id, type, title, body, metadata')
+    .like('type', 'quick_request.%')
+    .eq('metadata->>quick_request_no', requestNo)
+    .eq('metadata->>quick_request_event', event)
+    .order('id', { ascending: true });
   if (error) throw new Error(error.message);
-  return data as {
-    event: string;
-    status: string;
-    attempt_count: number;
-    http_status: number | null;
-    error_message: string | null;
-    payload: Record<string, unknown>;
-  } | null;
+  return (data ?? []) as QuickNotificationRow[];
+}
+
+export function notificationsOf(rows: QuickNotificationRow[], recipientUserId: string) {
+  return rows.filter((row) => row.recipient_user_id === recipientUserId);
+}
+
+async function listActiveProfileIds(match: Record<string, string>): Promise<string[]> {
+  const { data, error } = await serviceClient()
+    .from('profiles')
+    .select('user_id')
+    .eq('status', 'active')
+    .match(match);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.user_id as string);
+}
+
+/** plan 92 D-4 수신 후보 (구현과 같은 판별식) */
+export const listActiveDongbangIds = () => listActiveProfileIds({ affiliation: 'dongbang' });
+export const listActiveAdminIds = () => listActiveProfileIds({ system_role: 'admin' });
+export const listActiveLogisticsIds = () =>
+  listActiveProfileIds({ affiliation: 'wake', rank: '구매물류팀', system_role: 'user' });
+
+/** plan 92 — 수신자 검증용 동방특송 2번째 일회용 계정 (example.com · `E2E ` 이름 → teardown이 삭제) */
+export async function createDisposableDongbang(label = 'dongbang2'): Promise<AccountMeta> {
+  const email = uniqueOrgChartEmail(label);
+  const fullName = `E2E 동방특송2 ${Date.now()}`;
+  const password = 'E2eDongbang9!';
+  const created = await createOrgChartTestUser(label, {
+    email,
+    password,
+    affiliation: 'dongbang',
+    rank: null,
+    position_level: null,
+    leader_role: null,
+    birthday: null,
+    phone: '01055550002',
+    fullName
+  });
+  return { userId: created.userId, email, password, fullName };
 }
 
 export async function dbNotifications(recipientUserId: string, requestNo: string) {
@@ -278,7 +337,8 @@ export function buildCreateBody(tag = uniqueTag(), overrides: Record<string, unk
   };
 }
 
-export type CreatedQuickRequest = { requestNo: string; id: string; openchat: { status: string } };
+/** plan 92 — 등록 201 `{data:{requestNo,id}}` */
+export type CreatedQuickRequest = { requestNo: string; id: string } & Record<string, unknown>;
 
 export async function readJson<T = Record<string, unknown>>(response: APIResponse): Promise<T> {
   return (await response.json()) as T;
@@ -436,16 +496,6 @@ export function detailStatus(page: Page) {
 
 export async function expectDetailStatus(page: Page, status: keyof typeof STATUS_LABEL) {
   await expect(detailStatus(page)).toHaveText(STATUS_LABEL[status], { timeout: 20_000 });
-}
-
-/** 대상 서버의 webhook 설정 여부 (admin summary `openchatConfigured`) — 미설정 pass 판별 */
-export async function serverOpenchatConfigured(): Promise<boolean> {
-  return withApi('admin', async (api) => {
-    const response = await api.get('/api/quick-request/summary');
-    expect(response.status()).toBe(200);
-    const body = await readJson<{ data: { openchatConfigured: boolean | null } }>(response);
-    return body.data.openchatConfigured === true;
-  });
 }
 
 export function toast(page: Page, text: string) {

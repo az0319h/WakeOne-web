@@ -3,17 +3,15 @@ import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/ap
 import { canCreateQuickRequest } from '@/features/auth/api/quick-access.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
-  insertQuickRequestVendorNotifications,
+  notifyQuickRequestEvent,
   safeNotify
 } from '@/features/quick-request/api/notifications.server';
 import { recordQuickRequestRecentAddresses } from '@/features/quick-request/api/service.server';
 import {
   createQuickRequestRecord,
   listQuickRequestsForViewer,
-  QuickRequestRequesterForbiddenError,
-  toQuickOpenchatSource
+  QuickRequestRequesterForbiddenError
 } from '@/features/quick-request/api/workflow.server';
-import { dispatchQuickOpenchatEvent } from '@/features/quick-request/lib/openchat-webhook.server';
 import {
   isQuickRequestStatus,
   QUICK_REQUEST_MESSAGES,
@@ -68,7 +66,7 @@ export async function GET(request: Request) {
 }
 
 /**
- * 등록 — RPC 번호 발급 → 최근 주소 서버 기록(D-12) → webhook `created` → 동방특송 인앱 알림.
+ * 등록 — RPC 번호 발급 → 최근 주소 서버 기록(D-12) → 인앱 알림 `created`(동방·admin·구매물류팀 · plan 92).
  * 클라이언트의 `requesterName`·`requestedAtIso`는 무시한다.
  */
 export async function POST(request: Request) {
@@ -148,36 +146,22 @@ export async function POST(request: Request) {
     console.error('[quick-request] recent addresses record failed:', error);
   }
 
-  const openchat = await dispatchQuickOpenchatEvent(toQuickOpenchatSource(row), 'created');
-
   const actorName = profile.full_name?.trim() || profile.email;
-  await safeNotify('vendor created', () =>
-    insertQuickRequestVendorNotifications({
-      row,
-      event: 'created',
-      actorUserId: session.userId,
-      actorName
-    })
+  await safeNotify('created', () =>
+    notifyQuickRequestEvent({ row, event: 'created', actorUserId: session.userId, actorName })
   );
 
   return logger.respond(
     {
       success: true,
       message: `${QUICK_REQUEST_MESSAGES.created} (요청번호 ${row.request_no})`,
-      data: {
-        requestNo: row.request_no,
-        id: row.id,
-        openchat: { status: openchat.status }
-      }
+      data: { requestNo: row.request_no, id: row.id }
     },
     201,
     {
       targetLabel: row.request_no,
       targetUserId: session.userId,
-      metadata: quickLogMetadata(row.request_no, {
-        recentAddressesRecorded,
-        openchat
-      })
+      metadata: quickLogMetadata(row.request_no, { recentAddressesRecorded })
     }
   );
 }

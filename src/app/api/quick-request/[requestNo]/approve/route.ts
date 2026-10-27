@@ -1,7 +1,7 @@
 import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/api/log.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
-  insertQuickRequestRequesterNotification,
+  notifyQuickRequestEvent,
   safeNotify
 } from '@/features/quick-request/api/notifications.server';
 import {
@@ -25,7 +25,7 @@ type Params = { params: Promise<{ requestNo: string }> };
 
 const ACTION = 'quick_request.approve' as const;
 
-/** 요청자·admin: dispatched + 최종금액 → approved. 동방특송 403(AC-28). webhook 없음(AC-26) */
+/** 요청자·admin: dispatched + 최종금액 → approved. 동방특송 403(AC-28). 인앱 알림 `approved`(동방 전원·요청자, 행위자 제외) */
 export async function POST(_request: Request, { params }: Params) {
   const requestId = createRequestId();
   const { requestNo: rawRequestNo } = await params;
@@ -112,16 +112,11 @@ export async function POST(_request: Request, { params }: Params) {
     });
   }
 
-  // admin 대리 승인일 때만 요청자에게 알림 (본인 승인은 skip)
+  // 요청자는 admin 대리 승인일 때만 받는다 (행위자 본인 제외는 notifyQuickRequestEvent가 처리)
   const actorName = profile.full_name?.trim() || profile.email;
   const latest = updated;
-  await safeNotify('requester approved', () =>
-    insertQuickRequestRequesterNotification({
-      row: latest,
-      event: 'approved',
-      actorUserId: profile.user_id,
-      actorName
-    })
+  await safeNotify('approved', () =>
+    notifyQuickRequestEvent({ row: latest, event: 'approved', actorUserId: profile.user_id, actorName })
   );
 
   return logger.respond(

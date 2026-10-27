@@ -14,7 +14,7 @@ export type QuickRequestGoodsVisual = {
 
 const GOODS_IMAGE_BASE = '/quick-request/goods';
 
-/** plan 87 — 물품 크기 라벨 단일 출처 (카드 · 요약 · 카톡 메시지 공용) */
+/** plan 87 — 물품 크기 라벨 단일 출처 (카드 · 요약 · 미리보기 텍스트 공용) */
 export const QUICK_REQUEST_GOODS_VISUALS: Record<QuickRequestGoodsSize, QuickRequestGoodsVisual> = {
   xs: {
     title: '초소형',

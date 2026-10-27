@@ -246,8 +246,9 @@ export async function confirmPreviewAndRegister(page: Page) {
   await confirm.click();
   const response = await responsePromise;
   expect(response.status(), await response.text()).toBe(201);
+  // plan 92 — 201 `{data:{requestNo,id}}`
   const body = (await response.json()) as {
-    data: { requestNo: string; id: string; openchat: { status: string } };
+    data: { requestNo: string; id: string } & Record<string, unknown>;
   };
   const { requestNo } = body.data;
   expect(requestNo).toMatch(/^\d{4}-\d{2,}$/);
@@ -260,7 +261,7 @@ export async function confirmPreviewAndRegister(page: Page) {
   return {
     requestNo,
     id: body.data.id,
-    openchat: body.data.openchat,
+    responseData: body.data,
     requestBody: response.request().postDataJSON() as Record<string, unknown>
   };
 }

@@ -1,6 +1,28 @@
 import type { QuickRequestGoodsSize, QuickRequestRouteSummary } from '../api/types';
 import { QUICK_REQUEST_GOODS_VISUALS } from './quick-request-goods-visuals';
 
+/** plan 92 — 경로 요약 (plan 89 메시지 모듈에서 이동). 알림·목록·상세 공용 */
+export type QuickRouteSummary = QuickRequestRouteSummary;
+
+/** 도로명주소 앞 두 토큰 (예: `서울 용산구 한강대로 1` → `서울 용산구`) */
+export function formatRouteRegion(roadAddress: string | null | undefined): string {
+  const tokens = (roadAddress ?? '').trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return '—';
+  return tokens.slice(0, 2).join(' ');
+}
+
+export function buildQuickRouteSummary(
+  origin: { roadAddress?: string } | null | undefined,
+  destination: { roadAddress?: string } | null | undefined,
+  stopovers: unknown
+): QuickRouteSummary {
+  return {
+    from: formatRouteRegion(origin?.roadAddress),
+    to: formatRouteRegion(destination?.roadAddress),
+    stopoverCount: Array.isArray(stopovers) ? stopovers.length : 0
+  };
+}
+
 /** 표·카드 경로 문자열 — `서울 강남구 → 서울 용산구` */
 export function formatQuickRouteLabel(route: QuickRequestRouteSummary): string {
   return `${route.from} → ${route.to}`;

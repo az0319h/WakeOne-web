@@ -27,12 +27,6 @@ export type QuickRequestStatus = (typeof QUICK_REQUEST_STATUSES)[number];
 /** 수정·취소 가능한 상태 (approved·cancelled 이후 잠금) */
 export const QUICK_REQUEST_EDITABLE_STATUSES = ['requested', 'dispatching', 'dispatched'] as const;
 
-export const QUICK_OPENCHAT_EVENTS = ['created', 'accepted', 'dispatched', 'cancelled'] as const;
-export type QuickOpenchatEvent = (typeof QUICK_OPENCHAT_EVENTS)[number];
-
-export const QUICK_OPENCHAT_STATUSES = ['sent', 'failed', 'not_configured'] as const;
-export type QuickOpenchatStatus = (typeof QUICK_OPENCHAT_STATUSES)[number];
-
 /** `YYYY-NN` (최소 2자리, 100 이상은 3자리 이상) */
 export const QUICK_REQUEST_NO_PATTERN = /^\d{4}-\d{2,}$/;
 
@@ -64,11 +58,8 @@ export const QUICK_REQUEST_MESSAGES = {
   locked: '완료되었거나 취소된 요청은 변경할 수 없습니다.',
   finalAmountRequired: '최종금액이 입력되면 승인할 수 있습니다.',
   finalAmountOnlyDispatched: '최종금액은 배차완료 후에 입력할 수 있습니다.',
-  openchatAlreadySent: '이미 발송된 메시지입니다.',
-  openchatRecordNotFound: '발송 기록이 없습니다.',
   internalError: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-  created: '퀵 요청이 등록되었습니다.',
-  openchatFailedWarning: '오픈채팅 자동 발송에 실패했습니다. 상세 화면에서 다시 보낼 수 있습니다.'
+  created: '퀵 요청이 등록되었습니다.'
 } as const;
 
 const amountSchema = (requiredMessage: string) =>
@@ -130,13 +121,6 @@ export const quickRequestCancelBodySchema = z.object({
 });
 
 export type QuickRequestCancelBody = z.infer<typeof quickRequestCancelBodySchema>;
-
-/** POST …/openchat/resend */
-export const quickRequestResendBodySchema = z.object({
-  event: z.enum(QUICK_OPENCHAT_EVENTS)
-});
-
-export type QuickRequestResendBody = z.infer<typeof quickRequestResendBodySchema>;
 
 /**
  * PATCH /api/quick-request/[requestNo] — 바뀐 키만 온다. `origin`·`destination`·`stopovers`는 통째로 교체.

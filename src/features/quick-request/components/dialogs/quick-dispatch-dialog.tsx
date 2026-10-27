@@ -16,10 +16,7 @@ import { useAppForm } from '@/components/ui/tanstack-form';
 import { notifySuccess } from '@/lib/notify';
 import { dispatchQuickRequestMutation } from '../../api/mutations';
 import { parseQuickAmountInput } from '../../lib/format-quick-amount';
-import {
-  notifyQuickOpenchatOutcome,
-  notifyQuickRequestError
-} from '../../lib/quick-request-mutation-feedback';
+import { notifyQuickRequestError } from '../../lib/quick-request-mutation-feedback';
 import {
   QUICK_REQUEST_DISPATCH_FORM_DEFAULTS,
   quickRequestDispatchFormSchema
@@ -50,7 +47,7 @@ export function QuickDispatchDialog({ requestNo, onOpenChange }: QuickDispatchDi
       if (!parsed.success || estimatedAmount == null) return;
 
       try {
-        const result = await mutation.mutateAsync({
+        await mutation.mutateAsync({
           requestNo,
           payload: {
             estimatedAmount,
@@ -60,7 +57,6 @@ export function QuickDispatchDialog({ requestNo, onOpenChange }: QuickDispatchDi
           }
         });
         notifySuccess('배차 완료를 등록했습니다.');
-        notifyQuickOpenchatOutcome(result.openchat);
         form.reset();
         onOpenChange(false);
       } catch (error) {
@@ -89,7 +85,8 @@ export function QuickDispatchDialog({ requestNo, onOpenChange }: QuickDispatchDi
         <DialogHeader>
           <DialogTitle>배차 완료</DialogTitle>
           <DialogDescription>
-            {requestNo} 요청의 배차 정보를 입력합니다. 저장하면 오픈채팅으로 안내됩니다.
+            {requestNo} 요청의 배차 정보를 입력합니다. 저장하면 요청자와 동방특송 담당자에게 알림이
+            갑니다.
           </DialogDescription>
         </DialogHeader>
         <form.AppForm>

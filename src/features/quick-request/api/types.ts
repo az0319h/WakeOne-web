@@ -3,11 +3,7 @@ import type {
   QuickRequestNotifyBody,
   QuickRequestVehicleType
 } from '../schemas/quick-request-notify';
-import type {
-  QuickOpenchatEvent,
-  QuickOpenchatStatus,
-  QuickRequestStatus
-} from '../schemas/quick-request-workflow';
+import type { QuickRequestStatus } from '../schemas/quick-request-workflow';
 
 export type { QuickRequestFormValues } from '../schemas/quick-request-form';
 
@@ -91,14 +87,10 @@ export type QuickRequestRecentAddressesRecordResponse = {
 };
 
 // ---------------------------------------------------------------------------
-// plan 89 — 퀵 업무 흐름 (등록·목록·요약·상세·수정·접수·배차·승인·취소·재발송)
+// plan 89 — 퀵 업무 흐름 (등록·목록·요약·상세·수정·접수·배차·승인·취소)
 // ---------------------------------------------------------------------------
 
-export type {
-  QuickOpenchatEvent,
-  QuickOpenchatStatus,
-  QuickRequestStatus
-} from '../schemas/quick-request-workflow';
+export type { QuickRequestStatus } from '../schemas/quick-request-workflow';
 
 export type QuickRequestOriginSchedule =
   | { mode: 'immediate' }
@@ -179,8 +171,6 @@ export type QuickRequestListResponse = {
     limit: number;
     counts: QuickRequestStatusCounts;
     viewer: QuickRequestViewer;
-    /** 동방·admin만 boolean, 그 외 null */
-    openchatConfigured: boolean | null;
   };
 };
 
@@ -189,7 +179,6 @@ export type QuickRequestSummary = {
   /** KST `yyyy-MM-dd` */
   range: { fromDate: string; toDate: string };
   viewer: QuickRequestViewer;
-  openchatConfigured: boolean | null;
 };
 
 /** GET /api/quick-request/summary — status·search 무시 */
@@ -221,19 +210,8 @@ export type QuickRequestPermissions = {
   canSetFinal: boolean;
   canApprove: boolean;
   canCancel: boolean;
-  canResend: boolean;
-};
-
-export type QuickOpenchatDispatchView = {
-  event: QuickOpenchatEvent;
-  status: QuickOpenchatStatus;
-  attemptCount: number;
-  httpStatus: number | null;
-  errorMessage: string | null;
-  lastAttemptAt: string | null;
-  sentAt: string | null;
-  /** 저장된 payload.text — 「메시지 복사」용 */
-  text: string;
+  /** 동방·admin (운영 권한). 취소 Alert 등 FE 분기용 (plan 92에서 이름 변경) */
+  canOperate: boolean;
 };
 
 export type QuickRequestDetail = {
@@ -260,11 +238,6 @@ export type QuickRequestDetail = {
   finalAmount: number | null;
   history: QuickRequestHistory;
   permissions: QuickRequestPermissions;
-  /** 동방·admin(canResend)만. 그 외 null */
-  openchat: null | {
-    configured: boolean;
-    dispatches: QuickOpenchatDispatchView[];
-  };
 };
 
 /** GET /api/quick-request/[requestNo] */
@@ -276,7 +249,7 @@ export type QuickRequestDetailResponse = {
 /** POST /api/quick-request — 201 */
 export type QuickRequestCreateResponse = {
   success: true;
-  data: { requestNo: string; id: string; openchat: { status: QuickOpenchatStatus } };
+  data: { requestNo: string; id: string };
 };
 
 /** 변경 API 공통 200 (PATCH · accept · dispatch · approve · cancel) */
@@ -285,14 +258,7 @@ export type QuickRequestMutationResponse = {
   data: {
     requestNo: string;
     status: QuickRequestStatus;
-    openchat?: { event: QuickOpenchatEvent; status: QuickOpenchatStatus };
   };
-};
-
-/** POST …/openchat/resend — 200 */
-export type QuickRequestResendResponse = {
-  success: true;
-  data: { event: QuickOpenchatEvent; status: QuickOpenchatStatus; attemptCount: number };
 };
 
 export type {
@@ -300,5 +266,4 @@ export type {
   QuickRequestCreateBody as QuickRequestCreatePayload,
   QuickRequestDispatchBody as QuickRequestDispatchPayload,
   QuickRequestPatchBody as QuickRequestPatchPayload,
-  QuickRequestResendBody as QuickRequestResendPayload
 } from '../schemas/quick-request-workflow';

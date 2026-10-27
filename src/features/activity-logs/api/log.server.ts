@@ -78,7 +78,6 @@ const METADATA_ALLOWLIST = new Set([
   "attachment_count",
   "quick_request_no",
   "changedFields",
-  "openchat",
   "recentAddressesRecorded",
   "created",
   "device_count",
@@ -420,22 +419,6 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === "disabled_groups" && Array.isArray(value)) {
       sanitized.disabled_groups = value.filter((item): item is string => typeof item === "string");
-      continue;
-    }
-
-    if (key === "openchat" && typeof value === "object" && !Array.isArray(value)) {
-      const openchat = value as { event?: unknown; status?: unknown; attempts?: unknown };
-      if (
-        typeof openchat.event === "string" &&
-        typeof openchat.status === "string" &&
-        typeof openchat.attempts === "number"
-      ) {
-        sanitized.openchat = {
-          event: openchat.event,
-          status: openchat.status,
-          attempts: openchat.attempts,
-        };
-      }
       continue;
     }
 

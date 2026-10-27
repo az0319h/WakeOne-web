@@ -9,13 +9,11 @@ import {
   createQuickRequestNote,
   deleteQuickRequestNote,
   dispatchQuickRequest,
-  resendQuickRequestOpenchat,
   setQuickRequestFinalAmount,
   updateQuickRequest,
   updateQuickRequestNote
 } from './service';
 import type {
-  QuickOpenchatEvent,
   QuickRequestCancelPayload,
   QuickRequestCreatePayload,
   QuickRequestDispatchPayload,
@@ -100,11 +98,5 @@ export const approveQuickRequestMutation = mutationOptions({
 export const cancelQuickRequestMutation = mutationOptions({
   mutationFn: (params: { requestNo: string; payload?: QuickRequestCancelPayload }) =>
     cancelQuickRequest(params),
-  onSettled: invalidateQuickRequestWorkflow
-});
-
-export const resendQuickRequestOpenchatMutation = mutationOptions({
-  mutationFn: (params: { requestNo: string; event: QuickOpenchatEvent }) =>
-    resendQuickRequestOpenchat(params),
   onSettled: invalidateQuickRequestWorkflow
 });

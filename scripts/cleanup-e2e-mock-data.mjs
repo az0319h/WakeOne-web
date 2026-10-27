@@ -596,7 +596,7 @@ async function cleanupWorkflowFixtures() {
   }
 }
 
-// plan 89 — 퀵 업무 흐름 e2e 산출물 (quick_requests · 발송 기록 · 알림 · 연도 카운터)
+// plan 89·92 — 퀵 업무 흐름 e2e 산출물 (quick_requests · 알림 · 연도 카운터)
 // `quick_requests.requester_user_id`가 on delete restrict라 cleanup_e2e_mock_data RPC(일회용 사용자 삭제) 전에 지운다.
 // 대상: 일회용 계정이 요청한 건 전부 + fixture 계정이 요청한 건 중 출발 담당자 `E2E…` 표식 건
 async function quickWorkflowTargetRows(userIds, fixtureIds) {
@@ -661,7 +661,7 @@ async function cleanupQuickWorkflowFixtures() {
     deletedNotifications += data?.length ?? 0;
   }
 
-  // 2) quick_requests (발송 기록 dispatches는 on delete cascade)
+  // 2) quick_requests
   const ids = targets.map(({ id }) => id);
   for (let offset = 0; offset < ids.length; offset += 100) {
     const { error } = await admin.from('quick_requests').delete().in('id', ids.slice(offset, offset + 100));
