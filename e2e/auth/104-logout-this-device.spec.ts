@@ -483,24 +483,33 @@ test.describe('plan 104 정적 검사 (grep)', () => {
     const globalLine = lines.findIndex((line) => /signOut\(\{\s*scope:\s*'global'\s*\}\)/.test(line));
     expect(lines[globalLine - 1]?.trim()).toMatch(/^\/\/.*plan 104/);
 
+    // plan 105 AC-20 — realtime 강제 로그아웃은 `{ scope: 'global', reason: 'forced' }` (105가 104 시그니처에 reason 추가)
     const realtime = readSource('src/features/auth/components/profile-status-realtime.tsx');
-    expect(countMatches(realtime, /signOut\(\{\s*scope:\s*'global'\s*\}\)/g)).toBe(1);
+    expect(
+      countMatches(realtime, /signOut\(\{\s*scope:\s*'global'\s*(?:,\s*reason:\s*'forced'\s*)?\}\)/g)
+    ).toBe(1);
 
+    // plan 105 — `signOut(options?: { scope?: 'local' | 'global'; reason?: 'user' | 'forced' })` (여러 줄 허용)
     const service = readSource('src/features/auth/api/service.ts');
-    expect(service).toMatch(/export async function signOut\(options\?: \{ scope\?: 'local' \| 'global' \}\)/);
+    expect(service).toMatch(
+      /export async function signOut\(options\?: \{\s*scope\?: 'local' \| 'global';?\s*(?:reason\?: 'user' \| 'forced';?\s*)?\}\)/
+    );
     expect(service).toMatch(/supabase\.auth\.signOut\(\{\s*scope:\s*options\?\.scope\s*\?\?\s*'local'\s*\}\)/);
   });
 
-  test('AC-09: service.signOut 안에서 await unsubscribePushOnThisDevice()가 supabase.auth.signOut( 보다 먼저 (plan 91 AC-17 회귀)', () => {
+  test('AC-09: service.signOut 안에서 푸시 처리 호출이 supabase.auth.signOut( 보다 먼저 (plan 91 AC-17 회귀 · plan 105 기준: 일반 signOutPushOnThisDevice · 강제 unsubscribePushOnThisDevice)', () => {
     const service = readSource('src/features/auth/api/service.ts');
     const start = service.indexOf('export async function signOut(');
     expect(start).toBeGreaterThanOrEqual(0);
     const end = service.indexOf('\n}\n', start);
     const body = service.slice(start, end);
     const unsubscribeAt = body.indexOf('await unsubscribePushOnThisDevice()');
+    const userPushAt = body.indexOf('await signOutPushOnThisDevice(');
     const signOutAt = body.indexOf('supabase.auth.signOut(');
     expect(unsubscribeAt).toBeGreaterThanOrEqual(0);
+    expect(userPushAt).toBeGreaterThanOrEqual(0);
     expect(signOutAt).toBeGreaterThan(unsubscribeAt);
+    expect(signOutAt).toBeGreaterThan(userPushAt);
   });
 });
 

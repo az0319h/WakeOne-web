@@ -1,6 +1,10 @@
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { createClient } from '@/lib/supabase/client';
-import { unsubscribePushOnThisDevice } from '@/features/notifications/lib/push-client';
+import {
+  signOutPushOnThisDevice,
+  unsubscribePushOnThisDevice
+} from '@/features/notifications/lib/push-client';
+import { clearOwnResumeMarker, hashPushOwner } from '@/features/notifications/lib/push-resume';
 import type {
   AuthProfile,
   ForcePasswordChangePayload,
@@ -103,10 +107,52 @@ export async function forcePasswordChange(
   return data;
 }
 
-export async function signOut(options?: { scope?: 'local' | 'global' }) {
-  // plan 91 — 로그아웃 전에 이 기기의 푸시 구독을 먼저 해제한다(2초 timeout · 실패 무시)
-  await unsubscribePushOnThisDevice();
+const SIGN_OUT_SESSION_READ_TIMEOUT_MS = 2000;
+
+/** plan 105 — 로그아웃 직전 세션의 기기 표시용 owner hash (user id 원문은 남기지 않는다 · 실패·2초 초과 시 null) */
+async function readSessionPushOwnerHash(
+  supabase: ReturnType<typeof createClient>
+): Promise<string | null> {
+  const read = (async () => {
+    try {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      return userId ? await hashPushOwner(userId) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const timeout = new Promise<null>((resolve) => {
+    setTimeout(() => resolve(null), SIGN_OUT_SESSION_READ_TIMEOUT_MS);
+  });
+  return Promise.race([read, timeout]);
+}
+
+/**
+ * 로그아웃.
+ * - `scope`(plan 104): 기본 `local`(이 기기만) · 비활성 계정 강제 로그아웃만 `global`.
+ * - `reason`(plan 105): 기본 `user`(로그아웃 버튼) · `forced`(비활성화 감지 강제 로그아웃).
+ * 푸시 처리는 항상 `supabase.auth.signOut(`보다 먼저 한다(세션이 있어야 DELETE가 통과).
+ */
+export async function signOut(options?: {
+  scope?: 'local' | 'global';
+  reason?: 'user' | 'forced';
+}) {
   const supabase = createClient();
+  const pushOwnerHash = await readSessionPushOwnerHash(supabase);
+
+  if (options?.reason === 'forced') {
+    // plan 105 — 강제 로그아웃: 내 기기 표시 삭제 + plan 91 동작(DELETE forced_sign_out + 브라우저 구독 해제 · 2초 timeout · 실패 무시)
+    clearOwnResumeMarker(pushOwnerHash);
+    await unsubscribePushOnThisDevice();
+  } else {
+    // plan 105 — 로그아웃 버튼: 서버 등록만 지우고 브라우저 구독은 남긴 뒤 기기 표시를 「나」로 기록
+    // (2초 timeout · DELETE 실패 시 브라우저 구독까지 해제 · 실패 무시)
+    await signOutPushOnThisDevice(pushOwnerHash);
+  }
+
   // plan 104 — 기본은 이 기기만 로그아웃(local). 비활성 계정 강제 로그아웃만 global
   await supabase.auth.signOut({ scope: options?.scope ?? 'local' });
 }

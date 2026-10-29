@@ -24,6 +24,11 @@ export const PUSH_INVALID_GROUP_MESSAGE = '알림 종류가 올바르지 않습�
 export const PUSH_NO_DEVICE_MESSAGE = '등록된 기기가 없습니다. 먼저 알림을 켜 주세요.';
 export const PUSH_TEST_TITLE = 'WakeOne 테스트 알림';
 export const PUSH_TEST_BODY = '휴대폰 알림이 정상적으로 연결되었어요.';
+/** plan 105 — `auto_resume` POST 409 (화면에는 띄우지 않음 · 응답·로그 전용) */
+export const PUSH_RESUME_BLOCKED_DEACTIVATED_MESSAGE =
+  '계정이 비활성화된 적이 있어 휴대폰 알림을 자동으로 다시 켜지 않았어요.';
+export const PUSH_RESUME_OWNED_BY_OTHER_MESSAGE =
+  '이 기기는 다른 계정이 알림을 켜 두어서 자동으로 다시 켜지 않았어요.';
 
 export function profileTargetLabel(profile: Pick<AuthProfile, 'email' | 'full_name'>): string {
   const name = profile.full_name?.trim() ?? '';
@@ -71,14 +76,36 @@ export function respondWithLog(
   status: number,
   metadata: ActivityLogMetadata
 ): Promise<NextResponse> {
+  return respondWithLogForTarget(
+    ctx,
+    session,
+    { userId: session.userId, label: profileTargetLabel(session.profile) },
+    body,
+    status,
+    metadata
+  );
+}
+
+/**
+ * plan 105 — target을 다른 사용자로 지정하는 변형 (detach `detached` → 이전 주인).
+ * actor는 항상 세션 본인이다.
+ */
+export function respondWithLogForTarget(
+  ctx: PushRouteContext,
+  session: PushRouteSession,
+  target: { userId: string; label: string },
+  body: unknown,
+  status: number,
+  metadata: ActivityLogMetadata
+): Promise<NextResponse> {
   return jsonWithActivityLog(
     ctx.requestId,
     {
       ...actorFromProfile(session.profile),
       action: ctx.action,
       targetType: 'user',
-      targetUserId: session.userId,
-      targetLabel: profileTargetLabel(session.profile),
+      targetUserId: target.userId,
+      targetLabel: target.label,
       httpMethod: ctx.httpMethod,
       httpPath: ctx.httpPath,
       metadata
@@ -108,10 +135,11 @@ export function failWithLog(
 export function internalErrorWithLog(
   ctx: PushRouteContext,
   session: PushRouteSession,
-  error: unknown
+  error: unknown,
+  extra?: ActivityLogMetadata
 ): Promise<NextResponse> {
   const message = error instanceof Error ? error.message : 'Unknown server error';
-  return failWithLog(ctx, session, 500, message, 'internal_error');
+  return failWithLog(ctx, session, 500, message, 'internal_error', extra);
 }
 
 export async function readJsonBody(request: Request): Promise<unknown> {

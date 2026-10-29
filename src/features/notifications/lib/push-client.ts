@@ -1,7 +1,27 @@
 'use client';
 
-import { createPushSubscription, deletePushSubscription } from '../api/push-service';
+import {
+  createPushSubscription,
+  createPushSubscriptionWithStatus,
+  deletePushSubscription,
+  detachPushSubscription,
+  isPushApiError
+} from '../api/push-service';
 import type { PushDevice } from '../api/push-types';
+import {
+  decideDetachOutcome,
+  decideResumeOutcome,
+  decideSignOutOutcome,
+  resumeMarkerAtIso,
+  type DetachAttemptResult,
+  type DetachOutcome,
+  type PushPermissionState,
+  type PushResumeMarker,
+  type ResumeAttemptResult,
+  type ResumeOutcome,
+  type SignOutDeleteResult
+} from './push-resume-decision';
+import { clearResumeMarker, writeResumeMarker } from './push-resume';
 
 /**
  * plan 91 — 브라우저 전용 푸시 유틸. 서버 모듈 import 금지.
@@ -14,6 +34,8 @@ export const IOS_INSTALL_BANNER_DISMISSED_KEY = 'wakeone.push.ios-banner-dismiss
 export const IOS_INSTALL_BANNER_DISMISS_DAYS = 7;
 
 const UNSUBSCRIBE_TIMEOUT_MS = 2000;
+/** plan 105 — 자동 복구 `subscribe()` 전 SW 활성화 대기 상한 (넘으면 안내 줄) */
+const SW_READY_TIMEOUT_MS = 5000;
 
 /**
  * plan 94 D-6 — SW `notificationclick` → 열린 창 `postMessage({ type, url }, [port])` → 앱 `router.push(url)` → `port.postMessage('ack')`.
@@ -199,10 +221,51 @@ export async function subscribeThisDevice(): Promise<{ endpoint: string; deviceC
   const result = await createPushSubscription({
     endpoint: json.endpoint,
     keys: { p256dh, auth },
-    userAgent: navigator.userAgent
+    userAgent: navigator.userAgent,
+    // plan 105 — 스위치·안내 줄 「다시 켜기」(사용자 제스처) 경로
+    source: 'manual'
   });
 
   return { endpoint: json.endpoint, deviceCount: result.device_count };
+}
+
+/**
+ * plan 105 — 자동 복구용 통로 확보. **`Notification.requestPermission()`을 부르지 않는다**
+ * (WebKit은 사용자 제스처가 없으면 이미 granted여도 Denied로 끝난다).
+ * 1) `getSubscription()`(제스처 불필요) 재사용 → 2) 없으면 권한이 granted일 때만 `subscribe()` 1회.
+ * 실패하면 던진다 → 호출부가 `subscribe_failed`(안내 줄)로 처리한다.
+ */
+export async function subscribeExistingOrGranted(): Promise<PushSubscription> {
+  if (!isPushSupported()) {
+    throw new Error('이 브라우저에서는 알림을 켤 수 없어요.');
+  }
+
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (!vapidPublicKey) {
+    throw new Error('휴대폰 알림 서버 설정이 아직 준비되지 않았습니다.');
+  }
+
+  const registration = await getServiceWorkerRegistration();
+  if (!registration) {
+    throw new Error('알림 서비스를 준비할 수 없어요. 잠시 후 다시 시도해 주세요.');
+  }
+
+  const existing = await registration.pushManager.getSubscription();
+  if (existing) return existing;
+
+  if (getNotificationPermission() !== 'granted') {
+    throw new Error('알림 권한이 없어 자동으로 다시 켤 수 없어요.');
+  }
+
+  const ready = await withTimeout(navigator.serviceWorker.ready, SW_READY_TIMEOUT_MS);
+  if (!ready) {
+    throw new Error('알림 서비스를 준비할 수 없어요. 잠시 후 다시 시도해 주세요.');
+  }
+
+  return registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource
+  });
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | undefined> {
@@ -222,8 +285,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | undefined>
 }
 
 /**
- * Switch OFF · 로그아웃 — `DELETE {endpoint}` → `subscription.unsubscribe()`.
- * 2초 timeout · 모든 실패는 무시한다(로그아웃을 막지 않는다).
+ * 강제 로그아웃(plan 105 `signOut({ reason: 'forced' })` · 비활성화 감지) — `DELETE {endpoint, source:'forced_sign_out'}` → `subscription.unsubscribe()`.
+ * plan 91 동작 그대로: 2초 timeout · 모든 실패는 무시한다(로그아웃을 막지 않는다).
+ * 일반 로그아웃 버튼은 브라우저 구독을 남기는 `signOutPushOnThisDevice()`를 쓴다.
  */
 export async function unsubscribePushOnThisDevice(): Promise<void> {
   if (!isPushSupported()) return;
@@ -234,7 +298,7 @@ export async function unsubscribePushOnThisDevice(): Promise<void> {
       if (!subscription) return;
 
       try {
-        await deletePushSubscription({ endpoint: subscription.endpoint });
+        await deletePushSubscription({ endpoint: subscription.endpoint, source: 'forced_sign_out' });
       } catch {
         /* 404(이미 해제)·네트워크 오류 무시 */
       }
@@ -256,7 +320,7 @@ export async function disablePushOnThisDevice(): Promise<{ deviceCount: number |
 
   let deviceCount: number | null = null;
   try {
-    const result = await deletePushSubscription({ endpoint: subscription.endpoint });
+    const result = await deletePushSubscription({ endpoint: subscription.endpoint, source: 'manual' });
     deviceCount = result.device_count;
   } catch (error) {
     // 서버에 없는(404) 구독은 브라우저 측만 정리한다
@@ -267,6 +331,156 @@ export async function disablePushOnThisDevice(): Promise<{ deviceCount: number |
 
   await subscription.unsubscribe();
   return { deviceCount };
+}
+
+// ---------------------------------------------------------------------------
+// plan 105 — 로그아웃 버튼 · 대시보드 진입 동기화 (결정은 push-resume-decision.ts)
+// ---------------------------------------------------------------------------
+
+async function deleteForSignOut(endpoint: string): Promise<SignOutDeleteResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UNSUBSCRIBE_TIMEOUT_MS);
+  try {
+    await deletePushSubscription({ endpoint, source: 'sign_out' }, { signal: controller.signal });
+    return { kind: 'http', status: 200 };
+  } catch (error) {
+    if (isPushApiError(error)) return { kind: 'http', status: error.status };
+    if (controller.signal.aborted) return { kind: 'timeout' };
+    return { kind: 'network_error' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * 로그아웃 버튼(`signOut()` · reason `user`) — 서버 등록만 지우고(`DELETE {endpoint, source:'sign_out'}` · 2초)
+ * - 200: 브라우저 구독 **유지** + 기기 표시를 「나」로 기록 (같은 계정 재로그인 시 자동 복구)
+ * - 404: 내 행 아님 → 구독·표시 그대로
+ * - 그 밖의 실패·timeout·네트워크 오류: 서버 행이 남았을 수 있으니 브라우저 구독까지 해제(안전장치)
+ * 모든 실패는 삼킨다(로그아웃을 막지 않는다).
+ */
+export async function signOutPushOnThisDevice(myOwnerHash: string | null): Promise<void> {
+  if (!isPushSupported()) return;
+
+  const subscription = await withTimeout(getCurrentPushSubscription(), UNSUBSCRIBE_TIMEOUT_MS);
+  const result: SignOutDeleteResult = subscription
+    ? await deleteForSignOut(subscription.endpoint)
+    : { kind: 'no_subscription' };
+  const outcome = decideSignOutOutcome(result);
+
+  // hash를 못 구하면 표시를 남길 수 없다 → 주인 없는 통로를 남기지 않도록 91 동작(구독 해제)으로 떨어진다
+  const keepWithoutMarker = outcome.writeMarkerSelf && !myOwnerHash;
+  if (outcome.writeMarkerSelf && myOwnerHash) {
+    writeResumeMarker(myOwnerHash);
+  }
+
+  if (subscription && (outcome.unsubscribeChannel || keepWithoutMarker)) {
+    await withTimeout(subscription.unsubscribe(), UNSUBSCRIBE_TIMEOUT_MS);
+  }
+}
+
+export type PushDeviceSnapshot = {
+  pushSupported: boolean;
+  vapidKeyPresent: boolean;
+  permission: PushPermissionState;
+  /** `getSubscription()` 결과 (제스처 불필요) — 미지원·키 없음이면 조회하지 않고 null */
+  subscription: PushSubscription | null;
+};
+
+/** 대시보드 진입 판정 입력 — 브라우저 API만 읽는다(서버 호출 없음) */
+export async function readPushDeviceSnapshot(): Promise<PushDeviceSnapshot> {
+  const pushSupported = isPushSupported();
+  const vapidKeyPresent = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+  const rawPermission = getNotificationPermission();
+  const permission: PushPermissionState = rawPermission === 'unsupported' ? 'default' : rawPermission;
+
+  if (!pushSupported || !vapidKeyPresent) {
+    return { pushSupported, vapidKeyPresent, permission, subscription: null };
+  }
+
+  const subscription = await getCurrentPushSubscription();
+  return { pushSupported, vapidKeyPresent, permission, subscription };
+}
+
+/** 통로 hash ∈ 내 서버 기기 목록 */
+export async function isSubscriptionInDevices(
+  subscription: PushSubscription,
+  devices: PushDevice[]
+): Promise<boolean> {
+  const endpointHash = await hashEndpoint(subscription.endpoint);
+  return findThisDevice(devices, endpointHash) !== undefined;
+}
+
+/**
+ * 자동 복구(표시 owner = 나 · 권한 granted) — 통로 확보(`requestPermission` 없이) →
+ * `POST {…, source:'auto_resume', resume_marker_at}` → `decideResumeOutcome`. 표시 삭제는 여기서 적용한다.
+ * 던지지 않는다(모든 실패는 outcome으로 돌려준다).
+ */
+export async function resumePushOnThisDevice(marker: PushResumeMarker): Promise<ResumeOutcome> {
+  let attempt: ResumeAttemptResult;
+
+  let subscription: PushSubscription | null = null;
+  try {
+    subscription = await subscribeExistingOrGranted();
+  } catch {
+    subscription = null;
+  }
+
+  const json = subscription?.toJSON();
+  const p256dh = json?.keys?.p256dh;
+  const auth = json?.keys?.auth;
+
+  if (!json?.endpoint || !p256dh || !auth) {
+    attempt = { kind: 'subscribe_failed' };
+  } else {
+    try {
+      const { status } = await createPushSubscriptionWithStatus({
+        endpoint: json.endpoint,
+        keys: { p256dh, auth },
+        userAgent: navigator.userAgent,
+        source: 'auto_resume',
+        resume_marker_at: resumeMarkerAtIso(marker)
+      });
+      attempt = { kind: 'http', status };
+    } catch (error) {
+      attempt = isPushApiError(error) ? { kind: 'http', status: error.status } : { kind: 'network_error' };
+    }
+  }
+
+  const outcome = decideResumeOutcome(attempt);
+  if (outcome.clearMarker) clearResumeMarker();
+  return outcome;
+}
+
+/**
+ * 표시 없음 · 통로가 내 기기 목록에 없음 — `POST …/subscriptions/detach` → `decideDetachOutcome`.
+ * `detached`: 이전 주인 hash로 표시 기록 · `none`: 주인 없는 통로 해제 · `mine`: 변경 없음. 던지지 않는다.
+ */
+export async function detachPushChannelOnThisDevice(
+  subscription: PushSubscription
+): Promise<DetachOutcome> {
+  let attempt: DetachAttemptResult;
+  try {
+    const data = await detachPushSubscription({ endpoint: subscription.endpoint });
+    attempt = {
+      kind: 'ok',
+      result: data.result,
+      previousOwnerHash: data.result === 'detached' ? data.previous_owner_hash : null
+    };
+  } catch (error) {
+    attempt = isPushApiError(error) ? { kind: 'http_error', status: error.status } : { kind: 'network_error' };
+  }
+
+  const outcome = decideDetachOutcome(attempt);
+  if (outcome.writeMarkerOwner) writeResumeMarker(outcome.writeMarkerOwner);
+  if (outcome.unsubscribeChannel) {
+    try {
+      await subscription.unsubscribe();
+    } catch {
+      /* 브라우저 측 해제 실패 무시 — 서버 행이 없어 알림은 가지 않는다 */
+    }
+  }
+  return outcome;
 }
 
 export function findThisDevice(

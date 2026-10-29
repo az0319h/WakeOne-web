@@ -97,7 +97,13 @@ const METADATA_ALLOWLIST = new Set([
   "latency_ms",
   "input_tokens",
   "output_tokens",
+  // plan 105 — 휴대폰 알림 자동 복구 · detach (`source`는 plan 100 키 공용 · 식별자 문자열만 · 자유 문장 금지)
+  "result",
+  "reason",
 ]);
+
+/** plan 105 — `source`·`result`·`reason`은 코드 식별자(`auto_resume`·`detached`·`owned_by_other` 등)만 남긴다 */
+const METADATA_IDENTIFIER_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
 
 const SENSITIVE_FIELD_PATTERN =
   /password|token|secret|temporary_password|current_password|new_password/i;
@@ -454,6 +460,14 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
 
     if (key === "source" && (value === "ai" || value === "rules")) {
       sanitized.source = value;
+      continue;
+    }
+
+    // plan 105 — 푸시 구독 출처·detach 결과·409 사유 (식별자만 · 그 밖의 값은 버린다)
+    if (key === "source" || key === "result" || key === "reason") {
+      if (typeof value === "string" && METADATA_IDENTIFIER_PATTERN.test(value)) {
+        (sanitized as Record<string, unknown>)[key] = value;
+      }
       continue;
     }
 

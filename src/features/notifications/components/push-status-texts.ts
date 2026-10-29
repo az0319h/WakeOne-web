@@ -8,3 +8,8 @@ export const PUSH_STATUS_DENIED_TEXT =
 export const PUSH_STATUS_OFF_TEXT = '알림이 꺼져 있어요';
 export const PUSH_STATUS_ON_TEXT = '이 기기에서 알림이 켜져 있어요';
 export const PUSH_STATUS_LOADING_TEXT = '알림 상태를 확인하고 있어요';
+
+/** plan 105 — 재로그인 자동 복구 안내 줄 · 토스트 (AC-02·11 원문 그대로 · 토스트는 마침표 없음) */
+export const PUSH_RESUME_BANNER_TEXT = '로그아웃 전에 켜 두었던 휴대폰 알림이 꺼졌어요';
+export const PUSH_RESUME_ENABLE_LABEL = '다시 켜기';
+export const PUSH_RESUME_SUCCESS_TEXT = '휴대폰 알림을 다시 켰어요';

@@ -20,6 +20,7 @@ import { QuickChatUnreadRealtime } from "@/features/quick-request/components/cha
 import { canViewAllQuickRequests } from "@/features/auth/api/quick-access.server";
 import { resolveQuickScopeTopic } from "@/features/quick-request/lib/quick-realtime-topics";
 import { IosInstallBanner } from "@/features/notifications/components/ios-install-banner";
+import { PushResumeSync } from "@/features/notifications/components/push-resume-sync";
 import { AppBadgeSync } from "@/features/notifications/components/app-badge-sync";
 import { AttachmentLightboxProvider } from "@/features/attachments/components/attachment-lightbox-provider";
 import { DashboardPresenceTrack } from "@/features/live-users/components/dashboard-presence-track";
@@ -103,6 +104,7 @@ export default async function DashboardLayout({
                     <AppBadgeSync />
                   </Suspense>
                   <IosInstallBanner />
+                  <PushResumeSync userId={profile.user_id} />
                   <InfobarProvider defaultOpen={false} className="min-w-0">
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                       {children}
