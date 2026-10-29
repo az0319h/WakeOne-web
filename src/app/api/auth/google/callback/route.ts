@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
   });
 
   if (ensureError || !ensuredRows?.length) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     await recordActivityLog({
       requestId,
       actorUserId: user.id,
@@ -249,7 +249,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tasksSync.ok) {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       await recordActivityLog({
         requestId,
         ...actor,
@@ -333,14 +333,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     return withRequestId(
       redirectToSignIn(request, { authStatus: 'pending_approval' }),
       requestId
     );
   }
 
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: 'local' });
 
   if (profileResult.status === 'rejected') {
     return withRequestId(redirectToSignIn(request, { authStatus: 'rejected' }), requestId);

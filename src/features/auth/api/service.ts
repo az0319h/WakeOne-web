@@ -103,11 +103,12 @@ export async function forcePasswordChange(
   return data;
 }
 
-export async function signOut() {
+export async function signOut(options?: { scope?: 'local' | 'global' }) {
   // plan 91 — 로그아웃 전에 이 기기의 푸시 구독을 먼저 해제한다(2초 timeout · 실패 무시)
   await unsubscribePushOnThisDevice();
   const supabase = createClient();
-  await supabase.auth.signOut();
+  // plan 104 — 기본은 이 기기만 로그아웃(local). 비활성 계정 강제 로그아웃만 global
+  await supabase.auth.signOut({ scope: options?.scope ?? 'local' });
 }
 
 export async function getSessionProfile(): Promise<AuthProfile | null> {
