@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import * as z from 'zod';
 import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/api/log.server';
 import { canOperateQuickRequests } from '@/features/auth/api/quick-access.server';
@@ -9,12 +9,16 @@ import {
 } from '@/features/quick-request/api/notifications.server';
 import {
   buildQuickRequestDetail,
-  canViewQuickRequest,
   getQuickRequestByNo,
   isQuickRequestLocked,
+  resolveQuickRequestAccess,
   updateQuickRequestIfStatus,
   type QuickRequestRow
 } from '@/features/quick-request/api/workflow.server';
+import {
+  buildQuickRequestChangedLabels,
+  type QuickRequestFieldChange
+} from '@/features/quick-request/lib/quick-notification-copy';
 import { refineQuickRequestCrossFields } from '@/features/quick-request/schemas/quick-request-notify';
 import {
   QUICK_REQUEST_MESSAGES,
@@ -56,11 +60,13 @@ export async function GET(_request: Request, { params }: Params) {
 
   try {
     const row = await getQuickRequestByNo(requestNo);
-    if (!row || !canViewQuickRequest(session.profile, row)) {
+    // plan 101 D-4 — 활성 초대 참여자는 읽기 전용(permissions 전부 false + isParticipant)
+    const access = row ? await resolveQuickRequestAccess(session.profile, row) : null;
+    if (!row || !access?.canView) {
       return NextResponse.json(quickErrorBody(QUICK_REQUEST_MESSAGES.notFound), { status: 404 });
     }
 
-    const data = await buildQuickRequestDetail(session.profile, row);
+    const data = await buildQuickRequestDetail(session.profile, row, { isParticipant: access.isParticipant });
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('[quick-request] detail failed:', error);
@@ -160,7 +166,11 @@ function buildPatchPlan(row: QuickRequestRow, body: QuickRequestPatchBody): Patc
   return { ok: true, updates, changedFields };
 }
 
-/** 동방·admin 부분 수정. 요청자 403(AC-22) · approved/cancelled 409(AC-27) · finalAmount는 dispatched만 */
+/**
+ * 동방·admin 부분 수정. 요청자 403(89 AC-22) · approved/cancelled 409(89 AC-27) · finalAmount는 dispatched만.
+ * 알림(plan 94 D-11): `finalAmount`만 바뀌면 `final_amount_set`(92) · 그 밖의 항목이 1개라도 바뀌면 요청자에게 `updated`
+ * (type `quick_request.requester_event` 재사용 · `quick_request_event='updated'`). 둘 다 바뀌면 두 알림. 모두 `after()`에서(D-2).
+ */
 export async function PATCH(request: Request, { params }: Params) {
   const requestId = createRequestId();
   const { requestNo: rawRequestNo } = await params;
@@ -302,16 +312,37 @@ export async function PATCH(request: Request, { params }: Params) {
     });
   }
 
+  const actorName = profile.full_name?.trim() || profile.email;
+  const latest = updated;
+  const otherChanges: QuickRequestFieldChange[] = plan.changedFields
+    .filter((key) => key !== 'finalAmount')
+    .map((key) => ({ key, before: row[PATCH_COLUMN[key]], after: plan.updates[PATCH_COLUMN[key]] }));
+
+  // plan 94 D-2 — 알림은 응답을 돌려준 뒤 after()에서. 실패는 safeNotify가 console.error만
   if (finalAmountChanged) {
-    const actorName = profile.full_name?.trim() || profile.email;
-    const latest = updated;
-    await safeNotify('final_amount_set', () =>
-      notifyQuickRequestEvent({
-        row: latest,
-        event: 'final_amount_set',
-        actorUserId: profile.user_id,
-        actorName
-      })
+    after(() =>
+      safeNotify('final_amount_set', () =>
+        notifyQuickRequestEvent({
+          row: latest,
+          event: 'final_amount_set',
+          actorUserId: profile.user_id,
+          actorName
+        })
+      )
+    );
+  }
+  if (otherChanges.length > 0) {
+    const changedLabels = buildQuickRequestChangedLabels(otherChanges);
+    after(() =>
+      safeNotify('updated', () =>
+        notifyQuickRequestEvent({
+          row: latest,
+          event: 'updated',
+          actorUserId: profile.user_id,
+          actorName,
+          changedLabels
+        })
+      )
     );
   }
 

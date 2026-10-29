@@ -14,9 +14,10 @@ type RoutableNotification = {
  * FE 클릭과 푸시 payload `url` 양쪽이 이 함수를 쓴다. 규칙 없는 타입은 `/dashboard/notifications`.
  */
 export function resolveNotificationRoute(notification: RoutableNotification): string {
-  const actions = getNotificationActions({ type: notification.type } as Notification);
-  const actionId = actions[0]?.id;
   const metadata = notification.metadata ?? {};
+  // plan 101 — 초대 알림(`requester_event` + `quick_request_event='participant_invited'`)은 metadata로 「채팅 보기」를 고른다
+  const actions = getNotificationActions({ type: notification.type, metadata } as Notification);
+  const actionId = actions[0]?.id;
   let route: string | undefined = actionId ? NOTIFICATION_ACTION_ROUTES[actionId] : undefined;
 
   if (actionId === 'view-announcement' && typeof metadata.announcement_id === 'number') {

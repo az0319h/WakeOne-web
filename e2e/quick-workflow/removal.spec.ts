@@ -62,7 +62,7 @@ test.describe('plan 92 A. 카톡 흔적 제거', () => {
         () =>
           callAs('dongbang', (api) =>
             api.post(`/api/quick-request/${no}/dispatch`, {
-              data: { estimatedAmount: 20000, vehicleInfo: '오토바이 8514', driverName: '홍길동', driverPhone: '01012345678' }
+              data: { estimatedAmount: 20000, vehicleInfo: '21마 6543', driverName: '홍길동', driverPhone: '01012345678' }
             })
           )
       ],

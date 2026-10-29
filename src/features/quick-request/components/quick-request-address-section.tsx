@@ -50,11 +50,14 @@ type QuickRequestAddressSectionProps = {
   form: QuickRequestOrderForm;
   /** 주소 검색 Dialog 「최근 이용 내역」 탭 (기본 true · plan 89 수정 Sheet는 false) */
   showRecentAddresses?: boolean;
+  /** plan 99 — 주소 검색 Dialog 「장소 검색」 탭 (기본 false · 수정 Sheet는 전달하지 않음) */
+  placeSearchEnabled?: boolean;
 };
 
 export function QuickRequestAddressSection({
   form,
-  showRecentAddresses = true
+  showRecentAddresses = true,
+  placeSearchEnabled = false
 }: QuickRequestAddressSectionProps) {
   return (
     <form.AppField name='stopovers' mode='array'>
@@ -84,6 +87,7 @@ export function QuickRequestAddressSection({
                   fieldPrefix='origin'
                   idPrefix='quick-request-origin'
                   showRecent={showRecentAddresses}
+                  placeSearchEnabled={placeSearchEnabled}
                 />
               </QuickRequestRouteBlock>
 
@@ -111,6 +115,7 @@ export function QuickRequestAddressSection({
                     fieldPrefix={`stopovers[${index}]`}
                     idPrefix={`quick-request-stopover-${index}`}
                     showRecent={showRecentAddresses}
+                    placeSearchEnabled={placeSearchEnabled}
                   />
                 </QuickRequestRouteBlock>
               ))}
@@ -121,6 +126,7 @@ export function QuickRequestAddressSection({
                   fieldPrefix='destination'
                   idPrefix='quick-request-destination'
                   showRecent={showRecentAddresses}
+                  placeSearchEnabled={placeSearchEnabled}
                 />
               </QuickRequestRouteBlock>
             </Card>

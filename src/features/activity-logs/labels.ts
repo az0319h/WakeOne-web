@@ -83,6 +83,11 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "quick_request.approve": "퀵 요청 승인",
   "quick_request.cancel": "퀵 요청 취소",
   "quick_request.message_create": "퀵 대화 메시지 전송",
+  "quick_request.message_attachment_prepare": "퀵 대화 첨부 준비",
+  "quick_request.message_attachment_delete": "퀵 대화 첨부 취소",
+  "quick_request.participant_add": "퀵 대화 참여자 추가",
+  "quick_request.participant_remove": "퀵 대화 참여자 제외",
+  "quick_request.chat_ai_suggest": "퀵 대화 답장 추천",
   // legacy — plan 92에서 Route 삭제. 과거 로그 행 표시용
   "quick_request.openchat_resend": "퀵 오픈채팅 재발송",
   "workflow.document_create": "워크플로우 문서 작성",
@@ -178,6 +183,12 @@ export const METADATA_LABELS: Record<string, string> = {
   attempted: "발송 시도",
   sent: "발송 성공",
   removed: "만료 기기 삭제",
+  // plan 100 — 퀵 대화 답장 추천
+  source: "추천 출처",
+  message_count: "전송 메시지 수",
+  latency_ms: "응답 시간(ms)",
+  input_tokens: "입력 토큰",
+  output_tokens: "출력 토큰",
 };
 
 /** plan 88 — activity target_type 한국어 라벨 */

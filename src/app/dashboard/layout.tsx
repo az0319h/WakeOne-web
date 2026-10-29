@@ -17,6 +17,8 @@ import { AccessDeniedToast } from "@/components/dashboard/access-denied-toast";
 import { ProfileStatusRealtime } from "@/features/auth/components/profile-status-realtime";
 import { NotificationsRealtime } from "@/features/notifications/components/notifications-realtime";
 import { QuickChatUnreadRealtime } from "@/features/quick-request/components/chat/quick-chat-unread-realtime";
+import { canViewAllQuickRequests } from "@/features/auth/api/quick-access.server";
+import { resolveQuickScopeTopic } from "@/features/quick-request/lib/quick-realtime-topics";
 import { IosInstallBanner } from "@/features/notifications/components/ios-install-banner";
 import { AppBadgeSync } from "@/features/notifications/components/app-badge-sync";
 import { AttachmentLightboxProvider } from "@/features/attachments/components/attachment-lightbox-provider";
@@ -90,7 +92,13 @@ export default async function DashboardLayout({
                   </Suspense>
                   <ProfileStatusRealtime profile={profile} />
                   <NotificationsRealtime profile={profile} />
-                  <QuickChatUnreadRealtime profile={profile} />
+                  <QuickChatUnreadRealtime
+                    profile={profile}
+                    topic={resolveQuickScopeTopic({
+                      scope: canViewAllQuickRequests(profile) ? "all" : "own",
+                      userId: profile.user_id,
+                    })}
+                  />
                   <Suspense fallback={null}>
                     <AppBadgeSync />
                   </Suspense>

@@ -38,8 +38,9 @@ export default async function ActivityLogListing() {
 
     if (isAdmin) {
       void queryClient.prefetchQuery({
-        ...usersQueryOptions({ limit: 50 }),
-        queryFn: () => getUsersServer({ limit: 50 })
+        // plan 95 D-2② — log-user-combobox 초기(search 없음) 쿼리 키와 동일
+        ...usersQueryOptions({ limit: 50, includeDongbang: true }),
+        queryFn: () => getUsersServer({ limit: 50, includeDongbang: true })
       });
     }
   }

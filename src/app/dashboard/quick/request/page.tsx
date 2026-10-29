@@ -1,15 +1,17 @@
 import { HydrationBoundary, dehydrate, type QueryClient } from '@tanstack/react-query';
 import PageContainer from '@/components/layout/page-container';
 import { getSessionProfile } from '@/features/auth/api/session.server';
+import { isPlaceSearchConfigured } from '@/features/quick-request/api/places.server';
 import {
   quickRequestNotesQueryOptions,
-  quickRequestRecentAddressesQueryOptions
+  quickRequestRecentAddressesInfiniteQueryOptions
 } from '@/features/quick-request/api/queries';
 import {
   listQuickRequestNotes,
   listQuickRequestRecentAddresses
 } from '@/features/quick-request/api/service.server';
 import { QuickRequestPageContent } from '@/features/quick-request/components/quick-request-page-content';
+import { QUICK_REQUEST_RECENT_ADDRESS_DIRECTIONS } from '@/features/quick-request/schemas/quick-request-recent-address';
 import { getQueryClient } from '@/lib/query-client';
 import { redirect } from 'next/navigation';
 
@@ -17,6 +19,7 @@ import { redirect } from 'next/navigation';
  * 서버 prefetch 실패(테이블 미적용·DB 오류)는 삼킨다.
  * 실패한 query는 dehydrate 대상이 아니므로 클라이언트가 다시 조회하고,
  * 그 결과는 섹션별 오류 경계가 처리한다 — 페이지 전체가 죽지 않는다.
+ * plan 97 D-9 — 최근 주소는 direction별 무한 목록 첫 페이지(10건)만 prefetch (클라이언트 키와 동일 · `initialPageParam: null`).
  */
 async function prefetchQuickRequestData(queryClient: QueryClient, userId: string) {
   await Promise.all([
@@ -24,10 +27,12 @@ async function prefetchQuickRequestData(queryClient: QueryClient, userId: string
       ...quickRequestNotesQueryOptions(),
       queryFn: () => listQuickRequestNotes(userId)
     }),
-    queryClient.prefetchQuery({
-      ...quickRequestRecentAddressesQueryOptions(),
-      queryFn: () => listQuickRequestRecentAddresses(userId)
-    })
+    ...QUICK_REQUEST_RECENT_ADDRESS_DIRECTIONS.map((direction) =>
+      queryClient.prefetchInfiniteQuery({
+        ...quickRequestRecentAddressesInfiniteQueryOptions(direction),
+        queryFn: () => listQuickRequestRecentAddresses(userId, { direction })
+      })
+    )
   ]).catch(() => undefined);
 }
 
@@ -62,6 +67,7 @@ export default async function QuickRequestPage() {
             full_name: profile.full_name,
             phone: profile.phone
           }}
+          placeSearchEnabled={isPlaceSearchConfigured()}
         />
       </HydrationBoundary>
     </PageContainer>

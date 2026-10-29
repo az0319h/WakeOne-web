@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import type { QuickRequestDetail } from '../../api/types';
 import { QUICK_CHAT_TEXT } from '../chat/quick-chat-constants';
+import { QuickChatParticipantsButton } from '../chat/quick-chat-participants-button';
 import { QuickRequestConversation } from '../chat/quick-request-conversation';
 import { useVisualViewportHeight } from '../chat/use-visual-viewport-height';
 import { QuickRequestStatusBadge } from '../quick-request-status-badge';
@@ -53,6 +54,8 @@ export function QuickRequestDetailChatView({ detail, onBack }: QuickRequestDetai
           </span>
           <QuickRequestStatusBadge status={detail.status} />
         </div>
+        {/* plan 101 U-1 — 「참여자 N」 */}
+        <QuickChatParticipantsButton requestNo={detail.requestNo} variant='detail' className='ml-auto' />
       </div>
       <QuickRequestConversation
         requestNo={detail.requestNo}

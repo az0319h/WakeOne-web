@@ -22,6 +22,7 @@ interface UsersTableBodyProps {
     systemRoles?: string;
     statuses?: string;
     sort?: string;
+    includeDongbang: true;
   };
   profileUserId: string | undefined;
   onProfileUserSync: (user: User) => void;
@@ -103,7 +104,9 @@ export function UsersTable() {
     ...(params.name && { search: params.name }),
     ...(params.system_role && { systemRoles: params.system_role }),
     ...(params.status && { statuses: params.status }),
-    ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
+    ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) }),
+    // plan 95 D-2① — user-listing.tsx 서버 prefetch 키와 동일
+    includeDongbang: true as const
   };
 
   const querySignature = JSON.stringify(filters);

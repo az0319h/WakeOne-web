@@ -8,7 +8,7 @@ type QuickChatReadOnlyNoticeProps = {
   reason: QuickChatReadOnlyReason;
 };
 
-/** 입력 영역 자리의 읽기 전용 안내 한 줄 (U-7 · AC-05 · AC-07) */
+/** 입력 영역 자리의 읽기 전용 안내 한 줄 (plan 93 U-7 · AC-05) — plan 94 D-12: `logistics`만 남음(승인·취소 건도 대화 가능) */
 export function QuickChatReadOnlyNotice({ reason }: QuickChatReadOnlyNoticeProps) {
   return (
     <div

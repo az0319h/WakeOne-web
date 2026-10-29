@@ -7,11 +7,10 @@ import {
   canViewAllQuickRequests,
   isQuickAdmin
 } from '@/features/auth/api/quick-access.server';
-import { getKstTodayDateString } from '@/lib/kst';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import { buildQuickRouteSummary } from '../lib/quick-request-route-label';
+import type { QuickRange } from '../lib/quick-request-range';
 import {
-  QUICK_REQUEST_DASHBOARD_DAYS,
   QUICK_REQUEST_EDITABLE_STATUSES,
   QUICK_REQUEST_LIST_DEFAULT_LIMIT,
   QUICK_REQUEST_LIST_MAX_LIMIT,
@@ -23,11 +22,11 @@ import type {
   QuickRequestActorRef,
   QuickRequestDestinationDetail,
   QuickRequestDetail,
-  QuickRequestListFilters,
   QuickRequestListRow,
   QuickRequestLocation,
   QuickRequestOriginDetail,
   QuickRequestPermissions,
+  QuickRequestRangeEcho,
   QuickRequestRowActions,
   QuickRequestStatusCounts,
   QuickRequestSummary,
@@ -40,8 +39,8 @@ import type {
  */
 
 const TABLE = 'quick_requests';
-/** 7일 window 안전 상한 (in-memory 검색·페이지) */
-const WINDOW_ROW_LIMIT = 2_000;
+/** PostgREST: offset이 전체 건수를 넘으면 416 (빈 페이지로 처리) */
+const RANGE_NOT_SATISFIABLE = 'PGRST103';
 
 export const QUICK_REQUEST_COLUMNS =
   'id, request_no, status, requester_user_id, requester_name, requester_phone, goods_size, item_description, vehicle_types, vehicle_other_text, vehicle_count, freight_payment, origin, stopovers, destination, requested_at, estimated_amount, final_amount, dispatch_vehicle_info, driver_name, driver_phone, accepted_at, accepted_by, dispatched_at, dispatched_by, final_amount_set_at, final_amount_set_by, approved_at, approved_by, cancelled_at, cancelled_by, cancel_reason, created_at, updated_at';
@@ -106,8 +105,62 @@ export function buildQuickRequestViewer(profile: QuickViewerProfile): QuickReque
   };
 }
 
+/** 규칙만으로 판정되는 조회 권한 (요청자 본인 · viewer-all). 초대 참여자는 `resolveQuickRequestAccess`(DB 조회)로 확인한다 */
 export function canViewQuickRequest(profile: QuickViewerProfile, row: QuickRequestRow): boolean {
   return row.requester_user_id === profile.user_id || canViewAllQuickRequests(profile);
+}
+
+export type QuickRequestAccess = {
+  canView: boolean;
+  /** plan 101 — 활성 초대 참여자(`quick_request_participants.removed_at null`) · 요청자·viewer-all이면 false */
+  isParticipant: boolean;
+};
+
+/** 활성 초대 참여자 여부 (SQL 97 `private.is_quick_request_participant`와 같은 조건 · service role) */
+export async function isActiveQuickRequestParticipant(userId: string, requestId: string): Promise<boolean> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('quick_request_participants')
+    .select('id')
+    .eq('quick_request_id', requestId)
+    .eq('user_id', userId)
+    .is('removed_at', null)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return Boolean(data);
+}
+
+/** 내가 활성 참여자인 건 id 전체 (대시보드·대화 목록 범위 · 부분 인덱스 idx_qrp_user_active) */
+export async function listParticipantRequestIds(userId: string): Promise<string[]> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('quick_request_participants')
+    .select('quick_request_id')
+    .eq('user_id', userId)
+    .is('removed_at', null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data ?? []).map((row) => row.quick_request_id as string);
+}
+
+/**
+ * plan 101 D-11 — 조회 권한 = 요청자 OR viewer-all OR 활성 초대 참여자 (`private.can_view_quick_request`와 같은 규칙).
+ * 규칙으로 통과하면 DB를 보지 않는다. `isParticipant`는 규칙 통과자에게는 항상 false(요청자·admin은 초대 대상이 아니다).
+ */
+export async function resolveQuickRequestAccess(
+  profile: QuickViewerProfile,
+  row: QuickRequestRow
+): Promise<QuickRequestAccess> {
+  if (canViewQuickRequest(profile, row)) {
+    return { canView: true, isParticipant: false };
+  }
+  const isParticipant = await isActiveQuickRequestParticipant(profile.user_id, row.id);
+  return { canView: isParticipant, isParticipant };
 }
 
 export function isQuickRequestLocked(status: QuickRequestStatus): boolean {
@@ -126,11 +179,26 @@ export function canApproveRole(profile: QuickViewerProfile, row: QuickRequestRow
 
 export function buildQuickRequestPermissions(
   profile: QuickViewerProfile,
-  row: QuickRequestRow
+  row: QuickRequestRow,
+  isParticipant = false
 ): QuickRequestPermissions {
   const operate = canOperateQuickRequests(profile);
   const isRequester = row.requester_user_id === profile.user_id;
   const editable = isQuickRequestEditableStatus(row.status);
+
+  // plan 101 D-4 — 초대 참여자는 읽기·대화만 (permissions 전부 false + isParticipant)
+  if (isParticipant) {
+    return {
+      canEdit: false,
+      canAccept: false,
+      canDispatch: false,
+      canSetFinal: false,
+      canApprove: false,
+      canCancel: false,
+      canOperate: false,
+      isParticipant: true
+    };
+  }
 
   return {
     canEdit: operate && editable,
@@ -139,7 +207,8 @@ export function buildQuickRequestPermissions(
     canSetFinal: operate && row.status === 'dispatched',
     canApprove: canApproveRole(profile, row) && row.status === 'dispatched',
     canCancel: (operate && editable) || (isRequester && row.status === 'requested'),
-    canOperate: operate
+    canOperate: operate,
+    isParticipant: false
   };
 }
 
@@ -199,11 +268,13 @@ function toDestinationDetail(value: JsonLocation): QuickRequestDestinationDetail
 export function toQuickRequestListRow(
   profile: QuickViewerProfile,
   row: QuickRequestRow,
-  unreadMessageCount = 0
+  unreadMessageCount = 0,
+  isParticipant = false
 ): QuickRequestListRow {
   return {
     id: row.id,
     unreadMessageCount,
+    isParticipant,
     requestNo: row.request_no,
     status: row.status,
     requestedAt: row.requested_at,
@@ -216,28 +287,14 @@ export function toQuickRequestListRow(
     vehicleCount: row.vehicle_count,
     estimatedAmount: row.estimated_amount,
     finalAmount: row.final_amount,
-    actions: buildRowActions(profile, row)
+    actions: isParticipant
+      ? { accept: false, dispatch: false, setFinal: false, approve: false }
+      : buildRowActions(profile, row)
   };
 }
 
 // ---------------------------------------------------------------------------
-// 기간 (KST 오늘 포함 7일)
-// ---------------------------------------------------------------------------
-
-export function getQuickDashboardRange(now = new Date()): {
-  fromDate: string;
-  toDate: string;
-  fromIso: string;
-} {
-  const toDate = getKstTodayDateString(now);
-  const [year, month, day] = toDate.split('-').map(Number);
-  const from = new Date(Date.UTC(year, month - 1, day - (QUICK_REQUEST_DASHBOARD_DAYS - 1)));
-  const fromDate = from.toISOString().slice(0, 10);
-  return { fromDate, toDate, fromIso: `${fromDate}T00:00:00+09:00` };
-}
-
-// ---------------------------------------------------------------------------
-// 조회
+// 조회 (plan 97 D-3 — 기간·상태·검색·권한을 DB에서 필터 + `range()` + `count:'exact'`)
 // ---------------------------------------------------------------------------
 
 export async function getQuickRequestByNo(requestNo: string): Promise<QuickRequestRow | null> {
@@ -255,87 +312,141 @@ export async function getQuickRequestByNo(requestNo: string): Promise<QuickReque
   return (data as QuickRequestRow | null) ?? null;
 }
 
-/** 최근 7일(KST) window 행 (plan 93 대화 목록도 같은 범위를 쓴다) */
-export async function listWindowRows(profile: QuickViewerProfile): Promise<QuickRequestRow[]> {
-  const { fromIso } = getQuickDashboardRange();
-  const supabase = getServiceRoleClient();
-  let query = supabase
-    .from(TABLE)
-    .select(QUICK_REQUEST_COLUMNS)
-    .gte('requested_at', fromIso)
-    .order('requested_at', { ascending: false })
-    .order('request_seq', { ascending: false })
-    .limit(WINDOW_ROW_LIMIT);
-
-  if (!canViewAllQuickRequests(profile)) {
-    query = query.eq('requester_user_id', profile.user_id);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (data ?? []) as QuickRequestRow[];
-}
-
 function emptyCounts(): QuickRequestStatusCounts {
   return Object.fromEntries(QUICK_REQUEST_STATUSES.map((status) => [status, 0])) as QuickRequestStatusCounts;
-}
-
-function countByStatus(rows: QuickRequestRow[]): QuickRequestStatusCounts {
-  const counts = emptyCounts();
-  for (const row of rows) {
-    counts[row.status] += 1;
-  }
-  return counts;
 }
 
 export function normalizeQuickRequestSearch(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-/** 요청번호·요청자 이름·출발/경유/도착 주소 부분 일치 (plan 93 대화 목록 `q`도 같은 규칙) */
-export function matchesQuickRequestSearch(row: QuickRequestRow, keyword: string): boolean {
-  const locations = [row.origin, row.destination, ...(Array.isArray(row.stopovers) ? row.stopovers : [])];
-  const haystack = [
-    row.request_no,
-    row.requester_name,
-    ...locations.flatMap((location) => [location?.roadAddress ?? '', location?.detailAddress ?? ''])
-  ]
-    .join('\n')
-    .toLowerCase();
-  return haystack.includes(keyword);
+/** LIKE 메타문자 이스케이프 (`\` → `\\`, `%` → `\%`, `_` → `\_`) — Postgres 기본 escape 문자는 `\` */
+export function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+export function toQuickRequestRangeEcho(range: QuickRange): QuickRequestRangeEcho {
+  return { kind: range.kind, from: range.from, to: range.to };
+}
+
+export type QuickRequestListQuery = {
+  range: QuickRange;
+  status?: QuickRequestStatus | null;
+  search?: string | null;
+  page?: number;
+  limit?: number;
+};
+
+type QuickRequestFilterParams = {
+  range: QuickRange;
+  status?: QuickRequestStatus | null;
+  keyword?: string;
+  /** plan 101 — 내가 활성 참여자인 건 id (비-viewer-all만 사용 · `listParticipantRequestIds`) */
+  participantRequestIds?: readonly string[];
+};
+
+type PostgrestFilter =
+  | { kind: 'filter'; column: string; operator: string; value: string }
+  | { kind: 'or'; filters: string };
+
+/**
+ * 기간(KST · `requested_at`) + 조회 범위(본인 | viewer-all) + 상태 + 검색 → PostgREST 필터 목록.
+ * 검색은 SQL 95 generated column `search_text`(요청번호·요청자·출발/경유/도착 도로명+상세 · lower) `ilike` — OQ-1 결정.
+ * plan 101 D-11 — 비-viewer-all은 `requester_user_id = me OR id in (활성 참여 건)`.
+ */
+function buildQuickRequestFilters(
+  profile: QuickViewerProfile,
+  params: QuickRequestFilterParams
+): PostgrestFilter[] {
+  const filters: PostgrestFilter[] = [];
+  if (params.range.fromIso) {
+    filters.push({ kind: 'filter', column: 'requested_at', operator: 'gte', value: params.range.fromIso });
+  }
+  if (params.range.toIso) {
+    filters.push({ kind: 'filter', column: 'requested_at', operator: 'lt', value: params.range.toIso });
+  }
+  if (!canViewAllQuickRequests(profile)) {
+    const participantIds = params.participantRequestIds ?? [];
+    if (participantIds.length > 0) {
+      filters.push({
+        kind: 'or',
+        filters: `requester_user_id.eq.${profile.user_id},id.in.(${participantIds.join(',')})`
+      });
+    } else {
+      filters.push({ kind: 'filter', column: 'requester_user_id', operator: 'eq', value: profile.user_id });
+    }
+  }
+  if (params.status) filters.push({ kind: 'filter', column: 'status', operator: 'eq', value: params.status });
+  if (params.keyword) {
+    filters.push({
+      kind: 'filter',
+      column: 'search_text',
+      operator: 'ilike',
+      value: `%${escapeLikePattern(params.keyword)}%`
+    });
+  }
+  return filters;
+}
+
+/** 비-viewer-all 사용자만 참여 건 id를 조회한다 (viewer-all은 범위 필터가 없다) */
+async function resolveParticipantRequestIds(profile: QuickViewerProfile): Promise<string[]> {
+  return canViewAllQuickRequests(profile) ? [] : listParticipantRequestIds(profile.user_id);
+}
+
+export function clampQuickRequestListLimit(limit: number | undefined): number {
+  return Math.min(Math.max(limit ?? QUICK_REQUEST_LIST_DEFAULT_LIMIT, 1), QUICK_REQUEST_LIST_MAX_LIMIT);
 }
 
 export async function listQuickRequestsForViewer(
   profile: QuickViewerProfile,
-  filters: QuickRequestListFilters
+  filters: QuickRequestListQuery
 ): Promise<{
   rows: QuickRequestListRow[];
   total: number;
   page: number;
   limit: number;
-  counts: QuickRequestStatusCounts;
+  range: QuickRequestRangeEcho;
   viewer: QuickRequestViewer;
 }> {
-  const windowRows = await listWindowRows(profile);
-  const counts = countByStatus(windowRows);
-
   const keyword = filters.search ? normalizeQuickRequestSearch(filters.search) : '';
-  const filtered = windowRows.filter(
-    (row) =>
-      (!filters.status || row.status === filters.status) &&
-      (!keyword || matchesQuickRequestSearch(row, keyword))
-  );
-
-  const limit = Math.min(
-    Math.max(filters.limit ?? QUICK_REQUEST_LIST_DEFAULT_LIMIT, 1),
-    QUICK_REQUEST_LIST_MAX_LIMIT
-  );
+  const limit = clampQuickRequestListLimit(filters.limit);
   const page = Math.max(filters.page ?? 1, 1);
   const start = (page - 1) * limit;
-  const pageRows = filtered.slice(start, start + limit);
+  const supabase = getServiceRoleClient();
+  const participantRequestIds = await resolveParticipantRequestIds(profile);
+  const participantSet = new Set(participantRequestIds);
+
+  let query = supabase.from(TABLE).select(QUICK_REQUEST_COLUMNS, { count: 'exact' });
+  for (const filter of buildQuickRequestFilters(profile, {
+    range: filters.range,
+    status: filters.status,
+    keyword,
+    participantRequestIds
+  })) {
+    query = filter.kind === 'or' ? query.or(filter.filters) : query.filter(filter.column, filter.operator, filter.value);
+  }
+  const { data, error, count } = await query
+    .order('requested_at', { ascending: false })
+    .order('request_seq', { ascending: false })
+    .range(start, start + limit - 1);
+
+  let pageRows = (data ?? []) as QuickRequestRow[];
+  let total = count ?? 0;
+
+  if (error) {
+    if (error.code !== RANGE_NOT_SATISFIABLE) {
+      throw new Error(error.message);
+    }
+    // offset이 전체 건수를 넘는 페이지 — 빈 행 + 정확한 total
+    pageRows = [];
+    total = await countQuickRequests(profile, {
+      range: filters.range,
+      status: filters.status,
+      keyword,
+      participantRequestIds
+    });
+  }
+
   // plan 93 — 화면에 있는 건 id만 RPC 1회 (안 읽은 수 집계 비용 완화 ②)
   const unread = await fetchQuickRequestUnreadCounts(
     profile.user_id,
@@ -343,23 +454,56 @@ export async function listQuickRequestsForViewer(
   );
 
   return {
-    rows: pageRows.map((row) => toQuickRequestListRow(profile, row, unread.get(row.id) ?? 0)),
-    total: filtered.length,
+    rows: pageRows.map((row) =>
+      toQuickRequestListRow(
+        profile,
+        row,
+        unread.get(row.id) ?? 0,
+        participantSet.has(row.id) && row.requester_user_id !== profile.user_id
+      )
+    ),
+    total,
     page,
     limit,
-    counts,
+    range: toQuickRequestRangeEcho(filters.range),
     viewer: buildQuickRequestViewer(profile)
   };
 }
 
+async function countQuickRequests(
+  profile: QuickViewerProfile,
+  params: QuickRequestFilterParams
+): Promise<number> {
+  const supabase = getServiceRoleClient();
+  let query = supabase.from(TABLE).select('id', { count: 'exact', head: true });
+  for (const filter of buildQuickRequestFilters(profile, params)) {
+    query = filter.kind === 'or' ? query.or(filter.filters) : query.filter(filter.column, filter.operator, filter.value);
+  }
+  const { count, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return count ?? 0;
+}
+
+/** 카드 숫자 — 선택 기간 기준 5상태 count (상태별 head count 병렬 · status·search 무관) */
 export async function getQuickRequestSummaryForViewer(
-  profile: QuickViewerProfile
+  profile: QuickViewerProfile,
+  range: QuickRange
 ): Promise<QuickRequestSummary> {
-  const windowRows = await listWindowRows(profile);
-  const { fromDate, toDate } = getQuickDashboardRange();
+  const counts = emptyCounts();
+  const participantRequestIds = await resolveParticipantRequestIds(profile);
+  const results = await Promise.all(
+    QUICK_REQUEST_STATUSES.map((status) => countQuickRequests(profile, { range, status, participantRequestIds }))
+  );
+  QUICK_REQUEST_STATUSES.forEach((status, index) => {
+    counts[status] = results[index];
+  });
+
   return {
-    counts: countByStatus(windowRows),
-    range: { fromDate, toDate },
+    counts,
+    range: { kind: range.kind, fromDate: range.from, toDate: range.to },
     viewer: buildQuickRequestViewer(profile)
   };
 }
@@ -388,9 +532,10 @@ async function fetchProfileNames(userIds: string[]): Promise<Map<string, string>
 
 export async function buildQuickRequestDetail(
   profile: QuickViewerProfile,
-  row: QuickRequestRow
+  row: QuickRequestRow,
+  options: { isParticipant?: boolean } = {}
 ): Promise<QuickRequestDetail> {
-  const permissions = buildQuickRequestPermissions(profile, row);
+  const permissions = buildQuickRequestPermissions(profile, row, options.isParticipant ?? false);
   const names = await fetchProfileNames(
     [
       row.accepted_by,

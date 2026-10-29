@@ -1,8 +1,20 @@
 import 'server-only';
 
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
-import type { QuickRequestLocation, QuickRequestNote, QuickRequestRecentAddress } from './types';
-import { QUICK_REQUEST_RECENT_ADDRESSES_MAX_COUNT } from '../schemas/quick-request-recent-address';
+import type {
+  QuickRequestNote,
+  QuickRequestRecentAddress,
+  QuickRequestRecentAddressItem
+} from './types';
+import {
+  QUICK_REQUEST_RECENT_ADDRESSES_MAX_LIMIT,
+  QUICK_REQUEST_RECENT_ADDRESSES_PAGE_SIZE,
+  type QuickRequestRecentAddressDirection
+} from '../schemas/quick-request-recent-address';
+import {
+  encodeRecentAddressCursor,
+  type QuickRecentAddressCursor
+} from './cursor.server';
 
 /**
  * plan 87 — 퀵 요청 특이사항 칩 · 최근 주소 서버 데이터 접근.
@@ -19,6 +31,8 @@ type DbError = { code?: string; message: string } | null;
 type NoteRow = { id: number; label: string };
 
 type RecentAddressRow = {
+  id: number;
+  direction: QuickRequestRecentAddressDirection;
   road_address: string;
   detail_address: string;
   contact_name: string;
@@ -169,47 +183,87 @@ export async function deleteQuickRequestNote(
   return { ok: true, id: Number(row.id), label: row.label };
 }
 
+export function clampQuickRequestRecentAddressesLimit(limit: number | undefined): number {
+  return Math.min(
+    Math.max(limit ?? QUICK_REQUEST_RECENT_ADDRESSES_PAGE_SIZE, 1),
+    QUICK_REQUEST_RECENT_ADDRESSES_MAX_LIMIT
+  );
+}
+
+/**
+ * plan 97 D-9 — direction별 커서 목록 (`last_used_at desc, id desc` · SQL 95 인덱스 `idx_qrra_user_dir_last_used`).
+ * limit+1로 다음 페이지 유무를 판정하고, 다음 페이지가 있으면 마지막 행의 정렬 키를 opaque 커서로 돌려준다.
+ */
 export async function listQuickRequestRecentAddresses(
-  userId: string
-): Promise<QuickRequestRecentAddress[]> {
+  userId: string,
+  params: {
+    direction: QuickRequestRecentAddressDirection;
+    cursor?: QuickRecentAddressCursor | null;
+    limit?: number;
+  }
+): Promise<{ addresses: QuickRequestRecentAddress[]; nextCursor: string | null }> {
+  const limit = clampQuickRequestRecentAddressesLimit(params.limit);
   const supabase = getServiceRoleClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from(RECENT_TABLE)
-    .select('road_address, detail_address, contact_name, contact_phone, last_used_at')
+    .select('id, direction, road_address, detail_address, contact_name, contact_phone, last_used_at')
     .eq('user_id', userId)
+    .eq('direction', params.direction);
+
+  if (params.cursor) {
+    // keyset: (last_used_at, id) < (cursor.at, cursor.id) — 타임스탬프는 `.`·`:` 때문에 따옴표로 감싼다
+    const at = params.cursor.lastUsedAt;
+    query = query.or(`last_used_at.lt."${at}",and(last_used_at.eq."${at}",id.lt.${params.cursor.id})`);
+  }
+
+  const { data, error } = await query
     .order('last_used_at', { ascending: false })
     .order('id', { ascending: false })
-    .limit(QUICK_REQUEST_RECENT_ADDRESSES_MAX_COUNT);
+    .limit(limit + 1);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return ((data ?? []) as RecentAddressRow[]).map((row) => ({
-    roadAddress: row.road_address,
-    detailAddress: row.detail_address,
-    contactName: row.contact_name,
-    contactPhone: row.contact_phone,
-    lastUsedAt: row.last_used_at
-  }));
+  const rows = (data ?? []) as RecentAddressRow[];
+  const pageRows = rows.slice(0, limit);
+  const last = pageRows[pageRows.length - 1];
+  const nextCursor =
+    rows.length > limit && last
+      ? encodeRecentAddressCursor({ lastUsedAt: last.last_used_at, id: Number(last.id) })
+      : null;
+
+  return {
+    addresses: pageRows.map((row) => ({
+      id: Number(row.id),
+      direction: row.direction,
+      roadAddress: row.road_address,
+      detailAddress: row.detail_address,
+      contactName: row.contact_name,
+      contactPhone: row.contact_phone,
+      lastUsedAt: row.last_used_at
+    })),
+    nextCursor
+  };
 }
 
 /**
- * upsert(도로명+상세 dedupe) + 사용자별 10개 prune — RPC 한 트랜잭션 (service_role 전용).
- * `locations` 앞쪽 항목이 더 최근으로 기록된다. 반환값은 upsert된 고유 주소 수.
+ * upsert(direction+도로명+상세 dedupe) — RPC 한 트랜잭션 (service_role 전용 · SQL 95 · prune 없음 = 상한 없음).
+ * `items` 앞쪽 항목이 더 최근으로 기록된다. 반환값은 upsert된 고유 주소 수.
  */
 export async function recordQuickRequestRecentAddresses(
   userId: string,
-  locations: QuickRequestLocation[]
+  items: QuickRequestRecentAddressItem[]
 ): Promise<number> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase.rpc('record_quick_request_recent_addresses', {
     p_user_id: userId,
-    p_items: locations.map((location) => ({
-      roadAddress: location.roadAddress,
-      detailAddress: location.detailAddress,
-      contactName: location.contactName,
-      contactPhone: location.contactPhone
+    p_items: items.map((item) => ({
+      direction: item.direction,
+      roadAddress: item.roadAddress,
+      detailAddress: item.detailAddress,
+      contactName: item.contactName,
+      contactPhone: item.contactPhone
     }))
   });
 

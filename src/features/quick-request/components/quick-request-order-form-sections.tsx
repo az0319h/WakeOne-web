@@ -10,13 +10,18 @@ import { QuickRequestVehicleSection } from './quick-request-vehicle-section';
 
 type QuickRequestOrderFormSectionsProps = {
   form: QuickRequestOrderForm;
+  /** plan 99 — 주소 검색 Dialog 「장소 검색」 탭 (기본 false) */
+  placeSearchEnabled?: boolean;
 };
 
 /** 카카오 순서: 주소 → 배송 수단 → 배송 일정 → 물품 → 기사님 전달사항 → 운임 결제 */
-export function QuickRequestOrderFormSections({ form }: QuickRequestOrderFormSectionsProps) {
+export function QuickRequestOrderFormSections({
+  form,
+  placeSearchEnabled = false
+}: QuickRequestOrderFormSectionsProps) {
   return (
     <div className='min-w-0 space-y-10'>
-      <QuickRequestAddressSection form={form} />
+      <QuickRequestAddressSection form={form} placeSearchEnabled={placeSearchEnabled} />
       <QuickRequestVehicleSection form={form} />
       <QuickRequestScheduleSection form={form} />
       <QuickRequestGoodsSection form={form} />

@@ -15,6 +15,33 @@ export const IOS_INSTALL_BANNER_DISMISS_DAYS = 7;
 
 const UNSUBSCRIBE_TIMEOUT_MS = 2000;
 
+/**
+ * plan 94 D-6 — SW `notificationclick` → 열린 창 `postMessage({ type, url }, [port])` → 앱 `router.push(url)` → `port.postMessage('ack')`.
+ * `public/sw.js`의 문자열과 1:1 (SW는 모듈 import가 안 되므로 양쪽에 같은 값을 둔다).
+ */
+export const SW_NAVIGATE_MESSAGE_TYPE = 'wakeone:navigate';
+export const SW_NAVIGATE_ACK = 'ack';
+
+export type SwNavigateMessage = { type: typeof SW_NAVIGATE_MESSAGE_TYPE; url: string };
+
+export function isSwNavigateMessage(value: unknown): value is SwNavigateMessage {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<SwNavigateMessage>;
+  return candidate.type === SW_NAVIGATE_MESSAGE_TYPE && typeof candidate.url === 'string';
+}
+
+/** 같은 origin의 경로만 `pathname+search+hash`로 돌려준다 — 외부 URL·`//host`는 null (SW 메시지는 신뢰하되 한 번 더 거른다) */
+export function resolveInternalNavigationPath(url: string, origin: string = window.location.origin): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url, origin);
+  } catch {
+    return null;
+  }
+  if (parsed.origin !== origin) return null;
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
 export function isPushSupported(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
   return (

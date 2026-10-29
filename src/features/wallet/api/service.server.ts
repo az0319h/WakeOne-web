@@ -8,6 +8,7 @@ import {
 } from './balance-email.service.server';
 import type { WalletBalanceEmailPreferencesResponse } from './balance-email.types';
 import { WALLET_SYNCS_PAGE_SIZE } from './keys';
+import { applyDongbangScope } from '@/features/users/api/profile-scope.server';
 import type {
   WalletLimitSnapshot,
   WalletSummary,
@@ -136,10 +137,10 @@ interface ProfileNameIndex {
 async function buildProfileNameIndex(
   supabase: ReturnType<typeof getServiceRoleClient>
 ): Promise<ProfileNameIndex> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('user_id, full_name')
-    .not('full_name', 'is', null);
+  // plan 95 S-4 — KB카드 이름 매칭 인덱스에서 동방특송 제외
+  const { data, error } = await applyDongbangScope(
+    supabase.from('profiles').select('user_id, full_name').not('full_name', 'is', null)
+  );
 
   if (error) {
     throw new Error(error.message);

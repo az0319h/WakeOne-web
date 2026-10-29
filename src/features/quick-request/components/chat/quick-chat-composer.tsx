@@ -1,26 +1,34 @@
 'use client';
 
-import { useId, type KeyboardEvent, type RefObject } from 'react';
+import { useId, useRef, type ChangeEvent, type KeyboardEvent, type RefObject } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import type { QuickChatAttachmentItem } from '../../lib/quick-chat-cache';
+import { QUICK_CHAT_ATTACHMENT_ACCEPT } from '../../schemas/quick-request-attachment';
 import { QUICK_CHAT_BODY_MAX_LENGTH } from '../../schemas/quick-request-chat';
 import { QUICK_CHAT_COUNTER_THRESHOLD, QUICK_CHAT_TEXT, quickChatText } from './quick-chat-constants';
+import type { UseAttachmentUploadResult } from './use-attachment-upload';
 
 type QuickChatComposerProps = {
   draft: string;
   onDraftChange: (value: string) => void;
-  onSubmit: (body: string) => void;
+  /** 본문(공백 허용 · 첨부 ≥1) + 업로드 완료 첨부 스냅샷 */
+  onSubmit: (body: string, attachments: QuickChatAttachmentItem[]) => void;
   isPending: boolean;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   onTypingInput: () => void;
   onTypingStop: () => void;
+  /** plan 98 — 첨부 대기 줄 상태 (전송 활성 규칙 §3-2) */
+  attachments: UseAttachmentUploadResult;
 };
 
 /**
  * 입력창 + 전송 (U-6 · AC-10·11). Enter 전송 · Shift+Enter 줄바꿈 · IME 조합 중 Enter 무시(`isComposing || keyCode 229`).
  * 900자부터 「남은 글자 N」, 1,000자 초과면 전송 비활성. 단일 필드라 TanStack Form 대신 controlled Textarea.
+ * plan 98 U-1 — 왼쪽 클립 버튼(숨은 `<input type=file multiple>`) · 전송은 본문 또는 완료 첨부 ≥1 · 업로드 중·실패 칩이면 비활성.
+ * mobile-ux 2차 #3 — placeholder는 짧게(빈 입력창 1줄 44px · `field-sizing-content`), Enter·Shift+Enter 안내는 sr-only 설명.
  */
 export function QuickChatComposer({
   draft,
@@ -29,19 +37,25 @@ export function QuickChatComposer({
   isPending,
   textareaRef,
   onTypingInput,
-  onTypingStop
+  onTypingStop,
+  attachments
 }: QuickChatComposerProps) {
   const inputId = useId();
+  const hintId = useId();
   const counterId = useId();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const length = draft.length;
   const tooLong = length > QUICK_CHAT_BODY_MAX_LENGTH;
   const showCounter = length >= QUICK_CHAT_COUNTER_THRESHOLD;
-  const canSubmit = draft.trim().length > 0 && !tooLong && !isPending;
+  const hasContent = draft.trim().length > 0 || attachments.uploadedCount > 0;
+  const canSubmit = hasContent && !tooLong && !isPending && !attachments.isUploading && !attachments.hasFailed;
 
   function submit() {
     if (!canSubmit) return;
     onTypingStop();
-    onSubmit(draft);
+    const snapshot = attachments.snapshot();
+    onSubmit(draft, snapshot);
+    attachments.clear();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -49,6 +63,13 @@ export function QuickChatComposer({
     if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     event.preventDefault();
     submit();
+  }
+
+  function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    attachments.add(files);
+    // 같은 파일을 다시 고를 수 있게 비운다
+    event.target.value = '';
   }
 
   return (
@@ -61,16 +82,42 @@ export function QuickChatComposer({
       }}
     >
       <div className='flex items-end gap-2'>
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon'
+          className='size-11 shrink-0 touch-manipulation md:size-10'
+          aria-label={QUICK_CHAT_TEXT.attach}
+          data-testid='quick-chat-attach'
+          disabled={isPending || attachments.items.length >= attachments.max}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Icons.paperclip aria-hidden className='size-5' />
+        </Button>
+        <input
+          ref={fileInputRef}
+          type='file'
+          multiple
+          accept={QUICK_CHAT_ATTACHMENT_ACCEPT}
+          className='sr-only'
+          tabIndex={-1}
+          aria-hidden
+          data-testid='quick-chat-attach-input'
+          onChange={handleFilesChange}
+        />
         <label htmlFor={inputId} className='sr-only'>
           {QUICK_CHAT_TEXT.composerLabel}
         </label>
+        <p id={hintId} className='sr-only'>
+          {QUICK_CHAT_TEXT.composerHint}
+        </p>
         <Textarea
           id={inputId}
           ref={textareaRef}
           rows={1}
           value={draft}
           placeholder={QUICK_CHAT_TEXT.composerPlaceholder}
-          aria-describedby={showCounter ? counterId : undefined}
+          aria-describedby={showCounter ? `${hintId} ${counterId}` : hintId}
           aria-invalid={tooLong || undefined}
           enterKeyHint='send'
           autoComplete='off'

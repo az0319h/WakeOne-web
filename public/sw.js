@@ -7,6 +7,10 @@
 const NOTIFICATIONS_URL = '/dashboard/notifications';
 const ICON_URL = '/icons/icon-192.png';
 const BADGE_URL = '/icons/badge-72.png';
+/** plan 94 D-6 — 앱(`service-worker-registrar.tsx`)과 같은 값. 열린 창에 경로를 보내 `router.push`로 즉시 이동시킨다 */
+const NAVIGATE_MESSAGE_TYPE = 'wakeone:navigate';
+const NAVIGATE_ACK = 'ack';
+const NAVIGATE_ACK_TIMEOUT_MS = 1500;
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -64,6 +68,33 @@ self.addEventListener('push', (event) => {
   );
 });
 
+/**
+ * 열린 창에 `{ type: 'wakeone:navigate', url }`를 보내고 앱의 `'ack'`를 기다린다 (MessageChannel).
+ * resolve(true) = 앱이 `router.push`로 이동함 · resolve(false) = 1.5초 안에 ack 없음(앱이 옛 번들이거나 멈춤) → 호출자가 fallback.
+ */
+function navigateViaApp(client, url) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer = null;
+    const finish = (acked) => {
+      if (settled) return;
+      settled = true;
+      if (timer !== null) clearTimeout(timer);
+      resolve(acked);
+    };
+    timer = setTimeout(() => finish(false), NAVIGATE_ACK_TIMEOUT_MS);
+    try {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = (message) => {
+        if (message.data === NAVIGATE_ACK) finish(true);
+      };
+      client.postMessage({ type: NAVIGATE_MESSAGE_TYPE, url }, [channel.port2]);
+    } catch {
+      finish(false);
+    }
+  });
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data || {};
@@ -80,18 +111,24 @@ self.addEventListener('notificationclick', (event) => {
         }
       });
 
-      if (sameOrigin) {
-        return Promise.resolve(sameOrigin.focus ? sameOrigin.focus() : sameOrigin).then(
-          (client) => {
-            if (client && 'navigate' in client && typeof client.navigate === 'function') {
-              return client.navigate(targetUrl).catch(() => client);
-            }
-            return client;
-          }
-        );
+      if (!sameOrigin) {
+        // 창이 없을 때만 새 창
+        return self.clients.openWindow(targetUrl);
       }
 
-      return self.clients.openWindow(targetUrl);
+      // plan 94 D-6 — 창이 있으면 focus 후 postMessage → 앱이 router.push (전체 재로드 없음)
+      return Promise.resolve(sameOrigin.focus ? sameOrigin.focus() : sameOrigin)
+        .then((focused) => focused || sameOrigin)
+        .then((client) =>
+          navigateViaApp(client, targetUrl).then((acked) => {
+            if (acked) return client;
+            // ack 타임아웃 fallback — 옛 번들·멈춘 탭: 기존 방식(재로드)으로 이동
+            if (typeof client.navigate === 'function') {
+              return client.navigate(targetUrl).catch(() => self.clients.openWindow(targetUrl));
+            }
+            return self.clients.openWindow(targetUrl);
+          })
+        );
     })
   );
 });

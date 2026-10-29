@@ -76,6 +76,14 @@ export type ActivityAction =
   | "quick_request.cancel"
   /** plan 93 — 퀵 대화 메시지 전송 (본문은 남기지 않는다 · 읽음 갱신은 로그 Out) */
   | "quick_request.message_create"
+  /** plan 98 — 퀵 대화 첨부 준비(prepare · signed upload URL) · pending 첨부 취소 (파일명·storage_path 금지) */
+  | "quick_request.message_attachment_prepare"
+  | "quick_request.message_attachment_delete"
+  /** plan 101 — 퀵 대화 참여자 초대 · 제외/나가기 (metadata `participant_user_id` · `self`) */
+  | "quick_request.participant_add"
+  | "quick_request.participant_remove"
+  /** plan 100 — 퀵 대화 AI 답장 추천 (외부 AI 전송 + 일일 카운터 증가 · 전 분기 기록 · 본문·추천 문장 금지 · 숫자 메타만) */
+  | "quick_request.chat_ai_suggest"
   /** legacy — plan 92에서 Route 삭제. 과거 로그 표시용으로만 유지(신규 기록 없음) */
   | "quick_request.openchat_resend"
   | "workflow.document_create"
@@ -137,7 +145,17 @@ export type ActivityLogErrorCode =
   | "gone"
   | "duplicate_label"
   | "limit_exceeded"
-  | "conflict";
+  | "conflict"
+  /** plan 100 — AI 답장 추천: 503 꺼짐 · 502 호출 실패(timeout·rate limit·인증·중단·기타) · 200 rules 사유(refusal·형식 오류·전부 필터) */
+  | "ai_disabled"
+  | "ai_timeout"
+  | "ai_rate_limited"
+  | "ai_auth_error"
+  | "ai_aborted"
+  | "ai_upstream_error"
+  | "ai_refusal"
+  | "ai_invalid_output"
+  | "ai_filtered";
 
 export type ActivityLogMetadata = {
   error_code?: ActivityLogErrorCode;
@@ -218,9 +236,20 @@ export type ActivityLogMetadata = {
   quick_request_no?: string;
   changedFields?: string[];
   recentAddressesRecorded?: boolean;
-  /** plan 93 — 퀵 대화 (본문 `body` 금지 · `body_length`는 기존 키) */
+  /** plan 93 — 퀵 대화 (본문 `body` 금지 · `body_length`는 기존 키). `recipient_count`는 plan 94 D-2로 제거(알림이 응답 뒤 after()로 이동) */
   message_id?: number;
-  recipient_count?: number;
+  /** plan 98 — 퀵 대화 첨부 (파일명·storage_path·서명 URL 금지 · `attachment_count`는 기존 키) */
+  total_bytes?: number;
+  attachment_id?: number;
+  /** plan 101 — 퀵 대화 참여자 (초대·제외 대상 user id · `self` = 본인 나가기) */
+  participant_user_id?: string;
+  self?: boolean;
+  /** plan 100 — AI 답장 추천 (본문·추천 문장·마스킹 전 데이터 금지 · 숫자·출처만) */
+  source?: "ai" | "rules";
+  message_count?: number;
+  latency_ms?: number;
+  input_tokens?: number;
+  output_tokens?: number;
   /** plan 91 — 휴대폰 푸시 (endpoint 전체·p256dh·auth 키는 절대 남기지 않는다) */
   created?: boolean;
   device_count?: number;

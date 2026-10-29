@@ -5,6 +5,7 @@ import {
   resolveWalletBalanceEmailMatchedSlot
 } from '@/features/wallet/api/balance-email.service.server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { applyDongbangScope } from '@/features/users/api/profile-scope.server';
 import type {
   WalletBalanceEmailLogRecipient,
   WalletBalanceEmailLogRun,
@@ -116,10 +117,10 @@ async function fetchProfileNamesByUserIds(
     return new Map();
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('user_id, full_name')
-    .in('user_id', userIds);
+  // plan 95 S-5 — 잔액 메일 로그 표시용 이름 조인에서 동방특송 제외 (미조인 행은 recipient_full_name null → UI 기존 fallback)
+  const { data, error } = await applyDongbangScope(
+    supabase.from('profiles').select('user_id, full_name').in('user_id', userIds)
+  );
 
   if (error) {
     throw new Error(error.message);

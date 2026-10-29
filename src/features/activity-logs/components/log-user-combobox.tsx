@@ -41,7 +41,9 @@ function LogUserComboboxUserList({ search, value, onSelect }: LogUserComboboxUse
   const { data } = useSuspenseQuery(
     usersQueryOptions({
       limit: 50,
-      ...(search && { search })
+      ...(search && { search }),
+      // plan 95 D-2② — admin이 동방 직원 로그를 봐야 함 (activity-log-listing prefetch 키와 동일)
+      includeDongbang: true
     })
   );
 
@@ -74,7 +76,7 @@ export function LogUserCombobox({ value, onValueChange }: LogUserComboboxProps) 
   const [open, setOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const [debouncedUserSearch, setDebouncedUserSearch] = useState('');
-  const selectedLabel = useUserComboboxLabel(value, STATIC_OPTIONS);
+  const selectedLabel = useUserComboboxLabel(value, STATIC_OPTIONS, { includeDongbang: true });
 
   const debouncedSetUserSearch = useDebouncedCallback((next: string) => {
     setDebouncedUserSearch(next);

@@ -81,6 +81,10 @@ select
 | fixture E2E 산출물 | fixture 3계정에 **E2E marker·test doc 패턴**으로 붙은 알림·로그·wallet 행만 삭제 (복지비 import 등 **실데이터 알림은 유지**) | sql/82+ |
 | 공지 | `title ilike 'E2E-ANN-%'` + 첨부·Storage 객체 | announcements E2E |
 | 복지비 | E2E 문서번호/task-key/작성자 marker | benefits E2E |
+| 퀵 대화 첨부 (plan 98) | 대상 건(일회용 계정 요청 건 + fixture `E2E…` 건)의 `quick_request_message_attachments` 행(pending 포함) + Storage `quick-chat-attachments/quick-chat/{request_id}/*` 객체(고아 포함) + **일회용 계정**이 올린 첨부 행·객체(건 표식 무관) | `cleanup-e2e-mock-data.mjs` `cleanupQuickChatAttachments` (quick_requests 삭제 전) |
+| 퀵 대화 (plan 94) | **일회용 계정**(동방·동방2·구매물류 · example.com)이 쓴 `quick_request_messages`·`quick_request_message_reads`·행위자 `metadata.actor_user_id` 퀵 알림 — 건 표식(`E2E…`)과 **무관**하게 삭제. 승인·취소 건 대화 허용(94 D-12) 후 실데이터 건에도 읽음 위치가 남기 때문 | `cleanup-e2e-mock-data.mjs` 3b |
+| 퀵 대화 AI 답장 추천 사용량 (plan 100) | fixture 계정(`FIXTURE_EMAILS`)의 `quick_chat_ai_usage` 행 전부(일일 카운터 · 본문 없음) · 일회용 계정 분은 `auth.users` on delete cascade · `quick request remaining.fixture_ai_usage` 0 확인 | `cleanup-e2e-mock-data.mjs` `cleanupQuickRequestFixtures` |
+| 퀵 대화 참여자 (plan 101) | 대상 건의 `quick_request_participants` 행은 `quick_requests` on delete cascade · **일회용 계정**이 `user_id`·`invited_by`인 행은 건 표식과 무관하게 삭제(`invited_by`는 on delete restrict라 남으면 RPC 사용자 삭제 실패) · `remaining.quick_request_participants`·`disposable_participants` 0 확인 | `cleanup-e2e-mock-data.mjs` 3c |
 
 **운영 실데이터 보호:** 위 패턴 **외** 행은 삭제하지 않는다. `DELETE` without WHERE on 전체 테이블 **금지**.
 

@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import type { QuickRequestRecentAddress } from '../api/types';
+import { notifyInfo } from '@/lib/notify';
+import type { QuickRequestPlace, QuickRequestRecentAddress } from '../api/types';
 import { QuickRequestAddressPickerDialog } from './quick-request-address-picker-dialog';
-import { QuickRequestRoadAddressInput } from './quick-request-field-controls';
+import { QuickRequestPhoneField, QuickRequestRoadAddressInput } from './quick-request-field-controls';
 import type { QuickRequestOrderForm } from './quick-request-form-api';
+import { QUICK_PLACE_SEARCH_TEXT } from './quick-request-place-search-tab';
 
 type QuickRequestLocationSectionProps = {
   form: QuickRequestOrderForm;
@@ -13,19 +15,24 @@ type QuickRequestLocationSectionProps = {
   idPrefix: string;
   /** 주소 검색 Dialog의 「최근 이용 내역」 탭 (기본 true · plan 89 수정 Sheet는 false) */
   showRecent?: boolean;
+  /** plan 99 — 주소 검색 Dialog의 「장소 검색」 탭 (기본 false · 요청 페이지만 서버 설정값 전달) */
+  placeSearchEnabled?: boolean;
 };
 
 export function QuickRequestLocationSection({
   form,
   fieldPrefix,
   idPrefix,
-  showRecent = true
+  showRecent = true,
+  placeSearchEnabled = false
 }: QuickRequestLocationSectionProps) {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   // 선택으로 닫히면 상세 주소로, Esc·닫기는 「주소 검색」 버튼으로 포커스 복귀
   const selectedRef = React.useRef(false);
   const detailInputId = `${fieldPrefix}.detailAddress`;
   const searchButtonId = `${fieldPrefix}.roadAddress-search`;
+  // plan 97 D-8 — 출발 칸은 origin 목록, 경유·도착 칸은 destination 목록
+  const recentDirection = fieldPrefix === 'origin' ? 'origin' : 'destination';
 
   function openPicker() {
     selectedRef.current = false;
@@ -47,6 +54,23 @@ export function QuickRequestLocationSection({
     form.setFieldValue(`${fieldPrefix}.detailAddress`, address.detailAddress);
     form.setFieldValue(`${fieldPrefix}.contactName`, address.contactName);
     form.setFieldValue(`${fieldPrefix}.contactPhone`, address.contactPhone);
+    closeAfterSelect();
+  }
+
+  /**
+   * plan 99 D-4 — 도로명(없으면 지번 + 안내) · 상세 주소가 비어 있을 때만 장소명.
+   * 담당자·연락처는 건드리지 않는다(장소 대표 전화는 담당자 번호가 아님).
+   * 닫힌 뒤 포커스는 상세 주소 → 장소명 뒤에 「3층」 등을 바로 덧붙일 수 있다.
+   */
+  function handlePlaceSelect(place: QuickRequestPlace) {
+    form.setFieldValue(`${fieldPrefix}.roadAddress`, place.roadAddress ?? place.address);
+    if (place.roadAddress == null) {
+      notifyInfo(QUICK_PLACE_SEARCH_TEXT.jibunFallback);
+    }
+    const currentDetail = form.getFieldValue(`${fieldPrefix}.detailAddress`);
+    if (typeof currentDetail !== 'string' || currentDetail.trim() === '') {
+      form.setFieldValue(`${fieldPrefix}.detailAddress`, place.name);
+    }
     closeAfterSelect();
   }
 
@@ -91,15 +115,11 @@ export function QuickRequestLocationSection({
         </form.AppField>
 
         <form.AppField name={`${fieldPrefix}.contactPhone`}>
-          {(field) => (
-            <field.TextField
+          {() => (
+            <QuickRequestPhoneField
               label='연락처'
               required
-              type='tel'
-              inputMode='numeric'
-              placeholder='01012345678'
-              autoComplete='off'
-              className='h-11 bg-muted/50'
+              className='bg-muted/50'
               data-testid={`${idPrefix}-contact-phone`}
             />
           )}
@@ -112,6 +132,9 @@ export function QuickRequestLocationSection({
         onRoadSelect={handleRoadSelect}
         onRecentSelect={handleRecentSelect}
         showRecent={showRecent}
+        recentDirection={recentDirection}
+        placeSearchEnabled={placeSearchEnabled}
+        onPlaceSelect={handlePlaceSelect}
         getReturnFocusElement={() =>
           document.getElementById(selectedRef.current ? detailInputId : searchButtonId)
         }

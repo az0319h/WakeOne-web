@@ -58,9 +58,12 @@ test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 
       await expect(conversation).toBeHidden();
 
       // 브라우저 뒤로가기로도 대화 ↔ 목록 (history push)
+      // plan 96 verifier — nuqs `history:'push'`는 throttle(50ms)·transition 뒤에 pushState → URL 반영을 기다린 뒤 goBack (spec 레이스 · 앱 버그 아님)
       await item.click();
+      await expect(page).toHaveURL(new RegExp(`request=${requestNo}`));
       await expect(conversation).toBeVisible();
       await page.goBack();
+      await expect(page).not.toHaveURL(/request=/);
       await expect(list).toBeVisible({ timeout: 10_000 });
       await expect(conversation).toBeHidden();
     } finally {
@@ -95,9 +98,12 @@ test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 
       await expect(full).toHaveAttribute('data-mode', 'full');
       await expect(full.getByRole('heading', { name: CHAT_TEXT.detailChatTitle })).toBeVisible();
       await expect(page.getByTestId('quick-chat-empty')).toHaveText(CHAT_TEXT.emptyWritable, { timeout: 20_000 });
-      await expect(page.getByPlaceholder(CHAT_TEXT.composerPlaceholder)).toBeVisible();
+      await expect(composerInput(page)).toBeVisible();
       await expect(page.getByRole('button', { name: CHAT_TEXT.send, exact: true })).toBeVisible();
       await expectTouchTarget(composerInput(page));
+      // mobile-ux 2차 #3 — 빈 입력창은 placeholder가 줄바꿈되지 않아 1줄(44px)
+      const inputBox = await composerInput(page).boundingBox();
+      expect(inputBox!.height, `empty composer height ${inputBox!.height}`).toBeLessThanOrEqual(46);
       await expectTouchTarget(sendButton(page));
       await expectNoHorizontalScroll(page);
 

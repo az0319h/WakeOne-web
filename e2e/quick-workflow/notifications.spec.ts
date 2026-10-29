@@ -130,11 +130,11 @@ test.describe('plan 92 B. 알림 수신자 · 문구', () => {
     );
   });
 
-  test('AC-12: 동방1 배차완료 → 동방2·요청자 각 1건 「퀵 {번호} 배차완료」 · 본문 `오토바이 8514 · 기사 홍길동 · 예상 20,000원` · 010 없음', async () => {
+  test('AC-12: 동방1 배차완료 → 동방2·요청자 각 1건 「퀵 {번호} 배차완료」 · 본문 `21마 6543 · 기사 홍길동 · 예상 20,000원` · 010 없음', async () => {
     await dispatchAs('dongbang', flowNo);
     const rows = await rowsFor(flowNo, 'dispatched');
     const title = NOTIFY_TITLE.dispatched(flowNo);
-    const body = '오토바이 8514 · 기사 홍길동 · 예상 20,000원';
+    const body = '21마 6543 · 기사 홍길동 · 예상 20,000원';
     expectOne(rows, dongbang2.userId, { type: NOTIFY_TYPE.vendor, title, body }, '동방2');
     expectOne(rows, user.userId, { type: NOTIFY_TYPE.requester, title, body }, '요청자');
     for (const row of rows) expect(row.body).not.toContain('010');

@@ -49,6 +49,13 @@ test.describe('plan 93 D·E. 알림 수신자 · 문구 · 활동 로그', () =>
   let flowId = '';
   let adminMessage: ChatMessage | null = null;
 
+  /** 94 D-13 `buildChatNotificationTitle`과 같은 규칙 — 이름 20자 · 전체 30자 */
+  const chatTitle = (requestNo: string, senderName: string) => {
+    const no = requestNo.trim();
+    const budget = Math.max(1, Math.min(20, 30 - 3 - no.length));
+    return `${senderName.replace(/\s+/g, ' ').trim().slice(0, budget)} · ${no}`;
+  };
+
   const without = (ids: Iterable<string>, ...exclude: string[]) => [...ids].filter((id) => !exclude.includes(id));
 
   async function sendAsDongbang2(requestNo: string, body: string): Promise<ChatMessage> {
@@ -64,7 +71,8 @@ test.describe('plan 93 D·E. 알림 수신자 · 문구 · 활동 로그', () =>
     const rows = await dbChatNotifications(requestNo, messageId);
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      expect(row.title).toBe(`${requestNo} · ${senderName.slice(0, 20)} 메시지`);
+      // plan 94 D-13 — 제목 `{이름(20)} · {번호}` · 전체 ≤30자(U-7)라 번호가 길면 이름을 더 줄인다 (옛 `{번호} · {이름} 메시지` 교체)
+      expect(row.title).toBe(chatTitle(requestNo, senderName));
       expect(row.body).toBe(body);
       expect(row.metadata.quick_request_event).toBe('chat_message');
       expect(row.metadata.quick_request_message_id).toBe(messageId);
@@ -91,7 +99,7 @@ test.describe('plan 93 D·E. 알림 수신자 · 문구 · 활동 로그', () =>
     await setProfileStatus(dongbang2.userId, 'active');
   });
 
-  test('AC-22: 새 requested 건 · 요청자 메시지 → active 동방 전원 각 1건 · admin·구매물류·요청자 0 · 제목 「{번호} · {이름} 메시지」 · 본문 일치', async () => {
+  test('AC-22: 새 requested 건 · 요청자 메시지 → active 동방 전원 각 1건 · admin·구매물류·요청자 0 · 제목 「{이름} · {번호}」(94 D-13) · 본문 일치', async () => {
     const created = await createAs('user', uniqueTag('E2E93NTF'));
     flowNo = created.requestNo;
     flowId = (await dbQuickRequest(flowNo)).id;
@@ -208,7 +216,7 @@ test.describe('plan 93 D·E. 알림 수신자 · 문구 · 활동 로그', () =>
 
     const chatCard = page.getByTestId(`notification-card-${chatRow!.id}`);
     await expect(chatCard).toBeVisible({ timeout: 20_000 });
-    await expect(chatCard).toContainText(`${flowNo} · ${admin.fullName.slice(0, 20)} 메시지`);
+    await expect(chatCard).toContainText(chatTitle(flowNo, admin.fullName));
     await chatCard.getByRole('button', { name: '채팅 보기' }).click();
     await expect(page).toHaveURL(new RegExp(`/dashboard/quick/chat\\?request=${flowNo}`));
     await expect(page.getByTestId('quick-chat-messenger')).toBeVisible({ timeout: 30_000 });
@@ -222,7 +230,7 @@ test.describe('plan 93 D·E. 알림 수신자 · 문구 · 활동 로그', () =>
     await expect(bubble).toBeInViewport();
   });
 
-  test('AC-29: 활동 로그 — user /dashboard/logs 「퀵 대화 메시지 전송」 · admin API 201 metadata(no·body_length·recipient_count, body 없음) · 구매물류 403 · x-request-id · 읽음 PUT 로그 0', async ({
+  test('AC-29: 활동 로그 — user /dashboard/logs 「퀵 대화 메시지 전송」 · admin API 201 metadata(no·body_length, recipient_count·body 없음 · 94 D-2) · 구매물류 403 · x-request-id · 읽음 PUT 로그 0', async ({
     page
   }) => {
     const logNo = (await createAs('user', uniqueTag('E2E93LOG'))).requestNo;
@@ -241,7 +249,7 @@ test.describe('plan 93 D·E. 알림 수신자 · 문구 · 활동 로그', () =>
     );
     expect(ok.metadata?.quick_request_no).toBe(logNo);
     expect(ok.metadata?.body_length).toBe(body.length);
-    expect(typeof ok.metadata?.recipient_count).toBe('number');
+    expect(ok.metadata && 'recipient_count' in ok.metadata, 'recipient_count 제거(94 D-2)').toBe(false);
     expect(ok.metadata?.message_id).toBeTruthy();
     expect(ok.metadata && 'body' in ok.metadata, '본문 미포함').toBe(false);
     expect(JSON.stringify(ok.metadata)).not.toContain(body);

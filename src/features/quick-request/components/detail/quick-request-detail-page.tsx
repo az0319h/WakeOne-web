@@ -5,12 +5,14 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { QUICK_CHAT_DETAIL_ASIDE_MEDIA_QUERY, QUICK_CHAT_TEXT } from '../chat/quick-chat-constants';
+import { QuickChatParticipantsButton } from '../chat/quick-chat-participants-button';
 import { QuickRequestConversation } from '../chat/quick-request-conversation';
 import { useMatchMedia } from '../chat/use-match-media';
 import { QuickRequestDetailChatView } from './quick-request-detail-chat-view';
 import { quickRequestDetailQueryOptions } from '../../api/queries';
 import type { QuickRequestDetail } from '../../api/types';
 import { formatQuickAmountWon } from '../../lib/format-quick-amount';
+import { quickRequestTopic } from '../../lib/quick-realtime-topics';
 import {
   formatQuickFreightLabel,
   formatQuickGoodsLabel,
@@ -112,7 +114,11 @@ function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
           <aside aria-label='요청 대화 · 금액 · 배차 · 이력' className='flex min-w-0 flex-col gap-4'>
             {isXl ? (
               <div ref={chatCardRef} className='scroll-mt-4'>
-                <QuickDetailSection title={QUICK_CHAT_TEXT.detailChatTitle} data-testid='quick-detail-chat'>
+                <QuickDetailSection
+                  title={QUICK_CHAT_TEXT.detailChatTitle}
+                  data-testid='quick-detail-chat'
+                  action={<QuickChatParticipantsButton requestNo={detail.requestNo} variant='detail' />}
+                >
                   <div className='-mx-5 -mb-5 flex h-[32rem] min-h-0 flex-col overflow-hidden rounded-b-xl border-t'>
                     <QuickRequestConversation
                       requestNo={detail.requestNo}
@@ -133,12 +139,14 @@ function QuickRequestDetailBody({ detail }: { detail: QuickRequestDetail }) {
                 />
                 <AmountRow label='최종금액' amount={detail.finalAmount} testId='quick-detail-final-amount' />
               </dl>
-              <p className='mt-2 text-xs text-muted-foreground'>예상금액은 부가세 별도입니다.</p>
+              <p className='mt-2 text-xs text-muted-foreground'>
+                예상금액·최종금액은 부가세 포함 금액입니다.
+              </p>
             </QuickDetailSection>
             <QuickDetailSection title='배차 정보' data-testid='quick-detail-section-dispatch'>
               {hasDispatch ? (
                 <dl className={QUICK_DETAIL_DL_CLASS}>
-                  <QuickDetailRow label='차량정보'>{detail.dispatch.vehicleInfo ?? '—'}</QuickDetailRow>
+                  <QuickDetailRow label='자동차등록번호'>{detail.dispatch.vehicleInfo ?? '—'}</QuickDetailRow>
                   <QuickDetailRow label='기사 이름'>{detail.dispatch.driverName ?? '—'}</QuickDetailRow>
                   <QuickDetailRow label='기사 연락처'>
                     <QuickRequestPhoneLink
@@ -215,7 +223,13 @@ function QuickRequestDetailContent({ requestNo }: { requestNo: string }) {
   if (!detail) {
     return <QuickRequestNotFound />;
   }
-  return <QuickRequestDetailBody detail={detail} />;
+  return (
+    <>
+      {/* plan 94 D-3 — 건별 private topic은 `id`(uuid)가 필요하므로 detail 조회 뒤 구독한다 (대화 컴포넌트와 채널 공유) */}
+      <QuickRequestRealtime topic={quickRequestTopic(detail.id)} requestNo={requestNo} />
+      <QuickRequestDetailBody detail={detail} />
+    </>
+  );
 }
 
 const subscribeNoop = () => () => undefined;
@@ -242,7 +256,6 @@ export function QuickRequestDetailPage({ requestNo }: QuickRequestDetailPageProp
 
   return (
     <div data-testid='quick-detail' className='flex min-w-0 flex-1 flex-col'>
-      <QuickRequestRealtime requestNo={requestNo} />
       {isHydrated ? (
         <QuickRequestQueryBoundary
           errorMessage='퀵 요청을 불러오지 못했습니다.'

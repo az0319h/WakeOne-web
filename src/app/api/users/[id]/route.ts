@@ -27,6 +27,7 @@ import { insertUserUpdateNotification } from '@/features/notifications/api/fan-o
 import { purgePushSubscriptionsByUser } from '@/features/notifications/api/push-subscriptions.server';
 import { birthdaySchema, refineBirthday } from '@/lib/birthday';
 import { PHONE_REGEX } from '@/lib/phone';
+import { PHONE_INPUT_ERROR } from '@/lib/phone-messages';
 import { z } from 'zod';
 
 type Params = { params: Promise<{ id: string }> };
@@ -48,7 +49,7 @@ const updateUserSchema = z
     phone: z
       .string()
       .min(1, '연락처를 입력해 주세요.')
-      .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.')
+      .regex(PHONE_REGEX, PHONE_INPUT_ERROR)
       .optional()
   })
   .superRefine((data, ctx) => {
@@ -292,6 +293,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
       const parsed = updateUserSchema.safeParse(body);
 
       if (!parsed.success) {
+        // plan 97 AC-20 — 연락처 자릿수 오류는 공용 문구(PHONE_INPUT_ERROR)로 돌려준다
+        const phoneMessage = parsed.error.issues.find((issue) => issue.path[0] === 'phone')?.message;
         return jsonWithActivityLog(
           requestId,
           {
@@ -304,7 +307,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
             httpPath,
             metadata: buildErrorMetadata('validation', '입력값이 올바르지 않습니다.')
           },
-          { success: false, message: '입력값이 올바르지 않습니다.' },
+          { success: false, message: phoneMessage ?? '입력값이 올바르지 않습니다.' },
           400
         );
       }

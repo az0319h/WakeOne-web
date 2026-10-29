@@ -34,7 +34,7 @@ export function QuickRequestRouteDot({ kind, className }: QuickRequestRouteDotPr
   );
 }
 
-function formatVehicleTypes(values: QuickRequestFormValues): string {
+export function formatVehicleTypes(values: QuickRequestFormValues): string {
   if (values.vehicleTypes.length === 0) {
     return '선택 전';
   }
@@ -44,12 +44,12 @@ function formatVehicleTypes(values: QuickRequestFormValues): string {
     .join(', ');
 }
 
-function formatVehicleCount(values: QuickRequestFormValues): string {
+export function formatVehicleCount(values: QuickRequestFormValues): string {
   const count = resolveVehicleCount(values);
   return count > 0 ? `${count}대` : '—';
 }
 
-function formatOriginSchedule(origin: QuickRequestFormValues['origin']): string {
+export function formatOriginSchedule(origin: QuickRequestFormValues['origin']): string {
   if (origin.scheduleMode === 'immediate') {
     return '즉시 요청';
   }
@@ -57,7 +57,9 @@ function formatOriginSchedule(origin: QuickRequestFormValues['origin']): string 
   return iso ? formatAbsoluteDateTimeKo(iso) : '—';
 }
 
-function formatDestinationSchedule(destination: QuickRequestFormValues['destination']): string {
+export function formatDestinationSchedule(
+  destination: QuickRequestFormValues['destination']
+): string {
   if (destination.scheduleMode === 'asap') {
     return '최대한 빠르게';
   }

@@ -1,7 +1,7 @@
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 
 /** 방침 시행일 — 본문을 개정할 때 함께 갱신합니다. */
-const PRIVACY_EFFECTIVE_DATE = '2026-10-22';
+const PRIVACY_EFFECTIVE_DATE = '2026-10-28';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -214,6 +214,21 @@ export default function PrivacyPolicyPage() {
             <li>
               <span className='text-foreground font-medium'>Google LLC</span> — Google 계정 OAuth
               로그인, Google Tasks API 연동 (미국 등)
+            </li>
+            <li>
+              <span className='text-foreground font-medium'>Anthropic, PBC</span> — 퀵 대화 답장
+              문장 추천. 최근 대화 본문 일부(최대 10개 · 연락처·주소·이메일은 가리고 이름은 보내지
+              않음)를 전송하며, 회사는 전송 내용과 추천 문장을 별도로 저장하지 않습니다. 전송된
+              데이터의 보관은 Anthropic의{' '}
+              <a
+                href='https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-primary font-medium hover:underline'
+              >
+                API 데이터 보존 정책
+              </a>
+              을 따릅니다 (미국)
             </li>
             <li>
               <span className='text-foreground font-medium'>

@@ -6,11 +6,13 @@ import {
   jsonWithActivityLog
 } from '@/features/activity-logs/api/log.server';
 import { requireSession } from '@/features/auth/api/session.server';
+import { decodeRecentAddressCursor } from '@/features/quick-request/api/cursor.server';
 import {
   listQuickRequestRecentAddresses,
   recordQuickRequestRecentAddresses
 } from '@/features/quick-request/api/service.server';
 import {
+  isQuickRequestRecentAddressDirection,
   QUICK_REQUEST_RECENT_ADDRESS_MESSAGES,
   quickRequestRecentAddressBodySchema
 } from '@/features/quick-request/schemas/quick-request-recent-address';
@@ -20,16 +22,47 @@ const HTTP_PATH = '/api/quick-request/recent-addresses';
 const ACTION = 'quick_request.recent_address_record' as const;
 const FALLBACK_TARGET_LABEL = '최근 주소';
 
-/** Read — activity log Out (plan 87). 최대 10행 · last_used_at 내림차순 */
-export async function GET() {
+function parsePositiveInt(value: string | null): number | undefined {
+  if (!value || !/^\d{1,6}$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return parsed > 0 ? parsed : undefined;
+}
+
+/**
+ * Read — activity log Out (plan 87/97 D-9). `direction=origin|destination`(필수 · 아니면 400 「요청 형식이 올바르지 않습니다.」)
+ * · `cursor`(opaque · 불량 400) · `limit`(기본 10 · ≤50) → `{addresses, nextCursor}` · `last_used_at desc, id desc`
+ */
+export async function GET(request: Request) {
   const session = await requireSession();
   if (!session.ok) {
     return session.response;
   }
 
+  const url = new URL(request.url);
+  const direction = url.searchParams.get('direction');
+  if (!isQuickRequestRecentAddressDirection(direction)) {
+    return NextResponse.json(
+      { success: false, message: QUICK_REQUEST_RECENT_ADDRESS_MESSAGES.invalidBody },
+      { status: 400 }
+    );
+  }
+
+  const cursorParam = url.searchParams.get('cursor');
+  const cursor = cursorParam ? decodeRecentAddressCursor(cursorParam) : null;
+  if (cursorParam && !cursor) {
+    return NextResponse.json(
+      { success: false, message: QUICK_REQUEST_RECENT_ADDRESS_MESSAGES.invalidBody },
+      { status: 400 }
+    );
+  }
+
   try {
-    const addresses = await listQuickRequestRecentAddresses(session.userId);
-    return NextResponse.json({ success: true, data: { addresses } });
+    const data = await listQuickRequestRecentAddresses(session.userId, {
+      direction,
+      cursor,
+      limit: parsePositiveInt(url.searchParams.get('limit'))
+    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('[quick-request/recent-addresses] list failed:', error);
     return NextResponse.json(
@@ -40,8 +73,8 @@ export async function GET() {
 }
 
 /**
- * 확인 시 출발·경유·도착 주소 기록.
- * activity log metadata에는 주소·이름·전화를 남기지 않는다 (`error_code` · `count`만, AC-19).
+ * 확인 시 출발·경유·도착 주소 기록 (plan 97 — item.direction 필수 · 출발 origin · 경유·도착 destination).
+ * activity log metadata에는 주소·이름·전화를 남기지 않는다 (`error_code` · `count`만, 87 AC-19 · 97 AC-24).
  */
 export async function POST(request: Request) {
   const requestId = createRequestId();

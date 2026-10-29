@@ -386,7 +386,7 @@ export async function createAs(account: 'user' | 'user2' | 'admin' | 'logistics'
 
 export const DISPATCH_BODY = {
   estimatedAmount: 20000,
-  vehicleInfo: '오토바이 8514',
+  vehicleInfo: '21마 6543',
   driverName: '홍길동',
   driverPhone: '01012345678'
 } as const;
@@ -402,7 +402,9 @@ export async function acceptAs(account: AccountKey, requestNo: string) {
   });
 }
 
-export async function dispatchAs(account: AccountKey, requestNo: string, body = DISPATCH_BODY) {
+export type DispatchBody = { estimatedAmount: number; vehicleInfo: string; driverName: string; driverPhone: string };
+
+export async function dispatchAs(account: AccountKey, requestNo: string, body: DispatchBody = DISPATCH_BODY) {
   return withApi(account, async (api) => {
     const response = await api.post(`/api/quick-request/${requestNo}/dispatch`, { data: body });
     await expectOk(response, `dispatch ${requestNo}`);

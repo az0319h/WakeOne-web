@@ -1,18 +1,20 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { DataTable } from '@/components/ui/table/data-table';
 import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import { useDataTable } from '@/hooks/use-data-table';
 import { quickRequestListQueryOptions } from '../../api/queries';
+import type { QuickRequestListRow } from '../../api/types';
 import { QUICK_REQUEST_LIST_DEFAULT_LIMIT } from '../../schemas/quick-request-workflow';
-import { createQuickDashboardColumns } from './quick-dashboard-columns';
+import { createQuickDashboardColumns, quickRequestDetailHref } from './quick-dashboard-columns';
+import { QuickDashboardDataTable } from './quick-dashboard-data-table';
 import { QuickDashboardEmpty } from './quick-dashboard-empty';
 import { QuickRequestMobileCard } from './quick-request-mobile-card';
 import type { QuickRequestRowActionHandlers } from './quick-request-row-action';
 import {
-  hasActiveQuickDashboardFilters,
+  getQuickDashboardEmptyReason,
   QUICK_DASHBOARD_PAGE_SIZE_OPTIONS,
   toQuickRequestListFilters,
   type QuickDashboardFilters
@@ -22,21 +24,31 @@ type QuickDashboardBodyProps = QuickRequestRowActionHandlers & {
   filters: QuickDashboardFilters;
   canCreate: boolean;
   onResetFilters: () => void;
+  onShowAllRange: () => void;
   onPageOverflow: (lastPage: number) => void;
 };
 
-/** 목록 본문 — lg↑ 표 / lg↓ 카드 (CSS 전환 · designer K2) · 페이지네이션은 공용 */
+/** 목록 본문 — lg↑ 표 / lg↓ 카드 (CSS 전환 · designer K2) · 페이지네이션은 공용 · 행/카드 클릭 → 상세 (plan 94 D-7) */
 export function QuickDashboardBody({
   filters,
   canCreate,
   onResetFilters,
+  onShowAllRange,
   onPageOverflow,
   onDispatch,
   onSetFinal,
   onApprove
 }: QuickDashboardBodyProps) {
+  const router = useRouter();
   const { data } = useSuspenseQuery(quickRequestListQueryOptions(toQuickRequestListFilters(filters)));
   const pageCount = Math.max(1, Math.ceil(data.total / filters.perPage) || 1);
+
+  const openDetail = useCallback(
+    (row: QuickRequestListRow) => {
+      router.push(quickRequestDetailHref(row.requestNo));
+    },
+    [router]
+  );
 
   const columns = useMemo(
     () => createQuickDashboardColumns({ onDispatch, onSetFinal, onApprove }),
@@ -64,9 +76,10 @@ export function QuickDashboardBody({
   if (data.total === 0) {
     return (
       <QuickDashboardEmpty
-        hasFilters={hasActiveQuickDashboardFilters(filters)}
+        reason={getQuickDashboardEmptyReason(filters)}
         canCreate={canCreate}
         onResetFilters={onResetFilters}
+        onShowAllRange={onShowAllRange}
       />
     );
   }
@@ -74,7 +87,11 @@ export function QuickDashboardBody({
   return (
     <div className='flex min-w-0 flex-1 flex-col gap-3'>
       <div data-testid='quick-dashboard-table' className='hidden min-w-0 lg:block'>
-        <DataTable table={table} />
+        <QuickDashboardDataTable
+          table={table}
+          onRowClick={openDetail}
+          pageSizeOptions={QUICK_DASHBOARD_PAGE_SIZE_OPTIONS}
+        />
       </div>
       <div className='flex min-w-0 flex-col gap-3 lg:hidden'>
         <ul data-testid='quick-dashboard-cards' className='flex min-w-0 flex-col gap-3'>
@@ -82,6 +99,7 @@ export function QuickDashboardBody({
             <QuickRequestMobileCard
               key={row.id}
               row={row}
+              onOpen={openDetail}
               onDispatch={onDispatch}
               onSetFinal={onSetFinal}
               onApprove={onApprove}

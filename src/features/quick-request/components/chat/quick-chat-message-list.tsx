@@ -11,8 +11,11 @@ import { QuickChatBubble } from './quick-chat-bubble';
 import { QUICK_CHAT_NEAR_BOTTOM_PX, QUICK_CHAT_TEXT, quickChatText } from './quick-chat-constants';
 import { QuickChatDivider } from './quick-chat-divider';
 import type { QuickChatReader, QuickChatReceiptState } from './quick-chat-receipt';
+import { QuickChatSystemLine } from './quick-chat-system-line';
 
 type QuickChatMessageListProps = {
+  /** plan 98 — 말풍선 첨부(lightbox·다운로드) pass-through */
+  requestNo: string;
   items: QuickChatListItem<QuickChatMessageItem>[];
   messages: QuickChatMessageItem[];
   viewer: QuickRequestChatViewer;
@@ -20,7 +23,7 @@ type QuickChatMessageListProps = {
   canWrite: boolean;
   /** 마지막 서버 메시지가 보이면(IO + visibilityState) 호출 — `useMarkRead` (C-11) */
   onLastMessageVisible: (lastMessageId: number) => void;
-  onRetry: (tempId: string, body: string) => void;
+  onRetry: (tempId: string) => void;
   onDiscard: (tempId: string) => void;
 };
 
@@ -28,11 +31,14 @@ function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** C-12 — 내 메시지의 상대편 역할: 내가 요청자면 동방·admin, 내가 동방·admin이면 요청자만 */
-function counterpartRoles(viewerRole: QuickRequestChatViewer['role']): ReadonlySet<string> {
-  return viewerRole === 'requester' || viewerRole === 'logistics'
-    ? new Set(['dongbang', 'admin'])
-    : new Set(['requester']);
+/**
+ * C-12 (plan 101 확장) — 내 메시지의 상대편 역할: 내가 요청자·참여자·구매물류면 동방·admin·참여자,
+ * 내가 동방·admin이면 요청자·참여자. 초대 참여자끼리도 서로 상대편이다 (AC-15 · `reads[].role==='participant'`)
+ */
+export function counterpartRoles(viewerRole: QuickRequestChatViewer['role']): ReadonlySet<string> {
+  return viewerRole === 'requester' || viewerRole === 'logistics' || viewerRole === 'participant'
+    ? new Set(['dongbang', 'admin', 'participant'])
+    : new Set(['requester', 'participant']);
 }
 
 /**
@@ -41,6 +47,7 @@ function counterpartRoles(viewerRole: QuickRequestChatViewer['role']): ReadonlyS
  * ③ 마지막 서버 메시지 IntersectionObserver(root=컨테이너, 0.5) + visibilityState → 읽음 갱신.
  */
 export function QuickChatMessageList({
+  requestNo,
   items,
   messages,
   viewer,
@@ -160,7 +167,7 @@ export function QuickChatMessageList({
         className='relative h-full overflow-y-auto overscroll-contain px-4 py-3'
         onScroll={handleScroll}
       >
-        {messages.length === 0 ? (
+        {messages.length === 0 && items.length === 0 ? (
           <div
             data-testid='quick-chat-empty'
             className='flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground'
@@ -168,53 +175,64 @@ export function QuickChatMessageList({
             {canWrite ? QUICK_CHAT_TEXT.emptyWritable : QUICK_CHAT_TEXT.emptyReadOnly}
           </div>
         ) : (
-          items.map((item) => {
-            if (item.type === 'date') {
-              return <QuickChatDivider key={item.key} label={item.label} data-testid='quick-chat-date-divider' />;
-            }
-            if (item.type === 'unread') {
+          // plan 96 D-4 — 메시지가 적으면 아래(입력창 쪽)에 붙인다. relative·gap 금지(offsetTop·말풍선 간격 유지)
+          <div data-testid='quick-chat-messages-stack' className='flex min-h-full flex-col justify-end'>
+            {items.map((item) => {
+              if (item.type === 'date') {
+                return <QuickChatDivider key={item.key} label={item.label} data-testid='quick-chat-date-divider' />;
+              }
+              if (item.type === 'unread') {
+                return (
+                  <QuickChatDivider
+                    key={item.key}
+                    label={QUICK_CHAT_TEXT.unreadDivider}
+                    tone='primary'
+                    data-testid='quick-chat-unread-divider'
+                  />
+                );
+              }
+              if (item.type === 'system') {
+                return <QuickChatSystemLine key={item.key} event={item.event} />;
+              }
+              const { message } = item;
+              const isMine = message.authorUserId === viewer.userId;
+              let receiptState: QuickChatReceiptState = 'sent';
+              let readers: QuickChatReader[] = [];
+              if (isMine) {
+                if (message.clientState === 'pending' || isTempMessageId(message.id)) {
+                  receiptState = 'pending';
+                } else {
+                  readers = reads
+                    .filter(
+                      (read) =>
+                        read.userId !== viewer.userId &&
+                        roles.has(read.role) &&
+                        read.lastReadMessageId >= (message.id as number)
+                    )
+                    .map((read) => ({
+                      userId: read.userId,
+                      name: read.name,
+                      lastReadAt: read.lastReadAt
+                    }));
+                  receiptState = readers.length > 0 ? 'read' : 'sent';
+                }
+              }
               return (
-                <QuickChatDivider
+                <QuickChatBubble
                   key={item.key}
-                  label={QUICK_CHAT_TEXT.unreadDivider}
-                  tone='primary'
-                  data-testid='quick-chat-unread-divider'
+                  requestNo={requestNo}
+                  message={message}
+                  isMine={isMine}
+                  isGroupStart={item.isGroupStart}
+                  isGroupEnd={item.isGroupEnd}
+                  receiptState={receiptState}
+                  readers={readers}
+                  onRetry={onRetry}
+                  onDiscard={onDiscard}
                 />
               );
-            }
-            const { message } = item;
-            const isMine = message.authorUserId === viewer.userId;
-            let receiptState: QuickChatReceiptState = 'sent';
-            let readers: QuickChatReader[] = [];
-            if (isMine) {
-              if (message.clientState === 'pending' || isTempMessageId(message.id)) {
-                receiptState = 'pending';
-              } else {
-                readers = reads
-                  .filter(
-                    (read) =>
-                      read.userId !== viewer.userId &&
-                      roles.has(read.role) &&
-                      read.lastReadMessageId >= (message.id as number)
-                  )
-                  .map((read) => ({ userId: read.userId, name: read.name, lastReadAt: read.lastReadAt }));
-                receiptState = readers.length > 0 ? 'read' : 'sent';
-              }
-            }
-            return (
-              <QuickChatBubble
-                key={item.key}
-                message={message}
-                isMine={isMine}
-                isGroupStart={item.isGroupStart}
-                isGroupEnd={item.isGroupEnd}
-                receiptState={receiptState}
-                readers={readers}
-                onRetry={onRetry}
-                onDiscard={onDiscard}
-              />
-            );
-          })
+            })}
+          </div>
         )}
       </div>
       {newCount > 0 ? (

@@ -9,7 +9,7 @@ import {
   fillQuickRequestOrder,
   gotoQuickRequest,
   noteChip,
-  previewMessage,
+  previewCard,
   resetNotesToSeed,
   SEED_NOTE_LABEL,
   quickRequestMain,
@@ -127,7 +127,7 @@ test.describe('퀵 배송 요청 모바일 375 (plan 86 AC-15~18)', () => {
 
     await clickMobileRegister(page);
     await expect(main.getByText('물품 내용을 입력해 주세요.')).toBeVisible();
-    await expect(previewMessage(page)).toHaveCount(0);
+    await expect(previewCard(page)).toHaveCount(0);
     await expect(itemField).toBeInViewport();
   });
 

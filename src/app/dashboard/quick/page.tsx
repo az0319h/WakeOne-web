@@ -6,8 +6,10 @@ import { requireDashboardSession } from '@/features/auth/api/session.server';
 import { buildQuickRequestViewer } from '@/features/quick-request/api/workflow.server';
 import { QuickDashboardPage } from '@/features/quick-request/components/dashboard/quick-dashboard-page';
 import { quickInfoContent } from '@/features/quick-request/info-content';
+import { resolveQuickScopeTopic } from '@/features/quick-request/lib/quick-realtime-topics';
 
-const QUICK_DASHBOARD_DESCRIPTION = '최근 7일 기준 · 한국 시간, 오늘 포함';
+/** plan 97 AC-10 — 기간은 목록 위에서 선택 (기본 최근 7일 · `quickRangeLabel`이 메타바에 표시) */
+const QUICK_DASHBOARD_DESCRIPTION = '한국 시간 기준 · 오늘 포함 · 조회 기간은 목록 위에서 선택합니다';
 
 /** plan 89 — 퀵 대시보드. 목록은 클라이언트에서 조회한다(서버 prefetch 없음 · workflow와 같음) */
 export default async function QuickDashboardRoute() {
@@ -30,7 +32,10 @@ export default async function QuickDashboardRoute() {
         ) : undefined
       }
     >
-      <QuickDashboardPage canCreate={viewer.canCreate} />
+      <QuickDashboardPage
+        canCreate={viewer.canCreate}
+        realtimeTopic={resolveQuickScopeTopic({ scope: viewer.scope, userId: profile.user_id })}
+      />
     </PageContainer>
   );
 }

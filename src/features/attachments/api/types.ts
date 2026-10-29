@@ -5,7 +5,9 @@ export type LightboxSource =
   | { kind: 'contract'; parentId: number }
   | { kind: 'my-contract'; parentId: number }
   | { kind: 'announcement'; parentId: number }
-  | { kind: 'workflow'; parentId: string };
+  | { kind: 'workflow'; parentId: string }
+  /** plan 98 — 퀵 대화 첨부 (parentId = requestNo `YYYY-NN` · id = number) */
+  | { kind: 'quick-chat'; parentId: string };
 
 export type AttachmentLightboxItemStatus = 'active' | 'soft_deleted';
 

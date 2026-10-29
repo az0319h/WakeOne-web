@@ -323,3 +323,4 @@ tar -tzf ../quick-request-baseline-20261020.tar.gz | head   # 내용 확인
 |------|----------|--------|
 | 2026-10-20 | 최초 작성 · Approved · 83 UI/AC supersede · 카카오 디자인 단일 화면 · THEMES 10종 × light/dark · tar 스냅샷 롤백 | planner |
 | 2026-10-21 | 일부 AC·testid·Out 범위 superseded by [87](./87_quick-request-goods-notes-address-picker-plan.md) (물품 크기·사용자별 특이사항 칩·주소 검색 Dialog·최근 주소) | planner |
+| 2026-10-28 | [96](./96_quick-preview-card-chat-bottom-align-plan.md) 구현 반영 — 미리보기 Dialog의 `<pre data-testid="quick-request-preview-message">` 텍스트 덩어리를 **구조화 카드**(`quick-request-preview-card` · 출발/도착 2칸 · 경유 · 칩 4종)로 교체 → AC-13의 `<pre>`·`previewMessage()` 판정은 `dialog[name=퀵 요청 미리보기]` 가시성 + 칩/카드 testid로 supersede · `formatQuickRequestKakaoMessage`→(92)`formatQuickRequestPreviewText` 계열 포맷터 **삭제** · `DialogFooter gap-2`. 레이아웃·테마·반응형 규칙은 유지 | planner |

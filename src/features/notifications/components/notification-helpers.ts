@@ -129,7 +129,12 @@ export function getNotificationActions(
   }
 
   // plan 93 — 채팅 알림은 「퀵 대화」로 (다른 퀵 알림은 「퀵 요청 보기」 유지)
-  if (notification.type === 'quick_request.chat_message') {
+  // plan 101 D-6 ① — 참여자 초대 알림도 「퀵 대화」(그 건 선택) · metadata.quick_request_event 분기
+  if (
+    notification.type === 'quick_request.chat_message' ||
+    (notification.type === 'quick_request.requester_event' &&
+      notification.metadata?.quick_request_event === 'participant_invited')
+  ) {
     return [
       {
         id: 'view-quick-request-chat',

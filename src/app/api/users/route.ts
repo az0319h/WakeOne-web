@@ -43,7 +43,9 @@ export async function GET(request: NextRequest) {
       ...(searchParams.get('statuses') && {
         statuses: searchParams.get('statuses')!
       }),
-      ...(searchParams.get('userId') && { userId: searchParams.get('userId')! })
+      ...(searchParams.get('userId') && { userId: searchParams.get('userId')! }),
+      // plan 95 — 기본 동방특송 제외 · `includeDongbang=1`일 때만 포함 (admin 전용 API · requireAdminSession 통과 후)
+      ...(searchParams.get('includeDongbang') === '1' && { includeDongbang: true })
     };
 
     const result = await listUsersForAdmin(supabase, filters);

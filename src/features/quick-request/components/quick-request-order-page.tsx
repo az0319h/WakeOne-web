@@ -9,10 +9,9 @@ import { useAppForm } from '@/components/ui/tanstack-form';
 import { notifyError, notifySuccess } from '@/lib/notify';
 import { createQuickRequestMutation } from '../api/mutations';
 import { buildQuickRequestDefaultValues } from '../lib/default-form-values';
-import { formatQuickRequestPreviewText } from '../lib/format-quick-request-message';
 import { mapFormValuesToNotifyPayload } from '../lib/map-quick-request-notify';
 import { getQuickRequestErrorMessage } from '../lib/quick-request-mutation-feedback';
-import { quickRequestFormSchema } from '../schemas/quick-request-form';
+import { quickRequestFormSchema, type QuickRequestFormValues } from '../schemas/quick-request-form';
 import { QuickRequestConfirmBoard } from './quick-request-confirm-board';
 import type { QuickRequestOrderForm } from './quick-request-form-api';
 import { QuickRequestMobileSummaryBar } from './quick-request-mobile-summary-bar';
@@ -25,11 +24,14 @@ type QuickRequestOrderPageProps = {
     full_name: string;
     phone: string | null;
   };
+  /** plan 99 — 서버 `isPlaceSearchConfigured()` 결과 · 주소 검색 Dialog 「장소 검색」 탭 (기본 false) */
+  placeSearchEnabled?: boolean;
 };
 
 export function QuickRequestOrderPage({
   requesterName,
-  profileDefaults
+  profileDefaults,
+  placeSearchEnabled = false
 }: QuickRequestOrderPageProps) {
   const emptyDefaults = React.useMemo(
     () => buildQuickRequestDefaultValues(profileDefaults),
@@ -37,7 +39,7 @@ export function QuickRequestOrderPage({
   );
 
   const [previewOpen, setPreviewOpen] = React.useState(false);
-  const [previewMessage, setPreviewMessage] = React.useState('');
+  const [previewValues, setPreviewValues] = React.useState<QuickRequestFormValues | null>(null);
   const [requestedAt, setRequestedAt] = React.useState<Date>(() => new Date());
 
   const form = useAppForm({
@@ -56,7 +58,7 @@ export function QuickRequestOrderPage({
       }
       const at = new Date();
       setRequestedAt(at);
-      setPreviewMessage(formatQuickRequestPreviewText(parsed.data, requesterName, at));
+      setPreviewValues(parsed.data);
       setPreviewOpen(true);
     },
     onSubmitInvalid: () => {
@@ -112,7 +114,7 @@ export function QuickRequestOrderPage({
           <div data-testid='quick-request-order-page' className='flex min-h-0 flex-1 flex-col'>
             <div className='grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem]'>
               <div className='relative -mx-1 min-h-0 min-w-0 overflow-y-auto overscroll-contain px-1 pb-8'>
-                <QuickRequestOrderFormSections form={orderForm} />
+                <QuickRequestOrderFormSections form={orderForm} placeSearchEnabled={placeSearchEnabled} />
               </div>
               <form.Subscribe selector={(state) => state.values}>
                 {(values) => (
@@ -140,7 +142,9 @@ export function QuickRequestOrderPage({
       <QuickRequestPreviewDialog
         open={previewOpen}
         onOpenChange={setPreviewOpen}
-        message={previewMessage}
+        values={previewValues}
+        requesterName={requesterName}
+        requestedAt={requestedAt}
         onConfirm={handleConfirmCreate}
         isPending={isRegistering}
       />

@@ -11,6 +11,8 @@ export type UserFilters = {
   search?: string;
   sort?: string;
   userId?: string;
+  /** plan 95 — 동방특송 포함 (기본 false = 서버 제외). 사용자 관리·활동 로그·알림 「타인 보기」 콤보만 true */
+  includeDongbang?: boolean;
 };
 
 export type UsersResponse = {

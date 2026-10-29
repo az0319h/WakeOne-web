@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { EXCLUDE_DONGBANG_OR_FILTER, isOrgAffiliation } from '@/features/users/constants/organization';
+import { applyDongbangScope } from '@/features/users/api/profile-scope.server';
+import { isOrgAffiliation } from '@/features/users/constants/organization';
 import { getKstTodayDateString } from '@/lib/kst';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
@@ -49,19 +50,20 @@ function toCelebrant(row: ProfileRow, referenceDate: string): BirthdayCelebrant 
 
 /**
  * plan 102 — overview 생일 휠 목록 (회사 전체).
- * 대상: active · 동방특송 아님(`EXCLUDE_DONGBANG_OR_FILTER`) · `birthday` 있음.
+ * 대상: active · 동방특송 아님(`applyDongbangScope` · plan 95) · `birthday` 있음.
  * 기준일은 KST 오늘. 정렬은 D-3(`days_offset` → 가나다).
  */
 export async function getBirthdayCelebrantsServer(): Promise<BirthdayCelebrantsResponse> {
   const referenceDate = getKstTodayDateString();
   const supabase = getServiceRoleClient();
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(CELEBRANT_COLUMNS)
-    .eq('status', 'active')
-    .not('birthday', 'is', null)
-    .or(EXCLUDE_DONGBANG_OR_FILTER);
+  const { data, error } = await applyDongbangScope(
+    supabase
+      .from('profiles')
+      .select(CELEBRANT_COLUMNS)
+      .eq('status', 'active')
+      .not('birthday', 'is', null)
+  );
 
   if (error) {
     throw error;

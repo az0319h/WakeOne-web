@@ -40,7 +40,7 @@ test.describe('PWA 셸 · manifest · SW', () => {
     }
   });
 
-  test('AC-02: GET /sw.js 200 · javascript · push·notificationclick 리스너 포함', async ({
+  test('AC-02 · plan 94 AC-12: GET /sw.js 200 · javascript · push·notificationclick 리스너 · postMessage wakeone:navigate · client.navigate 1곳 · openWindow 유지', async ({
     playwright
   }) => {
     const anon = await playwright.request.newContext({ storageState: { cookies: [], origins: [] } });
@@ -51,6 +51,12 @@ test.describe('PWA 셸 · manifest · SW', () => {
       const body = await response.text();
       expect(body).toContain("addEventListener('push'");
       expect(body).toContain("addEventListener('notificationclick'");
+
+      // plan 94 AC-12 (D-6) — 열린 창에는 postMessage('wakeone:navigate') · client.navigate( 는 ack 타임아웃 fallback 1곳 · openWindow( 유지
+      expect(body).toContain('postMessage(');
+      expect(body).toContain("'wakeone:navigate'");
+      expect(body.split('client.navigate(').length - 1, 'client.navigate( 1곳(ack 타임아웃 fallback)').toBe(1);
+      expect(body).toContain('openWindow(');
     } finally {
       await anon.dispose();
     }
