@@ -6,13 +6,18 @@ import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import type { QuickRequestListRow } from '../../api/types';
 import { formatQuickAmountWon } from '../../lib/format-quick-amount';
+import { isInteractiveClickTarget } from '../../lib/is-interactive-click-target';
 import {
   formatQuickGoodsLabel,
   formatQuickVehicleSummary
 } from '../../lib/quick-request-route-label';
 import { QuickRequestRouteDot } from '../quick-request-summary-content';
 import { QuickRequestStatusBadge } from '../quick-request-status-badge';
-import { QuickUnreadChatBadge, quickRequestDetailHref } from './quick-dashboard-columns';
+import {
+  QuickParticipantBadge,
+  QuickUnreadChatBadge,
+  quickRequestDetailHref
+} from './quick-dashboard-columns';
 import {
   QuickRequestRowAction,
   resolveQuickRowAction,
@@ -21,16 +26,34 @@ import {
 
 type QuickRequestMobileCardProps = QuickRequestRowActionHandlers & {
   row: QuickRequestListRow;
+  /** 카드 본문 탭 / 포커스 후 Enter·Space → 상세 (plan 94 D-7) */
+  onOpen: (row: QuickRequestListRow) => void;
 };
 
-/** lg 미만 카드 — 표와 같은 데이터 · testid `quick-card-*` (카드 전체는 링크가 아님) */
-export function QuickRequestMobileCard({ row, ...handlers }: QuickRequestMobileCardProps) {
+/**
+ * lg 미만 카드 — 표와 같은 데이터 · testid `quick-card-*`.
+ * 카드 전체 탭 → 상세 (plan 94 D-7). 안의 「새 대화 N」 Link·「상세 보기」 Link·업무 버튼은 가드로 전파 차단.
+ * `role`은 주지 않는다(ul>li 시맨틱 유지) — 접근성 1차 경로는 「상세 보기」 Link, `tabIndex=0`은 보조.
+ */
+export function QuickRequestMobileCard({ row, onOpen, ...handlers }: QuickRequestMobileCardProps) {
   const hasAction = resolveQuickRowAction(row) !== null;
 
   return (
     <li
       data-testid={`quick-card-${row.requestNo}`}
-      className='flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground'
+      tabIndex={0}
+      className='flex min-w-0 cursor-pointer flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
+      onClick={(event) => {
+        if (isInteractiveClickTarget(event.target)) return;
+        onOpen(row);
+      }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen(row);
+        }
+      }}
     >
       <div className='flex min-w-0 items-start justify-between gap-2'>
         <QuickRequestStatusBadge status={row.status} />
@@ -40,6 +63,7 @@ export function QuickRequestMobileCard({ row, ...handlers }: QuickRequestMobileC
             count={row.unreadMessageCount}
             className='min-h-7 px-2'
           />
+          {row.isParticipant ? <QuickParticipantBadge requestNo={row.requestNo} /> : null}
           <span translate='no' className='text-base font-semibold tabular-nums'>
             {row.requestNo}
           </span>

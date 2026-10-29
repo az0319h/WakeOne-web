@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createRequestId } from '@/features/activity-logs/api/log.server';
+import { isDongbang } from '@/features/auth/api/quick-access.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
   failWithLog,
@@ -20,6 +21,7 @@ import {
 } from '@/features/notifications/api/push-subscriptions.server';
 import {
   isPushGroupKey,
+  isPushGroupVisibleForDongbang,
   listPushGroupsForRole,
   type PushGroupKey
 } from '@/features/notifications/lib/push-groups';
@@ -33,7 +35,7 @@ const updateSchema = z.object({
     .refine((groups) => groups.every(isPushGroupKey), 'unknown group')
 });
 
-/** 설정 + 기기 목록 + 그룹 카탈로그(역할 필터) + configured — READ (activity log Out) */
+/** 설정 + 기기 목록 + 그룹 카탈로그(역할 필터 · plan 95 동방특송 2그룹) + configured — READ (activity log Out) */
 export async function GET() {
   const session = await requireSession();
   if (!session.ok) {
@@ -53,7 +55,9 @@ export async function GET() {
         disabled_groups: disabledGroups,
         device_count: subscriptions.length,
         devices: subscriptions.map(toDeviceView),
-        groups: listPushGroupsForRole(session.profile.system_role === 'admin' ? 'admin' : 'user')
+        groups: listPushGroupsForRole(session.profile.system_role === 'admin' ? 'admin' : 'user', {
+          dongbang: isDongbang(session.profile)
+        })
       }
     });
   } catch (error) {
@@ -82,10 +86,17 @@ export async function PUT(request: NextRequest) {
       return failWithLog(ctx, session, 400, PUSH_INVALID_GROUP_MESSAGE, 'validation');
     }
 
-    const saved = await upsertDisabledPushGroups(
-      session.userId,
-      parsed.data.disabled_groups as PushGroupKey[]
-    );
+    const disabledGroups = parsed.data.disabled_groups as PushGroupKey[];
+
+    // plan 95 D-5 — 동방특송은 `dongbang_visible` 그룹(profile·quick_request)만 저장할 수 있다. 그 밖은 400(기존 문구)
+    if (
+      isDongbang(session.profile) &&
+      disabledGroups.some((group) => !isPushGroupVisibleForDongbang(group))
+    ) {
+      return failWithLog(ctx, session, 400, PUSH_INVALID_GROUP_MESSAGE, 'validation');
+    }
+
+    const saved = await upsertDisabledPushGroups(session.userId, disabledGroups);
 
     return respondWithLog(
       ctx,

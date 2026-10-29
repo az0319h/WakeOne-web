@@ -33,6 +33,8 @@ export type QuickRequestOrderForm = {
     children: (field: QuickRequestFieldApi) => ReactNode;
   }) => ReactNode;
   setFieldValue: (name: string, value: unknown) => void;
+  /** plan 99 D-4 — 상세 주소가 비었는지 확인 (장소명 채움 조건) */
+  getFieldValue: (name: string) => unknown;
   reset: (values?: QuickRequestFormValues) => void;
   handleSubmit: () => void | Promise<void>;
 };

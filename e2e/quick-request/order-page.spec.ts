@@ -9,7 +9,11 @@ import {
   fillQuickRequestOrder,
   gotoQuickRequest,
   ORIGIN_PHONE,
-  previewMessage,
+  previewCard,
+  previewChips,
+  previewDialog,
+  previewItemDescription,
+  previewStopovers,
   quickRequestMain,
   quickRequestOrderPage,
   resetNotesToSeed,
@@ -63,24 +67,22 @@ test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', 
     await fillQuickRequestOrder(page, { goodsSize: 'other', item: '' });
     await clickDesktopRegister(page);
     await expect(quickRequestMain(page).getByText('물품 내용을 입력해 주세요.')).toBeVisible();
-    await expect(previewMessage(page)).toHaveCount(0);
+    await expect(previewCard(page)).toHaveCount(0);
   });
 
+  // plan 96 — `<pre>` 텍스트 판정 → 칩 줄(`formatVehicleTypes` 형식 `5톤, 오토바이, 기타(특수 윙바디) × 1대`)
   test('AC-08: 5톤 + 오토바이 + 기타 · 기타 비움 차단 → 입력 후 Dialog 반영', async ({ page }) => {
     await gotoQuickRequest(page);
     await fillQuickRequestOrder(page, { vehicles: ['5톤', '오토바이', '기타'] });
     await clickDesktopRegister(page);
     await expect(quickRequestMain(page).getByText('기타 차량을 입력해 주세요.')).toBeVisible();
-    await expect(previewMessage(page)).toHaveCount(0);
+    await expect(previewCard(page)).toHaveCount(0);
 
     await quickRequestMain(page).getByTestId('quick-request-vehicle-other').fill('특수 윙바디');
     await clickDesktopRegister(page);
-    const preview = previewMessage(page);
-    await expect(preview).toBeVisible();
-    await expect(preview).toContainText('5톤');
-    await expect(preview).toContainText('오토바이');
-    await expect(preview).toContainText('기타');
-    await expect(preview).toContainText('특수 윙바디');
+    await expect(previewCard(page)).toBeVisible();
+    const chips = previewChips(page);
+    await expect(chips).toContainText('5톤, 오토바이, 기타(특수 윙바디) × 1대');
   });
 
   test('AC-09: 차량 카드 img alt=차량명 · 2.5톤/5톤 톤수 · 기타 아이콘(이미지 없음)', async ({
@@ -118,7 +120,7 @@ test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', 
     await fillQuickRequestOrder(page, { count: { preset: 3 } });
     await expect(desktopSummary(page)).toContainText('3대');
     await clickDesktopRegister(page);
-    await expect(previewMessage(page)).toContainText('3대');
+    await expect(previewChips(page)).toContainText('× 3대');
   });
 
   test('AC-10: 대수 직접 7 → 요약·Dialog 7대', async ({ page }) => {
@@ -126,7 +128,7 @@ test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', 
     await fillQuickRequestOrder(page, { count: { custom: 7 } });
     await expect(desktopSummary(page)).toContainText('7대');
     await clickDesktopRegister(page);
-    await expect(previewMessage(page)).toContainText('7대');
+    await expect(previewChips(page)).toContainText('× 7대');
   });
 
   test('AC-11: 경유 3회 추가 → remove-1 → 2블록 · 상한 없음 · 요약/Dialog 순서 반영', async ({
@@ -166,12 +168,16 @@ test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', 
 
     await fillQuickRequestOrder(page);
     await clickDesktopRegister(page);
-    const preview = previewMessage(page);
-    await expect(preview).toBeVisible();
-    const previewText = await preview.innerText();
-    expect(previewText).not.toContain(stops[1]);
-    expect(previewText.indexOf(stops[0])).toBeGreaterThan(-1);
-    expect(previewText.indexOf(stops[2])).toBeGreaterThan(previewText.indexOf(stops[0]));
+    // plan 96 — 경유 순서는 `quick-request-preview-stopovers`의 「경유 N」 행으로 판정
+    const stopovers = previewStopovers(page);
+    await expect(stopovers).toBeVisible();
+    const rows = stopovers.getByRole('listitem');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0)).toContainText('경유 1');
+    await expect(rows.nth(0)).toContainText(stops[0]);
+    await expect(rows.nth(1)).toContainText('경유 2');
+    await expect(rows.nth(1)).toContainText(stops[2]);
+    await expect(stopovers).not.toContainText(stops[1]);
   });
 
   // plan 87 supersede — 칩은 사용자별 DB seed 「동승 필요」 (group + role 셀렉터)
@@ -202,7 +208,7 @@ test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', 
       'E2E 출발'
     );
     await clickDesktopRegister(page);
-    await expect(previewMessage(page)).toContainText(/새 퀵 요청|퀵 요청/);
+    await expect(previewDialog(page)).toBeVisible();
     const { requestBody } = await confirmPreviewAndRegister(page);
     expect((requestBody.origin as { contactName?: string }).contactName).toBe('E2E 출발');
     await expect(page.getByTestId('quick-detail-status')).toHaveText('신규요청');
@@ -243,10 +249,11 @@ test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () =
     await fillQuickRequestOrder(page, { goodsSize: null });
     await clickDesktopRegister(page);
     await expect(quickRequestMain(page).getByText('물품 크기를 선택해 주세요.')).toBeVisible();
-    await expect(previewMessage(page)).toHaveCount(0);
+    await expect(previewCard(page)).toHaveCount(0);
   });
 
-  test('AC-03: (r1) 기타 → 물품 내용 노출 · 비움 에러 → 「철판 2m」 미리보기 크기/물품 두 줄 · 요약', async ({
+  // plan 96 AC-04 대체 — 「크기: 기타」·「물품:」 줄 판정 → 칩 「기타」 + `quick-request-preview-item-description`
+  test('AC-03: (r1) 기타 → 물품 내용 노출 · 비움 에러 → 「철판 2m」 미리보기 칩 「기타」 + 물품 내용 행 · 요약', async ({
     page
   }) => {
     await gotoQuickRequest(page);
@@ -255,7 +262,7 @@ test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () =
     await expect(itemDescriptionField(page)).toBeVisible();
     await clickDesktopRegister(page);
     await expect(quickRequestMain(page).getByText('물품 내용을 입력해 주세요.')).toBeVisible();
-    await expect(previewMessage(page)).toHaveCount(0);
+    await expect(previewCard(page)).toHaveCount(0);
 
     await itemDescriptionField(page).fill('철판 2m');
     const summary = desktopSummary(page);
@@ -265,15 +272,13 @@ test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () =
     await expect(summary.getByText('철판 2m', { exact: true })).toBeVisible();
 
     await clickDesktopRegister(page);
-    const preview = previewMessage(page);
-    await expect(preview).toBeVisible();
-    const lines = (await preview.innerText()).split('\n').map((line) => line.trim());
-    const sizeIndex = lines.indexOf('크기: 기타');
-    expect(sizeIndex, lines.join(' | ')).toBeGreaterThan(-1);
-    expect(lines[sizeIndex + 1]).toBe('물품: 철판 2m');
+    await expect(previewCard(page)).toBeVisible();
+    await expect(previewChips(page).getByText('기타', { exact: true })).toHaveCount(1);
+    await expect(previewItemDescription(page)).toContainText('물품 내용');
+    await expect(previewItemDescription(page)).toContainText('철판 2m');
   });
 
-  test('AC-04: (r1) 소형 → 물품 내용 미노출·검증 없음 · 미리보기 「크기: 소형」 · 물품 줄/행 0건', async ({
+  test('AC-04: (r1) 소형 → 물품 내용 미노출·검증 없음 · 미리보기 칩 「소형」 · 물품 내용 행 0건', async ({
     page
   }) => {
     await gotoQuickRequest(page);
@@ -287,11 +292,9 @@ test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () =
 
     await clickDesktopRegister(page);
     await expect(quickRequestMain(page).getByText('물품 내용을 입력해 주세요.')).toHaveCount(0);
-    const preview = previewMessage(page);
-    await expect(preview).toBeVisible();
-    const lines = (await preview.innerText()).split('\n').map((line) => line.trim());
-    expect(lines).toContain('크기: 소형');
-    expect(lines.filter((line) => line.startsWith('물품:'))).toEqual([]);
+    await expect(previewCard(page)).toBeVisible();
+    await expect(previewChips(page).getByText('소형', { exact: true })).toHaveCount(1);
+    await expect(previewItemDescription(page)).toHaveCount(0);
     // Dialog 열림 중 main은 aria-hidden — 요약은 page 기준 testid
     await expect(page.getByTestId('quick-request-summary').getByText('물품', { exact: true })).toHaveCount(0);
   });
@@ -306,12 +309,11 @@ test.describe('퀵 배송 요청 물품 크기 · 확인 흐름 (plan 87)', () =
     await expect(desktopSummary(page).getByText('철판 2m')).toHaveCount(0);
 
     await clickDesktopRegister(page);
-    const preview = previewMessage(page);
+    const preview = previewCard(page);
     await expect(preview).toBeVisible();
-    const lines = (await preview.innerText()).split('\n').map((line) => line.trim());
-    expect(lines).toContain('크기: 소형');
-    expect(lines.filter((line) => line.startsWith('물품:'))).toEqual([]);
-    expect(lines.join('\n')).not.toContain('철판 2m');
+    await expect(previewChips(page).getByText('소형', { exact: true })).toHaveCount(1);
+    await expect(previewItemDescription(page)).toHaveCount(0);
+    await expect(preview).not.toContainText('철판 2m');
 
     // plan 89 — notify 대신 POST /api/quick-request (등록)
     const { requestBody } = await confirmPreviewAndRegister(page);

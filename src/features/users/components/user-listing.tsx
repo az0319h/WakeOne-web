@@ -19,7 +19,9 @@ export default function UserListingPage() {
     ...(search && { search }),
     ...(systemRoles && { systemRoles }),
     ...(statuses && { statuses }),
-    ...(sort && { sort })
+    ...(sort && { sort }),
+    // plan 95 D-2① — 사용자 관리는 동방특송 포함 (users-table/index.tsx 클라이언트 키와 동일해야 hydration 적중)
+    includeDongbang: true
   };
 
   const queryClient = getQueryClient();

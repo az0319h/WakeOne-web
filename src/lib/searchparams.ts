@@ -38,7 +38,9 @@ export const searchParams = {
   request: parseAsString,
   q: parseAsString,
   tab: parseAsString,
-  chat: parseAsString
+  chat: parseAsString,
+  // plan 97 — 퀵 조회 기간 (range · from/to는 위 공용)
+  range: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')

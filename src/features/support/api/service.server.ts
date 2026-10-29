@@ -3,6 +3,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import type { AuthProfile } from '@/features/auth/api/types';
+import { applyDongbangScope } from '@/features/users/api/profile-scope.server';
 import {
   SUPPORT_PAGE_SIZE,
   SUPPORT_STATUSES,
@@ -217,10 +218,13 @@ async function fetchProfilesByUserIds(userIds: string[]): Promise<Map<string, Pr
   }
 
   const supabase = getServiceRoleClient();
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('user_id, full_name, email, system_role')
-    .in('user_id', uniqueUserIds);
+  // plan 95 S-6 — CS 작성자/담당 표시 조인에서 동방특송 제외 (미조인 → 기존 '알 수 없음' fallback)
+  const { data, error } = await applyDongbangScope(
+    supabase
+      .from('profiles')
+      .select('user_id, full_name, email, system_role')
+      .in('user_id', uniqueUserIds)
+  );
 
   if (error) {
     throw new Error(error.message);

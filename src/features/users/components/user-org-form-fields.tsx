@@ -168,11 +168,7 @@ export function UserCreateOrgFormFields() {
         type='email'
         placeholder='user@example.com'
       />
-      <FormPhoneField
-        name='phone'
-        label='연락처'
-        placeholder='010-0000-0000'
-      />
+      <FormPhoneField name='phone' label='연락처' />
       <FormSelectField
         name='affiliation'
         label='소속'
@@ -215,11 +211,7 @@ export function UserApprovalOrgFormFields() {
         type='email'
         placeholder='user@example.com'
       />
-      <FormPhoneField
-        name='phone'
-        label='연락처'
-        placeholder='010-0000-0000'
-      />
+      <FormPhoneField name='phone' label='연락처' />
       <FormSelectField
         name='system_role'
         label='시스템 역할'
@@ -260,11 +252,7 @@ export function UserEditOrgFormFields() {
   return (
     <div className='space-y-4'>
       <FormTextField name='full_name' label='이름' placeholder='이름' />
-      <FormPhoneField
-        name='phone'
-        label='연락처'
-        placeholder='010-0000-0000'
-      />
+      <FormPhoneField name='phone' label='연락처' />
       <FormTextField
         name='avatar_url'
         label='아바타 URL'

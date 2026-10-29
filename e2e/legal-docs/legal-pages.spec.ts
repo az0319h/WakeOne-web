@@ -31,7 +31,8 @@ test.describe('법률 문서 현행화 (plan 60)', () => {
     await page.goto('/privacy-policy');
 
     await expect(page.getByRole('heading', { name: '개인정보처리방침', level: 1 })).toBeVisible();
-    await expect(page.getByText('시행일: 2026-10-02')).toBeVisible();
+    // plan 100 D-9 ② — Anthropic(외부 AI) 위탁 항목 추가로 개정 (2026-10-22 → 2026-10-28)
+    await expect(page.getByText('시행일: 2026-10-28')).toBeVisible();
     await expect(page.getByText('인증 정보: Google OAuth')).toBeVisible();
     await expect(page.getByText('Google LLC')).toBeVisible();
     await expect(page.getByText('Functional Software, Inc. (Sentry)')).toBeVisible();

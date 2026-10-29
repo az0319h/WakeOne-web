@@ -11,6 +11,7 @@ import {
 import type { ApproveUserFormValues } from '@/features/users/schemas/user';
 import { normalizeEmail } from '@/lib/auth/normalize-email';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { applyDongbangScope } from './profile-scope.server';
 import type { ProfileStatus, User, UserFilters, UsersResponse } from './types';
 
 const EMAIL_CONFLICT_MESSAGES: Record<ProfileStatus, string> = {
@@ -351,7 +352,10 @@ function applyUserListFilters<T extends { in: Function; or: Function; eq: Functi
   return next;
 }
 
-/** Admin users list — clamps page when URL page exceeds available data (avoids PostgREST range errors). */
+/**
+ * Admin users list — clamps page when URL page exceeds available data (avoids PostgREST range errors).
+ * plan 95 — 동방특송은 기본 제외(`applyDongbangScope`). count·data 두 쿼리 모두 같은 scope를 거친다(page 클램프 일관성).
+ */
 export async function listUsersForAdmin(
   supabase: SupabaseClient,
   filters: UserFilters
@@ -359,9 +363,13 @@ export async function listUsersForAdmin(
   const page = Number(filters.page ?? 1);
   const limit = Number(filters.limit ?? 10);
   const { sortColumn, sortDesc } = resolveSort(filters.sort);
+  const scope = { includeDongbang: filters.includeDongbang === true };
 
   const countQuery = applyUserListFilters(
-    supabase.from('profiles').select('user_id', { count: 'exact', head: true }),
+    applyDongbangScope(
+      supabase.from('profiles').select('user_id', { count: 'exact', head: true }),
+      scope
+    ),
     filters
   );
 
@@ -376,8 +384,11 @@ export async function listUsersForAdmin(
   const from = (safePage - 1) * limit;
   const to = from + limit - 1;
 
-  let dataQuery = applyUserListFilters(
-    supabase.from('profiles').select(PROFILE_LIST_SELECT, { count: 'exact' }),
+  const dataQuery = applyUserListFilters(
+    applyDongbangScope(
+      supabase.from('profiles').select(PROFILE_LIST_SELECT, { count: 'exact' }),
+      scope
+    ),
     filters
   );
 

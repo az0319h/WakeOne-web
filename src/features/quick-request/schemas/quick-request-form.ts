@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { PHONE_REGEX } from '@/lib/phone';
+import { PHONE_INPUT_ERROR } from '@/lib/phone-messages';
 import {
   QUICK_REQUEST_GOODS_SIZES,
   QUICK_REQUEST_ITEM_DESCRIPTION_MAX_LENGTH,
@@ -16,7 +17,7 @@ const locationFieldsSchema = z.object({
   contactPhone: z
     .string()
     .min(1, '연락처를 입력해 주세요.')
-    .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.')
+    .regex(PHONE_REGEX, PHONE_INPUT_ERROR)
 });
 
 export const quickRequestOriginFormSchema = locationFieldsSchema.extend({

@@ -75,7 +75,9 @@ const isQuickRequestE2eRun = process.argv.some((arg) => {
     normalized.includes('e2e/quick-workflow') ||
     normalized.includes('e2e/quick-info') ||
     // plan 93 — 퀵 대화(e2e/quick-chat): 2 context 실시간·계정 공유 → 직렬
-    normalized.includes('e2e/quick-chat')
+    normalized.includes('e2e/quick-chat') ||
+    // plan 94 — 퀵 2차(e2e/quick-round2): Broadcast 실시간·WebSocket 차단·계정 공유 → 직렬
+    normalized.includes('e2e/quick-round2')
   );
 });
 
@@ -152,6 +154,10 @@ export default defineConfig({
             ...(isGoogleTasksE2eRun ? { E2E_GOOGLE_TASKS_MOCK: '1' } : {}),
             ...(isPushE2eRun ? { E2E_WEB_PUSH_MOCK: '1' } : {}),
             ...(isQuickRequestE2eRun ? { E2E_SLOW_QUICK_REQUEST: '1' } : {}),
+            // plan 99 — e2e는 외부 장소 검색(카카오)을 실제로 부르지 않는다: fixture(e2e/fixtures/kakao-places.json) mock.
+            // 미설정 AC-10은 E2E_KAKAO_PLACES_UNCONFIGURED=1을 같이 넘긴다(MOCK보다 우선 · ...process.env).
+            // reuseExistingServer라 이미 떠 있는 dev 서버에는 적용되지 않는다 → 직접 띄울 때도 같은 env로 띄울 것
+            E2E_KAKAO_PLACES_MOCK: process.env.E2E_KAKAO_PLACES_MOCK ?? '1',
             ...(isDevProvisionE2eRun
               ? {
                   WAKEONE_ENV: 'development',
@@ -253,6 +259,7 @@ export default defineConfig({
         /quick-workflow[\\/]/,
         /quick-info[\\/]/,
         /quick-chat[\\/]/,
+        /quick-round2[\\/]/,
         /push-notifications[\\/]/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
@@ -384,6 +391,19 @@ export default defineConfig({
       timeout: 120_000
     },
     {
+      // plan 94 — 퀵 2차(실시간 Broadcast·푸시 클릭·작은 수정·수정 알림·잠금 해제): user·user2·admin·동방·구매물류 storageState + 2 context → 직렬
+      // plan 95 — 동방 노출 범위 감사: hr(복지비 관리자) storageState 추가
+      name: 'chromium-quick-round2',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2', 'setup-hr-benefits', 'setup-dongbang', 'setup-logistics'],
+      testMatch: [/quick-round2[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 150_000
+    },
+    {
       // plan 91 — 휴대폰 웹 푸시: user.json 기본 + admin·동방특송 request 컨텍스트 · 공유 구독 상태 → 직렬
       name: 'chromium-push',
       use: {
@@ -472,6 +492,7 @@ export default defineConfig({
         /[\\/]workflow[\\/]/,
         /quick-workflow[\\/]/,
         /quick-chat[\\/]/,
+        /quick-round2[\\/]/,
         /push-notifications[\\/]/,
         /auth[\\/]guard-parity\.api\.spec\.ts$/,
         ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : []),

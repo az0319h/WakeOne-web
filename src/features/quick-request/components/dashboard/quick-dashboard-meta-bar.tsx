@@ -1,56 +1,79 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
-import { formatAbsoluteDateKo } from '@/lib/format-date';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import { quickRequestKeys, quickRequestSummaryQueryOptions } from '../../api/queries';
+import type { QuickRequestRangeFilters } from '../../api/types';
+import { quickRangeLabel } from '../../lib/quick-request-range';
+
+const subscribeNoop = () => () => undefined;
+
+/** SSR·hydration 중 false — 레이아웃(사이드바 배지)이 먼저 띄운 fetch로 `useIsFetching`이 hydration 시점에 >0이 되는 불일치를 막는다 */
+function useIsHydrated() {
+  return useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+}
+
+type QuickDashboardMetaBarProps = {
+  /** 선택 기간 (summary 쿼리 키 · 라벨) */
+  rangeFilters: QuickRequestRangeFilters;
+};
 
 /**
- * 조회 기간 · 갱신 시각 · 새로고침 — Suspense 밖.
- * plan 92 U-1 — 왼쪽 발송 상태 배지를 없애고 한 줄로 정리(모바일 왼쪽 · sm↑ 오른쪽 정렬). 대체 요소 없음.
+ * 조회 기간 라벨 · 갱신 시각 · 새로고침 — Suspense 밖.
+ * plan 97 D-7 — 왼쪽 「기간: 최근 7일」/「기간: 2026-10-01 ~ 2026-10-27」/「기간: 전체」(`quickRangeLabel`) · 오른쪽 갱신·새로고침.
  */
-export function QuickDashboardMetaBar() {
+export function QuickDashboardMetaBar({ rangeFilters }: QuickDashboardMetaBarProps) {
   const queryClient = useQueryClient();
-  const { data: summary, dataUpdatedAt } = useQuery(quickRequestSummaryQueryOptions());
+  const { dataUpdatedAt } = useQuery(quickRequestSummaryQueryOptions(rangeFilters));
   const fetchingCount = useIsFetching({ queryKey: quickRequestKeys.all });
-  const isFetching = fetchingCount > 0;
+  const isHydrated = useIsHydrated();
+  const isFetching = isHydrated && fetchingCount > 0;
 
   function handleRefresh() {
     void queryClient.refetchQueries({ queryKey: quickRequestKeys.lists(), type: 'active' });
-    void queryClient.refetchQueries({ queryKey: quickRequestKeys.summary(), type: 'active' });
+    void queryClient.refetchQueries({ queryKey: quickRequestKeys.summaries(), type: 'active' });
   }
 
   return (
     <div
       data-testid='quick-dashboard-meta-bar'
-      className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground sm:justify-end'
+      className='flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground'
     >
-      {summary ? (
-        <span className='tabular-nums'>
-          {formatAbsoluteDateKo(summary.range.fromDate)} ~ {formatAbsoluteDateKo(summary.range.toDate)}
-        </span>
-      ) : null}
-      <span aria-live='polite' data-testid='quick-dashboard-updated-at' className='tabular-nums'>
-        갱신 {dataUpdatedAt > 0 ? formatAbsoluteDateTimeKo(new Date(dataUpdatedAt)) : '—'}
-      </span>
-      <Button
-        type='button'
-        variant='ghost'
-        size='icon'
-        className='size-11 lg:size-9'
-        aria-label='새로고침'
-        data-testid='quick-dashboard-refresh'
-        disabled={isFetching}
-        onClick={handleRefresh}
+      <span
+        data-testid='quick-dashboard-range-label'
+        aria-live='polite'
+        className='mr-auto tabular-nums'
       >
-        <Icons.refresh
-          aria-hidden
-          className={cn('size-4', isFetching && 'animate-spin motion-reduce:animate-none')}
-        />
-      </Button>
+        {quickRangeLabel(rangeFilters)}
+      </span>
+      <div className='flex min-w-0 items-center gap-1'>
+        <span aria-live='polite' data-testid='quick-dashboard-updated-at' className='tabular-nums'>
+          갱신 {dataUpdatedAt > 0 ? formatAbsoluteDateTimeKo(new Date(dataUpdatedAt)) : '—'}
+        </span>
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon'
+          className='size-11 lg:size-9'
+          aria-label='새로고침'
+          data-testid='quick-dashboard-refresh'
+          disabled={isFetching}
+          onClick={handleRefresh}
+        >
+          <Icons.refresh
+            aria-hidden
+            className={cn('size-4', isFetching && 'animate-spin motion-reduce:animate-none')}
+          />
+        </Button>
+      </div>
     </div>
   );
 }

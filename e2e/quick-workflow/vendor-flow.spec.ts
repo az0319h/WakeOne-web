@@ -72,7 +72,7 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
       await dialog.getByTestId('quick-dispatch-submit').click();
       for (const message of [
         '예상금액을 입력해 주세요.',
-        '차량정보를 입력해 주세요.',
+        '자동차등록번호를 입력해 주세요.',
         '기사 이름을 입력해 주세요.',
         '기사 연락처를 입력해 주세요.'
       ]) {
@@ -80,7 +80,7 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
       }
       // 하나만 비움 (기사 연락처)
       await dialog.getByTestId('quick-dispatch-estimated-amount').fill('20000');
-      await dialog.getByTestId('quick-dispatch-vehicle-info').fill('오토바이 8514');
+      await dialog.getByTestId('quick-dispatch-vehicle-info').fill('21마 6543');
       await dialog.getByTestId('quick-dispatch-driver-name').fill('홍길동');
       await dialog.getByTestId('quick-dispatch-submit').click();
       await expect(dialog.getByText('기사 연락처를 입력해 주세요.', { exact: true })).toBeVisible();
@@ -89,7 +89,7 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
       await dialog.getByTestId('quick-dispatch-driver-phone').fill('0101234');
       await dialog.getByTestId('quick-dispatch-submit').click();
       await expect(
-        dialog.getByText('연락처는 11자리 숫자만 입력할 수 있습니다.', { exact: true })
+        dialog.getByText('연락처는 숫자 9~11자리로 입력해 주세요.', { exact: true })
       ).toBeVisible();
       await page.waitForTimeout(500);
       expect(dispatchCalls, 'dispatch 요청 미전송').toEqual([]);
@@ -105,7 +105,7 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
       await expectDetailStatus(page, 'dispatched');
       await expect(page.getByTestId('quick-detail-estimated-amount')).toContainText('20,000원');
       const dispatchSection = page.getByTestId('quick-detail-section-dispatch');
-      await expect(dispatchSection).toContainText('오토바이 8514');
+      await expect(dispatchSection).toContainText('21마 6543');
       await expect(dispatchSection).toContainText('홍길동');
       await expect(page.getByTestId('quick-detail-driver-phone')).toContainText('010-1234-5678');
     } finally {
@@ -118,16 +118,26 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
     );
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0].title).toBe(NOTIFY_TITLE.dispatched(requestNo));
-    expect(dispatched[0].body).toBe('오토바이 8514 · 기사 홍길동 · 예상 20,000원');
+    expect(dispatched[0].body).toBe('21마 6543 · 기사 홍길동 · 예상 20,000원');
     expect(dispatched[0].body).not.toContain('010');
     await expectLogFor('quick_request.dispatch', requestNo, 200);
   });
 
-  test('AC-19: 수정 Sheet 도착 상세주소·도착 연락처·차량 종류 변경 → 즉시 반영 · update 로그 changedFields · 알림 없음', async ({
+  test('AC-19: 수정 Sheet 도착 상세주소·도착 연락처·차량 종류 변경 → 즉시 반영 · update 로그 changedFields · 요청자 「수정됨」 알림 1건(94 D-11)', async ({
     browser
   }) => {
     const { requestNo } = await seedQuickRequest('dispatching');
     const user = await fixtureUser('user');
+    // plan 96 verifier — seed(accept)의 요청자 `accepted` 알림은 Route `after()`에서 늦게 기록된다(부하 시 0.5s+).
+    // `before` 스냅샷 전에 기다리지 않으면 `before+2`로 보이는 spec 레이스 → 먼저 기록을 기다린다 (앱 변경 없음)
+    await expect
+      .poll(
+        async () =>
+          (await dbNotificationsByEvent(requestNo, 'accepted')).filter((row) => row.recipient_user_id === user.userId)
+            .length,
+        { timeout: 15_000, message: 'seed accepted 알림 기록 대기' }
+      )
+      .toBe(1);
     const before = (await dbNotifications(user.userId, requestNo)).length;
     const { context, page } = await pageAs(browser, 'dongbang');
     const newDetail = `E2E89 수정 도착 ${Date.now()}`;
@@ -172,7 +182,10 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
     const log = await expectLogFor('quick_request.update', requestNo, 200);
     const changed = (log.metadata?.changedFields ?? []) as string[];
     expect(changed).toEqual(expect.arrayContaining(['destination', 'vehicleTypes']));
-    expect((await dbNotifications(user.userId, requestNo)).length, '수정은 알림을 만들지 않는다').toBe(before);
+    // plan 94 D-11 — 최종금액 외 항목 수정 → 요청자에게 `updated` 알림 1건 (89 AC-19 「알림 없음」 supersede)
+    await expect
+      .poll(async () => (await dbNotifications(user.userId, requestNo)).length, { timeout: 15_000 })
+      .toBe(before + 1);
   });
 
   test('AC-20: dispatched 최종금액 23000 → 상세·표 23,000원 · 요청자 알림 「퀵 {번호} 최종금액 입력」 · 「확인 후 승인해 주세요.」', async ({
@@ -224,9 +237,13 @@ test.describe('plan 89 C. 동방특송 처리 흐름', () => {
     const conflict = responses.find((res) => res.status === 409)!;
     expect(conflict.body.message).toBe(MSG.stale);
     const user = await fixtureUser('user');
-    const accepted = (await dbNotificationsByEvent(requestNo, 'accepted')).filter(
-      (row) => row.recipient_user_id === user.userId
-    );
-    expect(accepted, '요청자 접수 알림은 1건(409는 알림 없음)').toHaveLength(1);
+    // plan 96 verifier — 알림은 `after()` 지연 기록 → 1건이 될 때까지 기다린 뒤 추가 기록이 없는지(409는 알림 없음) 확인
+    const acceptedOf = async () =>
+      (await dbNotificationsByEvent(requestNo, 'accepted')).filter((row) => row.recipient_user_id === user.userId);
+    await expect
+      .poll(async () => (await acceptedOf()).length, { timeout: 15_000, message: '요청자 접수 알림 기록 대기' })
+      .toBe(1);
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    expect(await acceptedOf(), '요청자 접수 알림은 1건(409는 알림 없음)').toHaveLength(1);
   });
 });

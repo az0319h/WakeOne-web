@@ -1,23 +1,45 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { quickRequestKeys } from '../api/keys';
-import type { QuickRequestMessage, QuickRequestMessagesData } from '../api/types';
+import type {
+  QuickRequestMessage,
+  QuickRequestMessageAttachment,
+  QuickRequestMessagesData
+} from '../api/types';
 
 /**
  * plan 93 — `quickRequestKeys.messages(no)` 캐시 형태·merge 규칙 (mutations · Realtime · UI 공용).
  * 서버 행은 `id: number`(bigint identity), optimistic 임시 행은 `id: 'temp-{uuid}'`로 구분한다(AC-33).
+ * plan 98 — 임시 행의 첨부는 `previewUrl`(ObjectURL · 이미지만)을 들고 있다가 201 교체 후 revoke한다.
  */
 
 export const QUICK_CHAT_TEMP_ID_PREFIX = 'temp-';
 
 export type QuickChatClientState = 'pending' | 'failed';
 
+/** 캐시 안 첨부 — 서버 행 또는 optimistic 임시 행(`previewUrl` = ObjectURL 썸네일) */
+export type QuickChatAttachmentItem = QuickRequestMessageAttachment & {
+  previewUrl?: string;
+};
+
 /** 캐시 안 메시지 — 서버 행 또는 optimistic 임시 행 */
-export type QuickChatMessageItem = Omit<QuickRequestMessage, 'id'> & {
+export type QuickChatMessageItem = Omit<QuickRequestMessage, 'id' | 'attachments'> & {
   id: number | string;
+  attachments: QuickChatAttachmentItem[];
   clientState?: QuickChatClientState;
 };
 
-/** 캐시 형태 (서버 응답 + 임시 메시지) · 404는 null */
+/** 본문 + 첨부 id 목록 — 임시 행 dedupe 키 (본문 `''` 첨부 메시지가 여러 개여도 오판하지 않는다) */
+export function chatMessageDedupeKey(message: {
+  body: string;
+  attachments: readonly { id: number }[];
+}): string {
+  return `${message.body}\u0000${message.attachments.map((attachment) => attachment.id).join(',')}`;
+}
+
+/**
+ * 캐시 형태 (서버 응답 + 임시 메시지) · 404는 null.
+ * plan 101 — `participants`·`events`는 서버 응답을 그대로 통과(merge 시 `...incoming`이 서버 값 우선 · 임시 행 없음).
+ */
 export type QuickChatMessagesCache = Omit<QuickRequestMessagesData, 'messages'> & {
   messages: QuickChatMessageItem[];
 };
@@ -68,7 +90,7 @@ export function mergeServerMessage(
         (message.clientState === 'pending' &&
           incoming.authorUserId === options.myUserId &&
           message.authorUserId === options.myUserId &&
-          message.body === incoming.body));
+          chatMessageDedupeKey(message) === chatMessageDedupeKey(incoming)));
     if (matchesTemp) {
       if (!replaced) {
         next.push({ ...incoming });
@@ -83,6 +105,35 @@ export function mergeServerMessage(
     next.push({ ...incoming });
   }
   return sortChatMessages(next);
+}
+
+/**
+ * plan 94 — refetch(Realtime invalidate · polling) 결과와 캐시 merge (`quickRequestMessagesQueryOptions.structuralSharing`).
+ * 서버 응답이 기준이되, 캐시의 optimistic 임시 행은 보존한다: 내 `pending` 임시 행과 같은 본문의 서버 행이 왔으면
+ * 임시 행을 버리고(dedupe · POST 응답보다 refetch가 먼저 와도 말풍선 2개가 되지 않는다), `failed`·아직 안 온 pending은 남긴다.
+ */
+export function mergeRefetchedMessages(
+  current: QuickChatMessagesCache | null | undefined,
+  incoming: QuickRequestMessagesData
+): QuickChatMessagesCache {
+  if (!current) {
+    return incoming;
+  }
+  const myServerKeys = new Set(
+    incoming.messages
+      .filter((message) => message.authorUserId === incoming.viewer.userId)
+      .map((message) => chatMessageDedupeKey(message))
+  );
+  const keptTemps = current.messages.filter((message) => {
+    if (!isTempMessageId(message.id)) return false;
+    if (message.clientState === 'pending' && myServerKeys.has(chatMessageDedupeKey(message))) return false;
+    return true;
+  });
+  return {
+    ...incoming,
+    myLastReadMessageId: Math.max(current.myLastReadMessageId, incoming.myLastReadMessageId),
+    messages: sortChatMessages([...incoming.messages, ...keptTemps])
+  };
 }
 
 export function getMessagesCache(

@@ -1,5 +1,7 @@
 import * as z from 'zod';
 import { PHONE_REGEX } from '@/lib/phone';
+import { PHONE_INPUT_ERROR } from '@/lib/phone-messages';
+import { quickRequestVehiclePlateSchema } from '../lib/quick-request-vehicle-plate';
 import {
   quickRequestDestinationSchema,
   quickRequestLocationSchema,
@@ -38,10 +40,10 @@ export function isQuickRequestStatus(value: string | null | undefined): value is
   return Boolean(value && (QUICK_REQUEST_STATUSES as readonly string[]).includes(value));
 }
 
-/** 대시보드 조회 기간 (KST 오늘 포함 7일) */
-export const QUICK_REQUEST_DASHBOARD_DAYS = 7;
+/** plan 97 D-2 — 페이지 크기 (기본 20 · 10/20/50 · 서버는 50으로 클램프). 조회 기간은 `lib/quick-request-range.ts` */
+export const QUICK_REQUEST_LIST_PAGE_SIZES = [10, 20, 50] as const;
 export const QUICK_REQUEST_LIST_DEFAULT_LIMIT = 20;
-export const QUICK_REQUEST_LIST_MAX_LIMIT = 100;
+export const QUICK_REQUEST_LIST_MAX_LIMIT = 50;
 
 export const QUICK_REQUEST_CANCEL_REASON_MAX_LENGTH = 200;
 export const QUICK_REQUEST_AMOUNT_MAX = 99_999_999;
@@ -73,13 +75,10 @@ const driverPhoneSchema = z
   .string({ message: '기사 연락처를 입력해 주세요.' })
   .trim()
   .min(1, '기사 연락처를 입력해 주세요.')
-  .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.');
+  .regex(PHONE_REGEX, PHONE_INPUT_ERROR);
 
-const vehicleInfoSchema = z
-  .string({ message: '차량정보를 입력해 주세요.' })
-  .trim()
-  .min(1, '차량정보를 입력해 주세요.')
-  .max(100, '차량정보는 100자 이내로 입력해 주세요.');
+/** plan 94 D-9 — 자동차등록번호 (정규화 + 번호판 3패턴 · 20자). 컬럼 `dispatch_vehicle_info`·필드명은 유지 */
+const vehicleInfoSchema = quickRequestVehiclePlateSchema;
 
 const driverNameSchema = z
   .string({ message: '기사 이름을 입력해 주세요.' })
@@ -98,7 +97,7 @@ export const quickRequestCreateBodySchema = z
 
 export type QuickRequestCreateBody = z.infer<typeof quickRequestCreateBodySchema>;
 
-/** POST …/dispatch — 4필드 필수 (AC-17) */
+/** POST …/dispatch — 4필드 필수 (89 AC-17) · `vehicleInfo`는 자동차등록번호 형식 (94 AC-17) */
 export const quickRequestDispatchBodySchema = z.object({
   estimatedAmount: amountSchema('예상금액을 입력해 주세요.'),
   vehicleInfo: vehicleInfoSchema,

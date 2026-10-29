@@ -70,3 +70,7 @@ Supabase DB 스키마 설계, SQL 작성, Route Handler, service 레이어 구�
 - [ ] 응답 `x-request-id` 헤더 **[INFERRED]** plan 준수 시
 
 채팅 완료 보고에 **Route return 매트릭스 체크리스트**를 포함한다.
+
+## NEVER (이메일 · 2026-10-28)
+
+- 테스트·스모크·시드에서 **메일 발송 Route**(`POST /api/contracts/reminders` · 잔액 메일)를 실제 호출하지 않는다. `E2E_REMINDER_DRY_RUN=1` 없이 실행 금지. 이메일은 계약서 누락·식대 잔액 두 용도뿐이며 그 외 알림은 인앱+푸시다 (워크스페이스 `CLAUDE.md` §이메일 정책).

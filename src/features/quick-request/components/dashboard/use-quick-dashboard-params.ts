@@ -1,16 +1,27 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import type { QuickRequestListFilters, QuickRequestStatus } from '../../api/types';
+import type { QuickRequestListFilters, QuickRequestRangeFilters, QuickRequestStatus } from '../../api/types';
+import {
+  normalizeQuickRangeParams,
+  quickRangeParsers,
+  toQuickRangeFilters,
+  toQuickRangeParams,
+  type QuickRangeValue
+} from '../../lib/quick-range-search-params';
+import type { QuickRangeKind } from '../../lib/quick-request-range';
 import {
   isQuickRequestStatus,
-  QUICK_REQUEST_LIST_DEFAULT_LIMIT
+  QUICK_REQUEST_LIST_DEFAULT_LIMIT,
+  QUICK_REQUEST_LIST_PAGE_SIZES
 } from '../../schemas/quick-request-workflow';
 
-export const QUICK_DASHBOARD_PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
+/** plan 97 D-2 — 10 · 20 · 50 (`DataTablePagination pageSizeOptions`) */
+export const QUICK_DASHBOARD_PAGE_SIZE_OPTIONS: number[] = [...QUICK_REQUEST_LIST_PAGE_SIZES];
 
 const quickDashboardParsers = {
+  ...quickRangeParsers,
   status: parseAsString,
   search: parseAsString,
   page: parseAsInteger.withDefault(1),
@@ -18,41 +29,71 @@ const quickDashboardParsers = {
 };
 
 export type QuickDashboardFilters = {
+  /** plan 97 D-1 — 정규화된 기간 (`range`는 항상 · `from`/`to`는 custom일 때만) */
+  range: QuickRangeKind;
+  from: string | null;
+  to: string | null;
   /** 허용값 밖은 null(전체) */
   status: QuickRequestStatus | null;
   search: string | null;
   page: number;
+  /** 10 · 20 · 50 — 옵션 밖은 20 */
   perPage: number;
 };
 
-/** 대시보드 URL 상태 (status·search·page·perPage) — nuqs shallow */
+function normalizePerPage(perPage: number): number {
+  return (QUICK_REQUEST_LIST_PAGE_SIZES as readonly number[]).includes(perPage)
+    ? perPage
+    : QUICK_REQUEST_LIST_DEFAULT_LIMIT;
+}
+
+/** 대시보드 URL 상태 (range·from·to·status·search·page·perPage) — nuqs shallow */
 export function useQuickDashboardParams() {
   const [params, setParams] = useQueryStates(quickDashboardParsers, {
     shallow: true,
     throttleMs: 50
   });
 
-  const filters = useMemo<QuickDashboardFilters>(
-    () => ({
+  const filters = useMemo<QuickDashboardFilters>(() => {
+    const range = normalizeQuickRangeParams(params);
+    return {
+      range: range.range,
+      from: range.from,
+      to: range.to,
       status: isQuickRequestStatus(params.status) ? params.status : null,
       search: params.search?.trim() ? params.search.trim() : null,
       page: Math.max(1, params.page),
-      perPage: params.perPage > 0 ? params.perPage : QUICK_REQUEST_LIST_DEFAULT_LIMIT
-    }),
-    [params.page, params.perPage, params.search, params.status]
+      perPage: normalizePerPage(params.perPage)
+    };
+  }, [params]);
+
+  /** 기간·상태·검색이 바뀌면 page를 1로 되돌린다 (plan 89 AC-31 · plan 97 D-2) */
+  const setStatus = useCallback(
+    (status: QuickRequestStatus | null) => void setParams({ status, page: null }),
+    [setParams]
+  );
+  const setSearch = useCallback(
+    (search: string | null) => void setParams({ search, page: null }),
+    [setParams]
+  );
+  const setRange = useCallback(
+    (next: QuickRangeValue) => void setParams({ ...toQuickRangeParams(next), page: null }),
+    [setParams]
+  );
+  /** 상태·검색만 초기화 · 기간은 조회 컨텍스트라 유지 (designer K3) */
+  const resetFilters = useCallback(
+    () => void setParams({ status: null, search: null, page: null }),
+    [setParams]
   );
 
-  /** 상태·검색이 바뀌면 page를 1로 되돌린다 (AC-31) */
-  const setStatus = (status: QuickRequestStatus | null) =>
-    void setParams({ status, page: null });
-  const setSearch = (search: string | null) => void setParams({ search, page: null });
-  const resetFilters = () => void setParams({ status: null, search: null, page: null });
-
-  return { filters, setStatus, setSearch, resetFilters };
+  return { filters, setStatus, setSearch, setRange, resetFilters };
 }
 
 export function toQuickRequestListFilters(filters: QuickDashboardFilters): QuickRequestListFilters {
   return {
+    range: filters.range,
+    from: filters.from,
+    to: filters.to,
     status: filters.status,
     search: filters.search,
     page: filters.page,
@@ -60,6 +101,25 @@ export function toQuickRequestListFilters(filters: QuickDashboardFilters): Quick
   };
 }
 
+/** 카드·메타바(summary) 쿼리 키용 — 기간만 */
+export function toQuickDashboardRangeFilters(filters: QuickDashboardFilters): QuickRequestRangeFilters {
+  return toQuickRangeFilters(filters);
+}
+
+export function toQuickDashboardRangeValue(filters: QuickDashboardFilters): QuickRangeValue {
+  return { range: filters.range, from: filters.from, to: filters.to };
+}
+
+/** 「초기화」 활성 · 「조건에 맞는」 빈 상태 — 기간은 제외 (designer K3 · 기간은 조회 컨텍스트라 초기화가 되돌리지 않는다) */
 export function hasActiveQuickDashboardFilters(filters: QuickDashboardFilters): boolean {
   return filters.status !== null || filters.search !== null;
+}
+
+/** 0건 빈 상태 종류 — `filtered` 검색·상태 · `period` 기간(「전체」 아님) · `initial` 전체 기간 0건 */
+export type QuickDashboardEmptyReason = 'filtered' | 'period' | 'initial';
+
+/** 검색·상태가 우선 · 그다음 기간 · 「첫 퀵 요청」은 기간 「전체」 + 필터 없음일 때만 (mobile-ux 2차 A#6) */
+export function getQuickDashboardEmptyReason(filters: QuickDashboardFilters): QuickDashboardEmptyReason {
+  if (hasActiveQuickDashboardFilters(filters)) return 'filtered';
+  return filters.range === 'all' ? 'initial' : 'period';
 }

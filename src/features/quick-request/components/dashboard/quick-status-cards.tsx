@@ -1,10 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { quickRequestSummaryQueryOptions } from '../../api/queries';
-import type { QuickRequestStatus } from '../../api/types';
+import type { QuickRequestRangeFilters, QuickRequestStatus } from '../../api/types';
 import {
   QUICK_REQUEST_CARD_DESCRIPTIONS,
   QUICK_REQUEST_CARD_STATUSES,
@@ -13,6 +13,8 @@ import {
 } from '../../lib/quick-request-status';
 
 type QuickStatusCardsProps = {
+  /** 선택 기간 — 카드 숫자는 이 기간 기준 (plan 97 D-4) */
+  rangeFilters: QuickRequestRangeFilters;
   selected: QuickRequestStatus | null;
   /** 같은 카드를 다시 누르면 null(해제) */
   onSelect: (status: QuickRequestStatus | null) => void;
@@ -20,10 +22,13 @@ type QuickStatusCardsProps = {
 
 /**
  * 상태 카드 4개 + 「취소 N」 — Suspense 밖 · non-suspense `useQuery`(designer K5).
- * 필터를 바꿔도 카드 숫자는 Spinner로 바뀌지 않는다(plan 40 filter shell).
+ * 필터·기간을 바꿔도 카드 숫자는 Spinner로 바뀌지 않는다(plan 40 filter shell · `keepPreviousData` · `aria-busy`).
  */
-export function QuickStatusCards({ selected, onSelect }: QuickStatusCardsProps) {
-  const { data: summary } = useQuery(quickRequestSummaryQueryOptions());
+export function QuickStatusCards({ rangeFilters, selected, onSelect }: QuickStatusCardsProps) {
+  const { data: summary, isFetching } = useQuery({
+    ...quickRequestSummaryQueryOptions(rangeFilters),
+    placeholderData: keepPreviousData
+  });
   const counts = summary?.counts;
 
   function toggle(status: QuickRequestStatus) {
@@ -31,7 +36,7 @@ export function QuickStatusCards({ selected, onSelect }: QuickStatusCardsProps) 
   }
 
   return (
-    <div className='flex min-w-0 flex-col gap-2'>
+    <div className='flex min-w-0 flex-col gap-2' aria-busy={isFetching}>
       <div className='grid grid-cols-2 gap-2 lg:grid-cols-4'>
         {QUICK_REQUEST_CARD_STATUSES.map((status) => {
           const isSelected = selected === status;
@@ -57,7 +62,7 @@ export function QuickStatusCards({ selected, onSelect }: QuickStatusCardsProps) 
                 <span className='break-keep'>{QUICK_REQUEST_STATUS_LABELS[status]}</span>
               </span>
               <span
-                aria-busy={count === undefined}
+                aria-busy={count === undefined || isFetching}
                 data-testid={`quick-dashboard-card-${status}-count`}
                 className='text-2xl font-semibold text-foreground tabular-nums'
               >
@@ -83,7 +88,7 @@ export function QuickStatusCards({ selected, onSelect }: QuickStatusCardsProps) 
           )}
         >
           {QUICK_REQUEST_STATUS_LABELS.cancelled}{' '}
-          <span aria-busy={counts === undefined}>{counts?.cancelled ?? '—'}</span>
+          <span aria-busy={counts === undefined || isFetching}>{counts?.cancelled ?? '—'}</span>
         </Button>
       </div>
     </div>

@@ -1,10 +1,16 @@
 import 'server-only';
 
-import { isDongbang, isQuickAdmin } from '@/features/auth/api/quick-access.server';
+import {
+  canManageQuickRequestParticipants,
+  isDongbang,
+  isQuickAdmin
+} from '@/features/auth/api/quick-access.server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { isChatAiSuggestEnabled } from './ai-suggest.server';
 import { buildQuickRouteSummary } from '../lib/quick-request-route-label';
 import {
-  QUICK_CHAT_CONVERSATIONS_LIMIT,
+  QUICK_CHAT_CONVERSATIONS_MAX_LIMIT,
+  QUICK_CHAT_CONVERSATIONS_PAGE_SIZE,
   QUICK_CHAT_MESSAGES_LIMIT,
   QUICK_CHAT_PREVIEW_LENGTH,
   QUICK_CHAT_QUICK_REPLIES,
@@ -22,12 +28,29 @@ import type {
   QuickRequestMessageRead,
   QuickRequestMessagesData
 } from './types';
+import type { QuickRange } from '../lib/quick-request-range';
 import {
-  canViewQuickRequest,
+  buildChatBodyWithAttachmentSummary,
+  type QuickChatAttachmentKind
+} from '../schemas/quick-request-attachment';
+import {
+  listQuickChatAttachmentKindsByMessageIds,
+  listQuickChatAttachmentsByMessageIds,
+  toQuickRequestMessageAttachment,
+  type QuickRequestMessageAttachmentRow
+} from './attachments.server';
+import { canViewAllQuickRequests } from '@/features/auth/api/quick-access.server';
+import {
+  encodeConversationCursor,
+  type QuickConversationCursor
+} from './cursor.server';
+import {
+  buildQuickRequestParticipantsData,
+  listActiveParticipantUserIds
+} from './participants.server';
+import {
   fetchQuickRequestUnreadCounts,
-  isQuickRequestLocked,
-  listWindowRows,
-  matchesQuickRequestSearch,
+  listParticipantRequestIds,
   normalizeQuickRequestSearch,
   QUICK_REQUEST_COLUMNS,
   type QuickRequestRow,
@@ -62,49 +85,50 @@ type ProfileNameRow = Pick<QuickViewerProfile, 'user_id' | 'system_role' | 'affi
   status: string | null;
 };
 
-export class QuickRequestChatLockedError extends Error {
-  constructor() {
-    super('quick_request_locked');
-  }
-}
-
 // ---------------------------------------------------------------------------
 // 역할·권한
 // ---------------------------------------------------------------------------
 
-/** 작성자 역할 — 요청자 판정 우선 → 동방특송 → admin. 그 밖(구매물류팀)은 null(쓰기 불가) */
+/**
+ * 작성자 역할 — 요청자 판정 우선 → 동방특송 → admin → 초대 참여자(plan 101 · `isParticipant`는 호출부가 DB로 확인). 그 밖(구매물류팀)은 null(쓰기 불가).
+ * admin은 초대 대상이 아니므로(D-2 r1) 초대되었더라도 계속 admin이다.
+ */
 export function resolveChatAuthorRole(
   profile: QuickViewerProfile,
-  row: Pick<QuickRequestRow, 'requester_user_id'>
+  row: Pick<QuickRequestRow, 'requester_user_id'>,
+  isParticipant = false
 ): QuickChatAuthorRole | null {
   if (row.requester_user_id === profile.user_id) return 'requester';
   if (isDongbang(profile)) return 'dongbang';
   if (isQuickAdmin(profile)) return 'admin';
+  if (isParticipant) return 'participant';
   return null;
 }
 
 /** 보는 사람 역할 — 조회 가능한 사람 중 쓰기 역할이 없으면 `logistics`(읽기 전용) */
 export function resolveChatViewerRole(
   profile: QuickViewerProfile,
-  row: Pick<QuickRequestRow, 'requester_user_id'>
+  row: Pick<QuickRequestRow, 'requester_user_id'>,
+  isParticipant = false
 ): QuickChatViewerRole {
-  return resolveChatAuthorRole(profile, row) ?? 'logistics';
+  return resolveChatAuthorRole(profile, row, isParticipant) ?? 'logistics';
 }
 
 export type QuickChatWriteState = {
   role: QuickChatViewerRole;
   canWrite: boolean;
-  /** logistics > locked (designer 4.7) */
+  /** plan 94 D-12 — 승인·취소 건도 대화 가능. 읽기 전용은 구매물류팀(`logistics`)뿐 */
   readOnlyReason: QuickChatReadOnlyReason | null;
 };
 
-export function buildChatWriteState(profile: QuickViewerProfile, row: QuickRequestRow): QuickChatWriteState {
-  const role = resolveChatViewerRole(profile, row);
+export function buildChatWriteState(
+  profile: QuickViewerProfile,
+  row: QuickRequestRow,
+  isParticipant = false
+): QuickChatWriteState {
+  const role = resolveChatViewerRole(profile, row, isParticipant);
   if (role === 'logistics') {
     return { role, canWrite: false, readOnlyReason: 'logistics' };
-  }
-  if (isQuickRequestLocked(row.status)) {
-    return { role, canWrite: false, readOnlyReason: 'locked' };
   }
   return { role, canWrite: true, readOnlyReason: null };
 }
@@ -119,14 +143,19 @@ export function resolveChatAuthorName(profile: { full_name: string | null; email
 // 매핑
 // ---------------------------------------------------------------------------
 
-export function toQuickRequestMessage(row: QuickRequestMessageRow): QuickRequestMessage {
+/** plan 98 — `attachments`는 빈 배열이라도 항상 존재 */
+export function toQuickRequestMessage(
+  row: QuickRequestMessageRow,
+  attachments: readonly QuickRequestMessageAttachmentRow[] = []
+): QuickRequestMessage {
   return {
     id: Number(row.id),
     authorUserId: row.author_user_id,
     authorName: row.author_name,
     authorRole: row.author_role,
     body: row.body,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    attachments: attachments.map(toQuickRequestMessageAttachment)
   };
 }
 
@@ -163,7 +192,7 @@ export async function listQuickRequestMessages(requestId: string): Promise<Quick
   return ((data ?? []) as QuickRequestMessageRow[]).reverse();
 }
 
-async function fetchProfileRows(userIds: string[]): Promise<Map<string, ProfileNameRow>> {
+export async function fetchProfileRows(userIds: string[]): Promise<Map<string, ProfileNameRow>> {
   const unique = [...new Set(userIds.filter(Boolean))];
   const map = new Map<string, ProfileNameRow>();
   if (unique.length === 0) return map;
@@ -197,7 +226,12 @@ export async function listQuickRequestReads(row: QuickRequestRow): Promise<Quick
   }
 
   const reads = (data ?? []) as { user_id: string; last_read_message_id: number; last_read_at: string }[];
-  const profiles = await fetchProfileRows(reads.map((read) => read.user_id));
+  // plan 101 — 읽은 사람이 초대 참여자면 role='participant' (C-12 ✓✓ 상대편 판정에 참여자 포함)
+  const [profiles, participantIds] = await Promise.all([
+    fetchProfileRows(reads.map((read) => read.user_id)),
+    listActiveParticipantUserIds(row.id)
+  ]);
+  const participantSet = new Set(participantIds);
 
   return reads.map((read) => {
     const profile = profiles.get(read.user_id);
@@ -211,35 +245,52 @@ export async function listQuickRequestReads(row: QuickRequestRow): Promise<Quick
     return {
       userId: read.user_id,
       name: profile ? resolveChatAuthorName({ full_name: profile.full_name, email: profile.email ?? '알 수 없음' }) : '알 수 없음',
-      role: resolveChatViewerRole(viewer, row),
+      role: resolveChatViewerRole(viewer, row, participantSet.has(read.user_id)),
       lastReadMessageId: Number(read.last_read_message_id),
       lastReadAt: read.last_read_at
     };
   });
 }
 
+/**
+ * plan 101 — `isParticipant`(Route가 `resolveQuickRequestAccess`로 확인) → viewer.role='participant' · 쓰기 가능 · 칩 참여자 세트.
+ * `participants`·`events`는 1회 조회로 같이 돌려준다(헤더 N · 패널 · 시스템 줄 · designer §5).
+ */
 export async function buildQuickRequestMessagesPayload(
   profile: QuickViewerProfile & { full_name: string | null; email: string },
-  row: QuickRequestRow
+  row: QuickRequestRow,
+  options: { isParticipant?: boolean } = {}
 ): Promise<QuickRequestMessagesData> {
-  const [messages, reads] = await Promise.all([listQuickRequestMessages(row.id), listQuickRequestReads(row)]);
-  const writeState = buildChatWriteState(profile, row);
+  const isParticipant = options.isParticipant ?? false;
+  const [messages, reads, participantsData] = await Promise.all([
+    listQuickRequestMessages(row.id),
+    listQuickRequestReads(row),
+    buildQuickRequestParticipantsData(row)
+  ]);
+  // plan 98 — 첨부는 메시지 id로 한 번에 (500개 상한 유지)
+  const attachmentsByMessage = await listQuickChatAttachmentsByMessageIds(messages.map((message) => Number(message.id)));
+  const writeState = buildChatWriteState(profile, row, isParticipant);
   const mine = reads.find((read) => read.userId === profile.user_id);
   const viewer: QuickRequestChatViewer = {
     userId: profile.user_id,
     name: resolveChatAuthorName(profile),
-    role: writeState.role
+    role: writeState.role,
+    canManageParticipants: canManageQuickRequestParticipants(profile, row)
   };
 
   return {
     request: toChatRequestSummary(row),
     viewer,
-    messages: messages.map(toQuickRequestMessage),
+    participants: participantsData.participants,
+    events: participantsData.events,
+    messages: messages.map((message) => toQuickRequestMessage(message, attachmentsByMessage.get(Number(message.id)) ?? [])),
     myLastReadMessageId: mine?.lastReadMessageId ?? 0,
     reads,
     canWrite: writeState.canWrite,
     readOnlyReason: writeState.readOnlyReason,
-    quickReplies: writeState.canWrite ? [...QUICK_CHAT_QUICK_REPLIES[writeState.role]] : []
+    quickReplies: writeState.canWrite ? [...QUICK_CHAT_QUICK_REPLIES[writeState.role]] : [],
+    // plan 100 D-1 — env ON && 쓰기 가능(구매물류팀 false)
+    aiSuggest: { enabled: writeState.canWrite && isChatAiSuggestEnabled() }
   };
 }
 
@@ -247,13 +298,28 @@ export async function buildQuickRequestMessagesPayload(
 // 쓰기 (RPC)
 // ---------------------------------------------------------------------------
 
-/** 잠금 검사 + insert + 보낸 사람 읽음 위치 갱신 (SQL 92 `create_quick_request_message`) */
+/** RPC가 거부한 사유 (SQL 96 `raise exception … message`) — Route가 400으로 옮긴다 */
+export class QuickRequestMessageRpcError extends Error {
+  readonly reason: 'empty' | 'attachment_mismatch';
+
+  constructor(reason: 'empty' | 'attachment_mismatch', message: string) {
+    super(message);
+    this.name = 'QuickRequestMessageRpcError';
+    this.reason = reason;
+  }
+}
+
+/**
+ * insert + 보낸 사람 읽음 위치 갱신 (SQL 92 `create_quick_request_message` · SQL 93 잠금 제거 · SQL 96 `p_attachment_ids`).
+ * plan 98 — pending 첨부를 같은 트랜잭션에서 연결. 소유·건·pending 불일치면 `attachment_mismatch`(롤백) · 본문·첨부 모두 없으면 `empty`.
+ */
 export async function createQuickRequestMessage(input: {
   requestId: string;
   authorUserId: string;
   authorName: string;
   authorRole: QuickChatAuthorRole;
   body: string;
+  attachmentIds?: readonly number[];
 }): Promise<QuickRequestMessageRow> {
   const supabase = getServiceRoleClient();
   const { data, error } = await supabase.rpc('create_quick_request_message', {
@@ -261,12 +327,16 @@ export async function createQuickRequestMessage(input: {
     p_author: input.authorUserId,
     p_author_name: input.authorName,
     p_author_role: input.authorRole,
-    p_body: input.body
+    p_body: input.body,
+    p_attachment_ids: [...new Set(input.attachmentIds ?? [])]
   });
 
   if (error) {
-    if (error.message?.includes('quick_request_locked')) {
-      throw new QuickRequestChatLockedError();
+    if (error.message.includes('quick_request_message_empty')) {
+      throw new QuickRequestMessageRpcError('empty', error.message);
+    }
+    if (error.message.includes('quick_request_attachment_mismatch')) {
+      throw new QuickRequestMessageRpcError('attachment_mismatch', error.message);
     }
     throw new Error(error.message);
   }
@@ -360,23 +430,6 @@ export async function fetchQuickRequestUnreadTotal(userId: string): Promise<numb
   return Number(data ?? 0);
 }
 
-async function fetchLastMessages(requestIds: string[]): Promise<Map<string, QuickRequestMessageRow>> {
-  const map = new Map<string, QuickRequestMessageRow>();
-  if (requestIds.length === 0) return map;
-
-  const supabase = getServiceRoleClient();
-  const { data, error } = await supabase.rpc('quick_request_last_messages', { p_request_ids: requestIds });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  for (const row of (data ?? []) as QuickRequestMessageRow[]) {
-    map.set(row.quick_request_id, row);
-  }
-  return map;
-}
-
 // ---------------------------------------------------------------------------
 // 알림 수신자 조회 (resolveChatRecipients 입력)
 // ---------------------------------------------------------------------------
@@ -406,12 +459,17 @@ export async function listInactiveUserIds(userIds: string[]): Promise<string[]> 
 }
 
 // ---------------------------------------------------------------------------
-// 대화 목록 (U-2 · 최근 7일 + 안 읽은 메시지 있는 건 · 최대 100)
+// 대화 목록 (plan 97 D-5 — 기간 ∪ 안 읽음(90일) · 검색 · 탭 · 커서 20건 · SQL 95 RPC quick_request_conversations_page)
 // ---------------------------------------------------------------------------
 
 function previewBody(body: string): string {
   const flat = body.trim();
   return flat.length > QUICK_CHAT_PREVIEW_LENGTH ? `${flat.slice(0, QUICK_CHAT_PREVIEW_LENGTH - 1)}…` : flat;
+}
+
+/** plan 98 D-9 · U-6 — `{본문 120자} (사진 2장·파일 1개)` / 본문 없음 → `사진 1장` (파일명 없음) */
+export function buildConversationPreview(body: string, kinds: readonly QuickChatAttachmentKind[]): string {
+  return buildChatBodyWithAttachmentSummary(previewBody(body), kinds);
 }
 
 async function fetchRowsByIds(ids: string[]): Promise<QuickRequestRow[]> {
@@ -425,63 +483,111 @@ async function fetchRowsByIds(ids: string[]): Promise<QuickRequestRow[]> {
   return (data ?? []) as QuickRequestRow[];
 }
 
+type ConversationPageItem = {
+  id: string;
+  has_message: boolean;
+  sort_at: string;
+  last_message_id: number | null;
+  last_author_name: string | null;
+  last_author_role: QuickChatAuthorRole | null;
+  last_body: string | null;
+  last_created_at: string | null;
+  unread_count: number;
+};
+
+type ConversationPage = {
+  items: ConversationPageItem[];
+  total: number;
+  unreadTotal: number;
+};
+
+export function clampQuickChatConversationsLimit(limit: number | undefined): number {
+  return Math.min(Math.max(limit ?? QUICK_CHAT_CONVERSATIONS_PAGE_SIZE, 1), QUICK_CHAT_CONVERSATIONS_MAX_LIMIT);
+}
+
+export type QuickRequestConversationsQuery = {
+  q?: string | null;
+  tab?: QuickChatConversationTab;
+  range: QuickRange;
+  cursor?: QuickConversationCursor | null;
+  limit?: number;
+};
+
+/**
+ * 집합 = 선택 기간 안 건 ∪ 내가 안 읽은 메시지가 있는 건(기간 무관 · 90일 · 사이드바 합계와 동일 상한) · 조회 범위(본인 | viewer-all).
+ * 정렬 = 메시지 있는 건(마지막 메시지 시각 desc) → 없는 건(요청 시각 desc) · tiebreak id desc — 93 정렬 유지.
+ * 커서 = 직전 페이지 마지막 행의 (has_message, sort_at, id) · `totals`는 첫 페이지(cursor 없음)에만, tab 무관(q 적용 후).
+ */
 export async function listQuickRequestConversations(
   profile: QuickViewerProfile,
-  filters: { q?: string | null; tab?: QuickChatConversationTab }
+  filters: QuickRequestConversationsQuery
 ): Promise<QuickRequestConversationsData> {
-  const [windowRows, unreadMap] = await Promise.all([
-    listWindowRows(profile),
-    fetchQuickRequestUnreadRequests(profile.user_id)
-  ]);
-
-  const rowsById = new Map(windowRows.map((row) => [row.id, row] as const));
-  const extraIds = [...unreadMap.keys()].filter((id) => !rowsById.has(id));
-  for (const row of await fetchRowsByIds(extraIds)) {
-    if (canViewQuickRequest(profile, row)) {
-      rowsById.set(row.id, row);
-    }
-  }
-
-  const rows = [...rowsById.values()];
-  const lastMessages = await fetchLastMessages(rows.map((row) => row.id));
+  const limit = clampQuickChatConversationsLimit(filters.limit);
   const keyword = filters.q ? normalizeQuickRequestSearch(filters.q) : '';
-
-  const items: QuickRequestConversation[] = rows
-    .filter((row) => !keyword || matchesQuickRequestSearch(row, keyword))
-    .map((row) => {
-      const last = lastMessages.get(row.id);
-      return {
-        ...toChatRequestSummary(row),
-        lastMessage: last
-          ? {
-              id: Number(last.id),
-              authorName: last.author_name,
-              authorRole: last.author_role,
-              body: previewBody(last.body),
-              createdAt: last.created_at
-            }
-          : null,
-        unreadCount: unreadMap.get(row.id) ?? 0
-      };
-    });
-
-  // 마지막 메시지 시각 desc · 메시지 없는 건은 그 뒤에 requestedAt desc
-  items.sort((a, b) => {
-    if (a.lastMessage && b.lastMessage) {
-      return b.lastMessage.createdAt.localeCompare(a.lastMessage.createdAt) || b.lastMessage.id - a.lastMessage.id;
-    }
-    if (a.lastMessage) return -1;
-    if (b.lastMessage) return 1;
-    return b.requestedAt.localeCompare(a.requestedAt);
+  const viewAll = canViewAllQuickRequests(profile);
+  const supabase = getServiceRoleClient();
+  // plan 101 — RPC(SQL 97)가 참여 건을 범위에 넣는다. 행 `isParticipant` 표시용으로 참여 건 id를 한 번 더 읽는다(비-viewer-all만)
+  const participantSet = new Set(viewAll ? [] : await listParticipantRequestIds(profile.user_id));
+  const { data, error } = await supabase.rpc('quick_request_conversations_page', {
+    p_user: profile.user_id,
+    p_view_all: viewAll,
+    p_from: filters.range.fromIso,
+    p_to: filters.range.toIso,
+    p_q: keyword || null,
+    p_unread_only: filters.tab === 'unread',
+    p_cursor_has_message: filters.cursor?.hasMessage ?? null,
+    p_cursor_sort_at: filters.cursor?.sortAt ?? null,
+    p_cursor_id: filters.cursor?.requestId ?? null,
+    p_limit: limit
   });
 
-  const totals = {
-    conversations: items.length,
-    unreadConversations: items.filter((item) => item.unreadCount > 0).length
-  };
-  const visible = filters.tab === 'unread' ? items.filter((item) => item.unreadCount > 0) : items;
+  if (error) {
+    throw new Error(error.message);
+  }
 
-  return { conversations: visible.slice(0, QUICK_CHAT_CONVERSATIONS_LIMIT), totals };
+  const page = (data ?? { items: [], total: 0, unreadTotal: 0 }) as ConversationPage;
+  const items = page.items.slice(0, limit);
+  const last = items[items.length - 1];
+  const nextCursor =
+    page.items.length > limit && last
+      ? encodeConversationCursor({ hasMessage: last.has_message, sortAt: last.sort_at, requestId: last.id })
+      : null;
+
+  const [rowsList, kindsByMessage] = await Promise.all([
+    fetchRowsByIds(items.map((item) => item.id)),
+    listQuickChatAttachmentKindsByMessageIds(
+      items.flatMap((item) => (item.last_message_id != null ? [Number(item.last_message_id)] : []))
+    )
+  ]);
+  const rowsById = new Map(rowsList.map((row) => [row.id, row] as const));
+  const conversations: QuickRequestConversation[] = [];
+  for (const item of items) {
+    const row = rowsById.get(item.id);
+    if (!row) continue;
+    conversations.push({
+      ...toChatRequestSummary(row),
+      lastMessage:
+        item.last_message_id != null && item.last_author_role && item.last_created_at
+          ? {
+              id: Number(item.last_message_id),
+              authorName: item.last_author_name ?? '',
+              authorRole: item.last_author_role,
+              body: buildConversationPreview(item.last_body ?? '', kindsByMessage.get(Number(item.last_message_id)) ?? []),
+              createdAt: item.last_created_at
+            }
+          : null,
+      unreadCount: Number(item.unread_count ?? 0),
+      isParticipant: participantSet.has(row.id) && row.requester_user_id !== profile.user_id
+    });
+  }
+
+  return {
+    conversations,
+    nextCursor,
+    ...(filters.cursor
+      ? {}
+      : { totals: { conversations: Number(page.total ?? 0), unreadConversations: Number(page.unreadTotal ?? 0) } })
+  };
 }
 
 export { fetchQuickRequestUnreadCounts };

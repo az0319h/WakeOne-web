@@ -12,7 +12,6 @@ import {
   pageAs,
   readJson,
   seedQuickRequest,
-  serviceClient,
   STATUS_LABEL,
   uniqueTag,
   VIEWPORT_MOBILE,
@@ -181,32 +180,7 @@ test.describe('plan 89 E. 퀵 대시보드 · 조회 범위', () => {
     }
   });
 
-  test('AC-33: requested_at 8일 전 행 미노출 · 「최근 7일 기준」', async ({ browser }) => {
-    const tag = uniqueTag('E2E89O');
-    const created = await withApi('user', (api) => createQuickRequestApi(api, buildCreateBody(tag)));
-    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
-    const { error } = await serviceClient()
-      .from('quick_requests')
-      .update({ requested_at: eightDaysAgo })
-      .eq('request_no', created.requestNo);
-    if (error) throw new Error(error.message);
-
-    const { context, page } = await pageAs(browser, 'admin');
-    try {
-      await gotoDashboard(page, `?search=${tag}`);
-      await expect(page.getByText(/최근 7일 기준/).first()).toBeVisible();
-      await expect(page.getByTestId('quick-dashboard-empty')).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByTestId(`quick-row-detail-${created.requestNo}`)).toHaveCount(0);
-      await expect(page.getByTestId(`quick-card-detail-${created.requestNo}`)).toHaveCount(0);
-    } finally {
-      await context.close();
-    }
-    const list = await withApi('admin', async (api) => {
-      const response = await api.get(`/api/quick-request?search=${encodeURIComponent(tag)}`);
-      return (await readJson<{ data: { total: number } }>(response)).data.total;
-    });
-    expect(list).toBe(0);
-  });
+  // AC-33(requested_at 8일 전 미노출 · 7일 고정 문구)은 plan 97 AC-01·02(기간 선택 · e2e/quick-round2/97-period.spec.ts)로 교체됐다
 
   test('AC-34: 표 열 헤더 9개 · 하단 문구 · 요청 시각 절대 형식', async ({ browser }) => {
     const tag = uniqueTag('E2E89H');

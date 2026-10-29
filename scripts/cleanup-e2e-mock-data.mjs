@@ -350,7 +350,18 @@ async function cleanupQuickRequestFixtures() {
     throw new Error(`quick_request_recent_addresses cleanup failed: ${recentError.message}`);
   }
 
+  // plan 100 — fixture 계정의 AI 답장 추천 일일 사용량(e2e·스모크 산출물 · 일회용 계정 분은 auth.users cascade)
+  const { data: deletedAiUsage, error: aiUsageError } = await admin
+    .from('quick_chat_ai_usage')
+    .delete()
+    .in('user_id', fixtureIds)
+    .select('user_id');
+  if (aiUsageError) {
+    throw new Error(`quick_chat_ai_usage cleanup failed: ${aiUsageError.message}`);
+  }
+
   const remaining = {
+    fixture_ai_usage: await countRows('quick_chat_ai_usage', (q) => q.in('user_id', fixtureIds)),
     fixture_e2e_notes: await countRows('quick_request_notes', (q) =>
       q.in('user_id', fixtureIds).like('label', E2E_LABEL_PATTERN)
     ),
@@ -369,6 +380,7 @@ async function cleanupQuickRequestFixtures() {
     deleted_notes: deletedNotes?.length ?? 0,
     restored_seed: missingSeed.length,
     deleted_recent_addresses: deletedRecent?.length ?? 0,
+    deleted_ai_usage: deletedAiUsage?.length ?? 0,
     remaining
   });
   if (Object.values(remaining).some((value) => Number(value) > 0)) {
@@ -379,6 +391,9 @@ async function cleanupQuickRequestFixtures() {
 // plan 88 — 워크플로우 e2e 산출물: `E2E-WF-` 표식 문서·임시저장·첨부(Storage 포함) + e2e가 바꾼 관리자·기본 결재선 원복
 const WORKFLOW_MARKER = 'E2E-WF-';
 const WORKFLOW_BUCKET = 'workflow-attachments';
+// plan 98 — 퀵 대화 첨부 (비공개 버킷 · `quick-chat/{request_id}/{uuid}.{ext}`)
+const QUICK_CHAT_BUCKET = 'quick-chat-attachments';
+const QUICK_CHAT_ATTACHMENTS_TABLE = 'quick_request_message_attachments';
 const WORKFLOW_TEMPLATE_DEFAULTS = { expense: { approval_step_edit_enabled: true } };
 
 async function workflowFixtureUserIds() {
@@ -628,6 +643,65 @@ async function quickWorkflowTargetRows(userIds, fixtureIds) {
   return [...rows.values()];
 }
 
+/** plan 98 — 대상 건 폴더(`quick-chat/{request_id}/`)의 Storage 객체 목록 (list는 폴더 1단계 · 100건씩) */
+async function listQuickChatStorageObjects(requestIds) {
+  const paths = [];
+  for (const requestId of requestIds) {
+    const folder = `quick-chat/${requestId}`;
+    let offset = 0;
+    for (;;) {
+      const { data, error } = await admin.storage.from(QUICK_CHAT_BUCKET).list(folder, { limit: 100, offset });
+      if (error) {
+        throw new Error(`${QUICK_CHAT_BUCKET} storage list failed: ${error.message}`);
+      }
+      const files = (data ?? []).filter((item) => item.id);
+      paths.push(...files.map((item) => `${folder}/${item.name}`));
+      if ((data ?? []).length < 100) break;
+      offset += 100;
+    }
+  }
+  return paths;
+}
+
+async function countQuickChatStorageObjects(requestIds) {
+  return (await listQuickChatStorageObjects(requestIds.slice(0, 100))).length;
+}
+
+/**
+ * plan 98 — 퀵 대화 첨부 정리 (AC-22 `remaining 0`):
+ *  a) 대상 건(`requestIds`)의 첨부 행(pending 포함) — storage_path 수집 후 삭제
+ *  b) 일회용 계정(`uploaderIds`)이 올린 첨부 — 건 표식과 무관(94 D-12로 실데이터 건에도 올릴 수 있음)
+ *  c) a)·b) 객체 + 대상 건 폴더의 고아 객체(행 없이 남은 업로드) Storage remove
+ */
+async function cleanupQuickChatAttachments(requestIds, uploaderIds) {
+  const storagePaths = new Set();
+  let deletedRows = 0;
+
+  const deleteBy = async (column, values) => {
+    for (let offset = 0; offset < values.length; offset += 100) {
+      const batch = values.slice(offset, offset + 100);
+      const { data, error } = await admin
+        .from(QUICK_CHAT_ATTACHMENTS_TABLE)
+        .delete()
+        .in(column, batch)
+        .select('storage_path');
+      if (error) {
+        throw new Error(`${QUICK_CHAT_ATTACHMENTS_TABLE} cleanup (${column}) failed: ${error.message}`);
+      }
+      (data ?? []).forEach(({ storage_path }) => storagePaths.add(storage_path));
+      deletedRows += data?.length ?? 0;
+    }
+  };
+
+  await deleteBy('quick_request_id', requestIds);
+  await deleteBy('uploader_user_id', uploaderIds);
+  (await listQuickChatStorageObjects(requestIds)).forEach((storagePath) => storagePaths.add(storagePath));
+
+  const paths = [...storagePaths];
+  await removeStorageObjects(QUICK_CHAT_BUCKET, paths);
+  return { rows: deletedRows, objects: paths.length };
+}
+
 async function cleanupQuickWorkflowFixtures() {
   const userIds = await workflowFixtureUserIds();
   const { data: stableProfiles, error: stableError } = await admin
@@ -644,6 +718,13 @@ async function cleanupQuickWorkflowFixtures() {
   const targets = await quickWorkflowTargetRows(disposableIds, fixtureIds);
   const requestNos = targets.map(({ request_no }) => request_no);
   const years = [...new Set(targets.map(({ request_year }) => request_year))];
+
+  // 0) plan 98 — 퀵 대화 첨부: 대상 건의 첨부 행·Storage 객체(pending 포함) + 일회용 계정이 올린 첨부(건 표식 무관) + 대상 건 폴더 고아 객체.
+  //    quick_requests 삭제 전에 지운다(행은 cascade되지만 Storage 객체는 남기 때문).
+  const quickChatAttachments = await cleanupQuickChatAttachments(
+    targets.map(({ id }) => id),
+    disposableIds
+  );
 
   // 1) 알림 (metadata.quick_request_no)
   let deletedNotifications = 0;
@@ -684,6 +765,63 @@ async function cleanupQuickWorkflowFixtures() {
     deletedRecent += data?.length ?? 0;
   }
 
+  // 3b) plan 94 D-12 — 승인·취소 건도 대화가 열리면서 일회용 계정(동방·동방2·구매물류)이 E2E 표식이 없는 실데이터 건에
+  //     메시지·읽음 위치를 남길 수 있다(cascade 대상 아님). 일회용 계정 자체가 E2E 산출물이므로 그 계정이 쓴 메시지·읽음·
+  //     그 계정이 행위자인 퀵 알림을 건 표식과 무관하게 지운다.
+  let deletedDisposableMessages = 0;
+  let deletedDisposableReads = 0;
+  let deletedDisposableActorNotifications = 0;
+  for (let offset = 0; offset < disposableIds.length; offset += 100) {
+    const batch = disposableIds.slice(offset, offset + 100);
+    const { data: readRows, error: readError } = await admin
+      .from('quick_request_message_reads')
+      .delete()
+      .in('user_id', batch)
+      .select('user_id');
+    if (readError) {
+      throw new Error(`quick_request_message_reads disposable cleanup failed: ${readError.message}`);
+    }
+    deletedDisposableReads += readRows?.length ?? 0;
+    const { data: messageRows, error: messageError } = await admin
+      .from('quick_request_messages')
+      .delete()
+      .in('author_user_id', batch)
+      .select('id');
+    if (messageError) {
+      throw new Error(`quick_request_messages disposable cleanup failed: ${messageError.message}`);
+    }
+    deletedDisposableMessages += messageRows?.length ?? 0;
+    const { data: notificationRows, error: notificationError } = await admin
+      .from('notifications')
+      .delete()
+      .like('type', 'quick_request.%')
+      .in('metadata->>actor_user_id', batch)
+      .select('id');
+    if (notificationError) {
+      throw new Error(`quick request disposable-actor notification cleanup failed: ${notificationError.message}`);
+    }
+    deletedDisposableActorNotifications += notificationRows?.length ?? 0;
+  }
+
+  // 3c) plan 101 — 참여자(`quick_request_participants`): E2E 건의 행은 quick_requests on delete cascade로 지워진다.
+  //     일회용 계정이 실데이터 건에 초대됐거나(user_id cascade) 초대한 경우(invited_by on delete restrict → RPC 사용자 삭제 실패)를
+  //     막기 위해 일회용 계정이 user_id·invited_by인 행을 건 표식과 무관하게 지운다.
+  let deletedDisposableParticipants = 0;
+  for (let offset = 0; offset < disposableIds.length; offset += 100) {
+    const batch = disposableIds.slice(offset, offset + 100);
+    for (const column of ['user_id', 'invited_by']) {
+      const { data, error } = await admin
+        .from('quick_request_participants')
+        .delete()
+        .in(column, batch)
+        .select('id');
+      if (error) {
+        throw new Error(`quick_request_participants disposable cleanup (${column}) failed: ${error.message}`);
+      }
+      deletedDisposableParticipants += data?.length ?? 0;
+    }
+  }
+
   // 4) 연도 카운터 — 해당 연도에 요청이 0건이면 행 삭제(다음 번호 01부터)
   const resetCounters = [];
   for (const year of years) {
@@ -698,10 +836,17 @@ async function cleanupQuickWorkflowFixtures() {
   }
 
   const remainingTargets = await quickWorkflowTargetRows(disposableIds, fixtureIds);
-  // plan 93 — 대화·읽음 위치는 quick_requests on delete cascade로 지워진다. 잔존 0 확인 (일회용 작성자 분 포함)
+  // plan 93 — 대화·읽음 위치는 quick_requests on delete cascade로 지워진다. 잔존 0 확인 (일회용 작성자 분은 3b가 건 표식과 무관하게 삭제)
   const idsForChatCheck = ids.slice(0, 100);
   const remaining = {
     quick_requests: remainingTargets.length,
+    quick_chat_attachment_rows: idsForChatCheck.length
+      ? await countRows(QUICK_CHAT_ATTACHMENTS_TABLE, (q) => q.in('quick_request_id', idsForChatCheck))
+      : 0,
+    disposable_uploader_attachments: disposableIds.length
+      ? await countRows(QUICK_CHAT_ATTACHMENTS_TABLE, (q) => q.in('uploader_user_id', disposableIds.slice(0, 100)))
+      : 0,
+    quick_chat_storage_objects: await countQuickChatStorageObjects(ids),
     quick_notifications: requestNos.length
       ? await countRows('notifications', (q) =>
           q.like('type', 'quick_request.%').in('metadata->>quick_request_no', requestNos.slice(0, 100))
@@ -718,13 +863,26 @@ async function cleanupQuickWorkflowFixtures() {
       : 0,
     disposable_reads: disposableIds.length
       ? await countRows('quick_request_message_reads', (q) => q.in('user_id', disposableIds.slice(0, 100)))
+      : 0,
+    quick_request_participants: idsForChatCheck.length
+      ? await countRows('quick_request_participants', (q) => q.in('quick_request_id', idsForChatCheck))
+      : 0,
+    disposable_participants: disposableIds.length
+      ? (await countRows('quick_request_participants', (q) => q.in('user_id', disposableIds.slice(0, 100)))) +
+        (await countRows('quick_request_participants', (q) => q.in('invited_by', disposableIds.slice(0, 100))))
       : 0
   };
 
   console.log('cleanup-e2e-mock-data: quick workflow', {
     deleted_quick_requests: ids.length,
+    deleted_quick_chat_attachment_rows: quickChatAttachments.rows,
+    deleted_quick_chat_storage_objects: quickChatAttachments.objects,
     deleted_notifications: deletedNotifications,
     deleted_disposable_recent_addresses: deletedRecent,
+    deleted_disposable_messages: deletedDisposableMessages,
+    deleted_disposable_reads: deletedDisposableReads,
+    deleted_disposable_actor_notifications: deletedDisposableActorNotifications,
+    deleted_disposable_participants: deletedDisposableParticipants,
     reset_counter_years: resetCounters,
     remaining
   });

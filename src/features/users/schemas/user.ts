@@ -9,11 +9,12 @@ import {
 } from '@/features/users/constants/organization';
 import { refineBirthday } from '@/lib/birthday';
 import { PHONE_REGEX } from '@/lib/phone';
+import { PHONE_INPUT_ERROR } from '@/lib/phone-messages';
 
 const requiredPhoneSchema = z
   .string()
   .min(1, '연락처를 입력해 주세요.')
-  .regex(PHONE_REGEX, '연락처는 11자리 숫자만 입력할 수 있습니다.');
+  .regex(PHONE_REGEX, PHONE_INPUT_ERROR);
 
 export const inviteUserSchema = z.object({
   email: z.string().email('올바른 이메일 주소를 입력해 주세요.')

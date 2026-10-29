@@ -19,6 +19,8 @@ export async function getUsers(filters: UserFilters): Promise<UsersResponse> {
   if (filters.search) searchParams.set('search', filters.search);
   if (filters.sort) searchParams.set('sort', filters.sort);
   if (filters.userId) searchParams.set('userId', filters.userId);
+  // plan 95 — 서버 기본 제외 · 예외 호출부만 '1' 전달
+  if (filters.includeDongbang) searchParams.set('includeDongbang', '1');
 
   const queryString = searchParams.toString();
   return apiClient<UsersResponse>(`/users${queryString ? `?${queryString}` : ''}`);

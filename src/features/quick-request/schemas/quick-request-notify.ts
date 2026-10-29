@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { PHONE_REGEX } from '@/lib/phone';
+import { PHONE_INPUT_ERROR } from '@/lib/phone-messages';
 
 export const QUICK_REQUEST_VEHICLE_TYPES = [
   '오토바이',
@@ -27,7 +28,7 @@ export const quickRequestLocationSchema = z.object({
   roadAddress: z.string().min(1),
   detailAddress: z.string().min(1),
   contactName: z.string().min(1),
-  contactPhone: z.string().regex(PHONE_REGEX)
+  contactPhone: z.string().regex(PHONE_REGEX, PHONE_INPUT_ERROR)
 });
 
 export const quickRequestOriginScheduleSchema = z.discriminatedUnion('mode', [

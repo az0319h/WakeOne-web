@@ -1,0 +1,44 @@
+{
+  "_comment": "plan 99 — E2E_KAKAO_PLACES_MOCK=1 fixture. 키는 검색어(trim 후 정확 일치). 없는 검색어는 0건. {status} 항목은 외부 실패 흉내(Route 502). src/features/quick-request/lib/place-search.ts createKakaoMockFetcher가 page·size로 자른다.",
+  "queries": {
+    "익선": {
+      "documents": [
+        {
+          "id": "mock-ikseon-1",
+          "place_name": "익선동 한옥거리",
+          "road_address_name": "서울 종로구 수표로28길 17-1",
+          "address_name": "서울 종로구 익선동 165-2",
+          "phone": "02-123-4567",
+          "category_name": "음식점 > 카페"
+        },
+        {
+          "id": "mock-ikseon-2",
+          "place_name": "익선 창고",
+          "road_address_name": "",
+          "address_name": "서울 종로구 익선동 166",
+          "phone": "",
+          "category_name": "부동산 > 창고"
+        }
+      ]
+    },
+    "산스 익선": {
+      "documents": [
+        {
+          "id": "mock-sans-1",
+          "place_name": "산스",
+          "road_address_name": "서울 종로구 수표로28길 30",
+          "address_name": "서울 종로구 익선동 40",
+          "phone": "070-7779-1806",
+          "category_name": "음식점 > 카페"
+        }
+      ]
+    },
+    "익선 산스": { "documents": [] },
+    "없는장소": { "documents": [] },
+    "에러": { "status": 500 },
+    "많은": {
+      "generate": { "count": 45, "namePrefix": "많은 장소" },
+      "meta": { "total_count": 120, "pageable_count": 60 }
+    }
+  }
+}

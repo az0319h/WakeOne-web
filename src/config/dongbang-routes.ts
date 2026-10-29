@@ -57,8 +57,10 @@ export function isDongbangAllowedPage(pathname: string): boolean {
 
 /**
  * 동방특송이 호출할 수 있는 API인지.
- * - `/api/quick-request/**` 허용. 단 등록 `POST /api/quick-request`, `notes/**`, `recent-addresses`는 거부
+ * - `/api/quick-request/**` 허용. 단 등록 `POST /api/quick-request`, `notes/**`, `recent-addresses`, `places`(plan 99)는 거부
  *   (plan 93 `conversations` · `[no]/messages` GET/POST · `[no]/messages/read` PUT · `unread-total`은 이 규칙으로 통과)
+ *   (plan 98 `[no]/messages/attachments/prepare` POST · `attachments/[id]` DELETE · `attachments/[id]/url`·`/download` GET도 이 규칙으로 통과 —
+ *    동방특송은 첨부 올리기·보기·다운로드 모두 가능. 구매물류팀 읽기 전용은 Route 안에서 403)
  * - `/api/profile/**`, `/api/notifications/**`, `/api/activity-logs/**`, `/api/auth/**` 허용
  */
 export function isDongbangAllowedApi(pathname: string, method: string): boolean {
@@ -72,7 +74,9 @@ export function isDongbangAllowedApi(pathname: string, method: string): boolean 
   if (matchesPrefix(path, '/api/quick-request')) {
     if (
       matchesPrefix(path, '/api/quick-request/notes') ||
-      matchesPrefix(path, '/api/quick-request/recent-addresses')
+      matchesPrefix(path, '/api/quick-request/recent-addresses') ||
+      // plan 99 — 「장소 검색」은 요청 작성 화면 전용 (동방특송은 요청 작성 불가)
+      matchesPrefix(path, '/api/quick-request/places')
     ) {
       return false;
     }

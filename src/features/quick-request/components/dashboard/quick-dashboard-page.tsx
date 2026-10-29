@@ -17,7 +17,7 @@ import { QuickDashboardBody } from './quick-dashboard-body';
 import { QuickDashboardMetaBar } from './quick-dashboard-meta-bar';
 import { QuickDashboardToolbar } from './quick-dashboard-toolbar';
 import { QuickStatusCards } from './quick-status-cards';
-import { useQuickDashboardParams } from './use-quick-dashboard-params';
+import { toQuickDashboardRangeFilters, useQuickDashboardParams } from './use-quick-dashboard-params';
 
 const subscribeNoop = () => () => undefined;
 
@@ -32,14 +32,20 @@ function useIsHydrated() {
 
 type QuickDashboardPageProps = {
   canCreate: boolean;
+  /** plan 94 D-3 — `quick-requests:all`(viewer-all) 또는 `quick-user:{uid}` (서버 page가 권한 판정) */
+  realtimeTopic: string;
 };
 
-/** 퀵 대시보드 client 셸 — 메타바·카드·툴바(Suspense 밖) + 목록 본문 + Dialog 1벌 */
-export function QuickDashboardPage({ canCreate }: QuickDashboardPageProps) {
-  const { filters, setStatus, setSearch, resetFilters } = useQuickDashboardParams();
+/**
+ * 퀵 대시보드 client 셸 — 메타바·카드·툴바(Suspense 밖) + 목록 본문 + Dialog 1벌.
+ * plan 97 — `suspenseKey`에 기간(range/from/to)이 들어가 기간 변경 시 본문만 `PageLoadingSpinner fill` 재진입.
+ */
+export function QuickDashboardPage({ canCreate, realtimeTopic }: QuickDashboardPageProps) {
+  const { filters, setStatus, setSearch, setRange, resetFilters } = useQuickDashboardParams();
   const [, setPageParams] = useQueryStates({ page: parseAsInteger }, { shallow: true });
   const isHydrated = useIsHydrated();
   const suspenseKey = JSON.stringify(filters);
+  const rangeFilters = toQuickDashboardRangeFilters(filters);
 
   const [dispatchRequestNo, setDispatchRequestNo] = useState<string | null>(null);
   const [finalTarget, setFinalTarget] = useState<QuickFinalAmountTarget | null>(null);
@@ -58,15 +64,21 @@ export function QuickDashboardPage({ canCreate }: QuickDashboardPageProps) {
     (lastPage: number) => void setPageParams({ page: lastPage }),
     [setPageParams]
   );
+  /** 기간 0건 빈 상태 「전체 기간 보기」 (mobile-ux 2차 A#6) */
+  const handleShowAllRange = useCallback(
+    () => setRange({ range: 'all', from: null, to: null }),
+    [setRange]
+  );
 
   return (
     <>
-      <QuickRequestRealtime />
+      <QuickRequestRealtime topic={realtimeTopic} />
       <div data-testid='quick-dashboard' className='flex min-w-0 flex-1 flex-col gap-4'>
-        <QuickDashboardMetaBar />
-        <QuickStatusCards selected={filters.status} onSelect={setStatus} />
+        <QuickDashboardMetaBar rangeFilters={rangeFilters} />
+        <QuickStatusCards rangeFilters={rangeFilters} selected={filters.status} onSelect={setStatus} />
         <QuickDashboardToolbar
           filters={filters}
+          onRangeChange={setRange}
           onSearchChange={setSearch}
           onStatusChange={setStatus}
           onReset={resetFilters}
@@ -82,6 +94,7 @@ export function QuickDashboardPage({ canCreate }: QuickDashboardPageProps) {
                 filters={filters}
                 canCreate={canCreate}
                 onResetFilters={resetFilters}
+                onShowAllRange={handleShowAllRange}
                 onPageOverflow={handlePageOverflow}
                 onDispatch={handleDispatch}
                 onSetFinal={handleSetFinal}

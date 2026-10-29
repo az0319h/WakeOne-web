@@ -77,6 +77,76 @@ describe('resolveChatRecipients', () => {
     );
   });
 
+  // plan 101 AC-05 — 초대 참여자 `participantIds` 4케이스
+  describe('participantIds (plan 101)', () => {
+    const P = 'participant-p';
+    const Q = 'participant-q';
+
+    it('요청자 발신 → 동방 전원 + admin 참여자 + 초대 참여자 전원', () => {
+      assert.deepEqual(
+        resolveChatRecipients({
+          requesterId: R,
+          activeDongbangIds: [A],
+          adminParticipantIds: [X],
+          participantIds: [P, Q],
+          senderId: R,
+          inactiveIds: []
+        }),
+        [A, X, P, Q]
+      );
+    });
+
+    it('참여자 발신 → 요청자 + 동방 전원 + admin 참여자 + 다른 참여자 · 본인 제외', () => {
+      assert.deepEqual(
+        resolveChatRecipients({
+          requesterId: R,
+          activeDongbangIds: [A, B],
+          adminParticipantIds: [],
+          participantIds: [P, Q],
+          senderId: P,
+          inactiveIds: []
+        }),
+        [R, A, B, Q]
+      );
+    });
+
+    it('비활성 참여자 제외 · 요청자와 같은 id가 participantIds에 있어도 중복 제거', () => {
+      assert.deepEqual(
+        resolveChatRecipients({
+          requesterId: R,
+          activeDongbangIds: [A],
+          adminParticipantIds: [X],
+          participantIds: [P, Q, R],
+          senderId: A,
+          inactiveIds: [Q]
+        }),
+        [R, X, P]
+      );
+    });
+
+    it('participantIds 생략 또는 빈 배열이면 93 규칙과 결과가 같다 (제외된 참여자는 호출부가 넣지 않는다)', () => {
+      const legacy = resolveChatRecipients({
+        requesterId: R,
+        activeDongbangIds: [A, B],
+        adminParticipantIds: [X],
+        senderId: R,
+        inactiveIds: []
+      });
+      assert.deepEqual(legacy, [A, B, X]);
+      assert.deepEqual(
+        resolveChatRecipients({
+          requesterId: R,
+          activeDongbangIds: [A, B],
+          adminParticipantIds: [X],
+          participantIds: [],
+          senderId: R,
+          inactiveIds: []
+        }),
+        legacy
+      );
+    });
+  });
+
   it('admin이 글을 쓰기 전에는 수신하지 않는다 (참여자 아님) · 접수 여부·상태 입력 자체가 없다', () => {
     assert.deepEqual(
       resolveChatRecipients({

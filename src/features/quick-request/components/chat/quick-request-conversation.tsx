@@ -7,16 +7,20 @@ import { formatAbsoluteDateKo } from '@/lib/format-date';
 import { cn } from '@/lib/utils';
 import { quickRequestKeys, quickRequestMessagesQueryOptions } from '../../api/queries';
 import type { QuickRequestChatRequestSummary } from '../../api/types';
-import type { QuickChatMessagesCache } from '../../lib/quick-chat-cache';
+import type { QuickChatAttachmentItem, QuickChatMessagesCache } from '../../lib/quick-chat-cache';
 import { QuickRequestQueryBoundary } from '../quick-request-query-boundary';
 import { groupMessages } from './group-messages';
+import { QuickChatAttachmentTray } from './quick-chat-attachment-tray';
 import { QuickChatComposer } from './quick-chat-composer';
 import { QUICK_CHAT_TEXT } from './quick-chat-constants';
+import { QuickChatDropzone } from './quick-chat-dropzone';
 import { QuickChatMessageList } from './quick-chat-message-list';
 import { QuickChatQuickReplies } from './quick-chat-quick-replies';
 import { QuickChatReadOnlyNotice } from './quick-chat-read-only-notice';
 import { useQuickChatRealtime } from './quick-chat-realtime';
 import { QuickChatTypingIndicator } from './quick-chat-typing-indicator';
+import { useAiSuggestions } from './use-ai-suggestions';
+import { useAttachmentUpload } from './use-attachment-upload';
 import { useMarkRead } from './use-mark-read';
 import { useSendMessage } from './use-send-message';
 import { useTypingBroadcast, useTypingReceiver } from './use-typing-broadcast';
@@ -43,7 +47,7 @@ type ConversationBodyProps = {
 };
 
 function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBodyProps) {
-  const { viewer, request, canWrite, readOnlyReason, quickReplies, reads, messages } = data;
+  const { viewer, request, canWrite, readOnlyReason, quickReplies, reads, messages, events, aiSuggest } = data;
   // 대화를 연 시점의 읽음 위치 — 갱신돼도 「여기부터 새 메시지」가 바로 사라지지 않는다 (C-13)
   const [initialLastReadId] = useState(data.myLastReadMessageId);
   const [draft, setDraft] = useState('');
@@ -66,16 +70,28 @@ function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBo
   });
   const getDraft = useCallback(() => draftRef.current, []);
   const { send, retry, discard, isPending } = useSendMessage({ requestNo, viewer, getDraft, setDraft });
+  const attachments = useAttachmentUpload({ requestNo });
   const markRead = useMarkRead({ requestNo, myLastReadMessageId: data.myLastReadMessageId });
+  // plan 100 — 상대 메시지에 AI 답장 추천 (ready일 때만 칩 교체 · 로딩·실패·한도·OFF는 규칙 칩 그대로)
+  const ai = useAiSuggestions({
+    requestNo,
+    enabled: aiSuggest?.enabled === true,
+    canWrite,
+    role: viewer.role,
+    viewerUserId: viewer.userId,
+    messages
+  });
 
   const items = useMemo(
     () =>
       groupMessages(messages, {
         myUserId: viewer.userId,
         myLastReadMessageId: initialLastReadId,
-        dayKey: formatAbsoluteDateKo
+        dayKey: formatAbsoluteDateKo,
+        // plan 101 D-7 — 참여자 이벤트를 시스템 줄로 끼운다 (렌더 시 파생 · 메시지 테이블에 없음)
+        events
       }),
-    [initialLastReadId, messages, viewer.userId]
+    [events, initialLastReadId, messages, viewer.userId]
   );
 
   function focusComposer() {
@@ -86,9 +102,9 @@ function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBo
     node.setSelectionRange(end, end);
   }
 
-  function handleSubmit(body: string) {
+  function handleSubmit(body: string, attachmentItems: QuickChatAttachmentItem[]) {
     setDraft('');
-    send(body);
+    send(body, attachmentItems);
     requestAnimationFrame(focusComposer);
   }
 
@@ -98,10 +114,12 @@ function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBo
   }
 
   return (
-    <>
+    // plan 98 U-2 — 헤더 아래 ~ composer까지 드롭존 (fragment → relative 래퍼 · 읽기 전용이면 오버레이 없음)
+    <QuickChatDropzone enabled={canWrite} onFiles={attachments.add} className='relative flex min-h-0 flex-1 flex-col'>
       {header ? <div className='shrink-0 border-b'>{header(request)}</div> : null}
       <div className='relative min-h-0 flex-1'>
         <QuickChatMessageList
+          requestNo={requestNo}
           items={items}
           messages={messages}
           viewer={viewer}
@@ -119,7 +137,13 @@ function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBo
       >
         {canWrite ? (
           <>
-            <QuickChatQuickReplies replies={quickReplies} onPick={handlePickReply} />
+            <QuickChatQuickReplies
+              replies={ai.state === 'ready' ? ai.suggestions : quickReplies}
+              onPick={handlePickReply}
+              source={ai.state === 'ready' ? 'ai' : 'rules'}
+              loading={ai.state === 'loading'}
+            />
+            <QuickChatAttachmentTray attachments={attachments} />
             <QuickChatComposer
               draft={draft}
               onDraftChange={setDraft}
@@ -128,14 +152,15 @@ function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBo
               textareaRef={textareaRef}
               onTypingInput={typing.onInput}
               onTypingStop={typing.stop}
+              attachments={attachments}
             />
           </>
         ) : (
-          <QuickChatReadOnlyNotice reason={readOnlyReason ?? 'locked'} />
+          <QuickChatReadOnlyNotice reason={readOnlyReason ?? 'logistics'} />
         )}
       </div>
       {autoFocus && canWrite ? <AutoFocus target={textareaRef} /> : null}
-    </>
+    </QuickChatDropzone>
   );
 }
 

@@ -37,7 +37,6 @@ export const CHAT_TEXT = {
   notFound: '대화를 찾을 수 없습니다.',
   emptyWritable: '아직 대화가 없습니다. 취소나 시간 변경 같은 요청을 남겨 보세요.',
   unreadDivider: '여기부터 새 메시지',
-  composerPlaceholder: '메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)',
   send: '전송',
   backToList: '목록',
   detailLink: '상세 보기',
@@ -49,9 +48,9 @@ export const CHAT_TEXT = {
   retry: '다시 보내기',
   discard: '삭제',
   logisticsReadOnly: '구매물류팀은 대화를 볼 수만 있습니다.',
-  locked: '승인되었거나 취소된 요청은 대화를 보낼 수 없습니다.',
   requestNotFound: '퀵 요청을 찾을 수 없습니다.',
-  bodyRequired: '메시지를 입력해 주세요.',
+  /** plan 98 AC-09 — 93 AC-08 「메시지를 입력해 주세요.」 교체 (본문 없이 첨부만도 허용) */
+  bodyRequired: '메시지를 입력하거나 파일을 첨부해 주세요.',
   bodyTooLong: '메시지는 1,000자까지 입력할 수 있습니다.',
   invalidBody: '요청 형식이 올바르지 않습니다.',
   roleRequester: '요청자',
@@ -89,7 +88,8 @@ export type ChatMessagesData = {
   myLastReadMessageId: number;
   reads: { userId: string; name: string; role: string; lastReadMessageId: number; lastReadAt: string }[];
   canWrite: boolean;
-  readOnlyReason: 'logistics' | 'locked' | null;
+  /** plan 94 D-12 — `'locked'` 삭제(승인·취소 건도 대화 가능) */
+  readOnlyReason: 'logistics' | null;
   quickReplies: string[];
 };
 
@@ -359,8 +359,9 @@ export async function sendViaUi(page: Page, body: string): Promise<{ id: number;
   return { id, bubble };
 }
 
+/** plan 94 U-1 — 배지 `quick-chat-realtime-status` · `data-state='live'` (옛 `quick-chat-realtime-badge`/`data-status` 교체) */
 export async function waitForSubscribed(page: Page) {
-  await expect(page.getByTestId('quick-chat-realtime-badge')).toHaveAttribute('data-status', 'subscribed', {
+  await expect(page.getByTestId('quick-chat-realtime-status')).toHaveAttribute('data-state', 'live', {
     timeout: 20_000
   });
 }

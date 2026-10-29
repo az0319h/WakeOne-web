@@ -13,16 +13,27 @@ function isDynamicUserValue(value: string, staticOptions: readonly StaticUserOpt
   return !staticOptions.some((option) => option.value === value);
 }
 
+type UseUserComboboxLabelOptions = {
+  /** plan 95 — 동방특송 포함 조회. 활동 로그·알림 「타인 보기」 콤보만 true (기본 false = 서버 제외) */
+  includeDongbang?: boolean;
+  fallbackLabel?: string;
+};
+
 export function useUserComboboxLabel(
   value: string,
   staticOptions: readonly StaticUserOption[],
-  fallbackLabel = '선택한 사용자'
+  options: UseUserComboboxLabelOptions = {}
 ) {
+  const { includeDongbang = false, fallbackLabel = '선택한 사용자' } = options;
   const staticOption = staticOptions.find((option) => option.value === value);
   const shouldResolveUser = isDynamicUserValue(value, staticOptions);
 
   const { data } = useQuery({
-    ...usersQueryOptions({ userId: value, limit: 1 }),
+    ...usersQueryOptions({
+      userId: value,
+      limit: 1,
+      ...(includeDongbang && { includeDongbang: true })
+    }),
     enabled: shouldResolveUser
   });
 

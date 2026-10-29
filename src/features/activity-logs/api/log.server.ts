@@ -80,7 +80,10 @@ const METADATA_ALLOWLIST = new Set([
   "changedFields",
   "recentAddressesRecorded",
   "message_id",
-  "recipient_count",
+  "total_bytes",
+  "attachment_id",
+  "participant_user_id",
+  "self",
   "created",
   "device_count",
   "endpoint_host",
@@ -88,6 +91,12 @@ const METADATA_ALLOWLIST = new Set([
   "attempted",
   "sent",
   "removed",
+  // plan 100 — 퀵 대화 AI 답장 추천 (본문·추천 문장 금지)
+  "source",
+  "message_count",
+  "latency_ms",
+  "input_tokens",
+  "output_tokens",
 ]);
 
 const SENSITIVE_FIELD_PATTERN =
@@ -264,11 +273,6 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       continue;
     }
 
-    if (key === "recipient_count" && typeof value === "number") {
-      sanitized.recipient_count = value;
-      continue;
-    }
-
     if (key === "parent_id" && (typeof value === "number" || value === null)) {
       sanitized.parent_id = value;
       continue;
@@ -381,7 +385,11 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       continue;
     }
 
-    if ((key === "step" || key === "attachment_count") && typeof value === "number") {
+    // plan 98 — `total_bytes`·`attachment_id`(퀵 대화 첨부)도 숫자 그대로 (allowlist에만 있고 숫자 분기가 없어 누락됐던 것 · verifier 수정)
+    if (
+      (key === "step" || key === "attachment_count" || key === "total_bytes" || key === "attachment_id") &&
+      typeof value === "number"
+    ) {
       (sanitized as Record<string, unknown>)[key] = value;
       continue;
     }
@@ -417,11 +425,35 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       continue;
     }
 
+    // plan 101 D-13 — 참여자 제외/나가기 (`self` = 본인 나가기)
+    if (key === "self" && typeof value === "boolean") {
+      sanitized.self = value;
+      continue;
+    }
+
     if (
       (key === "device_count" || key === "attempted" || key === "sent" || key === "removed") &&
       typeof value === "number"
     ) {
       (sanitized as Record<string, unknown>)[key] = value;
+      continue;
+    }
+
+    // plan 100 — AI 답장 추천 숫자 메타 (allowlist만 넣고 숫자 분기를 빠뜨리면 값이 사라진다 — 98·101 전례)
+    if (
+      (key === "message_count" ||
+        key === "latency_ms" ||
+        key === "input_tokens" ||
+        key === "output_tokens") &&
+      typeof value === "number" &&
+      Number.isFinite(value)
+    ) {
+      (sanitized as Record<string, unknown>)[key] = value;
+      continue;
+    }
+
+    if (key === "source" && (value === "ai" || value === "rules")) {
+      sanitized.source = value;
       continue;
     }
 

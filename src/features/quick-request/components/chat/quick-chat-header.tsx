@@ -7,6 +7,7 @@ import type { QuickRequestChatRequestSummary } from '../../api/types';
 import { quickRequestDetailHref } from '../dashboard/quick-dashboard-columns';
 import { QuickRequestStatusBadge } from '../quick-request-status-badge';
 import { QUICK_CHAT_TEXT, quickChatText } from './quick-chat-constants';
+import { QuickChatParticipantsButton } from './quick-chat-participants-button';
 
 type QuickChatHeaderProps = {
   request: QuickRequestChatRequestSummary;
@@ -14,7 +15,7 @@ type QuickChatHeaderProps = {
   onBack: () => void;
 };
 
-/** Messenger 대화 헤더 — 목록 · 요청번호 · 상태 · 경로·요청자 · 상세 보기 (U-3 · designer §4.2) */
+/** Messenger 대화 헤더 — 목록 · 요청번호 · 상태 · 경로·요청자 · 참여자 N(plan 101) · 상세 보기 (U-3 · designer §4.2) */
 export function QuickChatHeader({ request, onBack }: QuickChatHeaderProps) {
   return (
     <div data-testid='quick-chat-header' className='flex items-center gap-2 px-4 py-3'>
@@ -40,6 +41,8 @@ export function QuickChatHeader({ request, onBack }: QuickChatHeaderProps) {
           {request.route.from} → {request.route.to} · {request.requesterName}
         </p>
       </div>
+      {/* plan 101 U-1 — 「참여자 N」 (Popover lg↑ / Drawer 미만) */}
+      <QuickChatParticipantsButton requestNo={request.requestNo} variant='messenger' />
       <Button variant='outline' size='sm' className='h-9 shrink-0' asChild>
         <Link
           href={quickRequestDetailHref(request.requestNo)}

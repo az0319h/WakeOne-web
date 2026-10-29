@@ -3,7 +3,7 @@ import { callAs, createAs, pageAs, seedQuickRequest, uniqueTag } from '../quick-
 import { CHAT_TEXT, getMessagesAs, gotoChat, postMessageAs, sendMessageAs } from './helpers';
 
 /**
- * plan 93 §A 권한 — docs/plans/93_quick-request-chat-plan.md (AC-05 · AC-06 · AC-07 · AC-08)
+ * plan 93 §A 권한 — docs/plans/93_quick-request-chat-plan.md (AC-05 · AC-06 · AC-07→94 AC-22 · AC-08)
  */
 test.describe('plan 93 A. 권한 · 잠금 · 검증', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 });
@@ -61,7 +61,10 @@ test.describe('plan 93 A. 권한 · 잠금 · 검증', () => {
     }
   });
 
-  test('AC-07: approved·cancelled 건 — 기존 메시지 보임 · 입력창 대신 잠금 안내 · POST 409 · admin 동일', async ({ browser }) => {
+  test('AC-07 → plan 94 AC-22: approved·cancelled 건 — 기존 메시지 보임 · 입력창·칩 보임 · POST 201(동방·admin·요청자) · 잠금 안내 0건', async ({
+    browser
+  }) => {
+    // plan 94 D-12 — 93 AC-07(409 `locked`) supersede: 승인·취소 건도 대화 가능. 항목 수정·상태 변경 잠금은 94 AC-22에서 별도 판정
     const approved = await seedQuickRequest('dispatchedWithFinal', 'user', uniqueTag('E2E93P7A'));
     const approvedBody = `승인 전 메시지 ${Date.now()}`;
     await sendMessageAs('dongbang', approved.requestNo, approvedBody);
@@ -84,24 +87,20 @@ test.describe('plan 93 A. 권한 · 잠금 · 검증', () => {
       [approved.requestNo, approvedBody],
       [cancelled.requestNo, cancelledBody]
     ] as const) {
-      for (const account of ['dongbang', 'admin'] as const) {
-        const result = await postMessageAs(account, no, { body: '잠금 후 전송' });
-        expect(result.status, `${account} ${no}`).toBe(409);
-        expect(result.body.message).toBe(CHAT_TEXT.locked);
+      for (const account of ['dongbang', 'admin', 'user'] as const) {
+        const result = await postMessageAs(account, no, { body: `${account} 잠금 해제 후 전송` });
+        expect(result.status, `${account} ${no}`).toBe(201);
+        expect(result.headers['x-request-id']).toBeTruthy();
       }
-      const requester = await postMessageAs('user', no, { body: '잠금 후 전송' });
-      expect(requester.status, `user ${no}`).toBe(409);
 
       for (const account of ['dongbang', 'admin'] as const) {
         const { context, page } = await pageAs(browser, account);
         try {
           await gotoChat(page, no);
           await expect(page.getByTestId('quick-chat-messages')).toContainText(body, { timeout: 20_000 });
-          const notice = page.getByTestId('quick-chat-read-only');
-          await expect(notice).toHaveText(CHAT_TEXT.locked);
-          await expect(notice).toHaveAttribute('data-reason', 'locked');
-          await expect(page.getByTestId('quick-chat-input')).toHaveCount(0);
-          await expect(page.getByTestId('quick-chat-quick-replies')).toHaveCount(0);
+          await expect(page.getByTestId('quick-chat-read-only')).toHaveCount(0);
+          await expect(page.getByTestId('quick-chat-input')).toBeVisible();
+          await expect(page.getByTestId('quick-chat-quick-replies')).toBeVisible();
         } finally {
           await context.close();
         }

@@ -16,9 +16,9 @@ import type {
 } from '@/features/activity-logs/api/types';
 import type { AuthProfile } from '@/features/auth/api/types';
 import {
-  canViewQuickRequest,
   getQuickRequestByNo,
   isQuickRequestLocked,
+  resolveQuickRequestAccess,
   type QuickRequestRow
 } from '@/features/quick-request/api/workflow.server';
 import {
@@ -152,11 +152,12 @@ export function parseQuickRequestNoParam(raw: string): string | null {
 }
 
 export type LoadedQuickRequest =
-  | { ok: true; row: QuickRequestRow; requestNo: string }
+  | { ok: true; row: QuickRequestRow; requestNo: string; isParticipant: boolean }
   | { ok: false; response: NextResponse };
 
 /**
  * `[requestNo]` 공통: 형식 404 → 조회(500) → 미존재 404 → 조회 권한 없음 404 (권한 없음과 미존재를 구분하지 않는다, AC-29).
+ * plan 101 — 조회 권한에 활성 초대 참여자 포함(`resolveQuickRequestAccess`) · `isParticipant`를 돌려준다(상태 변경 Route는 각자 403).
  * 모든 실패 분기는 logger.respond로 기록된다.
  */
 export async function loadQuickRequestForMutation(params: {
@@ -175,8 +176,14 @@ export async function loadQuickRequestForMutation(params: {
   }
 
   let row: QuickRequestRow | null;
+  let isParticipant = false;
   try {
     row = await getQuickRequestByNo(requestNo);
+    if (row) {
+      const access = await resolveQuickRequestAccess(params.profile, row);
+      isParticipant = access.isParticipant;
+      if (!access.canView) row = null;
+    }
   } catch (error) {
     console.error('[quick-request] load failed:', error);
     return {
@@ -189,7 +196,7 @@ export async function loadQuickRequestForMutation(params: {
     };
   }
 
-  if (!row || !canViewQuickRequest(params.profile, row)) {
+  if (!row) {
     return {
       ok: false,
       response: await params.logger.respond(quickErrorBody(QUICK_REQUEST_MESSAGES.notFound), 404, {
@@ -199,7 +206,7 @@ export async function loadQuickRequestForMutation(params: {
     };
   }
 
-  return { ok: true, row, requestNo };
+  return { ok: true, row, requestNo, isParticipant };
 }
 
 /** 상태 전이 실패(0행) 후 원인 판정: 잠금이면 locked, 아니면 stale */

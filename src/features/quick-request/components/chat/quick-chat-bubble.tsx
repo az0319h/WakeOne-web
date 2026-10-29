@@ -8,7 +8,10 @@ import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import { QUICK_CHAT_ROLE_LABELS } from '../../schemas/quick-request-chat';
 import { isTempMessageId, type QuickChatMessageItem } from '../../lib/quick-chat-cache';
+import { splitAttachments } from '../../lib/quick-chat-attachments';
 import { QUICK_CHAT_TEXT } from './quick-chat-constants';
+import { QuickChatFileCard } from './quick-chat-file-card';
+import { QuickChatImageGrid } from './quick-chat-image-grid';
 import { QuickChatReceipt, type QuickChatReader, type QuickChatReceiptState } from './quick-chat-receipt';
 
 export function quickChatInitial(name: string): string {
@@ -17,18 +20,25 @@ export function quickChatInitial(name: string): string {
 }
 
 type QuickChatBubbleProps = {
+  /** plan 98 — lightbox source · 다운로드 URL */
+  requestNo: string;
   message: QuickChatMessageItem;
   isMine: boolean;
   isGroupStart: boolean;
   isGroupEnd: boolean;
   receiptState: QuickChatReceiptState;
   readers: QuickChatReader[];
-  onRetry: (tempId: string, body: string) => void;
+  /** 재시도는 캐시 임시 행의 본문·첨부 ids를 그대로 쓴다 (plan 98 AC-10) */
+  onRetry: (tempId: string) => void;
   onDiscard: (tempId: string) => void;
 };
 
-/** 말풍선 — 상대 왼쪽(muted) · 나 오른쪽(primary) · 연속 묶음 · pending/failed 상태 (U-4 · U-13 · designer §4.2 표) */
+/**
+ * 말풍선 — 상대 왼쪽(muted) · 나 오른쪽(primary) · 연속 묶음 · pending/failed 상태 (U-4 · U-13 · designer §4.2 표).
+ * plan 98 U-5 — 묶음 순서: 본문(비면 미렌더) → 이미지 격자 → 파일 카드 → 실패 줄·영수증·시각.
+ */
 export function QuickChatBubble({
+  requestNo,
   message,
   isMine,
   isGroupStart,
@@ -41,6 +51,10 @@ export function QuickChatBubble({
   const clientState = message.clientState;
   const dataState = clientState === 'failed' ? 'failed' : clientState === 'pending' ? 'pending' : 'sent';
   const tempId = isTempMessageId(message.id) ? message.id : null;
+  const hasBody = message.body.trim().length > 0;
+  const attachments = message.attachments ?? [];
+  const { images, files } = splitAttachments(attachments);
+  const dimmed = clientState === 'pending' || clientState === 'failed';
   const time = (
     <time
       dateTime={message.createdAt}
@@ -79,16 +93,46 @@ export function QuickChatBubble({
             </Badge>
           </div>
         ) : null}
-        <div
-          className={cn(
-            'rounded-lg px-3 py-2 text-sm break-words whitespace-pre-wrap',
-            isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
-            clientState === 'pending' && 'opacity-60',
-            clientState === 'failed' && 'border border-destructive bg-destructive/10 text-foreground'
-          )}
-        >
-          {message.body}
-        </div>
+        {hasBody ? (
+          <div
+            className={cn(
+              'rounded-lg px-3 py-2 text-sm break-words whitespace-pre-wrap',
+              isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+              clientState === 'pending' && 'opacity-60',
+              clientState === 'failed' && 'border border-destructive bg-destructive/10 text-foreground'
+            )}
+          >
+            {message.body}
+          </div>
+        ) : null}
+        {attachments.length > 0 ? (
+          <div
+            data-testid={`quick-chat-attachments-${String(message.id)}`}
+            className={cn(
+              'flex w-72 max-w-full flex-col gap-1',
+              isMine && 'items-end',
+              clientState === 'failed' && 'rounded-lg border border-destructive p-1'
+            )}
+          >
+            <QuickChatImageGrid
+              requestNo={requestNo}
+              messageId={message.id}
+              images={images}
+              allAttachments={attachments}
+              dimmed={dimmed}
+            />
+            {files.map((file) => (
+              <QuickChatFileCard
+                key={file.id}
+                requestNo={requestNo}
+                attachment={file}
+                allAttachments={attachments}
+                isMine={isMine}
+                dimmed={dimmed}
+              />
+            ))}
+          </div>
+        ) : null}
         {clientState === 'failed' && tempId ? (
           <div className='flex items-center gap-2 text-xs text-destructive'>
             <span>{QUICK_CHAT_TEXT.sendFailed}</span>
@@ -98,7 +142,7 @@ export function QuickChatBubble({
               size='sm'
               className='h-auto p-0 text-xs text-destructive'
               data-testid={`quick-chat-retry-${tempId}`}
-              onClick={() => onRetry(tempId, message.body)}
+              onClick={() => onRetry(tempId)}
             >
               <Icons.refresh aria-hidden className='size-3' />
               {QUICK_CHAT_TEXT.retry}

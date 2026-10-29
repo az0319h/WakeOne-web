@@ -5,7 +5,7 @@ import {
   markQuickRequestMessagesRead,
   messageBelongsToRequest
 } from '@/features/quick-request/api/messages.server';
-import { canViewQuickRequest, getQuickRequestByNo } from '@/features/quick-request/api/workflow.server';
+import { getQuickRequestByNo, resolveQuickRequestAccess } from '@/features/quick-request/api/workflow.server';
 import {
   QUICK_CHAT_MESSAGES,
   quickChatMarkReadBodySchema
@@ -47,7 +47,8 @@ export async function PUT(request: Request, { params }: Params) {
 
   try {
     const row = await getQuickRequestByNo(requestNo);
-    if (!row || !canViewQuickRequest(session.profile, row)) {
+    // plan 101 — 활성 초대 참여자도 조회 가능 (SQL 97 can_view_quick_request와 같은 규칙)
+    if (!row || !(await resolveQuickRequestAccess(session.profile, row)).canView) {
       return NextResponse.json(quickErrorBody(QUICK_CHAT_MESSAGES.notFound), { status: 404 });
     }
 

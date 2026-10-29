@@ -132,3 +132,7 @@ plan에 **CUD In**이 있으면 아래를 **추가** 검증한다.
 - 빌드만 통과하고 Playwright spec 미검증 완료
 - **Step 7 cleanup 없이** 완료 보고
 - CodeRabbit (PR 단계 전용)
+
+## NEVER (이메일 · 2026-10-28)
+
+- 테스트·스모크·시드에서 **메일 발송 Route**(`POST /api/contracts/reminders` · 잔액 메일)를 실제 호출하지 않는다. `E2E_REMINDER_DRY_RUN=1` 없이 실행 금지. 이메일은 계약서 누락·식대 잔액 두 용도뿐이며 그 외 알림은 인앱+푸시다 (워크스페이스 `CLAUDE.md` §이메일 정책).

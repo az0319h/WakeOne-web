@@ -68,14 +68,15 @@ function buildHistory(detail: QuickRequestDetail): HistoryEvent[] {
         }
       : null
   ];
-  return events.filter((event): event is HistoryEvent => event !== null);
+  // plan 94 U-5 — 최신이 위 (DOM 역순 · CSS 역순 금지: 낭독 순서 = 시각 순서). 「등록」이 맨 아래, 취소 건은 「취소」가 맨 위.
+  return events.filter((event): event is HistoryEvent => event !== null).reverse();
 }
 
 type QuickRequestHistoryProps = {
   detail: QuickRequestDetail;
 };
 
-/** 처리 이력 — 일어난 이벤트만 (절대 시각) */
+/** 처리 이력 — 일어난 이벤트만 (절대 시각 · 최신 위 · plan 94 U-5) */
 export function QuickRequestHistoryList({ detail }: QuickRequestHistoryProps) {
   const events = buildHistory(detail);
   return (

@@ -21,7 +21,7 @@ import {
   quickRequestFinalAmountFormSchema,
   type QuickRequestFinalAmountFormValues
 } from '../../schemas/quick-request-dispatch';
-import { QuickAmountInputField } from './quick-dispatch-fields';
+import { QUICK_AMOUNT_VAT_INCLUDED_DESCRIPTION, QuickAmountInputField } from './quick-dispatch-fields';
 
 const FORM_ID = 'quick-final-amount-form';
 const DEFAULT_VALUES: QuickRequestFinalAmountFormValues = { finalAmount: '' };
@@ -82,7 +82,7 @@ export function QuickFinalAmountDialog({ target, onOpenChange }: QuickFinalAmoun
           </DialogDescription>
         </DialogHeader>
         <p className='text-sm text-muted-foreground tabular-nums'>
-          예상금액 {formatQuickAmountWon(target?.estimatedAmount)}(부가세 별도)
+          예상금액 {formatQuickAmountWon(target?.estimatedAmount)}(부가세 포함)
         </p>
         <form.AppForm>
           <form.Form id={FORM_ID} className='flex min-w-0 flex-col gap-4'>
@@ -90,6 +90,7 @@ export function QuickFinalAmountDialog({ target, onOpenChange }: QuickFinalAmoun
               {() => (
                 <QuickAmountInputField
                   label='최종금액'
+                  description={QUICK_AMOUNT_VAT_INCLUDED_DESCRIPTION}
                   required
                   data-testid='quick-final-amount-input'
                 />

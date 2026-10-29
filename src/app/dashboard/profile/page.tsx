@@ -1,5 +1,6 @@
 import PageContainer from '@/components/layout/page-container';
 import { ProfilePageContent } from '@/features/auth/components/profile-page-content';
+import { isDongbang } from '@/features/auth/api/quick-access.server';
 import { getSessionProfile } from '@/features/auth/api/session.server';
 import { getPushPreferencesForUser } from '@/features/notifications/api/push-preferences.server';
 import { pushPreferencesQueryOptions } from '@/features/notifications/api/push-queries';
@@ -22,7 +23,8 @@ export default async function ProfilePage() {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery({
     ...pushPreferencesQueryOptions(),
-    queryFn: () => getPushPreferencesForUser(profile.user_id, profile.system_role)
+    queryFn: () =>
+      getPushPreferencesForUser(profile.user_id, profile.system_role, { dongbang: isDongbang(profile) })
   });
 
   return (

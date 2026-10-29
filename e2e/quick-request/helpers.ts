@@ -31,8 +31,29 @@ export function desktopSummary(page: Page) {
   return quickRequestMain(page).getByTestId('quick-request-summary');
 }
 
-export function previewMessage(page: Page) {
-  return page.getByTestId('quick-request-preview-message');
+/** plan 96 — 미리보기 Dialog(「퀵 요청 미리보기」) */
+export function previewDialog(page: Page) {
+  return page.getByRole('dialog', { name: '퀵 요청 미리보기' });
+}
+
+/** plan 96 D-1 — 구조화 미리보기 카드 (옛 `quick-request-preview-message` `<pre>` 대체 · 「Dialog 미오픈」은 `toHaveCount(0)`) */
+export function previewCard(page: Page) {
+  return page.getByTestId('quick-request-preview-card');
+}
+
+/** plan 96 D-1 ② — 칩 줄 「{크기}」「{차량} × {N}대」「{결제}」「{일정}」 */
+export function previewChips(page: Page) {
+  return page.getByTestId('quick-request-preview-chips');
+}
+
+/** plan 96 D-1 ① — 경유지 목록(「경유 N」 행) */
+export function previewStopovers(page: Page) {
+  return page.getByTestId('quick-request-preview-stopovers');
+}
+
+/** plan 96 D-1 ③ — 「기타」 크기일 때만 있는 「물품 내용」 행 */
+export function previewItemDescription(page: Page) {
+  return page.getByTestId('quick-request-preview-item-description');
 }
 
 /** plan 89 U-1 — 사이드바 「퀵」 그룹: 「퀵 대시보드」(/dashboard/quick) · 「퀵 요청하기」(/dashboard/quick/request) */
@@ -436,7 +457,10 @@ export async function openAddressPicker(page: Page, prefix = 'quick-request-orig
   return dialog;
 }
 
+/** plan 97 D-9 — `id`·`direction` 추가 · 응답 `{addresses, nextCursor}` */
 export type RecentAddressDto = {
+  id: number;
+  direction: RecentAddressDirection;
   roadAddress: string;
   detailAddress: string;
   contactName: string;
@@ -444,11 +468,37 @@ export type RecentAddressDto = {
   lastUsedAt: string;
 };
 
+export type RecentAddressDirection = 'origin' | 'destination';
+
+/** plan 97 — `direction` 필수(출발 칸 origin · 경유·도착 칸 destination) · 첫 페이지(기본 10건)만 돌려준다 */
 export async function listRecentAddressesApi(
-  request: APIRequestContext
+  request: APIRequestContext,
+  direction: RecentAddressDirection,
+  options: { cursor?: string | null; limit?: number } = {}
+): Promise<{ addresses: RecentAddressDto[]; nextCursor: string | null }> {
+  const params = new URLSearchParams({ direction });
+  if (options.cursor) params.set('cursor', options.cursor);
+  if (options.limit) params.set('limit', String(options.limit));
+  const response = await request.get(`/api/quick-request/recent-addresses?${params.toString()}`);
+  expect(response.status(), `GET /api/quick-request/recent-addresses?${params.toString()}`).toBe(200);
+  const body = (await response.json()) as {
+    data?: { addresses?: RecentAddressDto[]; nextCursor?: string | null };
+  };
+  return { addresses: body.data?.addresses ?? [], nextCursor: body.data?.nextCursor ?? null };
+}
+
+/** 모든 페이지를 모아 돌려준다 (상한 없음 · plan 97) */
+export async function listAllRecentAddressesApi(
+  request: APIRequestContext,
+  direction: RecentAddressDirection
 ): Promise<RecentAddressDto[]> {
-  const response = await request.get('/api/quick-request/recent-addresses');
-  expect(response.status(), 'GET /api/quick-request/recent-addresses').toBe(200);
-  const body = (await response.json()) as { data?: { addresses?: RecentAddressDto[] } };
-  return body.data?.addresses ?? [];
+  const rows: RecentAddressDto[] = [];
+  let cursor: string | null = null;
+  for (let guard = 0; guard < 50; guard += 1) {
+    const page = await listRecentAddressesApi(request, direction, { cursor, limit: 50 });
+    rows.push(...page.addresses);
+    cursor = page.nextCursor;
+    if (!cursor) break;
+  }
+  return rows;
 }

@@ -40,3 +40,7 @@ test-results/
 /playwright/.cache/
 .vercel
 .env*
+
+# plan 98 e2e upload fixtures (generated at test start) — JSON fixtures(plan 99·100 mock)는 커밋한다
+e2e/fixtures/*
+!e2e/fixtures/*.json

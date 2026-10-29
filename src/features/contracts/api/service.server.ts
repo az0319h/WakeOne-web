@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { normalizePersonName } from '@/lib/normalize-person-name';
+import { applyDongbangScope } from '@/features/users/api/profile-scope.server';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import {
   CONTRACT_ATTACHMENT_BUCKET,
@@ -1025,11 +1026,14 @@ export async function listContractReminderRecipientGroups(): Promise<ContractRem
     throw new Error(error.message);
   }
 
-  const { data: profileRows, error: profileError } = await supabase
-    .from('profiles')
-    .select('user_id, email, full_name')
-    .eq('status', 'active')
-    .not('full_name', 'is', null);
+  // plan 95 S-3 — 계약서 이름 매칭 후보에서 동방특송 제외 (동방 이름과 같은 author는 unmatched 처리)
+  const { data: profileRows, error: profileError } = await applyDongbangScope(
+    supabase
+      .from('profiles')
+      .select('user_id, email, full_name')
+      .eq('status', 'active')
+      .not('full_name', 'is', null)
+  );
 
   if (profileError) {
     throw new Error(profileError.message);

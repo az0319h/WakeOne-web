@@ -55,7 +55,9 @@ test.describe('plan 93 B·F. 상세 「요청 대화」 전송 · DM 동작', ()
     const section = page.getByTestId('quick-detail-chat');
     await expect(section.getByRole('heading', { name: CHAT_TEXT.detailChatTitle })).toBeVisible();
     await expect(page.getByTestId('quick-chat-empty')).toHaveText(CHAT_TEXT.emptyWritable, { timeout: 20_000 });
-    await expect(page.getByPlaceholder(CHAT_TEXT.composerPlaceholder)).toBeVisible();
+    // placeholder 문구는 mobile-ux 2차 #3에서 짧아졌다 → testId + placeholder 존재만 확인
+    await expect(composerInput(page)).toBeVisible();
+    await expect(composerInput(page)).toHaveAttribute('placeholder', /\S/);
     await expect(page.getByRole('button', { name: CHAT_TEXT.send, exact: true })).toBeVisible();
   });
 

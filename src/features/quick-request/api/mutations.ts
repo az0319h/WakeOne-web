@@ -1,4 +1,4 @@
-import { mutationOptions, type QueryKey } from '@tanstack/react-query';
+import { mutationOptions, type InfiniteData, type QueryKey } from '@tanstack/react-query';
 import { getQueryClient } from '@/lib/query-client';
 import { notificationKeys } from '@/features/notifications/api/keys';
 import {
@@ -13,6 +13,7 @@ import {
   mergeServerMessage,
   sortChatMessages,
   updateMessagesCache,
+  type QuickChatAttachmentItem,
   type QuickChatMessagesCache
 } from '../lib/quick-chat-cache';
 import { quickRequestKeys } from './keys';
@@ -22,15 +23,20 @@ import {
   cancelQuickRequest,
   createQuickRequest,
   createQuickRequestNote,
+  deleteQuickChatAttachment,
   deleteQuickRequestNote,
   dispatchQuickRequest,
+  inviteQuickRequestParticipant,
   markQuickRequestMessagesRead,
+  prepareQuickChatAttachments,
+  removeQuickRequestParticipant,
   sendQuickRequestMessage,
   setQuickRequestFinalAmount,
   updateQuickRequest,
   updateQuickRequestNote
 } from './service';
 import type {
+  QuickRequestAttachmentPreparePayload,
   QuickRequestCancelPayload,
   QuickRequestChatViewer,
   QuickRequestConversationsData,
@@ -74,7 +80,7 @@ export const deleteQuickRequestNoteMutation = mutationOptions({
 function invalidateQuickRequestWorkflow() {
   const queryClient = getQueryClient();
   void queryClient.invalidateQueries({ queryKey: quickRequestKeys.lists() });
-  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.summary() });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.summaries() });
   void queryClient.invalidateQueries({ queryKey: quickRequestKeys.details() });
 }
 
@@ -83,7 +89,7 @@ export const createQuickRequestMutation = mutationOptions({
   mutationFn: (payload: QuickRequestCreatePayload) => createQuickRequest(payload),
   onSettled: () => {
     invalidateQuickRequestWorkflow();
-    void getQueryClient().invalidateQueries({ queryKey: quickRequestKeys.recentAddresses() });
+    void getQueryClient().invalidateQueries({ queryKey: quickRequestKeys.recentAddressesAll() });
   }
 });
 
@@ -132,7 +138,21 @@ export type SendQuickRequestMessageVariables = {
   body: string;
   /** 임시 말풍선 작성자 (messages 응답 `viewer`) */
   viewer: QuickRequestChatViewer;
+  /** plan 98 — 업로드 완료된 pending 첨부 id (재시도는 같은 ids 재사용 · 재업로드 없음 · AC-10) */
+  attachmentIds: number[];
+  /** plan 98 — 임시 말풍선용 첨부 스냅샷 (`previewUrl` = 이미지 ObjectURL · 201 교체 후 revoke) */
+  attachments: QuickChatAttachmentItem[];
 };
+
+/** 임시 말풍선 썸네일 ObjectURL 해제 — 서버 행으로 교체된 뒤(서명 URL로 다시 그린다) */
+function revokeAttachmentPreviews(attachments: readonly QuickChatAttachmentItem[]) {
+  if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return;
+  for (const attachment of attachments) {
+    if (attachment.previewUrl) {
+      URL.revokeObjectURL(attachment.previewUrl);
+    }
+  }
+}
 
 function invalidateQuickChatLists() {
   const queryClient = getQueryClient();
@@ -148,7 +168,7 @@ export const sendQuickRequestMessageMutation = mutationOptions({
   mutationFn: (variables: SendQuickRequestMessageVariables) =>
     sendQuickRequestMessage({
       requestNo: variables.requestNo,
-      payload: { body: variables.body }
+      payload: { body: variables.body, attachmentIds: variables.attachmentIds }
     }),
   onMutate: (variables) => {
     const queryClient = getQueryClient();
@@ -164,6 +184,7 @@ export const sendQuickRequestMessageMutation = mutationOptions({
             authorRole,
             body: variables.body,
             createdAt: new Date().toISOString(),
+            attachments: variables.attachments,
             clientState: 'pending' as const
           };
       const rest = current.messages.filter((message) => message.id !== variables.tempId);
@@ -180,6 +201,7 @@ export const sendQuickRequestMessageMutation = mutationOptions({
       }),
       myLastReadMessageId: Math.max(current.myLastReadMessageId, data.message.id)
     }));
+    revokeAttachmentPreviews(variables.attachments);
   },
   onError: (_error, variables) => {
     const queryClient = getQueryClient();
@@ -195,13 +217,66 @@ export const sendQuickRequestMessageMutation = mutationOptions({
   }
 });
 
+// ---------------------------------------------------------------------------
+// plan 98 — 첨부 prepare(pending 행 + 서명 업로드 URL) · pending 취소. pending 행은 어떤 Read 캐시에도 보이지 않으므로
+// (RLS SELECT는 연결된 행만) 여기서는 invalidate 대상이 없다 — 메시지 전송(`sendQuickRequestMessageMutation`)이 목록을 갱신한다.
+// ---------------------------------------------------------------------------
+
+export const prepareQuickChatAttachmentsMutation = mutationOptions({
+  mutationFn: (params: { requestNo: string; payload: QuickRequestAttachmentPreparePayload }) =>
+    prepareQuickChatAttachments(params)
+});
+
+export const deleteQuickChatAttachmentMutation = mutationOptions({
+  mutationFn: (params: { requestNo: string; attachmentId: number }) =>
+    deleteQuickChatAttachment(params.requestNo, params.attachmentId)
+});
+
+// ---------------------------------------------------------------------------
+// plan 101 — 퀵 대화 참여자 초대·제외(나가기). 캐시 무효화는 onSettled에서만:
+// messages(no)(헤더 N·패널·시스템 줄) · 후보 검색 · 「퀵 대화」 목록·대시보드 목록·카드(참여 건 포함 여부 · 「참여」 배지)
+// ---------------------------------------------------------------------------
+
+export type QuickRequestParticipantVariables = {
+  requestNo: string;
+  userId: string;
+};
+
+function invalidateQuickRequestParticipants(requestNo: string) {
+  const queryClient = getQueryClient();
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.messages(requestNo) });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.participantCandidatesAll() });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.conversationsAll() });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.lists() });
+  void queryClient.invalidateQueries({ queryKey: quickRequestKeys.summaries() });
+}
+
+/** POST …/participants — 201 `{ participant }` · 400/403/404/409 message는 UI가 notifyError */
+export const inviteQuickRequestParticipantMutation = mutationOptions({
+  mutationFn: (variables: QuickRequestParticipantVariables) => inviteQuickRequestParticipant(variables),
+  onSettled: (_data, _error, variables) => {
+    invalidateQuickRequestParticipants(variables.requestNo);
+  }
+});
+
+/** DELETE …/participants/[userId] — 제외·본인 나가기 공용 (`data.self`). 본인 나가기 뒤 이동은 UI 몫 */
+export const removeQuickRequestParticipantMutation = mutationOptions({
+  mutationFn: (variables: QuickRequestParticipantVariables) => removeQuickRequestParticipant(variables),
+  onSettled: (_data, _error, variables) => {
+    invalidateQuickRequestParticipants(variables.requestNo);
+  }
+});
+
 export type MarkQuickRequestMessagesReadVariables = {
   requestNo: string;
   lastMessageId: number;
 };
 
+/** plan 97 D-5 — 「퀵 대화」 목록 캐시 형태 (`useInfiniteQuery` · 커서 string|null) */
+export type QuickRequestConversationsInfiniteData = InfiniteData<QuickRequestConversationsData, string | null>;
+
 type MarkReadContext = {
-  conversations: Array<[QueryKey, QuickRequestConversationsData | undefined]>;
+  conversations: Array<[QueryKey, QuickRequestConversationsInfiniteData | undefined]>;
   lists: Array<[QueryKey, QuickRequestListResponse['data'] | undefined]>;
   unreadTotal: number | undefined;
   messages: QuickChatMessagesCache | null | undefined;
@@ -243,7 +318,7 @@ export const markQuickRequestMessagesReadMutation = mutationOptions({
   onMutate: (variables): MarkReadContext => {
     const queryClient = getQueryClient();
     const context: MarkReadContext = {
-      conversations: queryClient.getQueriesData<QuickRequestConversationsData>({
+      conversations: queryClient.getQueriesData<QuickRequestConversationsInfiniteData>({
         queryKey: quickRequestKeys.conversationsAll()
       }),
       lists: queryClient.getQueriesData<QuickRequestListResponse['data']>({
@@ -266,29 +341,42 @@ export const markQuickRequestMessagesReadMutation = mutationOptions({
           message.id <= variables.lastMessageId
       ).length;
     } else {
-      for (const [, data] of context.conversations) {
-        const found = data?.conversations.find((item) => item.requestNo === variables.requestNo);
-        if (found) {
-          unreadBefore = found.unreadCount;
-          break;
+      outer: for (const [, data] of context.conversations) {
+        for (const page of data?.pages ?? []) {
+          const found = page.conversations.find((item) => item.requestNo === variables.requestNo);
+          if (found) {
+            unreadBefore = found.unreadCount;
+            break outer;
+          }
         }
       }
     }
 
-    queryClient.setQueriesData<QuickRequestConversationsData>(
+    // 무한 목록: 모든 페이지에서 그 건 unreadCount 0 · totals(첫 페이지에만 있음) unreadConversations -1
+    queryClient.setQueriesData<QuickRequestConversationsInfiniteData>(
       { queryKey: quickRequestKeys.conversationsAll() },
       (current) => {
         if (!current) return current;
-        const target = current.conversations.find((item) => item.requestNo === variables.requestNo);
-        if (!target || target.unreadCount === 0) return current;
+        const hasUnreadTarget = current.pages.some((page) =>
+          page.conversations.some((item) => item.requestNo === variables.requestNo && item.unreadCount > 0)
+        );
+        if (!hasUnreadTarget) return current;
         return {
-          conversations: current.conversations.map((item) =>
-            item.requestNo === variables.requestNo ? { ...item, unreadCount: 0 } : item
-          ),
-          totals: {
-            conversations: current.totals.conversations,
-            unreadConversations: Math.max(0, current.totals.unreadConversations - 1)
-          }
+          ...current,
+          pages: current.pages.map((page) => ({
+            ...page,
+            conversations: page.conversations.map((item) =>
+              item.requestNo === variables.requestNo ? { ...item, unreadCount: 0 } : item
+            ),
+            ...(page.totals
+              ? {
+                  totals: {
+                    conversations: page.totals.conversations,
+                    unreadConversations: Math.max(0, page.totals.unreadConversations - 1)
+                  }
+                }
+              : {})
+          }))
         };
       }
     );

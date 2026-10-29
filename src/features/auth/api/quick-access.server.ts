@@ -38,6 +38,15 @@ export function canOperateQuickRequests(profile: QuickAccessProfile): boolean {
   return isQuickAdmin(profile) || isDongbang(profile);
 }
 
+/** plan 101 D-1 — 참여자 초대·제외·후보 조회: 요청자 본인 · admin. 동방특송·구매물류팀·참여자 불가 */
+export function canManageQuickRequestParticipants(
+  profile: Pick<AuthProfile, 'system_role' | 'affiliation'> & { user_id: string },
+  row: { requester_user_id: string }
+): boolean {
+  if (isDongbang(profile)) return false;
+  return row.requester_user_id === profile.user_id || isQuickAdmin(profile);
+}
+
 /** 등록: active 직원·admin. 동방특송 불가 (D-6) */
 export function canCreateQuickRequest(profile: QuickAccessProfile): boolean {
   return !isDongbang(profile);

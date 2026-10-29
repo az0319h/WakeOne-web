@@ -86,7 +86,7 @@ test.describe('plan 93 A. 「퀵 대화」 nav · Messenger 구조 · 동방 all
       const panel = page.getByRole('complementary', { name: '퀵 대화 목록' });
       await expect(panel.getByRole('heading', { name: CHAT_TEXT.listTitle, exact: true })).toBeVisible();
       await waitForSubscribed(page);
-      await expect(page.getByTestId('quick-chat-realtime-badge')).toHaveText(CHAT_TEXT.realtimeOn);
+      await expect(page.getByTestId('quick-chat-realtime-status')).toHaveText(CHAT_TEXT.realtimeOn);
       await expect(page.getByTestId('quick-chat-list-summary')).toHaveText(/^대화 \d+건 · 안 읽은 대화 \d+건$/);
       const summary = await page.getByTestId('quick-chat-list-summary').innerText();
       expect(Number(/대화 (\d+)건/.exec(summary)![1]), '대화 3건 이상').toBeGreaterThanOrEqual(3);

@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { buildErrorMetadata, createRequestId } from '@/features/activity-logs/api/log.server';
 import { requireSession } from '@/features/auth/api/session.server';
 import {
@@ -115,8 +116,11 @@ export async function POST(_request: Request, { params }: Params) {
   // 요청자는 admin 대리 승인일 때만 받는다 (행위자 본인 제외는 notifyQuickRequestEvent가 처리)
   const actorName = profile.full_name?.trim() || profile.email;
   const latest = updated;
-  await safeNotify('approved', () =>
-    notifyQuickRequestEvent({ row: latest, event: 'approved', actorUserId: profile.user_id, actorName })
+  // plan 94 D-2 — 알림(인앱 insert + 푸시 fan-out)은 응답을 돌려준 뒤 after()에서. 실패는 safeNotify가 console.error만
+  after(() =>
+    safeNotify('approved', () =>
+      notifyQuickRequestEvent({ row: latest, event: 'approved', actorUserId: profile.user_id, actorName })
+    )
   );
 
   return logger.respond(

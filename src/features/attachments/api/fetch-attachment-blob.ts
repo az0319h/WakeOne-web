@@ -3,6 +3,7 @@ import {
   downloadContractAttachment,
   downloadMyContractAttachment
 } from '@/features/contracts/api/service';
+import { downloadQuickChatAttachmentBlob } from '@/features/quick-request/api/service';
 import { downloadWorkflowAttachmentBlob } from '@/features/workflow/api/service';
 import type { AttachmentId, LightboxSource } from './types';
 
@@ -25,6 +26,8 @@ async function fetchAttachmentBlobOnce(
       return downloadAnnouncementAttachment(source.parentId, Number(attachmentId));
     case 'workflow':
       return downloadWorkflowAttachmentBlob(source.parentId, String(attachmentId));
+    case 'quick-chat':
+      return downloadQuickChatAttachmentBlob(source.parentId, Number(attachmentId));
     default: {
       const _exhaustive: never = source;
       throw new Error(`Unsupported lightbox source: ${String(_exhaustive)}`);

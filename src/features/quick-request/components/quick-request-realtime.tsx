@@ -1,118 +1,65 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
 import { quickRequestKeys } from '../api/keys';
+import { useQuickRealtimeChannel } from '../lib/use-quick-realtime-channel';
 
-/** INSERT·UPDATE가 몰려도 React Query invalidate는 300ms에 1회 (plan 92 리스크 MED) */
+/** INSERT·UPDATE가 몰려도 React Query invalidate는 300ms에 1회 (plan 92 리스크 MED · plan 94 D-3 유지) */
 const QUICK_REQUEST_REALTIME_DEBOUNCE_MS = 300;
 
 type QuickRequestRealtimeProps = {
-  /** 상세에서만 전달 — 그 요청번호의 변경만 받고 `detail(no)`를 invalidate한다 */
+  /**
+   * 대시보드: `quick-requests:all`(viewer-all) 또는 `quick-user:{uid}` — 서버 page가 권한 판정 후 넘긴다.
+   * 상세: `quick-request:{id}` — detail 조회 뒤 `id`로 만든다.
+   */
+  topic: string | null;
+  /** 상세에서만 전달 — `detail(no)`를 invalidate한다 (없으면 `details()` 전체) */
   requestNo?: string;
 };
 
 /**
- * plan 92 D-7 — `quick_requests` Realtime 구독 → 목록·카드·상세 invalidate.
- * RLS가 그대로 적용돼 볼 권한이 없는 건의 변경은 오지 않는다(AC-21).
- * 시각 효과 없이 조용히 갱신한다(U-5) · `support-comment-realtime.tsx` 패턴(setAuth → subscribe → removeChannel).
+ * plan 94 D-3 — 퀵 private Broadcast 구독 → 목록·카드·상세 invalidate (payload 본문 없음 · 신호로만).
+ * 구독 실패 시 공용 훅이 5초 polling으로 같은 query를 돌린다(D-4). 시각 효과 없이 조용히 갱신한다(plan 92 U-5).
  */
-export function QuickRequestRealtime({ requestNo }: QuickRequestRealtimeProps) {
+export function QuickRequestRealtime({ topic, requestNo }: QuickRequestRealtimeProps) {
   const queryClient = useQueryClient();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const supabase = createClient();
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+  const pollingQueryKeys = useMemo(
+    () => [
+      quickRequestKeys.lists(),
+      quickRequestKeys.summaries(),
+      requestNo ? quickRequestKeys.detail(requestNo) : quickRequestKeys.details()
+    ],
+    [requestNo]
+  );
 
-    function invalidate() {
-      timer = null;
-      if (cancelled) {
-        return;
-      }
-      void queryClient.invalidateQueries({ queryKey: quickRequestKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: quickRequestKeys.summary() });
-      void queryClient.invalidateQueries({
-        queryKey: requestNo ? quickRequestKeys.detail(requestNo) : quickRequestKeys.details()
-      });
+  const invalidate = useCallback(() => {
+    timerRef.current = null;
+    for (const queryKey of pollingQueryKeys) {
+      void queryClient.invalidateQueries({ queryKey });
     }
+  }, [pollingQueryKeys, queryClient]);
 
-    function scheduleInvalidate() {
-      if (timer !== null) {
-        clearTimeout(timer);
-      }
-      timer = setTimeout(invalidate, QUICK_REQUEST_REALTIME_DEBOUNCE_MS);
+  const onEvent = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
     }
+    timerRef.current = setTimeout(invalidate, QUICK_REQUEST_REALTIME_DEBOUNCE_MS);
+  }, [invalidate]);
 
-    const setup = async () => {
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
-
-      if (cancelled || !session?.access_token) {
-        return;
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
+    },
+    []
+  );
 
-      await supabase.realtime.setAuth(session.access_token);
-
-      if (cancelled) {
-        return;
-      }
-
-      const filter = requestNo ? `request_no=eq.${requestNo}` : undefined;
-      const channelName = requestNo ? `quick-requests-${requestNo}` : 'quick-requests';
-
-      channel = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'quick_requests', filter },
-          scheduleInvalidate
-        )
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'quick_requests', filter },
-          scheduleInvalidate
-        );
-
-      // plan 93 — 대시보드(필터 없음)에서는 메시지·읽음 이벤트로 「새 대화 N」(lists)도 갱신한다.
-      // 상세는 대화 컴포넌트가 자기 채널(`quick-chat-{id}`)로 받으므로 여기서는 구독하지 않는다.
-      if (!requestNo) {
-        channel
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'quick_request_messages' },
-            scheduleInvalidate
-          )
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'quick_request_message_reads' },
-            scheduleInvalidate
-          )
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'quick_request_message_reads' },
-            scheduleInvalidate
-          );
-      }
-
-      channel.subscribe();
-    };
-
-    void setup();
-
-    return () => {
-      cancelled = true;
-      if (timer !== null) {
-        clearTimeout(timer);
-      }
-      if (channel) {
-        void supabase.removeChannel(channel);
-      }
-    };
-  }, [queryClient, requestNo]);
+  useQuickRealtimeChannel({ topic, onEvent, pollingQueryKeys });
 
   return null;
 }

@@ -9,7 +9,7 @@ import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import type { QuickRequestListRow } from '../../api/types';
 import { formatUnreadBadge } from '../chat/format-unread-badge';
-import { quickChatHref, quickChatText } from '../chat/quick-chat-constants';
+import { QUICK_CHAT_TEXT, quickChatHref, quickChatText } from '../chat/quick-chat-constants';
 import { formatQuickAmountWon } from '../../lib/format-quick-amount';
 import {
   formatQuickGoodsLabel,
@@ -54,9 +54,30 @@ export function QuickUnreadChatBadge({ requestNo, count, className }: QuickUnrea
   );
 }
 
+type QuickParticipantBadgeProps = {
+  requestNo: string;
+  className?: string;
+};
 
 /**
- * 표 9열 (AC-34 헤더 텍스트 그대로) — 행 클릭 이동 없음, 링크로만 이동.
+ * plan 101 U-7 — 초대된 참여자로 보는 건 「참여」 outline Badge (표 「요청 정보」 셀 · 모바일 카드 번호 옆).
+ * 표·카드 둘 다 DOM에 있으므로 같은 testid가 2개 (verifier는 `.filter({ visible: true })`).
+ */
+export function QuickParticipantBadge({ requestNo, className }: QuickParticipantBadgeProps) {
+  return (
+    <Badge
+      variant='outline'
+      className={cn('h-5 shrink-0 px-1.5 text-[11px] font-normal', className)}
+      aria-label={QUICK_CHAT_TEXT.participantBadgeLabel}
+      data-testid={`quick-participant-badge-${requestNo}`}
+    >
+      {QUICK_CHAT_TEXT.participantBadge}
+    </Badge>
+  );
+}
+
+/**
+ * 표 9열 (AC-34 헤더 텍스트 그대로) — 행 클릭 → 상세 (plan 94 D-7 · `QuickDashboardDataTable`) · 「상세」 링크는 유지.
  * `size`는 DataTable 셀 width — 1280(사이드바 접힘)에서 가로 스크롤 없이 들어가는 폭.
  */
 export function createQuickDashboardColumns(
@@ -77,9 +98,12 @@ export function createQuickDashboardColumns(
       enableSorting: false,
       cell: ({ row }) => (
         <div className='flex flex-col gap-0.5'>
-          <span translate='no' className='font-semibold text-foreground tabular-nums'>
-            {row.original.requestNo}
-          </span>
+          <div className='flex min-w-0 items-center gap-1.5'>
+            <span translate='no' className='font-semibold text-foreground tabular-nums'>
+              {row.original.requestNo}
+            </span>
+            {row.original.isParticipant ? <QuickParticipantBadge requestNo={row.original.requestNo} /> : null}
+          </div>
           <QuickUnreadChatBadge
             requestNo={row.original.requestNo}
             count={row.original.unreadMessageCount}

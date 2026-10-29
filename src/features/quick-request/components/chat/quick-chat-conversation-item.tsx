@@ -17,7 +17,11 @@ type QuickChatConversationItemProps = {
   onSelect: (requestNo: string) => void;
 };
 
-/** 목록 항목 button — 아바타·요청번호·요청자·상태·경로·미리보기·시각·안 읽은 수 (U-2 · AC-02) */
+/**
+ * 목록 항목 button — 아바타 + 3행 grid (plan 97 D-6 · designer K2):
+ * 1행 제목(truncate) | 안 읽은 배지 · 2행 상태 | 경로(truncate) · 3행 미리보기(truncate) | 시각(nowrap · 전체 표시).
+ * 좁은 패널에서 잘리는 건 미리보기뿐 — `time`은 `yyyy-MM-dd (EEE) HH:mm:ss` 전체가 남는다 (AC-08).
+ */
 export function QuickChatConversationItem({ conversation, selected, onSelect }: QuickChatConversationItemProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const { requestNo, requesterName, status, route, lastMessage, unreadCount, requestedAt } = conversation;
@@ -38,48 +42,50 @@ export function QuickChatConversationItem({ conversation, selected, onSelect }: 
         data-testid={`quick-chat-list-item-${requestNo}`}
         data-unread={unreadCount}
         className={cn(
-          'flex min-h-[4.5rem] w-full items-start gap-3 px-4 py-3 text-left outline-none transition-colors',
+          'grid min-h-[4.5rem] w-full grid-cols-[auto_minmax(0,1fr)] gap-x-3 px-4 py-3 text-left outline-none transition-colors',
           'focus-visible:ring-[3px] focus-visible:ring-ring/50',
           selected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/60'
         )}
         onClick={() => onSelect(requestNo)}
       >
-        <Avatar className='size-9'>
+        <Avatar className='size-9 self-start'>
           <AvatarFallback className='bg-primary/10 text-sm font-medium text-primary'>
             {quickChatInitial(requesterName)}
           </AvatarFallback>
         </Avatar>
-        <div className='min-w-0 flex-1 space-y-0.5'>
-          <div className='flex items-center justify-between gap-2'>
-            <span translate='no' className='truncate font-medium tabular-nums'>
+        <div className='min-w-0 space-y-0.5'>
+          <div className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2'>
+            <span translate='no' className='min-w-0 truncate font-medium tabular-nums'>
               {requestNo} · {requesterName}
             </span>
-            <time
-              dateTime={lastMessage?.createdAt ?? requestedAt}
-              className='shrink-0 text-[11px] text-muted-foreground tabular-nums'
-            >
-              {formatAbsoluteDateTimeKo(lastMessage?.createdAt ?? requestedAt)}
-            </time>
-          </div>
-          <div className='flex items-center gap-1.5'>
-            <QuickRequestStatusBadge status={status} />
-            <span className='truncate text-xs text-muted-foreground'>
-              {route.from} → {route.to}
-            </span>
-          </div>
-          <div className='flex items-center justify-between gap-2'>
-            <p className='truncate text-xs text-muted-foreground'>
-              {lastMessage ? `${lastMessage.authorName}: ${lastMessage.body}` : QUICK_CHAT_TEXT.noLastMessage}
-            </p>
             {unreadCount > 0 ? (
               <Badge
                 aria-label={quickChatText.unreadBadge(unreadCount)}
                 data-testid={`quick-chat-list-unread-${requestNo}`}
-                className='h-5 min-w-5 rounded-full px-1.5 text-[11px] tabular-nums'
+                className='h-5 min-w-5 rounded-full px-1.5 text-xs tabular-nums'
               >
                 {formatUnreadBadge(unreadCount)}
               </Badge>
-            ) : null}
+            ) : (
+              <span aria-hidden className='w-0' />
+            )}
+          </div>
+          <div className='grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-1.5'>
+            <QuickRequestStatusBadge status={status} />
+            <span className='min-w-0 truncate text-xs text-muted-foreground'>
+              {route.from} → {route.to}
+            </span>
+          </div>
+          <div className='grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-2'>
+            <p className='min-w-0 truncate text-xs text-muted-foreground'>
+              {lastMessage ? `${lastMessage.authorName}: ${lastMessage.body}` : QUICK_CHAT_TEXT.noLastMessage}
+            </p>
+            <time
+              dateTime={lastMessage?.createdAt ?? requestedAt}
+              className='shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums'
+            >
+              {formatAbsoluteDateTimeKo(lastMessage?.createdAt ?? requestedAt)}
+            </time>
           </div>
         </div>
       </button>

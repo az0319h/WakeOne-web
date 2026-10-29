@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
+import { applyDongbangScope } from '@/features/users/api/profile-scope.server';
 import type { WalletLimitSnapshot } from './types';
 import {
   WALLET_BALANCE_EMAIL_DEFAULTS,
@@ -278,12 +279,10 @@ export async function listDueWalletBalanceEmailUsers(
       continue;
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .maybeSingle();
+    // plan 95 S-5 — 잔액 메일 대상에서 동방특송 제외 (동방이면 profile null → skip)
+    const { data: profile, error: profileError } = await applyDongbangScope(
+      supabase.from('profiles').select('email').eq('user_id', userId).eq('status', 'active')
+    ).maybeSingle();
 
     if (profileError) {
       throw new Error(profileError.message);

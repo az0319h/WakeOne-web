@@ -30,7 +30,9 @@ test.describe('퀵 요청 주소 검색 Dialog (plan 87)', () => {
   });
   test.describe.configure({ timeout: 90_000 });
 
-  test('AC-15: 1280 — 주소 검색 dialog · tab 2개 · postcode 컨테이너 · popup 0건', async ({
+  // plan 99 — 장소 검색 키(또는 E2E_KAKAO_PLACES_MOCK)가 설정된 서버면 「장소 검색」 탭이 더해져 3개다.
+  // 탭 개수·순서는 e2e/quick-round2/99-place-search*.spec.ts(AC-01 · AC-10)가 판정하고, 여기서는 87 탭 2개의 존재만 본다.
+  test('AC-15: 1280 — 주소 검색 dialog · 「주소 검색」「최근 이용 내역」 tab · postcode 컨테이너 · popup 0건', async ({
     page
   }) => {
     let popupCount = 0;
@@ -73,7 +75,7 @@ test.describe('퀵 요청 주소 검색 Dialog (plan 87)', () => {
     await expect(dialog).toBeHidden();
   });
 
-  test('AC-17: 확인(501) 후 최근 이용 내역 행 클릭 → 출발 4칸 자동 채움 · dialog 닫힘', async ({
+  test('AC-17: 등록 후 출발 칸 최근 이용 내역(origin) 행 클릭 → 출발 4칸 자동 채움 · dialog 닫힘 (97 D-8)', async ({
     page
   }) => {
     await gotoQuickRequest(page, VIEWPORT_DESKTOP);
@@ -118,12 +120,13 @@ test.describe('퀵 요청 주소 검색 Dialog (plan 87)', () => {
     const context = await browser.newContext({ storageState });
     const page = await context.newPage();
     try {
-      await page.route('**/api/quick-request/recent-addresses', async (route) => {
+      // plan 97 — `?direction=origin|destination` · `{addresses, nextCursor}`
+      await page.route('**/api/quick-request/recent-addresses?*', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify({ success: true, data: { addresses: [] } })
+            body: JSON.stringify({ success: true, data: { addresses: [], nextCursor: null } })
           });
           return;
         }
@@ -136,6 +139,9 @@ test.describe('퀵 요청 주소 검색 Dialog (plan 87)', () => {
       await expect(dialog.getByText('최근 이용 내역이 없습니다.', { exact: true })).toBeVisible({
         timeout: 15_000
       });
+      // plan 97 U-5 · designer K5 — 출발 칸 빈 상태 보조문장
+      await expect(dialog.getByText('출발지로 등록한 주소가 여기에 저장됩니다.', { exact: true })).toBeVisible();
+      await expect(dialog.getByTestId('quick-request-recent-address-hint')).toHaveText('출발지에서 쓴 주소');
       await expect(dialog.getByTestId('quick-request-recent-address-0')).toHaveCount(0);
     } finally {
       await context.close();
