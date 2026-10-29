@@ -267,3 +267,4 @@ export const birthdayCelebrantsKeys = {
 |------|----------|--------|
 | 2026-06-07 | 최초 작성 (Approved) | planner |
 | 2026-06-07 | BE·FE 구현 완료 · tsc/lint/build 통과 | frontend-dev |
+| 2026-10-29 | **overview 생일 배너 부분 superseded by [102](./102_overview-birthday-wheel-list-plan.md)** — 캐러셀·「이번 달 생일」(코드상 31일 창)·세션당 컨페티·AC #1~#6·#11~#12·`GET /api/birthdays/this-month`는 plan 102(휠 목록·`GET /api/birthdays`·오늘 생일자 있을 때만 하루 1번 컨페티)로 대체. 프로필 Account Sheet 부분은 plan 21에서 이미 철회 | planner |
