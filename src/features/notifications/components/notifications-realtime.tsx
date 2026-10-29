@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthProfile } from '@/features/auth/api/types';
 import { notificationKeys } from '../api/keys';
+import { assetRequestKeys } from '@/features/asset-requests/api/keys';
 
 interface NotificationsRealtimeProps {
   profile: AuthProfile;
@@ -47,8 +48,12 @@ export function NotificationsRealtime({ profile }: NotificationsRealtimeProps) {
             table: 'notifications',
             filter: `recipient_user_id=eq.${profile.user_id}`
           },
-          () => {
+          (payload: { new?: { type?: unknown } }) => {
             void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+            // plan 103 — 구독·비품 요청 알림이 오면 사이드바·전환 배지(summary)도 갱신
+            if (typeof payload.new?.type === 'string' && payload.new.type.startsWith('asset_request.')) {
+              void queryClient.invalidateQueries({ queryKey: assetRequestKeys.summary() });
+            }
           }
         )
         .subscribe();

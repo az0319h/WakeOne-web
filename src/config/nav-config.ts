@@ -105,6 +105,30 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
+    // plan 103 — 구독·비품 (동방특송은 dongbang allowlist 필터가 그룹째 숨김 · 처리 대기 배지는 권한자만)
+    label: '자산',
+    items: [
+      {
+        title: '구독 관리',
+        url: '/dashboard/subscriptions',
+        icon: 'creditCard',
+        shortcut: ['s', 'b'],
+        isActive: false,
+        badge: 'asset-subscriptions-pending',
+        items: []
+      },
+      {
+        title: '비품 관리',
+        url: '/dashboard/equipment',
+        icon: 'laptop',
+        shortcut: ['e', 'q'],
+        isActive: false,
+        badge: 'asset-equipment-pending',
+        items: []
+      }
+    ]
+  },
+  {
     label: 'HR (인사)',
     items: [
       {

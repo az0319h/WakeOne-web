@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { isWakeHrBenefitsManager } from "@/features/auth/api/benefits-access.server";
 import { isWorkflowAdmin } from "@/features/auth/api/workflow-access.server";
+import { isAssetManager } from "@/features/auth/api/asset-access.server";
 import { requireDashboardSession } from "@/features/auth/api/session.server";
 import { countMyContracts } from "@/features/contracts/api/service.server";
 import { NavAccessProvider } from "@/contexts/nav-access";
@@ -59,6 +60,8 @@ export default async function DashboardLayout({
   const hasWorkflowAdminNav = await isWorkflowAdmin(profile).catch(
     () => false,
   );
+  // plan 103 — 구독·비품 처리 대기 배지 (권한자만)
+  const hasAssetManagerNav = isAssetManager(profile);
 
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
@@ -79,6 +82,7 @@ export default async function DashboardLayout({
       hasMyContracts={hasMyContracts}
       hasHrBenefitsNav={hasHrBenefitsNav}
       hasWorkflowAdminNav={hasWorkflowAdminNav}
+      isAssetManager={hasAssetManagerNav}
     >
       <DashboardPresenceTrack profile={profile}>
         <HydrationBoundary state={dehydrate(queryClient)}>

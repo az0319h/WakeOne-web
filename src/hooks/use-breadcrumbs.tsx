@@ -14,6 +14,15 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
   '/dashboard/employee': [
     { title: 'Dashboard', link: '/dashboard' },
     { title: 'Employee', link: '/dashboard/employee' }
+  ],
+  // plan 103 — 「자산 › 구독 관리」 · 「자산 › 비품 관리」
+  '/dashboard/subscriptions': [
+    { title: '자산', link: '/dashboard/subscriptions' },
+    { title: '구독 관리', link: '/dashboard/subscriptions' }
+  ],
+  '/dashboard/equipment': [
+    { title: '자산', link: '/dashboard/equipment' },
+    { title: '비품 관리', link: '/dashboard/equipment' }
   ]
   // Add more custom mappings as needed
 };

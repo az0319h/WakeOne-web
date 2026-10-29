@@ -97,6 +97,20 @@ const METADATA_ALLOWLIST = new Set([
   "latency_ms",
   "input_tokens",
   "output_tokens",
+  // plan 103 — 구독·비품·자산 요청 (금액·카드·주계정·관리 메모·요청/댓글 본문·반려 사유는 allowlist에 없어 자동 제거)
+  "subscription_id",
+  "name",
+  "category",
+  "assignee_count",
+  "equipment_id",
+  "asset_no",
+  "kind",
+  "asset_request_id",
+  "target_type",
+  "target_id",
+  "request_type",
+  "assignee_user_id",
+  "deleted_by_manager",
   // plan 105 — 휴대폰 알림 자동 복구 · detach (`source`는 plan 100 키 공용 · 식별자 문자열만 · 자유 문장 금지)
   "result",
   "reason",
@@ -455,6 +469,30 @@ export function sanitizeMetadata(metadata?: ActivityLogMetadata): ActivityLogMet
       Number.isFinite(value)
     ) {
       (sanitized as Record<string, unknown>)[key] = value;
+      continue;
+    }
+
+    // plan 103 — 숫자·불리언 키 (allowlist만 넣고 분기를 빠뜨리면 값이 사라진다 — 98·101 전례)
+    if (
+      (key === "subscription_id" ||
+        key === "equipment_id" ||
+        key === "asset_request_id" ||
+        key === "target_id" ||
+        key === "assignee_count") &&
+      typeof value === "number" &&
+      Number.isFinite(value)
+    ) {
+      (sanitized as Record<string, unknown>)[key] = value;
+      continue;
+    }
+
+    if (key === "deleted_by_manager" && typeof value === "boolean") {
+      sanitized.deleted_by_manager = value;
+      continue;
+    }
+
+    if (key === "name" && typeof value === "string") {
+      sanitized.name = value.length > 80 ? `${value.slice(0, 80)}…` : value;
       continue;
     }
 

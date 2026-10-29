@@ -115,6 +115,11 @@ import {
   IconBan,
   IconLinkOff,
   IconArrowsSort,
+  IconDeviceDesktop,
+  IconCpu,
+  IconMouse,
+  IconKeyboard,
+  IconBuilding,
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -301,5 +306,12 @@ export const Icons = {
   copy: IconCopy,
   refresh: IconRefresh,
   ban: IconBan,
-  sort: IconArrowsSort
+  sort: IconArrowsSort,
+
+  // 구독·비품 관리 (plan 103)
+  monitor: IconDeviceDesktop,
+  cpu: IconCpu,
+  mouse: IconMouse,
+  keyboard: IconKeyboard,
+  building: IconBuilding
 };

@@ -11,6 +11,8 @@ export interface PermissionCheck {
   hasHrBenefitsNav?: boolean;
   /** 워크플로우 관리자(시스템 관리자 포함) — 「워크플로우 설정」 nav (UX only, 서버 가드 별도). */
   hasWorkflowAdminNav?: boolean;
+  /** plan 103 — 구독·비품 권한자(admin · 웨이크 인사팀 · 웨이크 회계팀) (UX only, 서버 가드 별도). */
+  isAssetManager?: boolean;
   /** @deprecated Clerk-era fields — ignored by `checkNavAccess`. */
   permission?: string;
   plan?: string;
@@ -20,7 +22,11 @@ export interface PermissionCheck {
 }
 
 /** plan 93 — 사이드바 배지 레지스트리 키 (`src/components/layout/nav-badges.tsx`) */
-export type NavBadgeKey = 'quick-chat-unread';
+export type NavBadgeKey =
+  | 'quick-chat-unread'
+  // plan 103 — 구독·비품 처리 대기 (권한자만 · 그 외 0)
+  | 'asset-subscriptions-pending'
+  | 'asset-equipment-pending';
 
 export interface NavItem {
   title: string;

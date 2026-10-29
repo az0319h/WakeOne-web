@@ -99,6 +99,15 @@ if (isPushE2eRun) {
   process.env.E2E_WEB_PUSH_MOCK = '1';
 }
 
+/** plan 103 — 구독·비품 대장: 전용 계정 4명 + 공유 fixture(요청 배지·건수) → 직렬 · 푸시 mock */
+const isAssetLedgerE2eRun = process.argv.some((arg) =>
+  arg.replace(/\\/g, '/').includes('e2e/subscription-equipment')
+);
+
+if (isAssetLedgerE2eRun) {
+  process.env.E2E_WEB_PUSH_MOCK = '1';
+}
+
 if (isDevProvisionE2eRun) {
   process.env.WAKEONE_ENV = 'development';
   process.env.NEXT_PUBLIC_WAKEONE_ENV = 'development';
@@ -129,7 +138,8 @@ export default defineConfig({
     isGoogleTasksE2eRun ||
     isGoogleAuthPendingNotifE2eRun ||
     isDevProvisionE2eRun ||
-    isAttachmentsE2eRun || isQuickRequestE2eRun || isWorkflowE2eRun || isPushE2eRun
+    isAttachmentsE2eRun || isQuickRequestE2eRun || isWorkflowE2eRun || isPushE2eRun ||
+    isAssetLedgerE2eRun
       ? 1
       : undefined,
   reporter: 'html',
@@ -201,6 +211,24 @@ export default defineConfig({
       timeout: 90_000
     },
     {
+      // plan 103 — 구독·비품 전용 일회용 계정 4명 (회계팀 · 디자인팀 A·B · 마케팅팀 C)
+      name: 'setup-asset-ledger',
+      testMatch: /auth\.asset-ledger\.setup\.ts/,
+      timeout: 120_000
+    },
+    {
+      // plan 103 — 구독·비품 대장 · 요청 · 댓글 · 알림: admin·hr·회계·직원 3·동방 storageState + 2 context → 직렬
+      name: 'chromium-asset-ledger',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/asset-staff.json'
+      },
+      dependencies: ['setup', 'setup-hr-benefits', 'setup-dongbang', 'setup-asset-ledger'],
+      testMatch: [/subscription-equipment[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 150_000
+    },
+    {
       name: 'wallet-balance-email-api',
       use: {
         ...devices['Desktop Chrome'],
@@ -261,6 +289,7 @@ export default defineConfig({
         /quick-chat[\\/]/,
         /quick-round2[\\/]/,
         /push-notifications[\\/]/,
+        /subscription-equipment[\\/]/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
         /wallet-balance-email\/notifications\.spec\.ts$/,
         /wallet-balance-email\/balance-email-logs-rbac\.spec\.ts$/,
@@ -494,6 +523,7 @@ export default defineConfig({
         /quick-chat[\\/]/,
         /quick-round2[\\/]/,
         /push-notifications[\\/]/,
+        /subscription-equipment[\\/]/,
         /auth[\\/]guard-parity\.api\.spec\.ts$/,
         ...(isWalletBalanceEmailE2eRun ? [/wallet-balance-email\//] : []),
         ...(isDevProvisionE2eRun ? [] : [/users\/dev-provision\.api\.spec\.ts$/])

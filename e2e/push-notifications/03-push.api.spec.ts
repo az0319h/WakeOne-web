@@ -131,7 +131,8 @@ test.describe('그룹 설정 API', () => {
     expect(initial.disabled_groups).toEqual([]);
     expect(initial.device_count).toBe(0);
     expect(initial.devices).toEqual([]);
-    expect(initial.groups).toHaveLength(8);
+    // plan 103 — 「구독·비품 요청」(asset_request) 그룹 추가로 user 9 · admin 10
+    expect(initial.groups).toHaveLength(9);
     expect(initial.groups.map((g) => g.key)).not.toContain('users');
 
     const updated = await userRequest.put(PUSH_PREFERENCES_PATH, {
@@ -152,7 +153,7 @@ test.describe('그룹 설정 API', () => {
     await expectActivityLog(userRequest, 'push_preference.update', invalid.headers()['x-request-id']!, 400);
 
     const adminPrefs = await getPushPreferences(adminRequest);
-    expect(adminPrefs.groups).toHaveLength(9);
+    expect(adminPrefs.groups).toHaveLength(10);
     expect(adminPrefs.groups.map((g) => g.key)).toContain('users');
 
     const reset = await userRequest.put(PUSH_PREFERENCES_PATH, { data: { disabled_groups: [] } });

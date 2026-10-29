@@ -78,7 +78,8 @@ test.describe('알림 페이지 「휴대폰 알림 설정」 Dialog', () => {
 
     const dialog = page.getByTestId('push-preferences-dialog');
     await expect(dialog.getByRole('heading', { name: '휴대폰 알림 설정' })).toBeVisible();
-    await expect(dialog.getByRole('switch')).toHaveCount(8);
+    // plan 103 — 「구독·비품 요청」 그룹 추가로 user 9개
+    await expect(dialog.getByRole('switch')).toHaveCount(9);
     await expect(dialog.getByText('사용자 승인 요청')).toHaveCount(0);
 
     const announcement = page.getByTestId('push-group-announcement');
@@ -116,7 +117,8 @@ test.describe('알림 페이지 「휴대폰 알림 설정」 Dialog', () => {
       await adminPage.getByTestId('push-preferences-open').click();
       const dialog = adminPage.getByTestId('push-preferences-dialog');
       await expect(dialog.getByRole('heading', { name: '휴대폰 알림 설정' })).toBeVisible();
-      await expect(dialog.getByRole('switch')).toHaveCount(9);
+      // plan 103 — admin 10개
+      await expect(dialog.getByRole('switch')).toHaveCount(10);
       await expect(dialog.getByText('사용자 승인 요청')).toBeVisible();
       await adminPage.keyboard.press('Escape');
 
