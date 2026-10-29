@@ -73,23 +73,7 @@ export function formatBirthdayDisplay(
 }
 
 /**
- * 생일 월·일만 — 예: `7월 20일`
+ * 생일 월·일만 — 예: `7월 20일`. 입력은 `MM-DD`(plan 102 생일 목록) · `YYYY-MM-DD` · ISO datetime.
+ * 구현은 import 없는 `./birthday-month-day`(node --test용) — 호출부는 이 파일에서 import한다.
  */
-export function formatBirthdayMonthDay(
-  birthday: string | null | undefined
-): string | null {
-  const normalized = normalizeBirthdayToDateString(birthday);
-  if (!normalized) {
-    return null;
-  }
-
-  const [, monthStr, dayStr] = normalized.split('-');
-  const month = Number(monthStr);
-  const day = Number(dayStr);
-
-  if (!month || !day) {
-    return null;
-  }
-
-  return `${month}월 ${day}일`;
-}
+export { formatBirthdayMonthDay } from './birthday-month-day';

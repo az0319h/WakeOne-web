@@ -5,9 +5,7 @@ const FIREWORK_COLORS = ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', 
 
 const CANNON_COLORS = ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'];
 
-export function getBirthdayConfettiStorageKey(referenceDate: string) {
-  return `wakeone:birthday-confetti:${referenceDate}`;
-}
+// plan 102 — 저장 키(`getBirthdayConfettiStorageKey`)는 순수 모듈 `./birthday-order`로 이동
 
 /**
  * Card-scoped fireworks — renders only inside the provided canvas.
