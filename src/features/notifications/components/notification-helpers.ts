@@ -15,7 +15,9 @@ export const NOTIFICATION_ACTION_ROUTES: Record<string, string> = {
   'view-my-benefits': '/dashboard/my-benefits',
   'view-workflow': '/dashboard/workflow',
   'view-quick-request': '/dashboard/quick',
-  'view-quick-request-chat': '/dashboard/quick/chat'
+  'view-quick-request-chat': '/dashboard/quick/chat',
+  // plan 103 — 실제 경로는 resolveNotificationRoute가 metadata(asset_target_type·asset_request_id)로 완성
+  'view-asset-request': '/dashboard/equipment?view=requests'
 };
 
 export function getNotificationActions(
@@ -150,6 +152,18 @@ export function getNotificationActions(
       {
         id: 'view-quick-request',
         label: '퀵 요청 보기',
+        type: 'redirect',
+        style: 'primary'
+      }
+    ];
+  }
+
+  // plan 103 — 구독·비품 요청 6종
+  if (notification.type.startsWith('asset_request.')) {
+    return [
+      {
+        id: 'view-asset-request',
+        label: '요청 보기',
         type: 'redirect',
         style: 'primary'
       }

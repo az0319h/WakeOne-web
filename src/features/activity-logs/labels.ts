@@ -111,6 +111,21 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "push.test_send": "휴대폰 알림 테스트 발송",
   // plan 105 — 재로그인 자동 복구 (다른 계정 로그인 시 이전 사용자 기기 연결 해제)
   "push_subscription.detach": "휴대폰 알림 이전 사용자 연결 해제",
+  // plan 103 — 구독 관리 · 비품 관리 · 자산 요청
+  "subscription.create": "구독 추가",
+  "subscription.update": "구독 수정",
+  "subscription.delete": "구독 삭제",
+  "equipment.create": "비품 추가",
+  "equipment.update": "비품 수정",
+  "equipment.delete": "비품 삭제",
+  "asset_request.create": "자산 요청 등록",
+  "asset_request.update": "자산 요청 수정",
+  "asset_request.cancel": "자산 요청 취소",
+  "asset_request.status_update": "자산 요청 상태 변경",
+  "asset_request.assignee_update": "자산 요청 담당자 변경",
+  "asset_request.comment_create": "자산 요청 댓글 등록",
+  "asset_request.comment_update": "자산 요청 댓글 수정",
+  "asset_request.comment_delete": "자산 요청 댓글 삭제",
 };
 
 export const METADATA_LABELS: Record<string, string> = {
@@ -191,6 +206,19 @@ export const METADATA_LABELS: Record<string, string> = {
   latency_ms: "응답 시간(ms)",
   input_tokens: "입력 토큰",
   output_tokens: "출력 토큰",
+  // plan 103 — 구독·비품·자산 요청
+  subscription_id: "구독 ID",
+  name: "이름",
+  assignee_count: "대상자 수",
+  equipment_id: "비품 ID",
+  asset_no: "자산번호",
+  kind: "품목",
+  asset_request_id: "자산 요청 ID",
+  target_type: "대상 종류",
+  target_id: "대상 ID",
+  request_type: "요청 종류",
+  assignee_user_id: "담당자 ID",
+  deleted_by_manager: "권한자 삭제",
   // plan 105 — 휴대폰 알림 자동 복구 · detach
   result: "처리 결과",
   reason: "사유",
@@ -203,6 +231,14 @@ export const WORKFLOW_TARGET_TYPE_LABELS: Record<string, string> = {
   workflow_attachment: "워크플로우 첨부",
   workflow_template: "워크플로우 양식",
   workflow_admin: "워크플로우 관리자",
+};
+
+/** plan 103 — 구독·비품·자산 요청 target_type 한국어 라벨 */
+export const ASSET_LEDGER_TARGET_TYPE_LABELS: Record<string, string> = {
+  subscription: "구독",
+  equipment_item: "비품",
+  asset_request: "자산 요청",
+  asset_request_comment: "자산 요청 댓글",
 };
 
 /** plan 89 — 퀵 요청 target_type 한국어 라벨 */

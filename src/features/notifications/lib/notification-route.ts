@@ -41,5 +41,20 @@ export function resolveNotificationRoute(notification: RoutableNotification): st
     route = `/dashboard/quick/chat?request=${encodeURIComponent(metadata.quick_request_no)}`;
   }
 
+  // plan 103 — 「요청 보기」: 구독/비품 페이지의 요청 화면 + 그 요청 Dialog
+  if (actionId === 'view-asset-request') {
+    route = buildAssetRequestRoute(metadata.asset_target_type, metadata.asset_request_id) ?? route;
+  }
+
   return route ?? NOTIFICATIONS_PAGE_ROUTE;
+}
+
+/** plan 103 — `/dashboard/{subscriptions|equipment}?view=requests&request={id}` (대상 종류를 모르면 null) */
+export function buildAssetRequestRoute(targetType: unknown, requestId: unknown): string | null {
+  if (targetType !== 'subscription' && targetType !== 'equipment') return null;
+  const base = targetType === 'subscription' ? '/dashboard/subscriptions' : '/dashboard/equipment';
+  if (typeof requestId !== 'number' || !Number.isInteger(requestId) || requestId <= 0) {
+    return `${base}?view=requests`;
+  }
+  return `${base}?view=requests&request=${requestId}`;
 }

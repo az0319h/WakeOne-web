@@ -25,11 +25,12 @@ describe('PUSH_GROUP_CATALOG dongbang_visible', () => {
 });
 
 describe('listPushGroupsForRole', () => {
-  it('기존 동작 유지 — user 8 · admin 9', () => {
-    assert.equal(listPushGroupsForRole('user').length, 8);
-    assert.equal(listPushGroupsForRole('admin').length, 9);
-    assert.equal(listPushGroupsForRole('user', {}).length, 8);
-    assert.equal(listPushGroupsForRole('user', { dongbang: false }).length, 8);
+  // plan 103 — 「구독·비품 요청」(asset_request) 그룹 추가로 user 9 · admin 10 (동방은 2 그대로)
+  it('기존 동작 유지 — user 9 · admin 10', () => {
+    assert.equal(listPushGroupsForRole('user').length, 9);
+    assert.equal(listPushGroupsForRole('admin').length, 10);
+    assert.equal(listPushGroupsForRole('user', {}).length, 9);
+    assert.equal(listPushGroupsForRole('user', { dongbang: false }).length, 9);
   });
 
   it('동방특송은 역할과 무관하게 profile·quick_request 2개만 (카탈로그 순서 유지)', () => {

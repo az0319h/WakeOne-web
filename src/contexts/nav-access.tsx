@@ -9,6 +9,8 @@ interface NavAccessContextValue {
   hasMyContracts: boolean;
   hasHrBenefitsNav: boolean;
   hasWorkflowAdminNav: boolean;
+  /** plan 103 — 구독·비품 권한자(admin · 웨이크 인사팀 · 웨이크 회계팀) · 처리 대기 배지 */
+  isAssetManager: boolean;
   patchProfile: (patch: Partial<AuthProfile>) => void;
 }
 
@@ -19,12 +21,14 @@ export function NavAccessProvider({
   hasMyContracts = false,
   hasHrBenefitsNav = false,
   hasWorkflowAdminNav = false,
+  isAssetManager = false,
   children,
 }: {
   profile: AuthProfile | null;
   hasMyContracts?: boolean;
   hasHrBenefitsNav?: boolean;
   hasWorkflowAdminNav?: boolean;
+  isAssetManager?: boolean;
   children: React.ReactNode;
 }) {
   const [liveProfile, setLiveProfile] = useState(profile);
@@ -44,6 +48,7 @@ export function NavAccessProvider({
         hasMyContracts,
         hasHrBenefitsNav,
         hasWorkflowAdminNav,
+        isAssetManager,
         patchProfile,
       }}
     >
@@ -62,6 +67,7 @@ export function useNavAccessFlags() {
     hasMyContracts: context?.hasMyContracts ?? false,
     hasHrBenefitsNav: context?.hasHrBenefitsNav ?? false,
     hasWorkflowAdminNav: context?.hasWorkflowAdminNav ?? false,
+    isAssetManager: context?.isAssetManager ?? false,
   };
 }
 
@@ -76,6 +82,7 @@ export function checkNavAccess(
     hasMyContracts?: boolean;
     hasHrBenefitsNav?: boolean;
     hasWorkflowAdminNav?: boolean;
+    isAssetManager?: boolean;
   },
 ): boolean {
   if (!access) {
@@ -94,6 +101,10 @@ export function checkNavAccess(
     return (
       (flags?.hasWorkflowAdminNav ?? false) === access.hasWorkflowAdminNav
     );
+  }
+
+  if (access.isAssetManager !== undefined) {
+    return (flags?.isAssetManager ?? false) === access.isAssetManager;
   }
 
   if (access.systemRole !== undefined) {

@@ -1,7 +1,7 @@
 import type { NotificationType } from '../api/types';
 
 /**
- * plan 91 — 휴대폰 푸시 알림 그룹 (9개). 저장 단위는 그룹이며, 30종 type은 정확히 한 그룹에 속한다.
+ * plan 91 — 휴대폰 푸시 알림 그룹 (9개 → plan 103 10개). 저장 단위는 그룹이며, 모든 type은 정확히 한 그룹에 속한다.
  * SQL 90 `push_notification_preferences_groups_check`의 목록과 동일해야 한다. 그룹을 추가하는 plan은 둘을 함께 바꾼다.
  */
 export const PUSH_GROUP_KEYS = [
@@ -13,7 +13,9 @@ export const PUSH_GROUP_KEYS = [
   'support',
   'benefit',
   'workflow',
-  'quick_request'
+  'quick_request',
+  // plan 103 — 구독·비품 요청 (SQL 99에서 그룹 CHECK 10개로 갱신)
+  'asset_request'
 ] as const;
 
 export type PushGroupKey = (typeof PUSH_GROUP_KEYS)[number];
@@ -91,10 +93,17 @@ export const PUSH_GROUP_CATALOG: readonly PushGroupCatalogItem[] = [
     description: '퀵 요청 접수·배차·진행 변경·대화 메시지',
     admin_only: false,
     dongbang_visible: true
+  },
+  {
+    key: 'asset_request',
+    label: '구독·비품 요청',
+    description: '요청 접수·처리·댓글',
+    admin_only: false,
+    dongbang_visible: false
   }
 ];
 
-/** 31종(plan 93 +1) → 9그룹 exhaustive 매핑. type을 추가하는 plan은 여기에도 그룹을 지정해야 한다(누락 시 tsc 실패) */
+/** 37종(plan 93 +1 · plan 103 +6) → 10그룹 exhaustive 매핑. type을 추가하는 plan은 여기에도 그룹을 지정해야 한다(누락 시 tsc 실패) */
 export const PUSH_NOTIFICATION_GROUPS: Record<NotificationType, PushGroupKey> = {
   'user.update': 'profile',
   'user.approval_request_admin': 'users',
@@ -127,7 +136,14 @@ export const PUSH_NOTIFICATION_GROUPS: Record<NotificationType, PushGroupKey> = 
   'quick_request.vendor_event': 'quick_request',
   'quick_request.requester_event': 'quick_request',
   // plan 93 append — 채팅 원문이 그대로 OS 알림이 된다. 끄려면 「퀵 요청」 그룹 OFF
-  'quick_request.chat_message': 'quick_request'
+  'quick_request.chat_message': 'quick_request',
+  // plan 103 — 구독·비품 요청 6종
+  'asset_request.created': 'asset_request',
+  'asset_request.updated': 'asset_request',
+  'asset_request.canceled': 'asset_request',
+  'asset_request.status_changed': 'asset_request',
+  'asset_request.assigned': 'asset_request',
+  'asset_request.comment_created': 'asset_request'
 };
 
 export function isPushGroupKey(value: unknown): value is PushGroupKey {
@@ -144,7 +160,7 @@ export type PushGroupAudienceOptions = {
   dongbang?: boolean;
 };
 
-/** 역할별 그룹 카탈로그 — user 8 · admin 9 · 동방특송 2 (`profile`·`quick_request`) */
+/** 역할별 그룹 카탈로그 — user 9 · admin 10 · 동방특송 2 (`profile`·`quick_request`) (plan 103 +1) */
 export function listPushGroupsForRole(
   role: 'admin' | 'user',
   options: PushGroupAudienceOptions = {}

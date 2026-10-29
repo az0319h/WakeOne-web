@@ -891,6 +891,177 @@ async function cleanupQuickWorkflowFixtures() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// plan 103 — 구독·비품 e2e 산출물 (AC-53)
+// 삭제 대상 = 대장 행 중 source='e2e' 또는 (source='manual' AND 이름 ILIKE 'E2E%')
+//   · 구독 이름 = name · 비품 이름 = model_serial (자산번호는 실제 형식이라 표식으로 쓰지 않는다)
+// + 그 행의 요청(먼저 · 댓글은 cascade) · 관련 알림(metadata.asset_request_id) + E2E(일회용) 계정이 만든 요청·댓글.
+// **source='excel_import' 행과 거기 달린 요청은 절대 삭제하지 않는다.** 이관 행 건수는 전후 비교로 검증한다.
+// asset_requests.requester_user_id · asset_request_comments.author_user_id · equipment_items.assignee_user_id는
+// auth.users FK(on delete restrict)라 cleanup_e2e_mock_data RPC(일회용 사용자 삭제) 전에 정리한다.
+// ---------------------------------------------------------------------------
+async function selectIds(table, build) {
+  const { data, error } = await build(admin.from(table).select('id'));
+  if (error) {
+    throw new Error(`${table} lookup failed: ${error.message}`);
+  }
+  return (data ?? []).map(({ id }) => id);
+}
+
+async function deleteByIds(table, ids) {
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    const { error } = await admin.from(table).delete().in('id', ids.slice(offset, offset + 100));
+    if (error) {
+      throw new Error(`${table} cleanup failed: ${error.message}`);
+    }
+  }
+}
+
+async function assetLedgerTargetRows() {
+  const subscriptionIds = [
+    ...new Set([
+      ...(await selectIds('subscriptions', (q) => q.eq('source', 'e2e'))),
+      ...(await selectIds('subscriptions', (q) => q.eq('source', 'manual').ilike('name', E2E_LABEL_PATTERN)))
+    ])
+  ];
+  const equipmentIds = [
+    ...new Set([
+      ...(await selectIds('equipment_items', (q) => q.eq('source', 'e2e'))),
+      ...(await selectIds('equipment_items', (q) =>
+        q.eq('source', 'manual').ilike('model_serial', E2E_LABEL_PATTERN)
+      ))
+    ])
+  ];
+  return { subscriptionIds, equipmentIds };
+}
+
+async function excelImportLedgerIds() {
+  return {
+    subscriptions: await selectIds('subscriptions', (q) => q.eq('source', 'excel_import')),
+    equipment: await selectIds('equipment_items', (q) => q.eq('source', 'excel_import'))
+  };
+}
+
+async function cleanupAssetLedgerFixtures() {
+  const userIds = await workflowFixtureUserIds();
+  const { data: stableProfiles, error: stableError } = await admin
+    .from('profiles')
+    .select('user_id')
+    .in('email', FIXTURE_EMAILS);
+  if (stableError) {
+    throw new Error(`asset ledger fixture lookup failed: ${stableError.message}`);
+  }
+  const stableIds = new Set((stableProfiles ?? []).map(({ user_id }) => user_id));
+  const disposableIds = userIds.filter((id) => !stableIds.has(id));
+
+  const excelBefore = await countRows('subscriptions', (q) => q.eq('source', 'excel_import'));
+  const excelEquipmentBefore = await countRows('equipment_items', (q) => q.eq('source', 'excel_import'));
+  const excel = await excelImportLedgerIds();
+  const excelSubscriptionSet = new Set(excel.subscriptions);
+  const excelEquipmentSet = new Set(excel.equipment);
+
+  const { subscriptionIds, equipmentIds } = await assetLedgerTargetRows();
+
+  // 1) 대상 요청: E2E 대장 행의 요청 + 일회용 계정이 만든 요청(이관 행에 달린 것은 제외)
+  const requestIds = new Set();
+  for (let offset = 0; offset < subscriptionIds.length; offset += 100) {
+    (await selectIds('asset_requests', (q) => q.in('subscription_id', subscriptionIds.slice(offset, offset + 100)))).forEach((id) => requestIds.add(id));
+  }
+  for (let offset = 0; offset < equipmentIds.length; offset += 100) {
+    (await selectIds('asset_requests', (q) => q.in('equipment_id', equipmentIds.slice(offset, offset + 100)))).forEach((id) => requestIds.add(id));
+  }
+  for (let offset = 0; offset < disposableIds.length; offset += 100) {
+    const { data, error } = await admin
+      .from('asset_requests')
+      .select('id, subscription_id, equipment_id')
+      .in('requester_user_id', disposableIds.slice(offset, offset + 100));
+    if (error) {
+      throw new Error(`asset_requests disposable lookup failed: ${error.message}`);
+    }
+    for (const row of data ?? []) {
+      const onExcelRow =
+        (row.subscription_id && excelSubscriptionSet.has(row.subscription_id)) ||
+        (row.equipment_id && excelEquipmentSet.has(row.equipment_id));
+      if (!onExcelRow) requestIds.add(row.id);
+    }
+  }
+  const targetRequestIds = [...requestIds];
+
+  // 2) 알림 (metadata.asset_request_id)
+  let deletedNotifications = 0;
+  const requestIdTexts = targetRequestIds.map(String);
+  for (let offset = 0; offset < requestIdTexts.length; offset += 100) {
+    const { data, error } = await admin
+      .from('notifications')
+      .delete()
+      .like('type', 'asset_request.%')
+      .in('metadata->>asset_request_id', requestIdTexts.slice(offset, offset + 100))
+      .select('id');
+    if (error) {
+      throw new Error(`asset_request notifications cleanup failed: ${error.message}`);
+    }
+    deletedNotifications += data?.length ?? 0;
+  }
+
+  // 3) 일회용 계정이 남긴 댓글(다른 요청에 단 것 포함) → 요청 → 대장 행 (대상자는 cascade)
+  for (let offset = 0; offset < disposableIds.length; offset += 100) {
+    const { error } = await admin
+      .from('asset_request_comments')
+      .delete()
+      .in('author_user_id', disposableIds.slice(offset, offset + 100));
+    if (error) {
+      throw new Error(`asset_request_comments disposable cleanup failed: ${error.message}`);
+    }
+  }
+  await deleteByIds('asset_requests', targetRequestIds);
+  await deleteByIds('subscriptions', subscriptionIds);
+  await deleteByIds('equipment_items', equipmentIds);
+
+  // 4) 검증 — E2E 표식 행 0 · 일회용 계정 참조 0 · 이관 건수 불변
+  const after = await assetLedgerTargetRows();
+  const disposableSlice = disposableIds.slice(0, 100);
+  const remaining = {
+    asset_ledger_subscriptions: after.subscriptionIds.length,
+    asset_ledger_equipment: after.equipmentIds.length,
+    asset_requests: targetRequestIds.length
+      ? await countRows('asset_requests', (q) => q.in('id', targetRequestIds.slice(0, 100)))
+      : 0,
+    asset_requests_by_disposable: disposableSlice.length
+      ? await countRows('asset_requests', (q) => q.in('requester_user_id', disposableSlice))
+      : 0,
+    asset_request_comments_by_disposable: disposableSlice.length
+      ? await countRows('asset_request_comments', (q) => q.in('author_user_id', disposableSlice))
+      : 0,
+    equipment_assigned_to_disposable: disposableSlice.length
+      ? await countRows('equipment_items', (q) => q.in('assignee_user_id', disposableSlice))
+      : 0,
+    asset_request_notifications: requestIdTexts.length
+      ? await countRows('notifications', (q) =>
+          q.like('type', 'asset_request.%').in('metadata->>asset_request_id', requestIdTexts.slice(0, 100))
+        )
+      : 0
+  };
+  const excelAfter = await countRows('subscriptions', (q) => q.eq('source', 'excel_import'));
+  const excelEquipmentAfter = await countRows('equipment_items', (q) => q.eq('source', 'excel_import'));
+
+  console.log('cleanup-e2e-mock-data: asset ledger (plan 103)', {
+    deleted_subscriptions: subscriptionIds.length,
+    deleted_equipment: equipmentIds.length,
+    deleted_requests: targetRequestIds.length,
+    deleted_notifications: deletedNotifications,
+    excel_import_subscriptions: `${excelBefore} → ${excelAfter}`,
+    excel_import_equipment: `${excelEquipmentBefore} → ${excelEquipmentAfter}`,
+    remaining
+  });
+
+  if (excelAfter !== excelBefore || excelEquipmentAfter !== excelEquipmentBefore) {
+    throw new Error('asset ledger excel_import rows changed during cleanup — must never happen');
+  }
+  if (Object.values(remaining).some((value) => Number(value) > 0)) {
+    throw new Error(`asset ledger e2e data remains: ${JSON.stringify(remaining)}`);
+  }
+}
+
 async function resetFixtureProfiles() {
   const { data, error } = await admin.rpc('reset_e2e_fixture_profiles');
   if (error) {
@@ -919,6 +1090,7 @@ async function main() {
   await cleanupQuickWorkflowFixtures();
   await cleanupQuickRequestFixtures();
   await cleanupWorkflowFixtures();
+  await cleanupAssetLedgerFixtures();
 
   const { data, error } = await admin.rpc('cleanup_e2e_mock_data');
 

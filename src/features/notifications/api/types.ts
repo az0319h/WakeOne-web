@@ -30,7 +30,14 @@ export type NotificationType =
   | 'quick_request.vendor_event'
   | 'quick_request.requester_event'
   /** plan 93 — 퀵 대화 메시지 (보낸 사람을 뺀 참여자 전원) */
-  | 'quick_request.chat_message';
+  | 'quick_request.chat_message'
+  /** plan 103 — 구독·비품 요청 (인앱 + 푸시만 · 이메일 없음) */
+  | 'asset_request.created'
+  | 'asset_request.updated'
+  | 'asset_request.canceled'
+  | 'asset_request.status_changed'
+  | 'asset_request.assigned'
+  | 'asset_request.comment_created';
 
 export type NotificationStatus = 'unread' | 'read';
 
@@ -67,7 +74,13 @@ export type NotificationMetadata = {
     | 'workflow.comment_created'
     | 'quick_request.vendor_event'
     | 'quick_request.requester_event'
-    | 'quick_request.chat_message';
+    | 'quick_request.chat_message'
+    | 'asset_request.created'
+    | 'asset_request.updated'
+    | 'asset_request.canceled'
+    | 'asset_request.status_changed'
+    | 'asset_request.assigned'
+    | 'asset_request.comment_created';
   benefit_document_id?: number;
   benefit_type?: 'book' | 'fitness' | 'education';
   applicant_user_id?: string;
@@ -110,6 +123,11 @@ export type NotificationMetadata = {
   quick_request_event?: string;
   /** plan 93 — 클릭 이동 `/dashboard/quick/chat?request={quick_request_no}` · 자동 읽음은 `quick_request_id`로 매칭 */
   quick_request_message_id?: number;
+  /** plan 103 — 클릭 이동 `/dashboard/{subscriptions|equipment}?view=requests&request={asset_request_id}` (본문·금액·메모 금지) */
+  asset_request_id?: number;
+  asset_target_type?: 'subscription' | 'equipment';
+  request_type?: string;
+  is_reply?: boolean;
 };
 
 export type Notification = {

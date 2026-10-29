@@ -44,3 +44,6 @@ test-results/
 # plan 98 e2e upload fixtures (generated at test start) — JSON fixtures(plan 99·100 mock)는 커밋한다
 e2e/fixtures/*
 !e2e/fixtures/*.json
+
+# plan 103 — 엑셀 원본·추출물은 저장소에 두지 않는다(이관 스크립트는 저장소 밖 경로를 인자로 받는다)
+*.xlsx

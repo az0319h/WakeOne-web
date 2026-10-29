@@ -40,7 +40,17 @@ export const searchParams = {
   tab: parseAsString,
   chat: parseAsString,
   // plan 97 — 퀵 조회 기간 (range · from/to는 위 공용)
-  range: parseAsString
+  range: parseAsString,
+  // plan 103 — 구독·비품 (category·status·request·q·page·perPage는 위 공용 · 클라이언트 기본 perPage 20)
+  kind: parseAsString,
+  scope: parseAsString,
+  card: parseAsString,
+  view: parseAsString,
+  subscription: parseAsInteger,
+  equipment: parseAsInteger,
+  compose: parseAsString,
+  rstatus: parseAsString,
+  mine_assigned: parseAsString
   // advanced filter
   // filters: getFiltersStateParser().withDefault([]),
   // joinOperator: parseAsStringEnum(['and', 'or']).withDefault('and')

@@ -106,7 +106,22 @@ export type ActivityAction =
   | "push_preference.update"
   | "push.test_send"
   /** plan 105 — 다른 계정 로그인 시 그 기기에 남은 이전 사용자 푸시 구독 해제 */
-  | "push_subscription.detach";
+  | "push_subscription.detach"
+  /** plan 103 —구독 관리 · 비품 관리 · 자산 요청 (metadata에 금액·카드·주계정·관리 메모·요청/댓글 본문·반려 사유 금지) */
+  | "subscription.create"
+  | "subscription.update"
+  | "subscription.delete"
+  | "equipment.create"
+  | "equipment.update"
+  | "equipment.delete"
+  | "asset_request.create"
+  | "asset_request.update"
+  | "asset_request.cancel"
+  | "asset_request.status_update"
+  | "asset_request.assignee_update"
+  | "asset_request.comment_create"
+  | "asset_request.comment_update"
+  | "asset_request.comment_delete";
 
 export type ActivityTargetType =
   | "user"
@@ -126,7 +141,12 @@ export type ActivityTargetType =
   | "workflow_draft"
   | "workflow_attachment"
   | "workflow_template"
-  | "workflow_admin";
+  | "workflow_admin"
+  /** plan 103 */
+  | "subscription"
+  | "equipment_item"
+  | "asset_request"
+  | "asset_request_comment";
 
 export type ActivityLogErrorCode =
   | "unauthenticated"
@@ -255,6 +275,19 @@ export type ActivityLogMetadata = {
   latency_ms?: number;
   input_tokens?: number;
   output_tokens?: number;
+  /** plan 103 — 구독·비품·자산 요청 (금액·카드·주계정·관리 메모·요청/댓글 본문·반려 사유 금지) */
+  subscription_id?: number;
+  name?: string;
+  assignee_count?: number;
+  equipment_id?: number;
+  asset_no?: string;
+  kind?: string;
+  asset_request_id?: number;
+  target_type?: string;
+  target_id?: number;
+  request_type?: string;
+  assignee_user_id?: string;
+  deleted_by_manager?: boolean;
   /** plan 91 — 휴대폰 푸시 (endpoint 전체·p256dh·auth 키는 절대 남기지 않는다) */
   created?: boolean;
   device_count?: number;
