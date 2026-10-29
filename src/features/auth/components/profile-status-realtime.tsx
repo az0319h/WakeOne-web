@@ -69,7 +69,7 @@ export function ProfileStatusRealtime({ profile }: ProfileStatusRealtimeProps) {
               void (async () => {
                 writeAccountDisabledFlash();
                 notifyError('비활성화된 계정입니다.');
-                await signOut();
+                await signOut({ scope: 'global' });
                 router.replace('/auth/sign-in?accountDisabled=1');
                 router.refresh();
               })();

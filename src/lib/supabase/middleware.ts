@@ -112,7 +112,8 @@ export async function updateSession(request: NextRequest) {
       };
 
       if (data.status !== "active") {
-        await supabase.auth.signOut();
+        // 비활성·비승인 계정은 모든 기기 세션을 끊는다 (plan 104)
+        await supabase.auth.signOut({ scope: 'global' });
         sessionUser = null;
       }
     }
