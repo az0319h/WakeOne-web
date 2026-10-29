@@ -1,13 +1,13 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fetchBirthdayCelebrantsUpcoming } from './service';
+import { fetchBirthdayCelebrants } from './service';
 
 export const birthdayCelebrantsKeys = {
   all: ['birthday-celebrants'] as const,
-  upcoming: () => [...birthdayCelebrantsKeys.all, 'upcoming'] as const
+  list: () => [...birthdayCelebrantsKeys.all, 'list'] as const
 };
 
-export const birthdayCelebrantsUpcomingQueryOptions = () =>
+export const birthdayCelebrantsQueryOptions = () =>
   queryOptions({
-    queryKey: birthdayCelebrantsKeys.upcoming(),
-    queryFn: () => fetchBirthdayCelebrantsUpcoming()
+    queryKey: birthdayCelebrantsKeys.list(),
+    queryFn: () => fetchBirthdayCelebrants()
   });

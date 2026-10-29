@@ -50,7 +50,7 @@
 | 07 | [07_auth-route-guard-plan.md](./07_auth-route-guard-plan.md) | **Completed** · dashboard/API 인증·인가 defense in depth |
 | 08 | [08_activity-audit-log-plan.md](./08_activity-audit-log-plan.md) | **Approved** · CUD activity log · `/dashboard/logs` |
 | 09 | [09_profile-phone-birthday-plan.md](./09_profile-phone-birthday-plan.md) | **Approved** · 연락처 11자리·생일 Calendar · SQL `11` |
-| 10 | [10_dashboard-birthday-profile-sheet-plan.md](./10_dashboard-birthday-profile-sheet-plan.md) | **Approved** · overview 생일 배너·컨페티·프로필 Sheet |
+| 10 | [10_dashboard-birthday-profile-sheet-plan.md](./10_dashboard-birthday-profile-sheet-plan.md) | **Approved** · overview 생일 배너·컨페티·프로필 Sheet · **overview 배너 부분 superseded by [102](./102_overview-birthday-wheel-list-plan.md)** |
 | 11 | [11_password-policy-set-password-removal-plan.md](./11_password-policy-set-password-removal-plan.md) | **Approved** · 비밀번호 정책·set-password 제거 |
 | 13 | [13_office-snack-vote-plan.md](./13_office-snack-vote-plan.md) | **Cancelled** · 사무실 간식 — [35](./35_office-snack-removal-plan.md)로 폐기 |
 | 14 | [14_delete-confirm-dialog-plan.md](./14_delete-confirm-dialog-plan.md) | **Completed** · 삭제 확인 `AlertModal` 전역 규칙 |
@@ -116,6 +116,7 @@
 | 81 | [81_kanban-google-tasks-plan.md](./81_kanban-google-tasks-plan.md) | **Approved** · `/dashboard/kanban` Google Tasks 멀티리스트 칸반 · 로그인 Tasks scope · plan 52/54/57 supersede · SQL `83` |
 | 84 | [84_kanban-tasklist-rename-plan.md](./84_kanban-tasklist-rename-plan.md) | **Approved** · 칸반 tasklist 이름 수정 Dialog · plan 81 follow-up · SQL 없음 |
 | 85 | [85_kanban-task-live-reorder-plan.md](./85_kanban-task-live-reorder-plan.md) | **Approved** · 미완료 task DnD만 리얼타임(같은/다른 목록) · drop 시 move 1회 · plan 81 follow-up · SQL 없음 |
+| 102 | [102_overview-birthday-wheel-list-plan.md](./102_overview-birthday-wheel-list-plan.md) | **Completed** (r2 · 2026-10-29 verifier · AC 21 green · spec `e2e/birthdays/102-overview-birthday-list.spec.ts` 25 passed(셋업 4 + 21) 2회 연속 · 95 spec AC-04 추가 20 passed · `node --test` 28/28 · tsc·lint:strict·build 0 · cleanup remaining 0 · 무관한 기존 e2e 실패 9건은 후속 [TBD]) · overview 생일 카드 캐러셀 → **가운데 줄 강조 휠 목록**(A안) · 탭 전체/웨이크/산스/산스파운드리(r3 순서 변경 · 기본 전체 · 소속 없음은 전체만) · active·비동방·생일 등록 전원 · 오늘 기준 앞뒤 반년 순환(위 지난 생일 · 가운데 가장 가까운 생일 · 아래 나중 생일) · 줄 클릭 시 가운데 이동 · 컨페티는 오늘 생일자 있을 때만 브라우저당 하루 1번(`localStorage`) · `GET /api/birthdays` 신규(`month_day`·`days_offset`·`affiliation` · 연도 제거) · `this-month` 삭제 · `applyDongbangScope` · `embla-carousel-auto-height` 제거 · SQL 없음 · activity log 해당 없음 · AC 21 · plan 10 overview 배너 부분 supersede |
 
 ## 에이전트 참조
 

@@ -13,6 +13,19 @@ export const AFFILIATIONS = ['wake', 'sans', 'sans_foundry'] as const;
 
 export type Affiliation = (typeof AFFILIATIONS)[number];
 
+/** plan 102 운영 선반영 — dev(plan 89)와 같은 이름. 운영에는 아직 동방특송 소속이 없어 `Affiliation`과 같다 */
+export type OrgAffiliation = Affiliation;
+
+export function isOrgAffiliation(value: string | null | undefined): value is OrgAffiliation {
+  return Boolean(value && (AFFILIATIONS as readonly string[]).includes(value));
+}
+
+/**
+ * plan 89 — PostgREST `.or()` 필터: 동방특송을 명단(생일 등)에서 제외.
+ * `neq`만 쓰면 affiliation null(관리자) 행도 빠지므로 null을 함께 허용한다.
+ */
+export const EXCLUDE_DONGBANG_OR_FILTER = 'affiliation.is.null,affiliation.neq.dongbang';
+
 export const POSITION_LEVEL_BY_AFFILIATION: Record<Affiliation, readonly string[]> = {
   wake: ['CEO', 'COO', '부장', '차장', '과장', '대리', '주임', '사원'],
   sans: ['CEO', '점장', '부점장', '선임매니저', '매니저', '쉐프'],
