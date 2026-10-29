@@ -1,6 +1,7 @@
 import { getBirthdayCelebrantsServer } from '../api/service.server';
-import { BirthdayCelebrantsBanner } from './birthday-celebrants-banner';
+import { BirthdayCelebrantsWheelCard } from './birthday-celebrants-wheel-card';
 
+/** plan 102 — overview 생일 카드 (RSC). 회사 전체 0명이면 카드 자체를 숨긴다(D-13). */
 export async function BirthdayCelebrantsSection() {
   const data = await getBirthdayCelebrantsServer();
 
@@ -8,5 +9,5 @@ export async function BirthdayCelebrantsSection() {
     return null;
   }
 
-  return <BirthdayCelebrantsBanner data={data} />;
+  return <BirthdayCelebrantsWheelCard data={data} />;
 }
