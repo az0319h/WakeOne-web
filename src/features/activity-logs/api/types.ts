@@ -104,7 +104,9 @@ export type ActivityAction =
   | "push_subscription.create"
   | "push_subscription.delete"
   | "push_preference.update"
-  | "push.test_send";
+  | "push.test_send"
+  /** plan 105 — 다른 계정 로그인 시 그 기기에 남은 이전 사용자 푸시 구독 해제 */
+  | "push_subscription.detach";
 
 export type ActivityTargetType =
   | "user"
@@ -244,8 +246,11 @@ export type ActivityLogMetadata = {
   /** plan 101 — 퀵 대화 참여자 (초대·제외 대상 user id · `self` = 본인 나가기) */
   participant_user_id?: string;
   self?: boolean;
-  /** plan 100 — AI 답장 추천 (본문·추천 문장·마스킹 전 데이터 금지 · 숫자·출처만) */
-  source?: "ai" | "rules";
+  /**
+   * plan 100 — AI 답장 추천 (본문·추천 문장·마스킹 전 데이터 금지 · 숫자·출처만) · `ai`|`rules`
+   * plan 105 — 휴대폰 알림 구독 등록·해제 출처 `manual`|`auto_resume`|`sign_out`|`forced_sign_out`
+   */
+  source?: "ai" | "rules" | "manual" | "auto_resume" | "sign_out" | "forced_sign_out";
   message_count?: number;
   latency_ms?: number;
   input_tokens?: number;
@@ -258,6 +263,10 @@ export type ActivityLogMetadata = {
   attempted?: number;
   sent?: number;
   removed?: number;
+  /** plan 105 — detach 결과 (endpoint 전체·키·owner hash 금지) */
+  result?: "detached" | "none" | "mine";
+  /** plan 105 — `auto_resume` POST 409 사유 */
+  reason?: "owned_by_other" | "deactivated_after_marker";
 };
 
 export type ActivityLog = {

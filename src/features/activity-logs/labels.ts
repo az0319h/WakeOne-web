@@ -109,6 +109,8 @@ export const ACTION_LABELS: Record<ActivityAction, string> = {
   "push_subscription.delete": "휴대폰 알림 기기 해제",
   "push_preference.update": "휴대폰 알림 설정 변경",
   "push.test_send": "휴대폰 알림 테스트 발송",
+  // plan 105 — 재로그인 자동 복구 (다른 계정 로그인 시 이전 사용자 기기 연결 해제)
+  "push_subscription.detach": "휴대폰 알림 이전 사용자 연결 해제",
 };
 
 export const METADATA_LABELS: Record<string, string> = {
@@ -183,12 +185,15 @@ export const METADATA_LABELS: Record<string, string> = {
   attempted: "발송 시도",
   sent: "발송 성공",
   removed: "만료 기기 삭제",
-  // plan 100 — 퀵 대화 답장 추천
-  source: "추천 출처",
+  // plan 100 — 퀵 대화 답장 추천(ai·rules) · plan 105 — 휴대폰 알림 구독 출처(manual·auto_resume·sign_out·forced_sign_out) 공용
+  source: "출처",
   message_count: "전송 메시지 수",
   latency_ms: "응답 시간(ms)",
   input_tokens: "입력 토큰",
   output_tokens: "출력 토큰",
+  // plan 105 — 휴대폰 알림 자동 복구 · detach
+  result: "처리 결과",
+  reason: "사유",
 };
 
 /** plan 88 — activity target_type 한국어 라벨 */

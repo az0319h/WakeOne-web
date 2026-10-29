@@ -1,4 +1,8 @@
 import type { PushGroupCatalogItem, PushGroupKey } from '../lib/push-groups';
+import type {
+  PushSubscriptionCreateSource,
+  PushSubscriptionDeleteSource
+} from '../lib/push-resume-decision';
 
 /**
  * plan 91 — `/api/notifications/push/**` 요청·응답 계약 (FE `push-service.ts`·`push-queries.ts`·`push-mutations.ts`가 사용).
@@ -39,18 +43,38 @@ export type CreatePushSubscriptionPayload = {
   endpoint: string;
   keys: { p256dh: string; auth: string };
   userAgent?: string | null;
+  /** plan 105 — 기본 `manual`(스위치·「다시 켜기」) · `auto_resume`(재로그인 자동 복구) */
+  source?: PushSubscriptionCreateSource;
+  /** plan 105 — `auto_resume`이면 **필수** · 기기 표시 시각 ISO(`resumeMarkerAtIso(marker)`) */
+  resume_marker_at?: string;
 };
-/** 201 신규 · 200 기존(멱등) */
+/**
+ * 201 신규 · 200 기존(멱등).
+ * plan 105 `auto_resume` 409 2종(다른 계정 소유 · 표시 이후 비활성화 이력) — `PushApiError.status`로 구분.
+ */
 export type CreatePushSubscriptionResponse = {
   id: number;
   device_count: number;
 };
 
-/** DELETE /api/notifications/push/subscriptions — endpoint 또는 id 중 하나 */
-export type DeletePushSubscriptionPayload = { endpoint: string } | { id: number };
+/**
+ * DELETE /api/notifications/push/subscriptions — endpoint 또는 id 중 하나.
+ * plan 105 `source`: 기본 `manual` · 로그아웃 버튼 `sign_out` · 강제 로그아웃 `forced_sign_out`.
+ */
+export type DeletePushSubscriptionPayload = ({ endpoint: string } | { id: number }) & {
+  source?: PushSubscriptionDeleteSource;
+};
 export type DeletePushSubscriptionResponse = {
   device_count: number;
 };
+
+/** plan 105 — POST /api/notifications/push/subscriptions/detach */
+export type DetachPushSubscriptionPayload = { endpoint: string };
+/** 200 — `detached`면 이전 주인 owner hash(16자 hex · 기기 표시에 기록) */
+export type DetachPushSubscriptionResponse =
+  | { result: 'detached'; previous_owner_hash: string }
+  | { result: 'none' }
+  | { result: 'mine' };
 
 /** POST /api/notifications/push/test — 200 · 409(기기 없음) · 503(미설정) */
 export type PushTestSendResponse = {

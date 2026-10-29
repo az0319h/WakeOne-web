@@ -3,6 +3,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { getServiceRoleClient } from '@/lib/supabase/service-role';
 import { isPushGroupKey, type PushGroupKey } from '../lib/push-groups';
+import { pushOwnerHashInput, truncatePushOwnerHash } from '../lib/push-resume-decision';
 
 /**
  * plan 91 — push_subscriptions · push_notification_preferences 접근 (service_role 전용).
@@ -187,6 +188,93 @@ export async function purgePushSubscriptionsByUser(userId: string): Promise<numb
     .select('id');
   if (error) throw new Error(error.message);
   return (data ?? []).length;
+}
+
+// ---------------------------------------------------------------------------
+// plan 105 — 재로그인 자동 복구 · 이전 사용자 연결 해제 (detach) · 비활성화 이력
+// ---------------------------------------------------------------------------
+
+/**
+ * 기기 표시 owner hash — sha256('wakeone-push-owner:' + user_id) hex 앞 16자.
+ * 클라이언트(`push-resume.ts` Web Crypto)와 같은 접두사·길이(`push-resume-decision.ts`)를 쓴다.
+ */
+export function hashPushOwner(userId: string): string {
+  return truncatePushOwnerHash(createHash('sha256').update(pushOwnerHashInput(userId)).digest('hex'));
+}
+
+export type PushSubscriptionOwnerRow = { id: number; user_id: string };
+
+/** endpoint(unique)로 행 1건 — 없으면 null */
+export async function findPushSubscriptionByEndpoint(
+  endpoint: string
+): Promise<PushSubscriptionOwnerRow | null> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('id, user_id')
+    .eq('endpoint', endpoint)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as PushSubscriptionOwnerRow | null) ?? null;
+}
+
+export type DetachForeignPushSubscriptionResult =
+  | { result: 'none' }
+  | { result: 'mine' }
+  | { result: 'detached'; previousOwnerId: string };
+
+/**
+ * 이 기기(endpoint)에 남은 **다른 계정**의 행을 지운다 (D-4).
+ * - 행 없음 → `none` · 내 행 → `mine`(변경 없음) · 다른 계정 → 삭제 후 `detached`.
+ * - 조회와 삭제 사이에 행이 바뀌면(다른 탭 upsert 등) 삭제가 0행 → 1회만 다시 판정한다.
+ */
+export async function detachForeignPushSubscription(input: {
+  userId: string;
+  endpoint: string;
+}): Promise<DetachForeignPushSubscriptionResult> {
+  const supabase = getServiceRoleClient();
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const row = await findPushSubscriptionByEndpoint(input.endpoint);
+    if (!row) return { result: 'none' };
+    if (row.user_id === input.userId) return { result: 'mine' };
+
+    const { data, error } = await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('id', row.id)
+      .eq('user_id', row.user_id)
+      .select('id');
+    if (error) throw new Error(error.message);
+    if ((data ?? []).length > 0) {
+      return { result: 'detached', previousOwnerId: row.user_id };
+    }
+  }
+
+  const finalRow = await findPushSubscriptionByEndpoint(input.endpoint);
+  if (!finalRow) return { result: 'none' };
+  if (finalRow.user_id === input.userId) return { result: 'mine' };
+  throw new Error('push subscription detach conflict');
+}
+
+/**
+ * `sinceIso` **이후** 이 사용자를 대상으로 성공(2xx)한 `user.deactivate` 로그가 있으면 true (91 AC-15 · D-5 ①).
+ * `activity_logs`는 append-only(UPDATE/DELETE 트리거 차단 · 보존 cron 없음)라 판정 근거로 쓴다.
+ * 인덱스 `idx_activity_logs_target_created (target_user_id, created_at desc)`를 탄다.
+ */
+export async function hasDeactivationSince(userId: string, sinceIso: string): Promise<boolean> {
+  const supabase = getServiceRoleClient();
+  const { data, error } = await supabase
+    .from('activity_logs')
+    .select('id')
+    .eq('target_user_id', userId)
+    .eq('action', 'user.deactivate')
+    .gte('http_status', 200)
+    .lt('http_status', 300)
+    .gt('created_at', sinceIso)
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
 }
 
 export async function getDisabledPushGroups(userId: string): Promise<PushGroupKey[]> {

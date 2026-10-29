@@ -12,6 +12,7 @@ import {
   isStandaloneDisplay,
   type PushDeviceStatus
 } from '../lib/push-client';
+import { subscribePushDeviceChanged } from '../lib/push-resume';
 
 type LocalPushState = {
   ready: boolean;
@@ -76,6 +77,15 @@ export function usePushDeviceStatus(
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // plan 105 — 대시보드 진입 자동 복구·안내 줄 「다시 켜기」 등으로 이 기기 구독이 바뀌면 다시 읽는다(판정 로직은 그대로)
+  useEffect(
+    () =>
+      subscribePushDeviceChanged(() => {
+        void refresh();
+      }),
+    [refresh]
+  );
 
   let status: PushDeviceStatus = 'loading';
   let thisDeviceId: number | null = null;
