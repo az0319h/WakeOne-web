@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
-import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
+import { formatAbsoluteDateTimeKo, formatChatBubbleTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import { QUICK_CHAT_ROLE_LABELS } from '../../schemas/quick-request-chat';
 import { isTempMessageId, type QuickChatMessageItem } from '../../lib/quick-chat-cache';
@@ -36,6 +36,7 @@ type QuickChatBubbleProps = {
 /**
  * 말풍선 — 상대 왼쪽(muted) · 나 오른쪽(primary) · 연속 묶음 · pending/failed 상태 (U-4 · U-13 · designer §4.2 표).
  * plan 98 U-5 — 묶음 순서: 본문(비면 미렌더) → 이미지 격자 → 파일 카드 → 실패 줄·영수증·시각.
+ * plan 106 D-14 — 시각은 `formatChatBubbleTimeKo`(`HH:mm` · 퀵 대화 예외).
  */
 export function QuickChatBubble({
   requestNo,
@@ -56,11 +57,13 @@ export function QuickChatBubble({
   const { images, files } = splitAttachments(attachments);
   const dimmed = clientState === 'pending' || clientState === 'failed';
   const time = (
+    // plan 106 D-14 — 말풍선은 `HH:mm`(위 날짜 구분선이 날짜) · 전체 시각은 hover `title`(PC)
     <time
       dateTime={message.createdAt}
+      title={formatAbsoluteDateTimeKo(message.createdAt)}
       className='text-[11px] whitespace-nowrap text-muted-foreground tabular-nums'
     >
-      {formatAbsoluteDateTimeKo(message.createdAt)}
+      {formatChatBubbleTimeKo(message.createdAt)}
     </time>
   );
 
@@ -84,7 +87,7 @@ export function QuickChatBubble({
           <span aria-hidden className='w-7 shrink-0' />
         )
       ) : null}
-      <div className={cn('flex min-w-0 max-w-[85%] flex-col gap-1 sm:max-w-[70%]', isMine && 'items-end')}>
+      <div className={cn('flex min-w-0 max-w-[85%] flex-col gap-1 sm:max-w-[70%]', isMine ? 'items-end' : 'items-start')}>
         {isGroupStart ? (
           <div className={cn('flex max-w-full min-w-0 items-center gap-1.5 text-xs', isMine && 'justify-end')}>
             <span className='min-w-0 truncate font-medium text-foreground'>{message.authorName}</span>
@@ -110,7 +113,7 @@ export function QuickChatBubble({
             data-testid={`quick-chat-attachments-${String(message.id)}`}
             className={cn(
               'flex w-72 max-w-full flex-col gap-1',
-              isMine && 'items-end',
+              isMine ? 'items-end' : 'items-start',
               clientState === 'failed' && 'rounded-lg border border-destructive p-1'
             )}
           >

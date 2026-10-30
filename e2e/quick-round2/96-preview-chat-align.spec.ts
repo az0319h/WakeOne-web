@@ -40,6 +40,12 @@ import {
   uniqueTag
 } from '../quick-workflow/helpers';
 import { grepDir, readSource } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 96 — 퀵 요청 미리보기 구조화 카드 · 채팅 말풍선 하단 정렬

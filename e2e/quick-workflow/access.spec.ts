@@ -145,8 +145,11 @@ test.describe('plan 89 A. 동방특송 소속 · 접근 차단', () => {
       await expect(page.getByTestId('quick-request-new-button')).toHaveCount(0);
 
       // kbar — 같은 필터
-      await page.keyboard.press('ControlOrMeta+k');
-      await expect(kbarSearchInput(page)).toBeVisible({ timeout: 10_000 });
+      // hydration 전 단축키는 무시될 수 있어 검색창이 열릴 때까지 다시 누른다 (plan 106 verifier · 타이밍)
+      await expect(async () => {
+        if (!(await kbarSearchInput(page).isVisible())) await page.keyboard.press('ControlOrMeta+k');
+        await expect(kbarSearchInput(page)).toBeVisible({ timeout: 3_000 });
+      }).toPass({ timeout: 30_000 });
       await fillKbarSearch(page, '퀵 대시보드');
       await expect(page.getByTestId('kbar-result-item').filter({ hasText: '퀵 대시보드' })).toHaveCount(1, {
         timeout: 10_000

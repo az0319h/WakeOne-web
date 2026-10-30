@@ -27,6 +27,7 @@ export default async function QuickRequestDetailRoute({ params }: PageProps) {
 
   return (
     <PageContainer
+      mobileHeader='hidden'
       pageTitle='퀵 요청 상세'
       pageDescription='진행 상황과 배차 정보를 확인합니다.'
       infoContent={quickInfoContent}

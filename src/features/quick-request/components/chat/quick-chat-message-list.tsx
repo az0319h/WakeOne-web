@@ -109,6 +109,23 @@ export function QuickChatMessageList({
     setNewCount((count) => count + added);
   }, [messages, scrollToBottom, viewer.userId]);
 
+  // ④ plan 106 D-13 ④ — 키보드가 올라와(또는 내려가) 스크롤 상자 높이가 바뀌면, 직전에 맨 아래 근처였을 때만 맨 아래 유지.
+  // 위로 올려 둔 상태(nearBottomRef false)는 그대로 둔다(「새 메시지 N ↓」 유지). 첫 관찰(마운트)은 ①이 이미 위치를 잡았으므로 건너뛴다.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+    let lastHeight = container.clientHeight;
+    const observer = new ResizeObserver(() => {
+      const height = container.clientHeight;
+      if (height === lastHeight) return;
+      lastHeight = height;
+      if (!nearBottomRef.current) return;
+      container.scrollTop = container.scrollHeight;
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   function handleScroll() {
     const container = containerRef.current;
     if (!container) return;
@@ -241,7 +258,7 @@ export function QuickChatMessageList({
           size='sm'
           variant='secondary'
           data-testid='quick-chat-new-messages'
-          className={cn('absolute bottom-3 left-1/2 h-9 -translate-x-1/2 rounded-full shadow-sm')}
+          className={cn('absolute bottom-3 left-1/2 h-11 -translate-x-1/2 rounded-full shadow-sm lg:h-9')}
           onClick={() => scrollToBottom('smooth')}
         >
           <Icons.chevronsDown aria-hidden />

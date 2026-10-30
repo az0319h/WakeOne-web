@@ -2,7 +2,6 @@
 
 import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
 
-import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
 import { DataTableScrollContainer } from '@/components/ui/table/data-table-scroll-container';
 import {
   Table,
@@ -16,24 +15,29 @@ import { getCommonPinningStyles } from '@/lib/data-table';
 import { cn } from '@/lib/utils';
 import type { QuickRequestListRow } from '../../api/types';
 import { isInteractiveClickTarget } from '../../lib/is-interactive-click-target';
+import { QuickDashboardPagination } from './quick-dashboard-pagination';
 
 type QuickDashboardDataTableProps = {
   table: TanstackTable<QuickRequestListRow>;
   /** 행 아무 셀 클릭 / 행 포커스 후 Enter·Space → 상세 (plan 94 D-7) */
   onRowClick: (row: QuickRequestListRow) => void;
   /** plan 97 D-2 — 10 · 20 · 50 */
-  pageSizeOptions?: number[];
+  pageSizeOptions: number[];
+  /** 서버 `total` — 페이지네이션 「총 N건」 (plan 106 X-2) */
+  total: number;
 };
 
 /**
  * plan 94 D-7 · designer §4.3 — 퀵 대시보드 표 (`src/components/ui/table/data-table.tsx` 구조 복제 · system-email-logs 선례).
  * 행에 `tabIndex`·키보드·focus ring을 더한다. 셀 안 버튼·링크(「접수」·「상세」·「새 대화 N」)는 가드로 전파 차단.
  * `hover:bg-muted/50`은 `TableRow` 기본 스타일.
+ * plan 106 X-2 — 페이지네이션은 퀵 전용 한국어 `QuickDashboardPagination`(ui `DataTablePagination` 대신 · 배치·크기 동일).
  */
 export function QuickDashboardDataTable({
   table,
   onRowClick,
-  pageSizeOptions
+  pageSizeOptions,
+  total
 }: QuickDashboardDataTableProps) {
   const columnCount = table.getVisibleLeafColumns().length;
 
@@ -107,7 +111,7 @@ export function QuickDashboardDataTable({
           </TableBody>
         </Table>
       </DataTableScrollContainer>
-      <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />
+      <QuickDashboardPagination table={table} total={total} pageSizeOptions={pageSizeOptions} />
     </div>
   );
 }

@@ -19,7 +19,9 @@ export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: META_THEME_COLORS.light },
     { media: '(prefers-color-scheme: dark)', color: META_THEME_COLORS.dark }
-  ]
+  ],
+  /** plan 106 D-3 — 노치·홈 막대 영역까지 그리고 `env(safe-area-inset-*)`로 비킨다 (body 좌우 패딩 · 하단 고정 요소 pb) */
+  viewportFit: 'cover'
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body
         className={cn(
           'bg-background overflow-x-hidden overscroll-none font-sans antialiased',
+          'pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]',
           fontVariables
         )}
       >

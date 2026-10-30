@@ -183,7 +183,7 @@ test.describe('plan 97 A. 기간 필터 · 페이지네이션 · 대화 무한�
     expect(summaryBad.body.message).toBe(RANGE_TEXT.invalid);
   });
 
-  test('AC-05: 45건(오늘) — 1페이지 20행 · 「Page 1 of 3」 · 2페이지 URL page=2 행 21~40 · 기간·상태 카드 클릭 시 page 제거 · perPage 50 → 45행', async ({
+  test('AC-05: 45건(오늘) — 1페이지 20행 · 「1 / 3 페이지」(plan 106 AC-20 한국어) · 2페이지 URL page=2 행 21~40 · 기간·상태 카드 클릭 시 page 제거 · perPage 50 → 45행', async ({
     browser
   }) => {
     const tag = uniqueTag('E2E97PG');
@@ -216,14 +216,14 @@ test.describe('plan 97 A. 기간 필터 · 페이지네이션 · 대화 무한�
       const table = page.getByTestId('quick-dashboard-table');
       await expect(page.getByTestId('quick-dashboard-total')).toHaveText('총 45건', { timeout: 30_000 });
       await expect(dashboardDataRows(page)).toHaveCount(20);
-      await expect(table.getByText('Page 1 of 3')).toBeVisible();
+      await expect(table.getByText('1 / 3 페이지')).toBeVisible();
       for (const row of first.rows) {
         await expect(page.getByTestId(`quick-row-detail-${row.requestNo}`)).toBeVisible();
       }
 
-      await table.getByRole('button', { name: 'Go to next page' }).click();
+      await table.getByRole('button', { name: '다음 페이지' }).click();
       await expect(page).toHaveURL(/[?&]page=2/);
-      await expect(table.getByText('Page 2 of 3')).toBeVisible({ timeout: 30_000 });
+      await expect(table.getByText('2 / 3 페이지')).toBeVisible({ timeout: 30_000 });
       await expect(dashboardDataRows(page)).toHaveCount(20);
       for (const row of second.rows) {
         await expect(page.getByTestId(`quick-row-detail-${row.requestNo}`)).toBeVisible();
@@ -234,15 +234,15 @@ test.describe('plan 97 A. 기간 필터 · 페이지네이션 · 대화 무한�
       await page.getByTestId('quick-dashboard-range-30d').click();
       await expect(page).toHaveURL(/[?&]range=30d/);
       expect(new URL(page.url()).searchParams.get('page'), '기간 전환 시 page 리셋').toBeNull();
-      await expect(table.getByText('Page 1 of 3')).toBeVisible({ timeout: 30_000 });
+      await expect(table.getByText('1 / 3 페이지')).toBeVisible({ timeout: 30_000 });
 
       // 상태 카드 클릭(필터) → page=1
-      await table.getByRole('button', { name: 'Go to next page' }).click();
+      await table.getByRole('button', { name: '다음 페이지' }).click();
       await expect(page).toHaveURL(/[?&]page=2/);
       await page.getByTestId('quick-dashboard-card-requested').click();
       await expect(page).toHaveURL(/[?&]status=requested/);
       expect(new URL(page.url()).searchParams.get('page'), '상태 카드 클릭 시 page 리셋').toBeNull();
-      await expect(table.getByText('Page 1 of 3')).toBeVisible({ timeout: 30_000 });
+      await expect(table.getByText('1 / 3 페이지')).toBeVisible({ timeout: 30_000 });
 
       // perPage 50 → 1페이지 45행
       await table.getByRole('combobox').click();
@@ -250,7 +250,7 @@ test.describe('plan 97 A. 기간 필터 · 페이지네이션 · 대화 무한�
       await expect(options).toHaveText(['10', '20', '50']);
       await options.filter({ hasText: /^50$/ }).click();
       await expect(page).toHaveURL(/[?&]perPage=50/);
-      await expect(table.getByText('Page 1 of 1')).toBeVisible({ timeout: 30_000 });
+      await expect(table.getByText('1 / 1 페이지')).toBeVisible({ timeout: 30_000 });
       await expect(dashboardDataRows(page)).toHaveCount(45);
       await expect(page.getByTestId('quick-dashboard-total')).toHaveText('총 45건');
     } finally {
@@ -358,7 +358,7 @@ test.describe('plan 97 A. 기간 필터 · 페이지네이션 · 대화 무한�
     }
   });
 
-  test('AC-08: 1024 동방 「퀵 대화」 패널 — time 텍스트 `yyyy-MM-dd (EEE) HH:mm:ss` 전체 · aside scrollWidth <= clientWidth · 시각 말줄임 0', async ({
+  test('AC-08 (plan 106 AC-38): 1024 동방 「퀵 대화」 패널 — time 텍스트 짧은 시각(오늘 HH:mm) · dateTime·title 전체 시각 · aside scrollWidth <= clientWidth · 시각 말줄임 0', async ({
     browser
   }) => {
     const tag = uniqueTag('E2E97TIME');
@@ -389,7 +389,9 @@ test.describe('plan 97 A. 기간 필터 · 페이지네이션 · 대화 무한�
       const time = item.locator('time');
       await expect(time).toHaveCount(1);
       const text = (await time.innerText()).trim();
-      expect(text).toMatch(new RegExp(`^${ABSOLUTE_DATETIME_RE.source}$`));
+      // plan 106 D-14 — 대화 목록은 KST 오늘 `HH:mm` (전체 시각은 title·dateTime)
+      expect(text).toMatch(/^\d{2}:\d{2}$/);
+      expect(await time.getAttribute('title')).toMatch(new RegExp(`^${ABSOLUTE_DATETIME_RE.source}$`));
       expect(text).not.toContain('…');
       const metrics = await time.evaluate((node) => ({
         scrollWidth: node.scrollWidth,

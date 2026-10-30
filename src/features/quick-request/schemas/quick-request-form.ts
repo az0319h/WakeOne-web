@@ -8,6 +8,11 @@ import {
   type QuickRequestGoodsSize,
   type QuickRequestVehicleType
 } from './quick-request-notify';
+import {
+  QUICK_REQUEST_SCHEDULE_CLIENT_GRACE_MS,
+  QUICK_REQUEST_SCHEDULE_FORM_PATHS,
+  refineQuickRequestScheduleOrder
+} from './quick-request-schedule-rules';
 import { localDatetimeInputToIso } from '../lib/datetime-local';
 
 const locationFieldsSchema = z.object({
@@ -124,6 +129,39 @@ export function refineQuickRequestForm(data: QuickRequestFormObjectValues, ctx: 
 export const quickRequestFormSchema = quickRequestFormObjectSchema.superRefine(refineQuickRequestForm);
 
 export type QuickRequestFormValues = z.infer<typeof quickRequestFormSchema>;
+
+/** 예약(날짜/시간 선택)일 때만 ISO · 즉시·최대한 빠르게·빈 값·형식 오류는 `null`(형식 검사는 공용 refine 몫) */
+function scheduledAtIso(mode: string, datetime: string): string | null {
+  return mode === 'scheduled' ? localDatetimeInputToIso(datetime) : null;
+}
+
+/**
+ * plan 106 D-11 · AC-26 — **등록 전용** 교차 검증 = 공용 `refineQuickRequestForm` + 픽업·도착 날짜 검사.
+ * 클라이언트 여유 1분(`datetime-local`은 분 단위) · 서버 여유(5분)보다 작다 → 화면 통과 후 서버 거절 없음.
+ * 수정 Sheet(`buildQuickRequestEditFormSchema`)는 공용 refine만 쓰므로 지난 시각을 허용한다 (F-9).
+ */
+export function refineQuickRequestCreateForm(
+  data: QuickRequestFormObjectValues,
+  ctx: z.RefinementCtx
+) {
+  refineQuickRequestForm(data, ctx);
+  refineQuickRequestScheduleOrder(
+    {
+      originAtIso: scheduledAtIso(data.origin.scheduleMode, data.origin.scheduledDatetime),
+      destinationAtIso: scheduledAtIso(
+        data.destination.scheduleMode,
+        data.destination.scheduledDatetime
+      )
+    },
+    ctx,
+    { graceMs: QUICK_REQUEST_SCHEDULE_CLIENT_GRACE_MS, paths: QUICK_REQUEST_SCHEDULE_FORM_PATHS }
+  );
+}
+
+/** 요청 폼(`/dashboard/quick/request`) 등록 검증 — 날짜 검사 포함 (`quickRequestFormSchema`와 값 타입 동일) */
+export const quickRequestCreateFormSchema = quickRequestFormObjectSchema.superRefine(
+  refineQuickRequestCreateForm
+);
 
 export function resolveVehicleCount(
   values: Pick<

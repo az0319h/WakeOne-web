@@ -23,6 +23,12 @@ import {
   sendMessageAs,
   sendViaUi
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 93 §A·B·F 상세 「요청 대화」 · 전송 · 칩 · DM 동작 — docs/plans/93_quick-request-chat-plan.md
@@ -95,7 +101,9 @@ test.describe('plan 93 B·F. 상세 「요청 대화」 전송 · DM 동작', ()
     await expect(bubble).toContainText(user.fullName);
     await expect(bubble).toContainText(CHAT_TEXT.roleRequester);
     await expect(bubble).toContainText(body);
-    await expect(bubble).toContainText(ABSOLUTE_DATETIME_RE);
+    // plan 106 D-14 — 말풍선 시각은 HH:mm(날짜는 위 구분선) · 전체 시각은 title
+    await expect(bubble.locator('time')).toHaveText(/^\d{2}:\d{2}$/);
+    await expect(bubble.locator('time')).toHaveAttribute('title', ABSOLUTE_DATETIME_RE);
     await expect(receipt(page, id)).toHaveAttribute('data-state', 'sent');
     await expect(receipt(page, id)).toContainText(CHAT_TEXT.receiptSent);
     await expect(composerInput(page)).toHaveValue('');
@@ -267,7 +275,9 @@ test.describe('plan 93 B·F. 상세 「요청 대화」 전송 · DM 동작', ()
     await expect(second).not.toContainText(dongbang.fullName);
     await expect(second).not.toContainText(CHAT_TEXT.roleDongbang);
     await expect(second.locator('time')).toHaveCount(1);
-    await expect(second.locator('time')).toHaveText(ABSOLUTE_DATETIME_RE);
+    // plan 106 D-14 — 말풍선 시각 HH:mm (묶음 규칙: 시각은 마지막 말풍선에만 유지)
+    await expect(second.locator('time')).toHaveText(/^\d{2}:\d{2}$/);
+    await expect(second.locator('time')).toHaveAttribute('title', ABSOLUTE_DATETIME_RE);
     await expect(todayBubble).toContainText(dongbang.fullName);
     await expect(todayBubble.locator('time')).toHaveCount(1);
   });

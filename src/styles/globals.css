@@ -75,3 +75,26 @@
   /* Apply the reveal animation */
   animation: reveal 0.4s ease-in-out forwards;
 }
+
+/*
+ * plan 106 §2.6 — 퀵 휴대폰(lg 미만) 전역 규칙 1곳. @layer 밖이라 Tailwind 유틸리티(`flex` 등)보다 우선한다.
+ * - `data-quick-fullscreen`(대화방·상세 대화 루트)이 있으면 공통 상단바·앱 배너·퀵 탭 바를 숨기고 문서 스크롤을 잠근다(K1).
+ * - `data-quick-sticky-bottom`(퀵 탭 바·요청 요약바·상세 하단 바)이 있으면 포커스 이동 시 sticky가 칸을 가리지 않게 scroll-padding.
+ */
+@media (max-width: 1023.98px) {
+  [data-slot='sidebar-inset']:has([data-quick-fullscreen]) > [data-app-header],
+  [data-slot='sidebar-inset']:has([data-quick-fullscreen]) [data-app-banner],
+  [data-slot='sidebar-inset']:has([data-quick-fullscreen]) [data-quick-tabbar] {
+    display: none;
+  }
+
+  html:has([data-quick-fullscreen]) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html:has([data-quick-sticky-bottom]) {
+    scroll-padding-top: 4.5rem;
+    scroll-padding-bottom: 5.5rem;
+  }
+}

@@ -17,10 +17,12 @@ import type { QuickRangeValue } from '../../lib/quick-range-search-params';
 import type { QuickRealtimeStatus } from '../../lib/use-quick-realtime-channel';
 import { isQuickChatConversationTab, type QuickChatConversationTab } from '../../schemas/quick-request-chat';
 import { QuickRangeFilter } from '../dashboard/quick-range-filter';
+import { QuickMobileInfoButton } from '../mobile/quick-mobile-info-button';
 import { QuickInfiniteSentinel } from '../quick-infinite-sentinel';
 import { QuickRequestQueryBoundary } from '../quick-request-query-boundary';
 import { QUICK_CHAT_TEXT, quickChatText } from './quick-chat-constants';
 import { QuickChatConversationItem } from './quick-chat-conversation-item';
+import { QuickChatFilterSheet } from './quick-chat-filter-sheet';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -152,7 +154,12 @@ function ConversationItems({
   );
 }
 
-/** 목록 패널 — 헤더·검색·기간·탭 shell은 Suspense 밖(plan 40), 항목만 compact 스피너 (U-2 · U-10) */
+/**
+ * 목록 패널 — 헤더·검색·기간·탭 shell은 Suspense 밖(plan 40), 항목만 compact 스피너 (U-2 · U-10).
+ * plan 106 U-8 · designer §5.3 — lg 미만은 머리 압축(SSR 셸이라 CSS로만 배치 변경 · testid 한 벌):
+ * 행 A 「대화 N건 · 안 읽은 M」 + 실시간 + ⓘ(44) · 행 B 검색 + 「기간 7일」 판 버튼 · 행 C 탭(45) · 패널은 화면 가장자리까지.
+ * lg 이상은 지금 화면 그대로(제목 「퀵 대화」 · 기간 ToggleGroup 줄).
+ */
 export function QuickChatConversationList({
   filters,
   q,
@@ -190,23 +197,27 @@ export function QuickChatConversationList({
   return (
     <aside
       aria-label={QUICK_CHAT_TEXT.listAriaLabel}
-      className={cn('min-h-0 min-w-0 flex-col rounded-xl border bg-card', className)}
+      className={cn(
+        'min-h-0 min-w-0 flex-col rounded-xl border bg-card max-lg:rounded-none max-lg:border-x-0',
+        className
+      )}
     >
-      <div className='shrink-0 px-4 pt-4 pb-3'>
-        <div className='flex items-center justify-between gap-2'>
-          <h2 className='text-sm font-semibold'>{QUICK_CHAT_TEXT.listTitle}</h2>
-          <RealtimeStatusBadge status={realtimeStatus} />
-        </div>
+      {/* PC: [제목][실시간] / [요약] · lg 미만: [요약 ……][실시간][ⓘ] 한 줄 (같은 요소를 flex-wrap·order로 재배치) */}
+      <div className='flex shrink-0 flex-wrap items-center gap-x-2 px-4 pt-2 pb-2 lg:justify-between lg:pt-4 lg:pb-3'>
+        <h2 className='hidden text-sm font-semibold lg:block'>{QUICK_CHAT_TEXT.listTitle}</h2>
         <p
           data-testid='quick-chat-list-summary'
           aria-live='polite'
-          className='min-h-4 text-xs text-muted-foreground tabular-nums'
+          className='min-h-4 min-w-0 flex-1 text-xs text-muted-foreground tabular-nums max-lg:truncate lg:order-last lg:basis-full'
         >
           {totals ? quickChatText.summary(totals.conversations, totals.unreadConversations) : ''}
         </p>
+        <RealtimeStatusBadge status={realtimeStatus} />
+        <QuickMobileInfoButton className='-mr-2' />
       </div>
-      <div className='shrink-0 px-4 pb-2'>
-        <InputGroup className='h-11 lg:h-10'>
+      {/* lg 미만: 검색 입력칸 자체가 44px(테두리 포함 46) + 「기간」 판 버튼 · PC: 지금처럼 h-10 한 줄 */}
+      <div className='flex shrink-0 items-center gap-2 px-4 pb-2'>
+        <InputGroup className='h-auto min-w-0 flex-1 lg:h-10'>
           <InputGroupAddon>
             <Icons.search aria-hidden />
           </InputGroupAddon>
@@ -217,12 +228,14 @@ export function QuickChatConversationList({
             aria-label={QUICK_CHAT_TEXT.searchPlaceholder}
             autoComplete='off'
             data-testid='quick-chat-search'
+            className='max-lg:h-11 max-lg:text-base'
             onChange={(event) => {
               setSearchInput(event.target.value);
               debouncedSearch(event.target.value);
             }}
           />
         </InputGroup>
+        <QuickChatFilterSheet value={range} onChange={onRangeChange} />
       </div>
       <QuickRangeFilter
         value={range}
@@ -230,7 +243,7 @@ export function QuickChatConversationList({
         size='sm'
         testIdPrefix='quick-chat'
         labelPlacement='below'
-        className='shrink-0 px-4 pb-2'
+        className='hidden shrink-0 px-4 pb-2 lg:flex'
       />
       <Tabs
         value={tab}
@@ -239,7 +252,7 @@ export function QuickChatConversationList({
         }}
         className='shrink-0 px-4 pb-2'
       >
-        <TabsList className='grid w-full grid-cols-2'>
+        <TabsList className='grid w-full grid-cols-2 max-lg:h-[3.25rem]'>
           <TabsTrigger value='all' data-testid='quick-chat-tab-all'>
             {QUICK_CHAT_TEXT.tabAll}
           </TabsTrigger>

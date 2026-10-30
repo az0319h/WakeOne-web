@@ -10,6 +10,10 @@ import { QUICK_CHAT_ATTACHMENT_ACCEPT } from '../../schemas/quick-request-attach
 import { QUICK_CHAT_BODY_MAX_LENGTH } from '../../schemas/quick-request-chat';
 import { QUICK_CHAT_COUNTER_THRESHOLD, QUICK_CHAT_TEXT, quickChatText } from './quick-chat-constants';
 import type { UseAttachmentUploadResult } from './use-attachment-upload';
+import { useMatchMedia } from './use-match-media';
+
+/** plan 106 D-13 ① — 터치 기기 판정 (화면 폭이 아니라 입력 장치 · 마우스 PC는 Enter 전송 유지) */
+const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
 
 type QuickChatComposerProps = {
   draft: string;
@@ -29,6 +33,8 @@ type QuickChatComposerProps = {
  * 900자부터 「남은 글자 N」, 1,000자 초과면 전송 비활성. 단일 필드라 TanStack Form 대신 controlled Textarea.
  * plan 98 U-1 — 왼쪽 클립 버튼(숨은 `<input type=file multiple>`) · 전송은 본문 또는 완료 첨부 ≥1 · 업로드 중·실패 칩이면 비활성.
  * mobile-ux 2차 #3 — placeholder는 짧게(빈 입력창 1줄 44px · `field-sizing-content`), Enter·Shift+Enter 안내는 sr-only 설명.
+ * plan 106 D-13 — 터치 기기(`pointer: coarse`)는 Enter = 줄바꿈(`enterKeyHint='enter'` · 보내기는 「전송」 버튼만 · 안내문도 바꿈).
+ * 글자 16px는 lg 미만 전부(ui `Textarea` 기본 `md:text-sm`을 `md:text-base`로 덮어 T768도 확대 없음) · lg↑ 14px 그대로.
  */
 export function QuickChatComposer({
   draft,
@@ -44,6 +50,7 @@ export function QuickChatComposer({
   const hintId = useId();
   const counterId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isCoarsePointer = useMatchMedia(COARSE_POINTER_MEDIA_QUERY);
   const length = draft.length;
   const tooLong = length > QUICK_CHAT_BODY_MAX_LENGTH;
   const showCounter = length >= QUICK_CHAT_COUNTER_THRESHOLD;
@@ -59,6 +66,8 @@ export function QuickChatComposer({
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    // 터치 기기는 Enter 기본 동작(줄바꿈) 그대로 — 전송은 버튼만 (plan 106 D-13 ①)
+    if (isCoarsePointer) return;
     if (event.key !== 'Enter' || event.shiftKey) return;
     if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     event.preventDefault();
@@ -86,7 +95,7 @@ export function QuickChatComposer({
           type='button'
           variant='ghost'
           size='icon'
-          className='size-11 shrink-0 touch-manipulation md:size-10'
+          className='size-11 shrink-0 touch-manipulation lg:size-10'
           aria-label={QUICK_CHAT_TEXT.attach}
           data-testid='quick-chat-attach'
           disabled={isPending || attachments.items.length >= attachments.max}
@@ -109,7 +118,7 @@ export function QuickChatComposer({
           {QUICK_CHAT_TEXT.composerLabel}
         </label>
         <p id={hintId} className='sr-only'>
-          {QUICK_CHAT_TEXT.composerHint}
+          {isCoarsePointer ? QUICK_CHAT_TEXT.composerHintTouch : QUICK_CHAT_TEXT.composerHint}
         </p>
         <Textarea
           id={inputId}
@@ -119,10 +128,10 @@ export function QuickChatComposer({
           placeholder={QUICK_CHAT_TEXT.composerPlaceholder}
           aria-describedby={showCounter ? `${hintId} ${counterId}` : hintId}
           aria-invalid={tooLong || undefined}
-          enterKeyHint='send'
+          enterKeyHint={isCoarsePointer ? 'enter' : 'send'}
           autoComplete='off'
           data-testid='quick-chat-input'
-          className='max-h-40 min-h-11 flex-1 resize-none text-base md:text-sm'
+          className='max-h-40 min-h-11 flex-1 resize-none text-base md:text-base lg:text-sm'
           onChange={(event) => {
             onDraftChange(event.target.value);
             if (event.target.value.length > 0) {
@@ -134,7 +143,7 @@ export function QuickChatComposer({
         />
         <Button
           type='submit'
-          className='h-11 shrink-0 px-4 md:h-10'
+          className='h-11 shrink-0 px-4 lg:h-10'
           aria-label={QUICK_CHAT_TEXT.send}
           data-testid='quick-chat-send'
           isLoading={isPending}

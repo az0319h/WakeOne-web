@@ -23,6 +23,12 @@ import {
   selectGoodsSize,
   vehicleCard
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 // plan 86 — docs/plans/86_quick-request-kakao-redesign-plan.md (1280 데스크톱 단일 화면)
 test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', () => {
@@ -183,7 +189,9 @@ test.describe('퀵 배송 요청 단일 화면 · 데스크톱 1280 (plan 86)', 
   // plan 87 supersede — 칩은 사용자별 DB seed 「동승 필요」 (group + role 셀렉터)
   // mobile-ux #1 (2026-10-21) — 요약의 고정 「💳 결제: 월정산」 줄 제거 → 착불이면 요약에 월정산 없음
   test('AC-12: 픽업 예약 절대시각 · 최대한 빠르게 · 특이 칩 · 착불 요약', async ({ page }) => {
-    const local = '2026-12-25T14:30';
+    // plan 106 D-11 — 고정 날짜는 지나면 등록 날짜 검사와 충돌 → 「지금 + 1일」 14:30 (KST 로컬 값)
+    const tomorrow = new Date(Date.now() + 9 * 3_600_000 + 24 * 3_600_000).toISOString().slice(0, 10);
+    const local = `${tomorrow}T14:30`;
     const note = SEED_NOTE_LABEL;
     await resetNotesToSeed(page.request);
     await gotoQuickRequest(page);

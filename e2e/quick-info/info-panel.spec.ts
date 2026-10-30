@@ -19,9 +19,10 @@ import {
   desktopPanel,
   expectPanelMatches,
   infoButton,
+  mobileInfoButton,
   mobilePanel,
   openDesktopPanel,
-  openMobilePanel,
+  openMobilePanelBy,
   pageHeading,
   panelBodyText,
   panelTitle,
@@ -235,27 +236,26 @@ test.describe('plan 90 퀵 권한 안내 ⓘ 패널', () => {
     }
   });
 
-  test('AC-10: admin 모바일 390×844 대시보드 ⓘ → Sheet Q-1~Q-7 · 가로 넘침 없음 · ⓘ 44px 이상 · 닫기(X)', async ({
+  test('AC-10 (plan 106 판정 · ⓘ 본문 첫 줄): admin 모바일 390×844 대시보드 ⓘ → Sheet Q-1~Q-7 · 가로 넘침 없음 · ⓘ 44px 이상 · 닫기(X)', async ({
     browser
   }, testInfo) => {
     const { context, page } = await pageAs(browser, 'admin', { viewport: VIEWPORT_MOBILE_390 });
     try {
       await gotoDashboard(page);
-      const heading = pageHeading(page, '퀵 내역');
-      await expect(heading).toBeVisible();
-      const button = infoButton(page);
-      await expect(button).toBeVisible();
+      // plan 106 D-2 · U-2 (90 UI-1 supersede) — lg 미만은 큰 제목·「퀵 요청하기」를 숨기고 ⓘ를 본문 첫 줄(메타바 오른쪽)에 둔다
+      await expect(pageHeading(page, '퀵 내역')).toBeHidden();
+      await expect(infoButton(page)).toBeHidden();
+      const button = mobileInfoButton(page);
+      await expect(button).toBeVisible({ timeout: 30_000 });
+      await expect(button).toHaveAccessibleName('퀵 권한 안내 보기');
       const buttonBox = await button.boundingBox();
       expect(buttonBox!.width).toBeGreaterThanOrEqual(44);
       expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
-      // UI-1: ⓘ가 「퀵 요청하기」와 겹치지 않고 제목과 같은 줄에 있다
-      const newButtonBox = await page.getByTestId('quick-request-new-button').boundingBox();
-      expect(boxesOverlap(buttonBox!, newButtonBox!)).toBe(false);
-      const headingBox = await heading.boundingBox();
-      expect(buttonBox!.x).toBeGreaterThan(headingBox!.x + headingBox!.width - 1);
-      expect(buttonBox!.y).toBeLessThan(headingBox!.y + headingBox!.height);
+      expect(buttonBox!.y, 'ⓘ 본문 첫 줄(top < 200)').toBeLessThan(200);
+      const metaBox = await page.getByTestId('quick-dashboard-meta-bar').boundingBox();
+      expect(buttonBox!.y).toBeLessThan(metaBox!.y + metaBox!.height);
 
-      const sheet = await openMobilePanel(page);
+      const sheet = await openMobilePanelBy(page, button);
       await expect(panelTitle(sheet)).toHaveText(QUICK_INFO.title);
       const headings = sheet.getByRole('heading', { level: 3 });
       await expect(headings).toHaveText(QUICK_INFO.sections.map((section) => section.title));
@@ -287,28 +287,30 @@ test.describe('plan 90 퀵 권한 안내 ⓘ 패널', () => {
     }
   });
 
-  test('AC-10 (UI-1·R-3): 모바일 390 상세 — 「퀵 요청 상세」 + ⓘ(44px) + 「목록으로」 겹침 없음 · Sheet 열림', async ({
+  test('AC-10 (UI-1·R-3 · plan 106 판정): 모바일 390 상세 — 상태 카드 ⓘ(44px) · 상단바 「뒤로」와 겹침 없음 · Sheet 열림', async ({
     browser
   }) => {
     const { context, page } = await pageAs(browser, 'admin', { viewport: VIEWPORT_MOBILE_390 });
     try {
       await gotoDetail(page, requestNo);
-      const heading = pageHeading(page, '퀵 요청 상세');
-      await expect(heading).toBeVisible();
-      const buttonBox = await infoButton(page).boundingBox();
+      // plan 106 D-2 · U-2 — lg 미만 상세: 큰 제목·「목록으로」 숨김(상단바 「뒤로」가 대신) · ⓘ는 상태 카드 오른쪽 위
+      await expect(pageHeading(page, '퀵 요청 상세')).toBeHidden();
+      await expect(page.getByRole('link', { name: '목록으로' })).toBeHidden();
+      const button = mobileInfoButton(page);
+      await expect(button).toBeVisible({ timeout: 30_000 });
+      const buttonBox = await button.boundingBox();
       expect(buttonBox!.width).toBeGreaterThanOrEqual(44);
       expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
-      const backBox = await page.getByRole('link', { name: '목록으로' }).boundingBox();
+      const backBox = await page.getByTestId('quick-mobile-back').boundingBox();
       expect(boxesOverlap(buttonBox!, backBox!)).toBe(false);
-      const headingBox = await heading.boundingBox();
-      expect(buttonBox!.y).toBeLessThan(headingBox!.y + headingBox!.height);
+      expect(buttonBox!.y, 'ⓘ top < 200').toBeLessThan(200);
       const { scrollWidth, clientWidth } = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth
       }));
       expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
 
-      const sheet = await openMobilePanel(page);
+      const sheet = await openMobilePanelBy(page, button);
       await expect(panelTitle(sheet)).toHaveText(QUICK_INFO.title);
       await expect(sheet.getByRole('heading', { level: 3 })).toHaveCount(7);
     } finally {

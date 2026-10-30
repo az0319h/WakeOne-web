@@ -25,6 +25,12 @@ import {
   withApi
 } from '../quick-workflow/helpers';
 import { PHONE_TEXT, SRC_ROOT, grepDir } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 97 §C 전화번호 9~11자리 (AC-18 ~ AC-22 · AC-17은 `node --test src/lib/__tests__/phone.test.mjs`)

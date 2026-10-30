@@ -40,7 +40,7 @@ export function ThemeModeToggle() {
         <Button
           variant='secondary'
           size='icon'
-          className='group/toggle size-8'
+          className='group/toggle size-11 lg:size-8'
           onClick={handleThemeToggle}
         >
           <Icons.brightness />

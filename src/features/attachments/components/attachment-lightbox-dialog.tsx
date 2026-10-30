@@ -234,7 +234,8 @@ export function AttachmentLightboxDialog({
             ) : null}
           </div>
 
-          <footer className='grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-neutral-800 bg-neutral-950 px-4 py-3'>
+          {/* plan 106 D-3 — 전체 화면 하단 도구줄 · viewport-fit=cover에서 홈 막대 비킴 (PC env 0 → py-3 그대로) */}
+          <footer className='grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-neutral-800 bg-neutral-950 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'>
             <div className='flex justify-start'>
               <Button
                 type='button'

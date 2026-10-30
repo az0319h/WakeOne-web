@@ -16,7 +16,7 @@ import { Icons } from '@/components/icons';
 import type { QuickRequestFormValues } from '../schemas/quick-request-form';
 import {
   QuickRequestSummaryContent,
-  formatQuickRequestSummaryLine
+  formatQuickRequestSummaryParts
 } from './quick-request-summary-content';
 
 type QuickRequestMobileSummaryBarProps = {
@@ -25,7 +25,11 @@ type QuickRequestMobileSummaryBarProps = {
   onRegister: () => void;
 };
 
-/** lg 미만 하단 고정 바 — 요약 1줄 + 등록 · 탭 시 Drawer 전체 요약 */
+/**
+ * lg 미만 하단 고정 바 — 요약 1줄 + 등록 · 탭 시 Drawer 전체 요약.
+ * plan 106 D-10 ⑦ · AC-29 — 페이지 스크롤에서 `sticky bottom-0`(문서 흐름 끝 · fixed 아님) · 높이 61px(≤ 76) ·
+ * 경로만 말줄임, 「{차량} · {대수}」는 통째로(단어 중간 줄바꿈 없음). `data-quick-sticky-bottom` → 전역 scroll-padding.
+ */
 export function QuickRequestMobileSummaryBar({
   values,
   isSubmitting,
@@ -41,10 +45,13 @@ export function QuickRequestMobileSummaryBar({
     onRegister();
   }
 
+  const summary = formatQuickRequestSummaryParts(values);
+
   return (
     <div
       data-testid='quick-request-mobile-bar'
-      className='-mx-4 -mb-4 flex shrink-0 items-center gap-3 border-t bg-background px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6 lg:hidden'
+      data-quick-sticky-bottom
+      className='sticky bottom-0 z-20 -mx-4 -mb-4 flex shrink-0 items-center gap-3 border-t bg-background px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:-mx-6 md:px-6 lg:hidden'
     >
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerTrigger asChild>
@@ -52,13 +59,16 @@ export function QuickRequestMobileSummaryBar({
             type='button'
             variant='ghost'
             data-testid='quick-request-mobile-summary-trigger'
-            className='h-auto min-h-11 min-w-0 flex-1 justify-start gap-2 px-0 text-left font-normal hover:bg-transparent'
+            className='h-11 min-w-0 flex-1 justify-start gap-2 px-0 text-left font-normal hover:bg-transparent'
           >
-            <span className='min-w-0 flex-1'>
-              <span className='block text-xs text-muted-foreground'>요청 요약</span>
-              <span className='line-clamp-2 text-sm font-medium wrap-break-word whitespace-normal text-foreground'>
-                {formatQuickRequestSummaryLine(values)}
-              </span>
+            {/* 접근 이름 = 「요청 요약 보기, {보이는 요약}」 (보이는 글자 포함 규칙) */}
+            <span className='sr-only'>요청 요약 보기, </span>
+            <span
+              data-testid='quick-request-mobile-summary-text'
+              className='flex min-w-0 flex-1 items-center overflow-hidden text-sm font-medium whitespace-nowrap text-foreground'
+            >
+              <span className='min-w-0 truncate'>{summary.route}</span>
+              <span className='shrink-0 break-keep'>&nbsp;· {summary.rest}</span>
             </span>
             <Icons.chevronUp className='size-4 shrink-0 text-muted-foreground' aria-hidden />
           </Button>
@@ -99,12 +109,13 @@ export function QuickRequestMobileSummaryBar({
       </Drawer>
       <Button
         type='button'
-        className='h-11 shrink-0 px-4'
+        className='h-11 shrink-0 px-5'
         isLoading={isSubmitting}
+        aria-label='퀵 요청 등록하기'
         data-testid='quick-request-mobile-register-button'
         onClick={onRegister}
       >
-        퀵 요청 등록하기
+        등록하기
       </Button>
     </div>
   );

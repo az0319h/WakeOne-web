@@ -171,7 +171,7 @@ test.describe('plan 100 A. AI 답장 추천 칩 (mock)', () => {
     }
   });
 
-  test('AC-14: 375 — 칩 줄 높이 규칙·로딩·AI 3상태 동일 · AI 4개 가로 스크롤 · 칩 ≥ 44px · 문서 가로 넘침 0', async ({ browser }) => {
+  test('AC-14 (plan 106 판정 · 빈 입력): 375 — 칩 줄 높이 규칙·로딩·AI 3상태 동일 · AI 4개 가로 스크롤 · 칩 ≥ 44px · 문서 가로 넘침 0', async ({ browser }) => {
     const requestNo = (await createAs('user', uniqueTag('E2E100A14'))).requestNo;
     await sendMessageAs('dongbang', requestNo, '확인 부탁드립니다.');
     await sendMessageAs('user', requestNo, '네 확인했습니다.');
@@ -179,6 +179,8 @@ test.describe('plan 100 A. AI 답장 추천 칩 (mock)', () => {
     try {
       await gotoChat(requester.page, requestNo);
       await waitForSubscribed(requester.page);
+      // plan 106 D-13 ② — lg 미만은 입력 중 칩 줄을 숨긴다 → 이 판정은 빈 입력 상태에서만 (입력 중 숨김은 106 AC-34)
+      await expect(requester.page.getByTestId('quick-chat-input')).toHaveValue('');
       // 규칙(마지막 = 내 메시지 · idle)
       await expectRuleChips(requester.page, REQUESTER_REPLIES);
       const rulesHeight = await heightOf(repliesRow(requester.page));

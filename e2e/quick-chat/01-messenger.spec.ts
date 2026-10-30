@@ -95,7 +95,16 @@ test.describe('plan 93 A. 「퀵 대화」 nav · Messenger 구조 · 동방 all
       await expect(page.getByRole('tab', { name: /^안 읽음/ })).toBeVisible();
 
       for (const no of requestNos) {
-        await expect(page.getByTestId(`quick-chat-list-item-${no}`)).toBeVisible({ timeout: 15_000 });
+        // 메시지 없는 건은 목록 맨 뒤(정렬: 메시지 있는 건 먼저) — 공유 dev DB 건수가 많으면 아래로 내려 더 불러온다 (plan 106 verifier)
+        const listItem = page.getByTestId(`quick-chat-list-item-${no}`);
+        for (let round = 0; round < 30 && !(await listItem.isVisible()); round += 1) {
+          await page.getByTestId('quick-chat-list').evaluate((root) => {
+            const viewport = root.querySelector('[data-slot="scroll-area-viewport"]') ?? root;
+            viewport.scrollTop = viewport.scrollHeight;
+          });
+          await page.waitForTimeout(700);
+        }
+        await expect(listItem).toBeVisible({ timeout: 15_000 });
       }
       const item = page.getByTestId(`quick-chat-list-item-${msgNo}`);
       await expect(item).toContainText(user.fullName.trim().charAt(0));
@@ -103,7 +112,9 @@ test.describe('plan 93 A. 「퀵 대화」 nav · Messenger 구조 · 동방 all
       await expect(item).toContainText('신규요청');
       await expect(item).toContainText('→');
       await expect(item).toContainText(`${user.fullName}: ${lastBody}`);
-      await expect(item).toContainText(ABSOLUTE_DATETIME_RE);
+      // plan 106 D-14 — 대화 목록 시각은 짧게(KST 오늘 HH:mm) · 전체 시각은 title
+      await expect(item.locator('time')).toHaveText(/^\d{2}:\d{2}$/);
+      await expect(item.locator('time')).toHaveAttribute('title', ABSOLUTE_DATETIME_RE);
       await expect(page.getByTestId(`quick-chat-list-unread-${msgNo}`)).toHaveText('1');
       await expect(item).not.toHaveAttribute('aria-current', 'true');
       await expect(page.getByTestId('quick-chat-no-selection')).toContainText(CHAT_TEXT.noSelection);

@@ -34,6 +34,12 @@ import {
   waitForSubscribed
 } from '../quick-chat/helpers';
 import { TEXT, dbQuickNotificationsByEvent, expectedChatTitle, grepDir, readSource, waitQuickNotifications } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 94 §D 수정 알림(14) · 잠금 해제(15) · 푸시 제목(19) · §E 로그 — docs/plans/94_quick-realtime-and-small-fixes-plan.md

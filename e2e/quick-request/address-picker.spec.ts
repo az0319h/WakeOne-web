@@ -12,6 +12,12 @@ import {
   VIEWPORT_DESKTOP,
   VIEWPORT_MOBILE
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 // plan 87 — docs/plans/87_quick-request-goods-notes-address-picker-plan.md (주소 검색 Dialog · 최근 이용 내역 · AC-15~17·21)
 const MIN_TOUCH_TARGET = 44;

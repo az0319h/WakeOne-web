@@ -26,7 +26,8 @@ export default async function QuickChatRoute(props: PageProps) {
 
   return (
     <PageContainer
-      viewportFill
+      viewportFill='lg'
+      mobileHeader='hidden'
       pageTitle={QUICK_CHAT_PAGE_TITLE}
       pageDescription={QUICK_CHAT_PAGE_DESCRIPTION}
       infoContent={quickInfoContent}

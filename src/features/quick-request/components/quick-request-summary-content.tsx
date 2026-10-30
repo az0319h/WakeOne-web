@@ -67,15 +67,31 @@ export function formatDestinationSchedule(
   return iso ? formatAbsoluteDateTimeKo(iso) : '—';
 }
 
-/** 모바일 하단 바 1줄 요약 */
-export function formatQuickRequestSummaryLine(values: QuickRequestFormValues): string {
+export type QuickRequestSummaryParts = {
+  /** `{출발} → {도착}` — 하단 바에서 말줄임되는 부분 */
+  route: string;
+  /** `{차량} · {대수}` — 하단 바에서 통째로 보이는 부분(「차량 미선택」 줄바꿈 없음 · AC-29) */
+  rest: string;
+};
+
+/** plan 106 D-10 ⑦ — 하단 바 1줄 요약을 경로/나머지로 나눔 */
+export function formatQuickRequestSummaryParts(values: QuickRequestFormValues): QuickRequestSummaryParts {
   const origin = values.origin.roadAddress.trim() || '출발지';
   const destination = values.destination.roadAddress.trim() || '도착지';
   const [firstVehicle] = values.vehicleTypes;
   const vehicle = firstVehicle
     ? `${firstVehicle}${values.vehicleTypes.length > 1 ? ` 외 ${values.vehicleTypes.length - 1}` : ''}`
     : '차량 미선택';
-  return `${origin} → ${destination} · ${vehicle} · ${formatVehicleCount(values)}`;
+  return {
+    route: `${origin} → ${destination}`,
+    rest: `${vehicle} · ${formatVehicleCount(values)}`
+  };
+}
+
+/** 모바일 하단 바 1줄 요약 (parts를 합친 문자열) */
+export function formatQuickRequestSummaryLine(values: QuickRequestFormValues): string {
+  const { route, rest } = formatQuickRequestSummaryParts(values);
+  return `${route} · ${rest}`;
 }
 
 type RouteStop = {

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
+import { formatAbsoluteDateTimeKo, formatChatListTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import type { QuickRequestConversation } from '../../api/types';
 import { QuickRequestStatusBadge } from '../quick-request-status-badge';
@@ -20,11 +20,13 @@ type QuickChatConversationItemProps = {
 /**
  * 목록 항목 button — 아바타 + 3행 grid (plan 97 D-6 · designer K2):
  * 1행 제목(truncate) | 안 읽은 배지 · 2행 상태 | 경로(truncate) · 3행 미리보기(truncate) | 시각(nowrap · 전체 표시).
- * 좁은 패널에서 잘리는 건 미리보기뿐 — `time`은 `yyyy-MM-dd (EEE) HH:mm:ss` 전체가 남는다 (AC-08).
+ * plan 106 D-14 — 시각은 `formatChatListTimeKo`(KST 오늘 `HH:mm` / 같은 해 `MM-dd` / 이전 해 `yyyy-MM-dd` · 퀵 대화 예외)
+ * · 잘리는 건 미리보기뿐 · 전체 시각은 `dateTime`(ISO)과 hover `title`.
  */
 export function QuickChatConversationItem({ conversation, selected, onSelect }: QuickChatConversationItemProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const { requestNo, requesterName, status, route, lastMessage, unreadCount, requestedAt } = conversation;
+  const timeSource = lastMessage?.createdAt ?? requestedAt;
 
   // 알림 착지(`?request=`) 시 선택 항목이 보이게 (designer §4.5 ④)
   useEffect(() => {
@@ -81,10 +83,11 @@ export function QuickChatConversationItem({ conversation, selected, onSelect }: 
               {lastMessage ? `${lastMessage.authorName}: ${lastMessage.body}` : QUICK_CHAT_TEXT.noLastMessage}
             </p>
             <time
-              dateTime={lastMessage?.createdAt ?? requestedAt}
+              dateTime={timeSource}
+              title={formatAbsoluteDateTimeKo(timeSource)}
               className='shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums'
             >
-              {formatAbsoluteDateTimeKo(lastMessage?.createdAt ?? requestedAt)}
+              {formatChatListTimeKo(timeSource)}
             </time>
           </div>
         </div>

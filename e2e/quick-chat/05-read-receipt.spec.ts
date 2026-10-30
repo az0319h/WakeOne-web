@@ -35,6 +35,12 @@ import {
   sendViaUi,
   waitForSubscribed
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 93 §C 안 읽은 수·읽음 표시 — docs/plans/93_quick-request-chat-plan.md (AC-16 ~ AC-21)
@@ -52,15 +58,18 @@ test.describe('plan 93 C. 안 읽은 수 · 읽음 표시', () => {
 
   async function markAllReadAsDongbang2() {
     await apiAsDongbang2(async (api) => {
-      const response = await api.get('/api/quick-request/conversations?tab=unread');
-      expect(response.status()).toBe(200);
-      const { data } = (await response.json()) as {
-        data: { conversations: { requestNo: string; lastMessage: { id: number } | null }[] };
-      };
-      for (const conversation of data.conversations) {
-        if (conversation.lastMessage) {
+      // 안 읽음 탭은 한 번에 20건씩 — 공유 dev DB에 안 읽은 대화가 20건을 넘으면 비워질 때까지 반복 (plan 106 verifier)
+      for (let round = 0; round < 30; round += 1) {
+        const response = await api.get('/api/quick-request/conversations?tab=unread');
+        expect(response.status()).toBe(200);
+        const { data } = (await response.json()) as {
+          data: { conversations: { requestNo: string; lastMessage: { id: number } | null }[] };
+        };
+        const pending = data.conversations.filter((conversation) => conversation.lastMessage);
+        if (pending.length === 0) break;
+        for (const conversation of pending) {
           await api.put(`/api/quick-request/${conversation.requestNo}/messages/read`, {
-            data: { lastMessageId: conversation.lastMessage.id }
+            data: { lastMessageId: conversation.lastMessage!.id }
           });
         }
       }

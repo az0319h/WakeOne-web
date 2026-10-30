@@ -80,6 +80,32 @@ export function quickRequestListQueryOptions(filters: QuickRequestListFilters) {
   });
 }
 
+/** plan 106 D-9 — 휴대폰 퀵 내역 한 번에 불러오는 건수 */
+export const QUICK_REQUEST_LIST_INFINITE_PAGE_SIZE = 20;
+
+/** 휴대폰 무한 목록 필터 — URL `page`/`perPage`는 쓰지 않는다 (plan 106 D-9) */
+export type QuickRequestListInfiniteFilters = Omit<QuickRequestListFilters, 'page' | 'limit'>;
+
+/**
+ * plan 106 D-9 · designer §3.10 — 휴대폰(lg 미만) 퀵 내역 20건씩 자동 추가 로드.
+ * 기존 `GET /api/quick-request?page&perPage=20`을 page 번호로 이어 부른다(BE 변경 없음).
+ * 키는 `lists()` 아래 → Realtime·mutation의 `lists()` invalidate가 불러온 페이지 전부를 다시 받는다(새 건이 맨 위).
+ */
+export function quickRequestListInfiniteQueryOptions(filters: QuickRequestListInfiniteFilters) {
+  return infiniteQueryOptions({
+    queryKey: [...quickRequestKeys.lists(), 'infinite', filters] as const,
+    queryFn: ({ pageParam }) =>
+      fetchQuickRequestList({
+        ...filters,
+        page: pageParam,
+        limit: QUICK_REQUEST_LIST_INFINITE_PAGE_SIZE
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page * lastPage.limit < lastPage.total ? lastPage.page + 1 : undefined
+  });
+}
+
 /** 404(권한 없음 포함)는 `null` (designer K6) */
 export function quickRequestDetailQueryOptions(requestNo: string) {
   return queryOptions({

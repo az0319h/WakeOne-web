@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { quickRequestKeys, quickRequestSummaryQueryOptions } from '../../api/queries';
 import type { QuickRequestRangeFilters } from '../../api/types';
 import { quickRangeLabel } from '../../lib/quick-request-range';
+import { QuickMobileInfoButton } from '../mobile/quick-mobile-info-button';
 
 const subscribeNoop = () => () => undefined;
 
@@ -29,6 +30,7 @@ type QuickDashboardMetaBarProps = {
 /**
  * 조회 기간 라벨 · 갱신 시각 · 새로고침 — Suspense 밖.
  * plan 97 D-7 — 왼쪽 「기간: 최근 7일」/「기간: 2026-10-01 ~ 2026-10-27」/「기간: 전체」(`quickRangeLabel`) · 오른쪽 갱신·새로고침.
+ * plan 106 designer §3.4 — 휴대폰 본문 첫 줄: 갱신 시각은 sm 미만에서 숨김(메타바 1줄 유지) · 맨 오른쪽 ⓘ(lg 미만 · 44px).
  */
 export function QuickDashboardMetaBar({ rangeFilters }: QuickDashboardMetaBarProps) {
   const queryClient = useQueryClient();
@@ -45,7 +47,7 @@ export function QuickDashboardMetaBar({ rangeFilters }: QuickDashboardMetaBarPro
   return (
     <div
       data-testid='quick-dashboard-meta-bar'
-      className='flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground'
+      className='flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground max-lg:min-h-11'
     >
       <span
         data-testid='quick-dashboard-range-label'
@@ -55,7 +57,11 @@ export function QuickDashboardMetaBar({ rangeFilters }: QuickDashboardMetaBarPro
         {quickRangeLabel(rangeFilters)}
       </span>
       <div className='flex min-w-0 items-center gap-1'>
-        <span aria-live='polite' data-testid='quick-dashboard-updated-at' className='tabular-nums'>
+        <span
+          aria-live='polite'
+          data-testid='quick-dashboard-updated-at'
+          className='hidden tabular-nums sm:inline'
+        >
           갱신 {dataUpdatedAt > 0 ? formatAbsoluteDateTimeKo(new Date(dataUpdatedAt)) : '—'}
         </span>
         <Button
@@ -73,6 +79,7 @@ export function QuickDashboardMetaBar({ rangeFilters }: QuickDashboardMetaBarPro
             className={cn('size-4', isFetching && 'animate-spin motion-reduce:animate-none')}
           />
         </Button>
+        <QuickMobileInfoButton />
       </div>
     </div>
   );

@@ -16,6 +16,12 @@ import {
   callAs,
   withApi
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 // plan 89 §D 요청자·승인·취소·잠금 — docs/plans/89 · plan 92가 webhook 판정을 알림(DB) 판정으로 바꿨다
 test.describe('plan 89 D. 요청자 · 승인 · 취소 · 잠금', () => {

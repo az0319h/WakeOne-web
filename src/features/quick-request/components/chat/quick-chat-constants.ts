@@ -40,9 +40,11 @@ export const QUICK_CHAT_TEXT = {
   emptyWritable: '아직 대화가 없습니다. 취소나 시간 변경 같은 요청을 남겨 보세요.',
   emptyReadOnly: '아직 대화가 없습니다.',
   unreadDivider: '여기부터 새 메시지',
-  /** mobile-ux 2차 #3 — 360 입력칸(본문 ≈128px)에서도 1줄. 키 안내는 `composerHint`(sr-only · aria-describedby) */
-  composerPlaceholder: '메시지 입력',
+  /** mobile-ux 2차 #3 — 360 입력칸(본문 ≈128px)에서도 1줄. 키 안내는 `composerHint`(sr-only · aria-describedby) · plan 106 끝 줄임표 */
+  composerPlaceholder: '메시지 입력…',
   composerHint: 'Enter 전송, Shift+Enter 줄바꿈',
+  /** plan 106 D-13 ① — 터치 기기(`pointer: coarse`)는 Enter = 줄바꿈 */
+  composerHintTouch: 'Enter는 줄바꿈, 보내기는 전송 버튼',
   composerLabel: '메시지',
   send: '전송',
   quickReplies: '빠른 답장',
@@ -88,7 +90,14 @@ export const QUICK_CHAT_TEXT = {
   /** plan 100 — AI 답장 추천 (designer §4-3 · 배지 tooltip은 D-8 원문) */
   aiBadge: 'AI 추천',
   aiBadgeTooltip: '대화 내용을 바탕으로 AI가 제안한 문장입니다. 보내기 전에 확인하세요.',
-  aiLoading: '추천 중…'
+  aiLoading: '추천 중…',
+  /** plan 106 D-12 · designer §5.5 — 전체 화면 대화 상단바 「⋯」 */
+  more: '더보기',
+  /** plan 106 §5.3 · K15 — 대화 목록 기간 판 (lg 미만) */
+  filterTitle: '필터',
+  filterDescription: '대화 목록 기간을 고르면 바로 적용됩니다.',
+  filterButton: '기간',
+  filterButtonAria: '기간 필터'
 } as const;
 
 export const quickChatText = {
@@ -124,7 +133,11 @@ export const quickChatText = {
   systemRemoved: (name: string, time: string) => `${name}님이 제외되었습니다 · ${time}`,
   systemLeft: (name: string, time: string) => `${name}님이 나갔습니다 · ${time}`,
   /** plan 100 — 추천이 칩에 들어온 순간 스크린리더 안내 (`aria-live='polite'`) */
-  aiReadyLive: (count: number) => `AI 답장 추천 ${count}개`
+  aiReadyLive: (count: number) => `AI 답장 추천 ${count}개`,
+  /** plan 106 §6.9 — 상세 대화 상단바 둘째 줄 */
+  detailChatSubtitle: (from: string, to: string) => `요청 대화 · ${from} → ${to}`,
+  /** plan 106 §5.4 — 대화방 상단바 둘째 줄 */
+  messengerSubtitle: (from: string, to: string, requester: string) => `${from} → ${to} · ${requester}`
 } as const;
 
 /** 카운터가 나타나는 글자 수 (U-6) */

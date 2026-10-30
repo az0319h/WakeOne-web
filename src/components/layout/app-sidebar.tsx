@@ -199,7 +199,10 @@ function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter>{profile ? <NavUser profile={profile} /> : null}</SidebarFooter>
+      {/* plan 106 D-3 — viewport-fit=cover: 휴대폰 사이드바(Sheet p-0) 맨 아래 사용자 메뉴가 홈 막대에 겹치지 않게 (PC env 0 → p-2 그대로) */}
+      <SidebarFooter className='pb-[max(0.5rem,env(safe-area-inset-bottom))]'>
+        {profile ? <NavUser profile={profile} /> : null}
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
     </NavActiveUrlContext>

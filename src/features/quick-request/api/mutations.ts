@@ -275,9 +275,17 @@ export type MarkQuickRequestMessagesReadVariables = {
 /** plan 97 D-5 — 「퀵 대화」 목록 캐시 형태 (`useInfiniteQuery` · 커서 string|null) */
 export type QuickRequestConversationsInfiniteData = InfiniteData<QuickRequestConversationsData, string | null>;
 
+/**
+ * `lists()` 아래 캐시 두 모양 — PC 표 `{rows,…}` · plan 106 휴대폰 무한 목록 `{pages,pageParams}`
+ * (`quickRequestListInfiniteQueryOptions` · 키 `[...lists(),'infinite',…]`).
+ */
+type QuickRequestListCacheData =
+  | QuickRequestListResponse['data']
+  | InfiniteData<QuickRequestListResponse['data'], number>;
+
 type MarkReadContext = {
   conversations: Array<[QueryKey, QuickRequestConversationsInfiniteData | undefined]>;
-  lists: Array<[QueryKey, QuickRequestListResponse['data'] | undefined]>;
+  lists: Array<[QueryKey, QuickRequestListCacheData | undefined]>;
   unreadTotal: number | undefined;
   messages: QuickChatMessagesCache | null | undefined;
   notifications: NotificationQueriesSnapshot;
@@ -321,7 +329,7 @@ export const markQuickRequestMessagesReadMutation = mutationOptions({
       conversations: queryClient.getQueriesData<QuickRequestConversationsInfiniteData>({
         queryKey: quickRequestKeys.conversationsAll()
       }),
-      lists: queryClient.getQueriesData<QuickRequestListResponse['data']>({
+      lists: queryClient.getQueriesData<QuickRequestListCacheData>({
         queryKey: quickRequestKeys.lists()
       }),
       unreadTotal: queryClient.getQueryData<number>(quickRequestKeys.unreadTotal()),
@@ -381,17 +389,21 @@ export const markQuickRequestMessagesReadMutation = mutationOptions({
       }
     );
 
-    queryClient.setQueriesData<QuickRequestListResponse['data']>(
+    // 목록 캐시: PC 표 `{rows}` · 휴대폰 무한 목록 `{pages}`(plan 106) 둘 다 그 건 unreadMessageCount 0
+    const clearListUnread = (rows: QuickRequestListResponse['data']['rows']) =>
+      rows.map((row) => (row.requestNo === variables.requestNo ? { ...row, unreadMessageCount: 0 } : row));
+    queryClient.setQueriesData<QuickRequestListCacheData>(
       { queryKey: quickRequestKeys.lists() },
-      (current) =>
-        current
-          ? {
-              ...current,
-              rows: current.rows.map((row) =>
-                row.requestNo === variables.requestNo ? { ...row, unreadMessageCount: 0 } : row
-              )
-            }
-          : current
+      (current) => {
+        if (!current) return current;
+        if ('pages' in current) {
+          return {
+            ...current,
+            pages: current.pages.map((page) => ({ ...page, rows: clearListUnread(page.rows) }))
+          };
+        }
+        return { ...current, rows: clearListUnread(current.rows) };
+      }
     );
 
     if (unreadBefore > 0) {

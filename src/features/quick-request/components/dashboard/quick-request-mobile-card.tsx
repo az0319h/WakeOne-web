@@ -1,123 +1,166 @@
 'use client';
 
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { cn } from '@/lib/utils';
 import type { QuickRequestListRow } from '../../api/types';
 import { formatQuickAmountWon } from '../../lib/format-quick-amount';
-import { isInteractiveClickTarget } from '../../lib/is-interactive-click-target';
 import {
   formatQuickGoodsLabel,
   formatQuickVehicleSummary
 } from '../../lib/quick-request-route-label';
+import { formatUnreadBadge } from '../chat/format-unread-badge';
+import { quickChatHref, quickChatText } from '../chat/quick-chat-constants';
 import { QuickRequestRouteDot } from '../quick-request-summary-content';
 import { QuickRequestStatusBadge } from '../quick-request-status-badge';
-import {
-  QuickParticipantBadge,
-  QuickUnreadChatBadge,
-  quickRequestDetailHref
-} from './quick-dashboard-columns';
+import { QuickParticipantBadge, quickRequestDetailHref } from './quick-dashboard-columns';
 import {
   QuickRequestRowAction,
   resolveQuickRowAction,
   type QuickRequestRowActionHandlers
 } from './quick-request-row-action';
 
-type QuickRequestMobileCardProps = QuickRequestRowActionHandlers & {
-  row: QuickRequestListRow;
-  /** 카드 본문 탭 / 포커스 후 Enter·Space → 상세 (plan 94 D-7) */
-  onOpen: (row: QuickRequestListRow) => void;
+/** 경로 줄 안 점 — 글자와 같은 줄에서 말줄임되도록 inline */
+const INLINE_DOT_CLASS_NAME = 'inline-block align-middle';
+
+type QuickCardUnreadChatLinkProps = {
+  requestNo: string;
+  count: number;
 };
 
 /**
- * lg 미만 카드 — 표와 같은 데이터 · testid `quick-card-*`.
- * 카드 전체 탭 → 상세 (plan 94 D-7). 안의 「새 대화 N」 Link·「상세 보기」 Link·업무 버튼은 가드로 전파 차단.
- * `role`은 주지 않는다(ul>li 시맨틱 유지) — 접근성 1차 경로는 「상세 보기」 Link, `tabIndex=0`은 보조.
+ * 「새 대화 N」 44px 버튼 → 「퀵 대화」 그 건 (plan 106 D-8 · 93 AC-16 · testid `quick-unread-{no}` 유지).
+ * 카드 덮는 링크보다 위(`relative z-10`)라 누르면 대화로 간다.
  */
-export function QuickRequestMobileCard({ row, onOpen, ...handlers }: QuickRequestMobileCardProps) {
-  const hasAction = resolveQuickRowAction(row) !== null;
+function QuickCardUnreadChatLink({ requestNo, count }: QuickCardUnreadChatLinkProps) {
+  return (
+    <Button
+      variant='outline'
+      asChild
+      className='relative z-10 ml-auto h-11 min-w-11 shrink-0 touch-manipulation gap-1 rounded-full px-3 tabular-nums'
+    >
+      <Link
+        href={quickChatHref(requestNo)}
+        aria-label={quickChatText.newConversationsLink(requestNo, count)}
+        data-testid={`quick-unread-${requestNo}`}
+      >
+        <Icons.chat aria-hidden />
+        {quickChatText.newConversations(formatUnreadBadge(count))}
+      </Link>
+    </Button>
+  );
+}
+
+type QuickCardAmountLineProps = {
+  row: QuickRequestListRow;
+};
+
+/** 예상·최종 중 값이 있는 것만 (둘 다 없으면 줄 자체를 그리지 않는다 · D-8) */
+function QuickCardAmountLine({ row }: QuickCardAmountLineProps) {
+  const parts: Array<{ key: string; label: string; amount: number }> = [];
+  if (row.estimatedAmount != null) parts.push({ key: 'estimated', label: '예상', amount: row.estimatedAmount });
+  if (row.finalAmount != null) parts.push({ key: 'final', label: '최종', amount: row.finalAmount });
+  if (parts.length === 0) return null;
+
+  return (
+    <p
+      data-testid={`quick-card-amount-${row.requestNo}`}
+      className='flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm tabular-nums'
+    >
+      {parts.map((part, index) => (
+        <Fragment key={part.key}>
+          {index > 0 ? (
+            <span aria-hidden className='text-muted-foreground'>
+              ·
+            </span>
+          ) : null}
+          <span className='flex items-baseline gap-1'>
+            <span className='text-muted-foreground'>{part.label}</span>
+            <span>{formatQuickAmountWon(part.amount)}</span>
+          </span>
+        </Fragment>
+      ))}
+    </p>
+  );
+}
+
+type QuickRequestMobileCardProps = QuickRequestRowActionHandlers & {
+  row: QuickRequestListRow;
+};
+
+/**
+ * lg 미만 퀵 내역 카드 (plan 106 D-8 · U-5 · designer §3.9 K4) — testid `quick-card-*`.
+ * - 카드 전체를 덮는 빈 링크(`quick-card-link-{no}` · 「{no} 상세 보기」)가 상세 이동·키보드 포커스를 맡는다
+ *   (`::after` stretched link는 링크 박스가 글자 크기라 44px 스캔에서 떨어짐). 「상세 보기」 버튼은 없앴다.
+ * - 1줄 번호·참여 / 상태 · 2줄 출발 → 도착(경유 N) · 3줄 요청 시각(전체 시각)·요청자·물품·차량(최대 2줄)
+ *   · 금액(값 있을 때만) · 업무 버튼 + 「새 대화 N」(있을 때만). 버튼은 `relative z-10`으로 링크 위.
+ */
+export function QuickRequestMobileCard({ row, ...handlers }: QuickRequestMobileCardProps) {
+  const action = resolveQuickRowAction(row);
+  const hasUnread = row.unreadMessageCount > 0;
 
   return (
     <li
       data-testid={`quick-card-${row.requestNo}`}
-      tabIndex={0}
-      className='flex min-w-0 cursor-pointer flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
-      onClick={(event) => {
-        if (isInteractiveClickTarget(event.target)) return;
-        onOpen(row);
-      }}
-      onKeyDown={(event) => {
-        if (event.target !== event.currentTarget) return;
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onOpen(row);
-        }
-      }}
+      className='relative flex min-w-0 flex-col gap-1.5 rounded-xl border bg-card p-3 text-card-foreground ring-ring/50 transition-colors hover:bg-accent/40 has-[a[data-card-link]:focus-visible]:ring-[3px]'
     >
-      <div className='flex min-w-0 items-start justify-between gap-2'>
-        <QuickRequestStatusBadge status={row.status} />
-        <div className='flex min-w-0 items-center gap-2'>
-          <QuickUnreadChatBadge
-            requestNo={row.requestNo}
-            count={row.unreadMessageCount}
-            className='min-h-7 px-2'
-          />
-          {row.isParticipant ? <QuickParticipantBadge requestNo={row.requestNo} /> : null}
-          <span translate='no' className='text-base font-semibold tabular-nums'>
+      <Link
+        href={quickRequestDetailHref(row.requestNo)}
+        aria-label={`${row.requestNo} 상세 보기`}
+        data-card-link=''
+        data-testid={`quick-card-link-${row.requestNo}`}
+        className='absolute inset-0 touch-manipulation rounded-xl outline-none'
+      />
+      <div className='flex min-w-0 items-center justify-between gap-2'>
+        <div className='flex min-w-0 items-center gap-1.5'>
+          <span translate='no' className='truncate text-base font-semibold tabular-nums'>
             {row.requestNo}
           </span>
+          {row.isParticipant ? <QuickParticipantBadge requestNo={row.requestNo} /> : null}
         </div>
+        <QuickRequestStatusBadge status={row.status} />
       </div>
-      <p className='flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground'>
+      <p className='min-w-0 truncate text-sm'>
+        <QuickRequestRouteDot kind='origin' className={INLINE_DOT_CLASS_NAME} /> {row.route.from}{' '}
+        <span aria-hidden>→</span>{' '}
+        <QuickRequestRouteDot kind='destination' className={INLINE_DOT_CLASS_NAME} /> {row.route.to}
+        {row.route.stopoverCount > 0 ? (
+          <span className='text-muted-foreground'> · 경유 {row.route.stopoverCount}</span>
+        ) : null}
+      </p>
+      <p className='line-clamp-2 min-w-0 text-xs break-keep text-muted-foreground'>
         <time dateTime={row.requestedAt} className='tabular-nums'>
           {formatAbsoluteDateTimeKo(row.requestedAt)}
         </time>
-        <span aria-hidden>·</span>
-        <span className='max-w-32 truncate'>{row.requester.name}</span>
+        {' · '}
+        {row.requester.name}
+        {' · '}
+        {formatQuickGoodsLabel(row.goodsSize)}
+        {' · '}
+        {formatQuickVehicleSummary(row)}
       </p>
-      <p className='flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm break-words'>
-        <QuickRequestRouteDot kind='origin' />
-        <span>{row.route.from}</span>
-        <span aria-hidden>→</span>
-        <QuickRequestRouteDot kind='destination' />
-        <span>{row.route.to}</span>
-        {row.route.stopoverCount > 0 ? (
-          <span className='text-muted-foreground'>· 경유 {row.route.stopoverCount}</span>
-        ) : null}
-      </p>
-      <p className='text-sm text-muted-foreground'>
-        {formatQuickGoodsLabel(row.goodsSize)} · {formatQuickVehicleSummary(row)}
-      </p>
-      <dl className='grid grid-cols-2 gap-2 text-sm'>
-        <div className='flex min-w-0 items-baseline gap-2'>
-          <dt className='text-muted-foreground'>예상</dt>
-          <dd className='tabular-nums'>{formatQuickAmountWon(row.estimatedAmount)}</dd>
+      <QuickCardAmountLine row={row} />
+      {action !== null || hasUnread ? (
+        <div className='mt-0.5 flex min-w-0 items-center gap-2'>
+          {action !== null ? (
+            // 「최종금액 대기」 글자는 링크를 가리지 않는다(누르면 상세) · 버튼만 링크 위
+            <div className={cn('min-w-0 flex-1', action !== 'awaitingFinal' && 'relative z-10')}>
+              <QuickRequestRowAction
+                row={row}
+                layout='card'
+                testId={`quick-card-action-${row.requestNo}`}
+                {...handlers}
+              />
+            </div>
+          ) : null}
+          {hasUnread ? (
+            <QuickCardUnreadChatLink requestNo={row.requestNo} count={row.unreadMessageCount} />
+          ) : null}
         </div>
-        <div className='flex min-w-0 items-baseline gap-2'>
-          <dt className='text-muted-foreground'>최종</dt>
-          <dd className='tabular-nums'>{formatQuickAmountWon(row.finalAmount)}</dd>
-        </div>
-      </dl>
-      <div className={cn('grid gap-2', hasAction ? 'grid-cols-2' : 'grid-cols-1')}>
-        <Button variant='outline' className='h-11' asChild>
-          <Link
-            href={quickRequestDetailHref(row.requestNo)}
-            aria-label={`${row.requestNo} 상세 보기`}
-            data-testid={`quick-card-detail-${row.requestNo}`}
-          >
-            상세 보기
-          </Link>
-        </Button>
-        {hasAction ? (
-          <QuickRequestRowAction
-            row={row}
-            layout='card'
-            testId={`quick-card-action-${row.requestNo}`}
-            {...handlers}
-          />
-        ) : null}
-      </div>
+      ) : null}
     </li>
   );
 }

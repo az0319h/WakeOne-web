@@ -39,6 +39,7 @@ type QuickDashboardPageProps = {
 /**
  * 퀵 대시보드 client 셸 — 메타바·카드·툴바(Suspense 밖) + 목록 본문 + Dialog 1벌.
  * plan 97 — `suspenseKey`에 기간(range/from/to)이 들어가 기간 변경 시 본문만 `PageLoadingSpinner fill` 재진입.
+ * plan 106 designer §3.3 — lg 미만은 메타바 → 칩 줄 → [검색][필터] → 카드 사이를 `gap-3`(12px)로 줄여 첫 카드를 위로 올린다.
  */
 export function QuickDashboardPage({ canCreate, realtimeTopic }: QuickDashboardPageProps) {
   const { filters, setStatus, setSearch, setRange, resetFilters } = useQuickDashboardParams();
@@ -73,7 +74,7 @@ export function QuickDashboardPage({ canCreate, realtimeTopic }: QuickDashboardP
   return (
     <>
       <QuickRequestRealtime topic={realtimeTopic} />
-      <div data-testid='quick-dashboard' className='flex min-w-0 flex-1 flex-col gap-4'>
+      <div data-testid='quick-dashboard' className='flex min-w-0 flex-1 flex-col gap-3 lg:gap-4'>
         <QuickDashboardMetaBar rangeFilters={rangeFilters} />
         <QuickStatusCards rangeFilters={rangeFilters} selected={filters.status} onSelect={setStatus} />
         <QuickDashboardToolbar

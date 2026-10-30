@@ -22,6 +22,12 @@ import {
   type QuickNotificationRow,
   type QuickNotifyEvent
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 92 §B 알림 수신자·문구 — docs/plans/92_quick-web-only-notifications-plan.md (AC-10~18)

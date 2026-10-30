@@ -2,6 +2,12 @@ import { expect, request as playwrightRequest, test } from '@playwright/test';
 import { gotoQuickRequest, openAddressPicker, VIEWPORT_DESKTOP } from '../quick-request/helpers';
 import { AUTH, BASE_URL } from '../quick-workflow/helpers';
 import { isUnconfiguredRun, PLACE_TEXT, PLACES_PATH } from './99-helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 99 AC-10 — 키 미설정 서버: 「장소 검색」 탭 없음 · Route 503.

@@ -179,6 +179,8 @@ const updateMutation = useMutation({
 | **스타일** | 테이블·로그 행: `font-mono text-xs whitespace-nowrap` |
 | **금지** | `formatRelativeTimeKo`, `formatKoreanDateTime`, `formatWalletDate`, `formatDistanceToNow`, `N분/시간/일 전` 등 상대 시각 UI |
 
+> **퀵 대화 예외 (plan 106 D-14):** 퀵 대화의 **말풍선·대화 안 시스템 줄**은 `formatChatBubbleTimeKo`(`HH:mm`), **퀵 대화 목록**은 `formatChatListTimeKo`(KST 오늘 `HH:mm` / 같은 해 `MM-dd` / 이전 해 `yyyy-MM-dd`)만 쓴다 — 둘 다 `@/lib/format-datetime` · 이 세 곳 밖(상세·처리 이력·알림·읽음 tooltip·참여자 초대 시각·내역 카드)은 `formatAbsoluteDateTimeKo` 유지 · 상대 시각 금지는 그대로.
+
 **참조:** `src/lib/format-datetime.ts`
 
 ### 날짜만 (시간 없음)

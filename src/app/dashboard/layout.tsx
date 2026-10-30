@@ -107,8 +107,11 @@ export default async function DashboardLayout({
                   <Suspense fallback={null}>
                     <AppBadgeSync />
                   </Suspense>
-                  <IosInstallBanner />
-                  <PushResumeSync userId={profile.user_id} />
+                  {/* plan 106 K16 — 퀵 전체 화면 대화(`data-quick-fullscreen`)에서 전역 CSS가 배너 묶음을 숨긴다 (배너 컴포넌트 불변 · contents라 레이아웃 영향 0) */}
+                  <div data-app-banner className="contents">
+                    <IosInstallBanner />
+                    <PushResumeSync userId={profile.user_id} />
+                  </div>
                   <InfobarProvider defaultOpen={false} className="min-w-0">
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                       {children}
