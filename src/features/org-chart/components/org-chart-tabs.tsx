@@ -31,9 +31,9 @@ export function OrgChartTabs() {
         }
       }}
     >
-      <TabsList>
+      <TabsList className='max-md:h-auto'>
         {ORG_AFFILIATION_OPTIONS.map((option) => (
-          <TabsTrigger key={option.value} value={option.value}>
+          <TabsTrigger key={option.value} value={option.value} className='max-md:h-11'>
             {option.label}
           </TabsTrigger>
         ))}

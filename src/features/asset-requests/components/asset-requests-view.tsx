@@ -196,7 +196,8 @@ function AssetRequestsBody({ targetType, filters, onPageChange, onPerPageChange 
 
   return (
     <div className='flex min-w-0 flex-col gap-3'>
-      <div className='hidden min-w-0 md:block'>
+      {/* 768~1023px에서는 표 오른쪽 열이 잘려 lg부터 표 · 그 아래는 카드 */}
+      <div className='hidden min-w-0 lg:block'>
         <AssetLedgerTable
           data-testid='asset-requests-table'
           data={data.items}
@@ -207,7 +208,7 @@ function AssetRequestsBody({ targetType, filters, onPageChange, onPerPageChange 
           onRowClick={(row) => openRequest(row.id)}
         />
       </div>
-      <ul className='flex min-w-0 flex-col gap-3 md:hidden'>
+      <ul className='flex min-w-0 flex-col gap-3 lg:hidden'>
         {data.items.map((item) => (
           <AssetRequestCard key={item.id} targetType={targetType} item={item} onOpen={openRequest} />
         ))}

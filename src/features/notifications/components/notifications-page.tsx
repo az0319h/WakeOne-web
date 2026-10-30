@@ -23,6 +23,13 @@ interface NotificationTabCounts {
   read: number;
 }
 
+/**
+ * 알림 페이지 카드 — 모바일(<md)만: 본문 2줄 · 읽음 ✓·액션 버튼 44px 터치 영역.
+ * NotificationCard는 ui 파일이라 사용처 className(자손 선택자)으로만 확장한다.
+ */
+const PAGE_NOTIFICATION_CARD_CLASS =
+  'max-md:[&_p]:line-clamp-2 max-md:[&_button:not([data-slot])]:-m-2 max-md:[&_button:not([data-slot])]:p-3.5 max-md:[&_[data-slot=button]]:min-h-11';
+
 function flattenNotifications(
   pages: { notifications: Notification[] }[] | undefined
 ): Notification[] {
@@ -81,6 +88,7 @@ function NotificationsTabBodies({
           filters={filters}
           statusFilter='all'
           readOnly={!isViewingSelf}
+          cardClassName={PAGE_NOTIFICATION_CARD_CLASS}
         />
       </TabsContent>
       <TabsContent value='unread' className='mt-4'>
@@ -89,6 +97,7 @@ function NotificationsTabBodies({
           statusFilter='unread'
           readOnly={!isViewingSelf}
           emptyMessage='읽지 않은 알림이 없습니다'
+          cardClassName={PAGE_NOTIFICATION_CARD_CLASS}
         />
       </TabsContent>
       <TabsContent value='read' className='mt-4'>
@@ -97,6 +106,7 @@ function NotificationsTabBodies({
           statusFilter='read'
           readOnly={!isViewingSelf}
           emptyMessage='읽은 알림이 없습니다'
+          cardClassName={PAGE_NOTIFICATION_CARD_CLASS}
         />
       </TabsContent>
     </>
@@ -169,10 +179,16 @@ export function NotificationsPage() {
       ) : null}
 
       <Tabs defaultValue='all'>
-        <TabsList>
-          <TabsTrigger value='all'>전체 ({tabCounts.all})</TabsTrigger>
-          <TabsTrigger value='unread'>읽지 않음 ({tabCounts.unread})</TabsTrigger>
-          <TabsTrigger value='read'>읽음 ({tabCounts.read})</TabsTrigger>
+        <TabsList className='max-md:h-auto max-md:w-full'>
+          <TabsTrigger value='all' className='max-md:h-11'>
+            전체 ({tabCounts.all})
+          </TabsTrigger>
+          <TabsTrigger value='unread' className='max-md:h-11'>
+            읽지 않음 ({tabCounts.unread})
+          </TabsTrigger>
+          <TabsTrigger value='read' className='max-md:h-11'>
+            읽음 ({tabCounts.read})
+          </TabsTrigger>
         </TabsList>
         <Suspense key={suspenseKey} fallback={<PageLoadingSpinner variant='fill' />}>
           <NotificationsTabBodies

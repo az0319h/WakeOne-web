@@ -58,7 +58,7 @@ function FilterTriggerButton({
         size='sm'
         aria-expanded={open}
         data-testid={testId}
-        className='h-9 border-dashed md:h-8'
+        className='h-11 border-dashed md:h-8'
       >
         <Icons.plusCircle aria-hidden />
         {label}
@@ -394,7 +394,7 @@ export function WorkflowUpdatedFilter({
           size='sm'
           aria-expanded={open}
           data-testid='workflow-filter-updated'
-          className={cn('h-9 md:h-8', value ? '' : 'border-dashed')}
+          className={cn('h-11 md:h-8', value ? '' : 'border-dashed')}
         >
           <Icons.calendar aria-hidden />
           {label}
@@ -478,7 +478,7 @@ export function WorkflowSortMenu({
           variant='outline'
           size='sm'
           data-testid='workflow-sort'
-          className='h-9 md:h-8'
+          className='h-11 shrink-0 px-3 md:h-8'
           aria-label={`정렬: ${WORKFLOW_SORT_LABELS[value]}`}
         >
           <Icons.sort aria-hidden />

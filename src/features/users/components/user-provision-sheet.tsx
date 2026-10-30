@@ -93,7 +93,7 @@ export function UserProvisionSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex min-h-0 flex-col'>
+      <SheetContent className='flex min-h-0 w-full flex-col px-4 sm:px-6'>
         <SheetHeader>
           <SheetTitle>사용자 추가</SheetTitle>
           <SheetDescription>

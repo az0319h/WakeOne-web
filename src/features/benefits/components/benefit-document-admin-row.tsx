@@ -7,6 +7,7 @@ import { AlertModal } from '@/components/modal/alert-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { useIsMobileViewport } from '@/hooks/use-mobile-column-visibility';
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 import { notifySuccess } from '@/lib/notify';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ interface BenefitDocumentAdminRowProps {
 export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowProps) {
   const cancelled = isBenefitDocumentCancelled(document);
   const hasFlexUrl = Boolean(document.source_document_url);
+  const isMobile = useIsMobileViewport();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [restoreOpen, setRestoreOpen] = useState(false);
 
@@ -69,12 +71,13 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
           cancelled && 'opacity-70'
         )}
         onClick={() => {
-          if (hasFlexUrl && !cancelled) {
+          // 모바일은 행 탭으로 Flex(새 탭)를 열지 않는다 — 「원문」 버튼으로만
+          if (hasFlexUrl && !cancelled && !isMobile) {
             openBenefitDocument(document.source_document_url);
           }
         }}
       >
-        <TableCell className='pl-14'>
+        <TableCell className='pl-6 max-md:whitespace-normal md:pl-14'>
           <p
             className={cn(
               'text-sm font-medium',
@@ -96,10 +99,20 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
               )}
             </p>
           ) : null}
+          {/* 모바일: 숨긴 문서번호·승인일·금액 컬럼을 한 줄로 */}
+          <p
+            className={cn(
+              'mt-0.5 text-xs text-muted-foreground tabular-nums md:hidden',
+              cancelled && 'line-through'
+            )}
+          >
+            {document.document_number} · {formatAbsoluteDateKo(document.approved_at)} ·{' '}
+            {formatBenefitMoney(document.amount)}
+          </p>
         </TableCell>
         <TableCell
           className={cn(
-            'font-mono text-xs whitespace-nowrap',
+            'font-mono text-xs whitespace-nowrap max-md:hidden',
             cancelled && 'text-muted-foreground line-through'
           )}
         >
@@ -107,7 +120,7 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
         </TableCell>
         <TableCell
           className={cn(
-            'font-mono text-xs whitespace-nowrap',
+            'font-mono text-xs whitespace-nowrap max-md:hidden',
             cancelled && 'text-muted-foreground line-through'
           )}
         >
@@ -115,33 +128,40 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
         </TableCell>
         <TableCell
           className={cn(
-            'text-sm font-medium',
+            'text-sm font-medium max-md:hidden',
             cancelled && 'text-muted-foreground line-through'
           )}
         >
           {formatBenefitMoney(document.amount)}
         </TableCell>
-        <TableCell className={cancelled ? 'text-muted-foreground line-through' : ''}>
+        <TableCell
+          className={cn('max-md:hidden', cancelled && 'text-muted-foreground line-through')}
+        >
           {document.benefit_type === 'book' ? formatBenefitMoney(document.amount) : ''}
         </TableCell>
-        <TableCell className={cancelled ? 'text-muted-foreground line-through' : ''}>
+        <TableCell
+          className={cn('max-md:hidden', cancelled && 'text-muted-foreground line-through')}
+        >
           {document.benefit_type === 'fitness' ? formatBenefitMoney(document.amount) : ''}
         </TableCell>
-        <TableCell className={cancelled ? 'text-muted-foreground line-through' : ''}>
+        <TableCell
+          className={cn('max-md:hidden', cancelled && 'text-muted-foreground line-through')}
+        >
           {document.benefit_type === 'education' ? formatBenefitMoney(document.amount) : ''}
         </TableCell>
         <TableCell className='text-right' onClick={(event) => event.stopPropagation()}>
           {cancelled ? (
-            <div className='flex items-center justify-end gap-2'>
+            <div className='flex items-center justify-end gap-2 max-md:flex-col max-md:items-end max-md:gap-1'>
               <Badge variant='outline' className='whitespace-nowrap text-muted-foreground'>
                 취소됨
               </Badge>
-              <div className='opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100'>
+              {/* 터치 기기(hover 없음)는 hover 전에도 보이게 */}
+              <div className='opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100'>
                 <Button
                   type='button'
                   variant='ghost'
                   size='icon'
-                  className='size-8 text-muted-foreground'
+                  className='size-11 text-muted-foreground md:size-8'
                   aria-label='복지비 문서 복구'
                   title='복지비 문서 복구'
                   isLoading={restoreMutation.isPending}
@@ -152,18 +172,38 @@ export function BenefitDocumentAdminRow({ document }: BenefitDocumentAdminRowPro
               </div>
             </div>
           ) : (
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='size-8 text-destructive opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100'
-              aria-label='복지비 문서 취소'
-              title='복지비 문서 취소'
-              isLoading={cancelMutation.isPending}
-              onClick={() => setCancelOpen(true)}
-            >
-              <Icons.close aria-hidden='true' />
-            </Button>
+            // 모바일은 「원문」·취소 버튼을 세로로 쌓아 첫 칸 폭을 확보
+            <div className='flex items-center justify-end gap-1 max-md:flex-col max-md:items-end'>
+              {hasFlexUrl ? (
+                <Button
+                  asChild
+                  variant='outline'
+                  size='sm'
+                  className='h-11 md:hidden'
+                >
+                  <a
+                    href={document.source_document_url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                  >
+                    원문
+                    <Icons.externalLink aria-hidden='true' className='size-3.5' />
+                  </a>
+                </Button>
+              ) : null}
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='size-11 text-destructive opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100 md:size-8 [@media(hover:none)]:opacity-100'
+                aria-label='복지비 문서 취소'
+                title='복지비 문서 취소'
+                isLoading={cancelMutation.isPending}
+                onClick={() => setCancelOpen(true)}
+              >
+                <Icons.close aria-hidden='true' />
+              </Button>
+            </div>
           )}
         </TableCell>
       </TableRow>

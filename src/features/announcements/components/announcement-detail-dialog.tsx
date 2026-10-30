@@ -12,7 +12,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { announcementDetailQueryOptions } from '../api/queries';
 import { AnnouncementAttachmentList } from './announcement-attachment-list';
 import { AnnouncementPinBadge } from './announcement-pin-badge';
@@ -41,7 +41,7 @@ export function AnnouncementDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className='flex max-h-[85vh] flex-col sm:max-w-2xl'
+        className='flex max-h-[90dvh] flex-col sm:max-w-2xl'
         data-testid='announcement-detail-dialog'
       >
         {isPending ? (
@@ -69,9 +69,11 @@ export function AnnouncementDetailDialog({
           </>
         ) : (
           <>
-            <DialogHeader>
-              <div className='flex flex-wrap items-center gap-2'>
-                <DialogTitle className='text-left'>{announcement.title}</DialogTitle>
+            <DialogHeader className='shrink-0'>
+              <div className='flex flex-wrap items-center gap-2 pr-8'>
+                <DialogTitle className='min-w-0 text-left break-words'>
+                  {announcement.title}
+                </DialogTitle>
                 {announcement.is_pinned ? <AnnouncementPinBadge /> : null}
                 <AnnouncementPriorityBadge priority={announcement.priority} />
               </div>
@@ -85,10 +87,11 @@ export function AnnouncementDetailDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <ScrollArea className='min-h-0 flex-1 pr-3'>
-              <div className='min-w-0 space-y-4 pb-2 pr-1'>
+            {/* flex-col: Radix viewport(size-full)가 flex 축소로 높이를 받아 내부 스크롤 */}
+            <ScrollArea className='-mr-3 flex min-h-0 flex-1 flex-col pr-3'>
+              <div className='min-w-0 space-y-4 pr-1 pb-2'>
                 <div
-                  className='text-sm whitespace-pre-wrap'
+                  className='text-sm break-words whitespace-pre-wrap'
                   data-testid='announcement-detail-body'
                 >
                   {announcement.body}
@@ -104,10 +107,9 @@ export function AnnouncementDetailDialog({
                   />
                 </section>
               </div>
-              <ScrollBar orientation='vertical' />
             </ScrollArea>
 
-            <DialogFooter>
+            <DialogFooter className='shrink-0'>
               <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
                 닫기
               </Button>

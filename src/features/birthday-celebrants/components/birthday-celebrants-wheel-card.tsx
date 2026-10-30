@@ -178,9 +178,13 @@ export function BirthdayCelebrantsWheelCard({ data }: BirthdayCelebrantsWheelCar
           }}
           className='mt-3 min-h-0 flex-1 gap-3'
         >
-          <TabsList aria-label='소속' data-testid='birthday-tabs' className='w-full shrink-0'>
+          <TabsList
+            aria-label='소속'
+            data-testid='birthday-tabs'
+            className='w-full shrink-0 max-md:h-auto'
+          >
             {BIRTHDAY_TABS.map((value) => (
-              <TabsTrigger key={value} value={value} className='px-1.5 sm:px-2'>
+              <TabsTrigger key={value} value={value} className='px-1.5 max-md:h-11 sm:px-2'>
                 {getBirthdayTabLabel(value)}
               </TabsTrigger>
             ))}

@@ -5,6 +5,7 @@ import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { useNavAccess } from '@/contexts/nav-access';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useMobileColumnVisibility } from '@/hooks/use-mobile-column-visibility';
 import { getSortingStateParser } from '@/lib/parsers';
 import { cn } from '@/lib/utils';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -14,6 +15,9 @@ import type { ActivityLog } from '../../api/types';
 import { LogUserCombobox } from '../log-user-combobox';
 import { ActivityLogsDataTable } from './activity-logs-data-table';
 import { createColumns } from './columns';
+
+/** 모바일(768px 미만): 행위자·Endpoint는 숨긴다 — Endpoint 전체 값은 행 펼침 「기술 정보」에서 확인 */
+const ACTIVITY_LOGS_MOBILE_HIDDEN_COLUMNS = ['actor', 'http_path'] as const;
 
 interface ActivityLogsTableBodyProps {
   columns: ReturnType<typeof createColumns>;
@@ -41,6 +45,8 @@ function ActivityLogsTableBody({ columns, filters }: ActivityLogsTableBodyProps)
       sorting: [{ id: 'created_at', desc: true }]
     }
   });
+
+  useMobileColumnVisibility(table, ACTIVITY_LOGS_MOBILE_HIDDEN_COLUMNS);
 
   return <ActivityLogsDataTable table={table} />;
 }

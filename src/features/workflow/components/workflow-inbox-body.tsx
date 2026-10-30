@@ -19,6 +19,7 @@ import {
   hasActiveWorkflowFilters,
   type WorkflowListFilters
 } from '../lib/search-params';
+import { useWorkflowCompose } from './workflow-compose-context';
 import { ApproverAvatarStack } from './workflow-person';
 import { WorkflowStatusBadge } from './workflow-status-badge';
 
@@ -115,7 +116,7 @@ function LoadMoreButton({
         variant='ghost'
         size='sm'
         data-testid='workflow-load-more'
-        className='h-9'
+        className='h-11 md:h-9'
         isLoading={isFetchingNextPage}
         onClick={onClick}
       >
@@ -164,7 +165,7 @@ function WorkflowListGroup({
           size='sm'
           aria-expanded={open}
           aria-controls={contentId}
-          className='h-9 text-muted-foreground'
+          className='h-11 text-muted-foreground md:h-9'
           onClick={() => setOpen((current) => !current)}
         >
           {open ? '접기' : '펼치기'}
@@ -190,13 +191,26 @@ function WorkflowListGroup({
 }
 
 function WorkflowEmptyState({ filtered }: { filtered: boolean }) {
+  const { setPickerOpen } = useWorkflowCompose();
   return (
     <div className='flex flex-1 flex-col items-center justify-center gap-2 py-16 text-center'>
       <Icons.clipboardText aria-hidden className='size-10 text-muted-foreground' />
       <p className='text-sm font-medium'>문서가 없습니다.</p>
       {filtered ? (
         <p className='text-xs text-muted-foreground'>검색 조건을 바꾸거나 초기화해 보세요.</p>
-      ) : null}
+      ) : (
+        // 헤더 「문서 작성하기」와 같은 흐름(양식 선택) — testid는 헤더 버튼과 겹치지 않게 별도
+        <Button
+          type='button'
+          variant='outline'
+          data-testid='workflow-empty-compose'
+          className='mt-2 h-11 md:h-9'
+          onClick={() => setPickerOpen(true)}
+        >
+          <Icons.edit aria-hidden />
+          문서 작성하기
+        </Button>
+      )}
     </div>
   );
 }

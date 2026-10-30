@@ -98,7 +98,8 @@ export function WorkflowDecisionDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className='sm:max-w-md'>
+      {/* 휴대폰: 가운데 정렬이면 iOS 키보드가 버튼을 가린다 → 위쪽 정렬 + 내부 스크롤 */}
+      <DialogContent className='max-h-[90dvh] overflow-y-auto overscroll-contain max-sm:top-4 max-sm:translate-y-0 sm:max-w-md'>
         <DialogHeader>
           <DialogTitle>{copy.title}</DialogTitle>
           <DialogDescription>{copy.description(code)}</DialogDescription>

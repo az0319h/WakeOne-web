@@ -73,7 +73,11 @@ export function WorkflowMemberCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent align={align} className='w-[min(20rem,calc(100vw-2rem))] p-0'>
+      <PopoverContent
+        align={align}
+        collisionPadding={16}
+        className='w-[min(20rem,calc(100vw-2rem))] p-0'
+      >
         <Command>
           <CommandInput placeholder='이름 검색…' />
           <CommandList className='max-h-72'>

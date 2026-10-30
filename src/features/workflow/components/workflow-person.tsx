@@ -63,7 +63,14 @@ export function ApproverAvatarStack({
           </span>
         ))}
       </div>
-      {rest > 0 ? <span className='text-xs text-muted-foreground tabular-nums'>+{rest}명</span> : null}
+      {rest > 0 ? (
+        <span className='text-xs text-muted-foreground tabular-nums max-md:hidden'>+{rest}명</span>
+      ) : null}
+      {/* 휴대폰: hover(title)가 없으므로 첫 승인자 이름을 글자로 (스크린리더는 위 sr-only 이름을 읽는다) */}
+      <span aria-hidden className='text-xs text-muted-foreground tabular-nums md:hidden'>
+        {approvers[0].full_name}
+        {total > 1 ? ` 외 ${total - 1}명` : ''}
+      </span>
     </div>
   );
 }

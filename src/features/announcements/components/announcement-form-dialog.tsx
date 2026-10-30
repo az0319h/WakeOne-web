@@ -322,6 +322,8 @@ export function AnnouncementFormDialog({
                 label='본문'
                 required
                 rows={8}
+                // field-sizing-content가 rows를 무시 → 최소 높이 지정
+                className='min-h-32'
                 placeholder='공지 내용을 입력하세요.'
               />
               <FormSelectField

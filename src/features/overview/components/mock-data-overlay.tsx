@@ -31,7 +31,8 @@ export function MockDataOverlay({
       />
       <Badge
         variant='secondary'
-        className='absolute top-3 right-3 z-[3] gap-1 shadow-sm select-none'
+        // 카드 위 테두리에 걸쳐 표시 — 카드 안 추세 배지(CardAction)와 겹치지 않게
+        className='absolute -top-2 right-3 z-[3] gap-1 shadow-sm select-none'
       >
         <Icons.info className='size-3' aria-hidden />
         {label}

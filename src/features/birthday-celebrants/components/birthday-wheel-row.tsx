@@ -156,7 +156,7 @@ export function BirthdayWheelRow({
             <Badge
               variant='outline'
               data-testid='birthday-row-affiliation'
-              className='text-muted-foreground h-4 shrink-0 rounded-sm px-1 py-0 text-[11px] leading-4 font-medium'
+              className='text-muted-foreground h-4 shrink-0 rounded-sm px-1 py-0 text-xs leading-4 font-medium md:text-[11px]'
             >
               {affiliationLabel}
             </Badge>

@@ -134,7 +134,11 @@ function EditorToolbar({ editor }: { editor: Editor }) {
     <div
       role='toolbar'
       aria-label='본문 서식'
-      className='sticky top-0 z-10 flex items-center gap-0.5 overflow-x-auto border-b bg-background px-2 py-1'
+      className={cn(
+        'sticky top-0 z-10 flex items-center gap-0.5 overflow-x-auto border-b bg-background px-2 py-1',
+        // 휴대폰: 가로 스크롤 힌트 — 오른쪽 끝 페이드(끝 여백 pr-8 안에서만 흐려져 마지막 버튼은 가리지 않음)
+        'max-md:pr-8 max-md:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]'
+      )}
     >
       <Toggle size='sm' className={toggleClass} aria-label='굵게' pressed={state.bold} onPressedChange={() => editor.chain().focus().toggleBold().run()}>
         <Icons.bold aria-hidden />
@@ -287,7 +291,8 @@ export function WorkflowRichTextEditor({
     <div
       data-testid='workflow-editor'
       className={cn(
-        'overflow-hidden rounded-lg border focus-within:ring-2 focus-within:ring-ring/50',
+        // overflow-clip: 모서리는 자르되 스크롤 컨테이너를 만들지 않아 서식 툴바 sticky가 동작한다
+        'overflow-clip rounded-lg border focus-within:ring-2 focus-within:ring-ring/50',
         '[&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0 [&_p.is-editor-empty:first-child]:before:text-muted-foreground [&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]',
         '[&_.tableWrapper]:overflow-x-auto [&_.selectedCell]:bg-primary/10',
         className

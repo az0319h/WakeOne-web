@@ -83,7 +83,8 @@ export function GoogleTasksColumn({
         {...props}
         data-kanban-tasklist-id={tasklist.id}
         className={cn(
-          'h-auto w-[320px] min-w-[320px] max-w-[320px] shrink-0 self-start !h-auto !w-[320px] !min-w-[320px] !max-w-[320px] !shrink-0',
+          // 모바일: 85vw로 다음 목록이 살짝 보이게 + snap / md 이상: 기존 320px 고정
+          'h-auto shrink-0 snap-start self-start !h-auto !w-[85vw] !min-w-0 !max-w-[320px] !shrink-0 md:!w-[320px] md:!min-w-[320px]',
           className
         )}
       >
@@ -105,6 +106,7 @@ export function GoogleTasksColumn({
                 <Button
                   variant='ghost'
                   size='icon'
+                  className='max-md:size-11'
                   aria-label={`${tasklist.title} 목록 메뉴`}
                   data-testid='kanban-column-menu-trigger'
                 >
@@ -148,6 +150,7 @@ export function GoogleTasksColumn({
               <Button
                 variant='ghost'
                 size='icon'
+                className='touch-none max-md:size-11'
                 aria-label={`${tasklist.title} 목록 순서 변경`}
                 data-testid='kanban-column-drag-handle'
               >
@@ -175,7 +178,7 @@ export function GoogleTasksColumn({
           className='pt-2'
         >
           <CollapsibleTrigger
-            className='text-muted-foreground flex w-full items-center gap-1 text-xs hover:underline'
+            className='text-muted-foreground flex w-full items-center gap-1 py-3 text-xs hover:underline md:py-0'
             data-testid='kanban-completed-section-trigger'
           >
             <Icons.chevronRight

@@ -275,13 +275,13 @@ export function AssigneePicker({ mode, value, onChange, invalid }: AssigneePicke
               <li key={pick.key}>
                 <AssigneeChip
                   assignee={{ assignee_type: pick.input.assignee_type, label: pick.label }}
-                  className='pr-0.5'
+                  className='h-9 pr-0.5 md:h-7'
                 >
                   <Button
                     type='button'
                     variant='ghost'
                     size='icon'
-                    className='size-6 rounded-full'
+                    className='size-8 rounded-full md:size-6'
                     aria-label={`${pick.label} 빼기`}
                     data-testid={`assignee-chip-remove-${pick.key}`}
                     onClick={() => removePick(pick.key)}

@@ -25,6 +25,7 @@ import {
 import { useNavAccess } from '@/contexts/nav-access';
 import { formatAbsoluteDateTimeKo } from '@/lib/format-datetime';
 import { notifyError, notifySuccess } from '@/lib/notify';
+import { cn } from '@/lib/utils';
 import {
   updateSupportRequestMutation,
   updateSupportStatusMutation
@@ -56,6 +57,31 @@ interface SupportDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isAdmin?: boolean;
+}
+
+interface SupportDetailTimesProps {
+  createdAt: string;
+  updatedAt: string;
+  statusUpdatedLabel: string | null;
+  className?: string;
+}
+
+function SupportDetailTimes({
+  createdAt,
+  updatedAt,
+  statusUpdatedLabel,
+  className
+}: SupportDetailTimesProps) {
+  return (
+    <div className={cn('space-y-0.5', className)}>
+      <SupportTimestamps createdAt={createdAt} updatedAt={updatedAt} />
+      {statusUpdatedLabel ? (
+        <p className='text-muted-foreground font-mono text-xs whitespace-nowrap'>
+          상태 변경 {statusUpdatedLabel}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 function toFormValues(request: { title: string; body: string }): SupportFormValues {
@@ -227,6 +253,13 @@ export function SupportDetailDialog({
       <DialogContent
         className='flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl'
         data-testid='support-detail-dialog'
+        // 열 때 제목 입력란에 자동 포커스·전체 선택(모바일 키보드 팝업)되지 않게 — 포커스는 Dialog 자체로
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          if (event.target instanceof HTMLElement) {
+            event.target.focus({ preventScroll: true });
+          }
+        }}
       >
         {isPending ? (
           <div className='p-6'>
@@ -253,7 +286,7 @@ export function SupportDetailDialog({
           </div>
         ) : (
           <>
-            <DialogHeader className='shrink-0 border-b px-6 pt-6 pb-4'>
+            <DialogHeader className='shrink-0 border-b px-4 pt-4 pb-3 md:px-6 md:pt-6 md:pb-4'>
               <div className='flex flex-wrap items-center gap-2 pr-8'>
                 <DialogTitle className='text-left'>
                   {canUserEdit ? '문의 수정' : request.title}
@@ -263,25 +296,29 @@ export function SupportDetailDialog({
               <DialogDescription asChild className='text-left'>
                 <div className='space-y-2'>
                   {isAdmin ? (
-                    <p className='text-foreground text-sm'>
+                    <p className='text-foreground text-sm break-all'>
                       <span className='text-muted-foreground'>제출자 </span>
                       {request.submitter_name}({request.submitter_email})
                     </p>
                   ) : null}
-                  <SupportTimestamps
+                  {/* 모바일(768px 미만)은 시각 3줄을 고정 헤더 대신 본문 맨 위로 — 헤더 높이 축소 */}
+                  <SupportDetailTimes
+                    className='max-md:hidden'
                     createdAt={request.created_at}
                     updatedAt={request.updated_at}
+                    statusUpdatedLabel={statusUpdatedLabel}
                   />
-                  {statusUpdatedLabel ? (
-                    <p className='text-muted-foreground font-mono text-xs whitespace-nowrap'>
-                      상태 변경 {statusUpdatedLabel}
-                    </p>
-                  ) : null}
                 </div>
               </DialogDescription>
             </DialogHeader>
 
-            <div className='min-h-0 flex-1 overflow-y-auto px-6 py-4'>
+            <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6'>
+              <SupportDetailTimes
+                className='mb-4 md:hidden'
+                createdAt={request.created_at}
+                updatedAt={request.updated_at}
+                statusUpdatedLabel={statusUpdatedLabel}
+              />
               <div className='space-y-6'>
                 {canUserEdit ? (
                   <SupportDetailUserEditSection
@@ -340,7 +377,7 @@ export function SupportDetailDialog({
               </div>
             </div>
 
-            <DialogFooter className='shrink-0 gap-2 border-t px-6 py-4 sm:justify-end'>
+            <DialogFooter className='shrink-0 gap-2 border-t px-4 py-3 sm:justify-end md:px-6 md:py-4'>
               <Button
                 type='button'
                 variant='outline'

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Icons } from '@/components/icons';
@@ -229,11 +229,20 @@ function WorkflowDetailContent({
 }) {
   const { data: document } = useSuspenseQuery(workflowDocumentQueryOptions(documentId));
   const [decision, setDecision] = useState<'approve' | 'decline' | null>(null);
+  const lineSectionRef = useRef<HTMLElement>(null);
   const statusProps = {
     status: document.status,
     currentStep: document.current_step,
     totalSteps: document.total_steps
   };
+  // lg 미만 1열에서는 결재선이 맨 아래 → 상태 배지 밑에 요약 (탭하면 결재선으로 이동)
+  const ongoingStep = document.steps.find((step) => step.status === 'ONGOING');
+  const waitingNames = (ongoingStep?.actors ?? [])
+    .filter((actor) => actor.status === 'WAITING')
+    .map((actor) => actor.full_name);
+  const lineSummary = ongoingStep
+    ? `${ongoingStep.step}/${document.total_steps}단계 · 현재 승인자 ${waitingNames.join(', ') || '-'}`
+    : `결재 ${document.total_steps}단계 · 참조 ${document.referrers.length}명`;
 
   return (
     <>
@@ -257,6 +266,18 @@ function WorkflowDetailContent({
             <div data-testid='workflow-detail-status' className='flex'>
               <WorkflowStatusBadge {...statusProps} size='lg' />
             </div>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              data-testid='workflow-detail-line-summary'
+              className='h-11 max-w-full justify-start self-start lg:hidden'
+              onClick={() => lineSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            >
+              <Icons.teams aria-hidden />
+              <span className='min-w-0 truncate'>{lineSummary}</span>
+              <Icons.chevronDown aria-hidden className='text-muted-foreground' />
+            </Button>
             <DialogTitle className='text-2xl font-bold'>
               <span aria-hidden className='mr-2'>
                 {document.template.emoji}
@@ -282,7 +303,7 @@ function WorkflowDetailContent({
           <WorkflowAttachmentList documentId={document.id} attachments={document.attachments} />
           <WorkflowRichContent html={document.content_html} />
         </main>
-        <aside aria-label='승인 · 참조' className={ASIDE_CLASS}>
+        <aside ref={lineSectionRef} aria-label='승인 · 참조' className={ASIDE_CLASS}>
           <WorkflowApprovalLineView document={document} />
         </aside>
       </div>

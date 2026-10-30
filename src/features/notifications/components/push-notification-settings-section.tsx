@@ -212,10 +212,12 @@ function PushSettingsBody() {
         </AlertDescription>
       </Alert>
 
-      <div className='flex items-center justify-between gap-4 rounded-md border px-3 py-3'>
-        <Label htmlFor='push-toggle' className='cursor-pointer'>
-          이 기기에서 휴대폰 알림 받기
-        </Label>
+      {/* 행 전체가 Label — 어디를 눌러도 스위치 토글 (min-h-11 터치 영역) */}
+      <Label
+        htmlFor='push-toggle'
+        className='min-h-11 cursor-pointer justify-between gap-4 rounded-md border px-3 py-3 leading-normal has-[button:disabled]:cursor-not-allowed'
+      >
+        <span>이 기기에서 휴대폰 알림 받기</span>
         <Switch
           id='push-toggle'
           data-testid='push-toggle'
@@ -223,7 +225,7 @@ function PushSettingsBody() {
           disabled={toggleDisabled}
           onCheckedChange={handleToggle}
         />
-      </div>
+      </Label>
 
       <div className='flex flex-wrap gap-2'>
         {showInstallButton ? (
@@ -231,6 +233,7 @@ function PushSettingsBody() {
             type='button'
             variant='outline'
             size='sm'
+            className='max-md:h-11'
             data-testid='push-install-open'
             onClick={handleInstallClick}
           >
@@ -243,6 +246,7 @@ function PushSettingsBody() {
             type='button'
             variant='outline'
             size='sm'
+            className='max-md:h-11'
             data-testid='push-test-send'
             isLoading={testMutation.isPending}
             onClick={handleTestSend}
@@ -255,6 +259,7 @@ function PushSettingsBody() {
           type='button'
           variant='outline'
           size='sm'
+          className='max-md:h-11'
           data-testid='push-section-preferences-open'
           onClick={() => setPreferencesOpen(true)}
         >

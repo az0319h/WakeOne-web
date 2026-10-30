@@ -22,6 +22,9 @@ import { signOut } from '@/features/auth/api/service';
 import type { AuthProfile } from '@/features/auth/api/types';
 import { getProfileDisplayName } from '@/features/auth/lib/display-name';
 
+/** 휴대폰(md 미만) 메뉴 항목 터치 높이 44px — PC는 기본 높이 그대로 */
+const NAV_USER_ITEM_TOUCH_CLASS = 'max-md:min-h-11';
+
 interface NavUserProps {
   profile: AuthProfile;
 }
@@ -97,20 +100,23 @@ export function NavUser({ profile }: NavUserProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className={NAV_USER_ITEM_TOUCH_CLASS}>
               <Link href='/dashboard/profile'>
                 <Icons.user className='mr-2 h-4 w-4' />
                 프로필
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className={NAV_USER_ITEM_TOUCH_CLASS}>
               <Link href='/dashboard/notifications'>
                 <Icons.notification className='mr-2 h-4 w-4' />
                 알림
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => void handleSignOut()}>
+            <DropdownMenuItem
+              className={NAV_USER_ITEM_TOUCH_CLASS}
+              onClick={() => void handleSignOut()}
+            >
               <Icons.logout className='mr-2 h-4 w-4' />
               로그아웃
             </DropdownMenuItem>

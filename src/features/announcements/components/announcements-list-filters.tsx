@@ -104,7 +104,7 @@ export function AnnouncementsListFilters() {
           setSearchInput(value);
           debouncedSetSearch(value);
         }}
-        className='h-8 w-full min-w-48 sm:w-56'
+        className='h-10 w-full min-w-48 sm:w-56 md:h-8'
         data-testid='announcements-search-input'
       />
 
@@ -114,7 +114,7 @@ export function AnnouncementsListFilters() {
             type='button'
             variant='outline'
             size='sm'
-            className='border-dashed'
+            className='border-dashed max-md:h-10'
             data-testid='announcements-priority-filter'
           >
             {selectedPriorities.size > 0 ? (
@@ -202,7 +202,7 @@ export function AnnouncementsListFilters() {
         type='button'
         variant={params.pinned === '1' ? 'secondary' : 'outline'}
         size='sm'
-        className={cn(params.pinned !== '1' && 'border-dashed')}
+        className={cn('max-md:h-10', params.pinned !== '1' && 'border-dashed')}
         onClick={() => void setParams({ pinned: params.pinned === '1' ? null : '1' })}
         data-testid='announcements-pinned-filter'
       >
@@ -219,7 +219,7 @@ export function AnnouncementsListFilters() {
           type='button'
           variant='outline'
           size='sm'
-          className='border-dashed'
+          className='border-dashed max-md:h-10'
           onClick={resetFilters}
           data-testid='announcements-filter-reset'
         >

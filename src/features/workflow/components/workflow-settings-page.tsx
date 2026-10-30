@@ -52,7 +52,7 @@ function WorkflowAdminList() {
 
   return (
     <>
-      <div className='flex justify-end px-6'>
+      <div className='flex justify-end px-4 md:px-6'>
         <WorkflowMemberCombobox
           getDisabledReason={(member) => (adminIds.has(member.user_id) ? '이미 지정됨' : null)}
           onSelect={(member) =>
@@ -77,7 +77,7 @@ function WorkflowAdminList() {
           </Button>
         </WorkflowMemberCombobox>
       </div>
-      <CardContent>
+      <CardContent className='max-md:px-4'>
         {admins.length === 0 ? (
           <p className='py-4 text-sm text-muted-foreground'>지정된 워크플로우 관리자가 없습니다.</p>
         ) : (
@@ -132,7 +132,7 @@ function WorkflowAdminList() {
 function WorkflowAdminsCard() {
   return (
     <Card data-testid='workflow-admins'>
-      <CardHeader>
+      <CardHeader className='max-md:px-4'>
         <CardTitle>워크플로우 관리자</CardTitle>
         <CardDescription>시스템 관리자는 따로 지정하지 않아도 워크플로우 관리자 권한을 가집니다.</CardDescription>
       </CardHeader>
@@ -223,7 +223,8 @@ function TemplatePolicyList() {
           key={template.template_key}
           data-testid={`workflow-template-policy-${template.template_key}`}
           aria-labelledby={`workflow-policy-title-${template.template_key}`}
-          className='flex flex-col gap-4 rounded-lg border p-4'
+          // 휴대폰: 카드 안 카드 테두리·여백을 빼서 결재선 편집 폭 확보 (구분은 위 테두리로)
+          className='flex flex-col gap-4 max-md:not-first:border-t max-md:not-first:pt-6 md:rounded-lg md:border md:p-4'
         >
           <h3 id={`workflow-policy-title-${template.template_key}`} className='text-base font-semibold'>
             <span aria-hidden className='mr-1.5'>
@@ -246,11 +247,11 @@ function TemplatePolicyList() {
 function WorkflowTemplatePoliciesCard() {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className='max-md:px-4'>
         <CardTitle>양식 기본 결재선</CardTitle>
         <CardDescription>문서를 작성할 때 자동으로 채워지는 승인 단계와 참조자입니다.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className='max-md:px-4'>
         <WorkflowQueryBoundary
           errorMessage='양식을 불러오지 못했습니다.'
           loadingFallback={<PageLoadingSpinner variant='fill' />}

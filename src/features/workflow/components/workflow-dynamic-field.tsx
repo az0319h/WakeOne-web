@@ -104,7 +104,7 @@ function ReferenceWidget({
         {...a11y}
         type='button'
         variant='ghost'
-        className={`h-9 justify-start font-normal text-muted-foreground ${WORKFLOW_WIDGET_TONE}`}
+        className={`h-11 justify-start font-normal text-muted-foreground md:h-9 ${WORKFLOW_WIDGET_TONE}`}
         onClick={() => setOpen(true)}
       >
         <Icons.add aria-hidden />

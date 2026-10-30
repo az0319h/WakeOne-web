@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { FieldDescription } from '@/components/ui/field';
 import { Modal } from '@/components/ui/modal';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -230,12 +231,18 @@ export function ContractBulkDownloadButton({ from, to }: ContractBulkDownloadBut
   return (
     <>
       {!hasDateRange ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className='inline-flex'>{button}</span>
-          </TooltipTrigger>
-          <TooltipContent>문서승인일 기간을 먼저 선택하세요.</TooltipContent>
-        </Tooltip>
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className='inline-flex'>{button}</span>
+            </TooltipTrigger>
+            <TooltipContent>문서승인일 기간을 먼저 선택하세요.</TooltipContent>
+          </Tooltip>
+          {/* 터치 기기는 tooltip이 안 뜨므로 모바일(768px 미만)은 버튼 아래 안내 문구로 */}
+          <FieldDescription className='basis-full text-xs md:hidden'>
+            첨부 ZIP 다운로드는 문서승인일 기간을 먼저 선택하세요.
+          </FieldDescription>
+        </>
       ) : (
         button
       )}

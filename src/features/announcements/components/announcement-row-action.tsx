@@ -62,7 +62,7 @@ export function AnnouncementRowAction({
         <DropdownMenuTrigger asChild>
           <Button
             variant='ghost'
-            className='h-8 w-8 shrink-0 p-0'
+            className='size-11 shrink-0 p-0 md:size-8'
             data-testid={`announcement-row-action-${announcement.id}`}
             onClick={(event) => event.stopPropagation()}
           >

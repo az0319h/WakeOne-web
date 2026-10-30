@@ -7,7 +7,10 @@ import { cn } from '@/lib/utils';
 import { formatAbsoluteDateKoOrPlaceholder } from '@/lib/format-date';
 import type { Column, ColumnDef } from '@tanstack/react-table';
 import type { ContractDocument } from '../../api/types';
-import { getContractExternalDocumentUrl } from '../contracts-table/columns';
+import {
+  ContractTargetCell,
+  getContractExternalDocumentUrl
+} from '../contracts-table/columns';
 import {
   CONTRACT_ATTACHMENT_STATUS_LABELS,
   CONTRACT_ATTACHMENT_STATUS_OPTIONS
@@ -58,6 +61,7 @@ export function createMyContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='문서번호' />
       ),
+      size: 130,
       cell: ({ row }) => (
         <span className='font-medium'>{row.original.document_number}</span>
       ),
@@ -76,6 +80,7 @@ export function createMyContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='문서승인일' />
       ),
+      size: 120,
       cell: ({ row }) => formatAbsoluteDateKoOrPlaceholder(row.original.approved_at)
     },
     {
@@ -99,16 +104,14 @@ export function createMyContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='계약대상' />
       ),
-      cell: ({ row }) => (
-        <span className='block max-w-[220px] truncate'>{row.original.contract_target}</span>
-      )
+      cell: ({ row }) => <ContractTargetCell contract={row.original} />
     },
     {
       id: 'contract_summary',
       accessorKey: 'contract_summary',
       header: '계약 내용',
       cell: ({ row }) => (
-        <span className='text-muted-foreground block max-w-[260px] truncate'>
+        <span className='text-muted-foreground block max-w-[240px] truncate'>
           {row.original.contract_summary}
         </span>
       )
@@ -119,12 +122,14 @@ export function createMyContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='금액' />
       ),
+      size: 120,
       cell: ({ row }) => formatAmount(row.original.amount)
     },
     {
       id: 'attachment_status',
       accessorKey: 'attachment_status',
       header: '첨부파일 상태',
+      size: 100,
       cell: ({ row }) => <AttachmentStatusBadge contract={row.original} />,
       meta: {
         label: '첨부 상태',
@@ -135,6 +140,8 @@ export function createMyContractColumns({
     },
     {
       id: 'actions',
+      size: 56,
+      enableHiding: false,
       cell: ({ row }) => <MyContractRowAction data={row.original} onView={onView} />
     }
   ];

@@ -128,7 +128,9 @@ function SubscriptionRowScreenContent({ id }: { id: number }) {
             </LedgerDialogTitle>
             <AssetStatusBadge kind='subscription' status={item.status} />
           </div>
-          <DialogDescription className='text-sm text-muted-foreground'>{description}</DialogDescription>
+          <DialogDescription className='text-sm wrap-break-word break-keep text-muted-foreground'>
+            {description}
+          </DialogDescription>
         </div>
       </LedgerDialogHeader>
 
@@ -155,7 +157,8 @@ function SubscriptionRowScreenContent({ id }: { id: number }) {
                 )}
               </dd>
             </div>
-            <div>
+            {/* 휴대폰: 상태 배지는 머리(제목 옆)에 이미 있어 본문 줄은 뺀다 */}
+            <div className='max-md:hidden'>
               <dt className='text-xs text-muted-foreground'>상태</dt>
               <dd className='mt-1'>
                 <AssetStatusBadge kind='subscription' status={item.status} />

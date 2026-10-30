@@ -21,12 +21,12 @@ function SummaryCard({
   valueClassName?: string;
 }) {
   return (
-    <Card className="@container/card">
-      <CardHeader className="gap-1">
+    <Card className="@container/card py-4 md:py-6">
+      <CardHeader className="gap-1 px-4 md:px-6">
         <CardDescription>{label}</CardDescription>
         <CardTitle
           className={cn(
-            "text-2xl font-semibold tabular-nums @[250px]/card:text-3xl",
+            "text-lg font-semibold tabular-nums md:text-2xl @[250px]/card:text-3xl",
             valueClassName,
           )}
         >
@@ -44,7 +44,8 @@ export function BenefitsAdminSummarySection({
   overageMemberCount,
 }: BenefitsAdminSummarySectionProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    // 모바일도 2×2 — 카드 4장이 표를 화면 아래로 밀어내지 않게
+    <div className="grid grid-cols-2 gap-3 md:gap-4 @5xl/main:grid-cols-4">
       <SummaryCard label="총 지급 한도" value={formatBenefitMoney(totalLimit)} />
       <SummaryCard label="총 사용액" value={formatBenefitMoney(totalUsed)} />
       <SummaryCard label="잔여 예산" value={formatBenefitMoney(remaining)} />

@@ -4,6 +4,7 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
+import { useIsMobileViewport } from '@/hooks/use-mobile-column-visibility';
 import { formatBirthdayDisplay } from '@/lib/format-date';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { UserAvatarCell } from '../user-profile-modal';
@@ -25,6 +26,30 @@ const STATUS_BADGE_CONFIG: Record<
   rejected: { label: '거절됨', variant: 'destructive' }
 };
 
+function UserStatusBadge({ status }: { status: User['status'] }) {
+  const config = STATUS_BADGE_CONFIG[status];
+  return <Badge variant={config.variant}>{config.label}</Badge>;
+}
+
+/** 모바일(768px 미만)은 계정 상태 컬럼을 숨기고 이름 옆에 상태 배지를 붙인다 — 긴 이름·이메일은 말줄임 */
+function UserNameCell({ user }: { user: User }) {
+  const isMobile = useIsMobileViewport();
+
+  return (
+    <div className='flex max-w-[190px] min-w-0 flex-col md:max-w-[240px]'>
+      <span className='flex min-w-0 items-center gap-1.5'>
+        <span className='truncate font-medium' title={user.full_name}>
+          {user.full_name}
+        </span>
+        {isMobile ? <UserStatusBadge status={user.status} /> : null}
+      </span>
+      <span className='text-muted-foreground truncate text-xs' title={user.email}>
+        {user.email}
+      </span>
+    </div>
+  );
+}
+
 export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDef<User>[] {
   return [
     {
@@ -33,6 +58,7 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       header: '아바타',
       enableSorting: false,
       enableColumnFilter: false,
+      size: 56,
       cell: ({ row }) => (
         <UserAvatarCell user={row.original} onClick={onAvatarClick} />
       )
@@ -43,12 +69,7 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       header: ({ column }: { column: Column<User, unknown> }) => (
         <DataTableColumnHeader column={column} title='이름' />
       ),
-      cell: ({ row }) => (
-        <div className='flex flex-col'>
-          <span className='font-medium'>{row.original.full_name}</span>
-          <span className='text-muted-foreground text-xs'>{row.original.email}</span>
-        </div>
-      ),
+      cell: ({ row }) => <UserNameCell user={row.original} />,
       meta: {
         label: '이름',
         placeholder: '사용자 검색…',
@@ -60,6 +81,7 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
     {
       accessorKey: 'phone',
       header: '연락처',
+      size: 130,
       cell: ({ row }) => formatPhoneDisplay(row.original.phone) ?? '—'
     },
     {
@@ -67,6 +89,7 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       header: '생일',
       enableSorting: false,
       enableColumnFilter: false,
+      size: 130,
       cell: ({ row }) => formatBirthdayDisplay(row.original.birthday) ?? '—'
     },
     {
@@ -76,6 +99,7 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       header: ({ column }: { column: Column<User, unknown> }) => (
         <DataTableColumnHeader column={column} title='시스템 역할' />
       ),
+      size: 120,
       cell: ({ cell }) => {
         return (
           <Badge variant='outline' className='capitalize'>
@@ -96,6 +120,7 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       header: ({ column }: { column: Column<User, unknown> }) => (
         <DataTableColumnHeader column={column} title='소속' />
       ),
+      size: 110,
       cell: ({ cell }) => {
         return getAffiliationLabel(cell.getValue<User['affiliation']>()) ?? '—';
       }
@@ -106,6 +131,7 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       header: ({ column }: { column: Column<User, unknown> }) => (
         <DataTableColumnHeader column={column} title='부서/사업장' />
       ),
+      size: 140,
       cell: ({ cell }) => cell.getValue<string | null>() ?? '—'
     },
     {
@@ -114,15 +140,8 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
       header: ({ column }: { column: Column<User, unknown> }) => (
         <DataTableColumnHeader column={column} title='계정 상태' />
       ),
-      cell: ({ cell }) => {
-        const status = cell.getValue<User['status']>();
-        const config = STATUS_BADGE_CONFIG[status];
-        return (
-          <Badge variant={config.variant}>
-            {config.label}
-          </Badge>
-        );
-      },
+      size: 100,
+      cell: ({ cell }) => <UserStatusBadge status={cell.getValue<User['status']>()} />,
       enableColumnFilter: true,
       meta: {
         label: '계정 상태',
@@ -132,6 +151,8 @@ export function createColumns({ onAvatarClick }: CreateColumnsOptions): ColumnDe
     },
     {
       id: 'actions',
+      size: 56,
+      enableHiding: false,
       cell: ({ row }) => <CellAction data={row.original} />
     }
   ];

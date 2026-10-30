@@ -98,3 +98,24 @@
     scroll-padding-bottom: 5.5rem;
   }
 }
+
+/*
+ * 모바일 UX 점검(2026-10-29) — 터치 기기 공통 규칙. @layer 밖이라 Tailwind 유틸리티(`text-sm` 등)보다 우선한다.
+ * - 입력 칸 글자 16px: iOS Safari는 16px 미만 칸에 포커스하면 화면을 확대한다(CommandInput·날짜·Textarea·Tiptap 등).
+ * - Dialog·Sheet 기본 닫기(X, content의 마지막 button)는 16px — 모양은 그대로 두고 누르는 영역만 44px로 넓힌다.
+ */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  textarea,
+  select,
+  [contenteditable='true'] {
+    font-size: 16px;
+  }
+
+  [data-slot='dialog-content'] > button:last-child::after,
+  [data-slot='sheet-content'] > button:last-child::after {
+    content: '';
+    position: absolute;
+    inset: -14px;
+  }
+}

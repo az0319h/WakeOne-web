@@ -14,7 +14,8 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -27,6 +28,9 @@ import type { NavItem } from '@/types';
 import { NavUser } from '../nav-user';
 import { Icons } from '../icons';
 import { NavItemBadge } from './nav-badges';
+
+/** 휴대폰(md 미만 = 사이드바 Sheet) 메뉴·하위 메뉴 터치 높이 44px — PC(h-8 · h-7)는 그대로 */
+const SIDEBAR_MOBILE_TOUCH_CLASS = 'max-md:h-11';
 
 function matchesPath(pathname: string, url: string) {
   return pathname === url || pathname.startsWith(`${url}/`);
@@ -107,10 +111,17 @@ function SidebarNavCollapsibleItem({ item, pathname }: SidebarNavCollapsibleItem
     }
   }, [pathname, routeOpen]);
 
+  const { setOpenMobile } = useSidebar();
+
   return (
     <Collapsible open={open} onOpenChange={setOpen} asChild className='group/collapsible'>
       <SidebarMenuItem>
-        <SidebarMenuButton tooltip={item.title} isActive={isActive} asChild>
+        <SidebarMenuButton
+          tooltip={item.title}
+          isActive={isActive}
+          asChild
+          className={SIDEBAR_MOBILE_TOUCH_CLASS}
+        >
           <Link
             href={item.url}
             onClick={() => {
@@ -126,8 +137,12 @@ function SidebarNavCollapsibleItem({ item, pathname }: SidebarNavCollapsibleItem
           <SidebarMenuSub>
             {item.items?.map((subItem) => (
               <SidebarMenuSubItem key={subItem.title}>
-                <SidebarMenuSubButton asChild isActive={isPathActive(pathname, subItem.url)}>
-                  <Link href={subItem.url}>
+                <SidebarMenuSubButton
+                  asChild
+                  isActive={isPathActive(pathname, subItem.url)}
+                  className={SIDEBAR_MOBILE_TOUCH_CLASS}
+                >
+                  <Link href={subItem.url} onClick={() => setOpenMobile(false)}>
                     <span>{subItem.title}</span>
                   </Link>
                 </SidebarMenuSubButton>
@@ -148,11 +163,18 @@ interface SidebarNavLeafItemProps {
 function SidebarNavLeafItem({ item, pathname }: SidebarNavLeafItemProps) {
   const isPathActive = useIsPathActive();
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+  const { setOpenMobile } = useSidebar();
 
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton asChild tooltip={item.title} isActive={isPathActive(pathname, item.url)}>
-        <Link href={item.url}>
+    // 휴대폰 버튼이 44px이라 배지(top-1.5 고정)를 세로 가운데(top-3)로 내린다
+    <SidebarMenuItem className='max-md:[&>[data-sidebar=menu-badge]]:top-3'>
+      <SidebarMenuButton
+        asChild
+        tooltip={item.title}
+        isActive={isPathActive(pathname, item.url)}
+        className={SIDEBAR_MOBILE_TOUCH_CLASS}
+      >
+        <Link href={item.url} onClick={() => setOpenMobile(false)}>
           <Icon />
           <span>{item.title}</span>
         </Link>
@@ -169,10 +191,16 @@ function AppSidebar() {
   const profile = useNavAccess();
   const filteredGroups = useFilteredNavGroups(navGroups);
   const activeUrl = resolveActiveNavUrl(pathname, collectNavUrls(filteredGroups));
+  const { setOpenMobile } = useSidebar();
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
   }, [isOpen]);
+
+  // 휴대폰 서랍(Sheet)은 X가 숨겨져 있어 이동 후에도 열려 있었다 — 주소가 바뀌면 닫는다 (뒤로 가기·하위 메뉴가 있는 상위 항목·사용자 메뉴 링크 포함)
+  React.useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
 
   return (
     <NavActiveUrlContext value={activeUrl}>

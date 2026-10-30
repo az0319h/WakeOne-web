@@ -119,9 +119,10 @@ function MyContractAttachmentRow({
       )}
     >
       <div className='min-w-0'>
-        <div className='flex items-center gap-2'>
-          <Icons.paperclip className='h-4 w-4 shrink-0' />
-          <span className='truncate text-sm font-medium'>
+        <div className='flex items-start gap-2'>
+          <Icons.paperclip className='mt-0.5 h-4 w-4 shrink-0' />
+          {/* 긴 파일명은 잘라내지 않고 줄바꿈 */}
+          <span className='text-sm font-medium break-all' title={attachment.file_name}>
             {attachment.file_name}
           </span>
           {!isActive ? (
@@ -135,12 +136,13 @@ function MyContractAttachmentRow({
           {formatAbsoluteDateKoOrPlaceholder(attachment.created_at)}
         </p>
       </div>
-      <div className='flex gap-2'>
+      <div className='flex shrink-0 gap-2'>
         {canOpen ? (
           <Button
             type='button'
             variant='outline'
             size='icon'
+            className='size-11 md:size-9'
             disabled={!isActive}
             aria-label={`${attachment.file_name} 열기`}
             title='열기'
@@ -154,6 +156,7 @@ function MyContractAttachmentRow({
           type='button'
           variant='outline'
           size='icon'
+          className='size-11 md:size-9'
           isLoading={isDownloading}
           disabled={!isActive}
           aria-label={`${attachment.file_name} 다운로드`}
@@ -175,7 +178,8 @@ function MyContractDetailContent({ contractId }: { contractId: number }) {
 
   return (
     <div className='space-y-6'>
-      <section className='rounded-lg border p-4'>
+      {/* 모바일(640px 미만)은 Sheet 안 카드 테두리·안쪽 여백을 빼서 본문 폭 확보 */}
+      <section className='sm:rounded-lg sm:border sm:p-4'>
         <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
           <div>
             <h3 className='text-base font-semibold'>
@@ -220,14 +224,15 @@ function MyContractDetailContent({ contractId }: { contractId: number }) {
             <DetailItem
               label='원문 URL'
               value={
-                <a
-                  href={contract.source_document_url}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='text-primary inline-flex items-center gap-1 underline-offset-2 hover:underline'
+                <Button
+                  asChild
+                  variant='link'
+                  className='h-11 gap-1 px-0 has-[>svg]:px-0 md:h-auto md:py-0'
                 >
-                  Flex 문서 열기 <Icons.externalLink className='h-3 w-3' />
-                </a>
+                  <a href={contract.source_document_url} target='_blank' rel='noreferrer'>
+                    Flex 문서 열기 <Icons.externalLink className='size-3' />
+                  </a>
+                </Button>
               }
             />
           ) : null}
@@ -280,7 +285,7 @@ export function MyContractDetailSheet({
 }: MyContractDetailSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex min-h-0 flex-col sm:max-w-3xl'>
+      <SheetContent className='flex min-h-0 w-full flex-col px-4 sm:max-w-3xl sm:px-6'>
         <SheetHeader>
           <SheetTitle>내 계약서 상세</SheetTitle>
           <SheetDescription>

@@ -48,7 +48,7 @@ type AssetLedgerCreateButtonProps = {
 export function AssetLedgerCreateButton({ label, ...rest }: AssetLedgerCreateButtonProps) {
   const { openCreate } = useAssetLedgerSheet();
   return (
-    <Button type='button' data-testid={rest['data-testid']} onClick={openCreate}>
+    <Button type='button' data-testid={rest['data-testid']} className='h-11 md:h-9' onClick={openCreate}>
       <Icons.add aria-hidden />
       {label}
     </Button>

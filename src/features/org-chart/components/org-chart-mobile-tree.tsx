@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { hotkeysCoreFeature, syncDataLoaderFeature } from '@headless-tree/core';
 import { useTree } from '@headless-tree/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,6 +15,10 @@ import {
   type OrgChartTreeItemData
 } from '../lib/org-chart-nodes-to-tree';
 import type { OrgChartNode } from '../api/types';
+import {
+  OrgChartPersonContactDrawer,
+  type OrgChartPersonContact
+} from './org-chart-person-contact-drawer';
 
 const TREE_INDENT = 16;
 
@@ -35,6 +39,8 @@ function OrgChartTreeEmptyState() {
 }
 
 export function OrgChartMobileTree({ nodes, affiliation }: OrgChartMobileTreeProps) {
+  const [contact, setContact] = useState<OrgChartPersonContact | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
   const treeBundle = useMemo(
     () => buildOrgChartTreeBundle(nodes, affiliation),
     [nodes, affiliation]
@@ -69,8 +75,14 @@ export function OrgChartMobileTree({ nodes, affiliation }: OrgChartMobileTreePro
     return <OrgChartTreeEmptyState />;
   }
 
+  function openContact(next: OrgChartPersonContact) {
+    setContact(next);
+    setContactOpen(true);
+  }
+
   return (
-    <Tree indent={TREE_INDENT} tree={tree} toggleIconType='chevron'>
+    <>
+      <Tree indent={TREE_INDENT} tree={tree} toggleIconType='chevron'>
         {tree.getItems().map((item) => {
           if (item.getId() === ORG_CHART_VIRTUAL_ROOT_ID) {
             return null;
@@ -88,22 +100,39 @@ export function OrgChartMobileTree({ nodes, affiliation }: OrgChartMobileTreePro
 
             return (
               <TreeItem key={item.getId()} item={item}>
-                <TreeItemLabel className='gap-2'>
-                  <Avatar className='h-8 w-8'>
-                    {node.avatarUrl ? (
-                      <AvatarImage src={node.avatarUrl} alt={fullName} />
-                    ) : null}
-                    <AvatarFallback className='text-xs'>
-                      {getInitials({ full_name: fullName, email: fullName })}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className='flex min-w-0 flex-col text-left'>
-                    <span className='truncate'>{label}</span>
-                    {node.rank ? (
-                      <span className='text-muted-foreground truncate text-xs'>
-                        {node.rank}
-                      </span>
-                    ) : null}
+                <TreeItemLabel className='min-h-11 gap-2'>
+                  {/* 아바타·이름을 누르면 연락처 Drawer (하위가 있는 행의 펼침/접기는 화살표) */}
+                  <span
+                    className='flex min-w-0 flex-1 items-center gap-2'
+                    data-testid='org-chart-tree-person'
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openContact({
+                        avatarUrl: node.avatarUrl ?? null,
+                        email: node.email ?? null,
+                        phone: node.phone ?? null,
+                        fullName,
+                        label,
+                        rank: node.rank ?? null
+                      });
+                    }}
+                  >
+                    <Avatar className='h-8 w-8'>
+                      {node.avatarUrl ? (
+                        <AvatarImage src={node.avatarUrl} alt={fullName} />
+                      ) : null}
+                      <AvatarFallback className='text-xs'>
+                        {getInitials({ full_name: fullName, email: fullName })}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className='flex min-w-0 flex-col text-left'>
+                      <span className='truncate'>{label}</span>
+                      {node.rank ? (
+                        <span className='text-muted-foreground truncate text-xs'>
+                          {node.rank}
+                        </span>
+                      ) : null}
+                    </span>
                   </span>
                 </TreeItemLabel>
               </TreeItem>
@@ -116,6 +145,12 @@ export function OrgChartMobileTree({ nodes, affiliation }: OrgChartMobileTreePro
             </TreeItem>
           );
         })}
-    </Tree>
+      </Tree>
+      <OrgChartPersonContactDrawer
+        open={contactOpen}
+        contact={contact}
+        onOpenChange={setContactOpen}
+      />
+    </>
   );
 }

@@ -128,13 +128,18 @@ export function WalletSummaryOverviewCard({ snapshot }: WalletSummaryOverviewCar
           </Badge>
         </div>
 
-        <Link
-          href='/dashboard/wallet'
-          className='text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline'
+        <Button
+          asChild
+          variant='link'
+          size='sm'
+          // 모바일: 44px 터치 높이 · md 이상: 기존 텍스트 링크 높이
+          className='-my-3 h-11 gap-1 px-0 has-[>svg]:px-0 md:my-0 md:h-auto'
         >
-          식대 카드 자세히
-          <Icons.chevronRight className='size-4' />
-        </Link>
+          <Link href='/dashboard/wallet'>
+            식대 카드 자세히
+            <Icons.chevronRight className='size-4' />
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   );
