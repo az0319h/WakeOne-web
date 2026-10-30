@@ -48,12 +48,14 @@ export function createColumns(): ColumnDef<WalletBalanceEmailLogRun>[] {
       id: 'created_at',
       accessorKey: 'created_at',
       header: ({ column }) => <DataTableColumnHeader column={column} title='실행 시각' />,
+      size: 190,
       cell: ({ row }) => <TimeCell createdAt={row.original.created_at} />
     },
     {
       id: 'run_key',
       accessorKey: 'run_key',
       header: ({ column }) => <DataTableColumnHeader column={column} title='run_key' />,
+      size: 160,
       cell: ({ row }) => <RunKeyCell runKey={row.original.run_key} />,
       meta: {
         label: '검색',
@@ -68,42 +70,49 @@ export function createColumns(): ColumnDef<WalletBalanceEmailLogRun>[] {
       id: 'trigger_source',
       accessorKey: 'trigger_source',
       header: 'trigger',
+      size: 100,
       cell: ({ row }) => <TriggerSourceBadge source={row.original.trigger_source} />
     },
     {
       id: 'status',
       accessorKey: 'status',
       header: ({ column }) => <DataTableColumnHeader column={column} title='status' />,
+      size: 100,
       cell: ({ row }) => <RunStatusBadge status={row.original.status} />
     },
     {
       id: 'due_count',
       accessorKey: 'due_count',
       header: 'due',
+      size: 56,
       cell: ({ row }) => <CountCell value={row.original.due_count} />
     },
     {
       id: 'sent_count',
       accessorKey: 'sent_count',
       header: '발송 성공',
+      size: 72,
       cell: ({ row }) => <CountCell value={row.original.sent_count} />
     },
     {
       id: 'failed_count',
       accessorKey: 'failed_count',
       header: '실패',
+      size: 56,
       cell: ({ row }) => <CountCell value={row.original.failed_count} highlight='danger' />
     },
     {
       id: 'blocked_count',
       accessorKey: 'blocked_count',
       header: '차단',
+      size: 56,
       cell: ({ row }) => <CountCell value={row.original.blocked_count} highlight='warning' />
     },
     {
       id: 'skipped_count',
       accessorKey: 'skipped_count',
       header: '건너뜀',
+      size: 64,
       cell: ({ row }) => <CountCell value={row.original.skipped_count} />
     }
   ];

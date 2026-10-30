@@ -26,7 +26,8 @@ function printValue(field: WorkflowTemplateField, document: WorkflowDocumentDeta
   return text;
 }
 
-const CELL = 'border border-border px-2 py-1.5 align-top break-words print:border-black/40';
+const CELL =
+  'border border-border px-2 py-1.5 align-top break-words max-sm:px-1.5 print:border-black/40';
 
 /** 인쇄 전용 본문 — A4 · 흑백에서도 읽히게 상태는 텍스트로 (designer §7) */
 export function WorkflowPrintView({ document }: { document: WorkflowDocumentDetail }) {
@@ -59,13 +60,26 @@ export function WorkflowPrintView({ document }: { document: WorkflowDocumentDeta
 
       <section className='flex flex-col gap-2'>
         <h2 className='font-semibold'>결재선</h2>
+        {/* 모바일(<sm) 고정 폭 합이 본문보다 커서 승인자 열이 0px 되던 문제 — 좁은 폭에선 열을 줄이고 일시는 줄바꿈 */}
         <table className='w-full table-fixed border-collapse'>
           <thead>
             <tr>
-              <th className={`${CELL} w-16 bg-muted text-left print:bg-transparent`}>단계</th>
+              <th
+                className={`${CELL} w-14 bg-muted text-left sm:w-16 print:w-16 print:bg-transparent`}
+              >
+                단계
+              </th>
               <th className={`${CELL} bg-muted text-left print:bg-transparent`}>승인자</th>
-              <th className={`${CELL} w-20 bg-muted text-left print:bg-transparent`}>상태</th>
-              <th className={`${CELL} w-52 bg-muted text-left print:bg-transparent`}>처리 일시</th>
+              <th
+                className={`${CELL} w-14 bg-muted text-left sm:w-20 print:w-20 print:bg-transparent`}
+              >
+                상태
+              </th>
+              <th
+                className={`${CELL} w-28 bg-muted text-left sm:w-52 print:w-52 print:bg-transparent`}
+              >
+                처리 일시
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -75,7 +89,7 @@ export function WorkflowPrintView({ document }: { document: WorkflowDocumentDeta
                   <td className={CELL}>{step.step}단계</td>
                   <td className={CELL}>{actor.full_name}</td>
                   <td className={CELL}>{ACTOR_STATUS_LABEL[actor.status]}</td>
-                  <td className={`${CELL} tabular-nums`}>
+                  <td className={`${CELL} tabular-nums max-sm:text-xs`}>
                     {actor.acted_at ? formatAbsoluteDateTimeKo(actor.acted_at) : '-'}
                   </td>
                 </tr>

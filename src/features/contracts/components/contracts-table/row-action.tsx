@@ -52,7 +52,7 @@ export function ContractRowAction({ data, onView, onEdit }: ContractRowActionPro
       />
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant='ghost' className='h-8 w-8 p-0'>
+          <Button variant='ghost' className='size-11 p-0 md:size-8'>
             <span className='sr-only'>계약서 작업 메뉴 열기</span>
             <Icons.ellipsis className='h-4 w-4' />
           </Button>

@@ -25,6 +25,8 @@ interface NotificationInfiniteListProps {
   readOnly?: boolean;
   emptyMessage?: string;
   className?: string;
+  /** NotificationCard 루트에 전달 (ui 파일 수정 없이 사용처에서 확장) */
+  cardClassName?: string;
   intersectionRootRef?: RefObject<Element | null>;
 }
 
@@ -53,6 +55,7 @@ export function NotificationInfiniteList({
   readOnly = false,
   emptyMessage = '알림이 없습니다',
   className,
+  cardClassName,
   intersectionRootRef
 }: NotificationInfiniteListProps) {
   const router = useRouter();
@@ -145,6 +148,7 @@ export function NotificationInfiniteList({
             actions={readOnly ? [] : getNotificationActions(notification)}
             onMarkAsRead={readOnly ? undefined : handleMarkAsRead}
             onAction={readOnly ? undefined : handleAction}
+            className={cardClassName}
           />
           </div>
         ))}

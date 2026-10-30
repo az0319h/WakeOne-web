@@ -280,14 +280,14 @@ export function AssetRequestEditForm({ targetType, request, onDone, onCancel }: 
     <div className='space-y-3 rounded-lg border p-4'>
       <RequestFormFields targetType={targetType} form={form} formId={EDIT_FORM_ID} autoFocusBody />
       <div className='flex justify-end gap-2'>
-        <Button type='button' variant='outline' size='sm' className='h-9' onClick={onCancel}>
+        <Button type='button' variant='outline' size='sm' className='h-11 md:h-9' onClick={onCancel}>
           취소
         </Button>
         <Button
           type='submit'
           form={EDIT_FORM_ID}
           size='sm'
-          className='h-9'
+          className='h-11 md:h-9'
           data-testid='asset-request-submit'
           isLoading={mutation.isPending}
         >

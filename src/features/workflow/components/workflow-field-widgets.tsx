@@ -28,9 +28,12 @@ import { parseWorkflowDateValue, toWorkflowDateValue } from '../lib/date-value';
 import { formatAmountInput } from '../lib/format-amount';
 import { normalizeAmountInput } from '../lib/required-rules';
 
-/** flex 미니멀 톤 — 평소에는 표처럼, hover·focus 때 입력칸 */
+/**
+ * flex 미니멀 톤 — 평소에는 표처럼, hover·focus 때 입력칸.
+ * 휴대폰(md 미만)은 hover가 없어 입력칸인지 알 수 없으므로 테두리·배경을 늘 보인다.
+ */
 export const WORKFLOW_WIDGET_TONE =
-  'border-transparent bg-transparent shadow-none hover:bg-muted/50 focus-visible:border-ring dark:bg-transparent';
+  'border-transparent bg-transparent shadow-none hover:bg-muted/50 focus-visible:border-ring dark:bg-transparent max-md:border-input max-md:bg-muted/30 max-md:dark:bg-input/30';
 
 export type WidgetA11yProps = {
   id: string;
@@ -54,7 +57,10 @@ export function StringWidget({ value, onChange, onBlur, a11y }: BaseProps<string
       rows={1}
       value={value}
       placeholder='내용을 입력해 주세요.'
-      className={cn('min-h-9 resize-none py-1.5 field-sizing-content', WORKFLOW_WIDGET_TONE)}
+      className={cn(
+        'min-h-11 resize-none py-2.5 field-sizing-content md:min-h-9 md:py-1.5',
+        WORKFLOW_WIDGET_TONE
+      )}
       onChange={(event) => onChange(event.target.value)}
       onBlur={onBlur}
     />
@@ -63,14 +69,14 @@ export function StringWidget({ value, onChange, onBlur, a11y }: BaseProps<string
 
 export function AmountWidget({ value, onChange, onBlur, a11y }: BaseProps<string>) {
   return (
-    <InputGroup className={cn('h-9 max-w-xs', WORKFLOW_WIDGET_TONE)}>
+    <InputGroup className={cn('h-11 max-w-xs md:h-9', WORKFLOW_WIDGET_TONE)}>
       <InputGroupInput
         {...a11y}
         inputMode='numeric'
         autoComplete='off'
         value={formatAmountInput(value)}
         placeholder='금액을 입력해 주세요.'
-        className='tabular-nums'
+        className='h-full tabular-nums'
         onChange={(event) => onChange(normalizeAmountInput(event.target.value).replace(/\D/g, ''))}
         onBlur={onBlur}
       />
@@ -94,7 +100,13 @@ export function SelectWidget({
         onBlur?.();
       }}
     >
-      <SelectTrigger {...a11y} className={cn('h-9 w-full max-w-xs justify-between', WORKFLOW_WIDGET_TONE)}>
+      <SelectTrigger
+        {...a11y}
+        className={cn(
+          'w-full max-w-xs justify-between data-[size=default]:h-11 md:data-[size=default]:h-9',
+          WORKFLOW_WIDGET_TONE
+        )}
+      >
         <SelectValue placeholder='옵션을 선택해 주세요.'>
           {value ? (
             <Badge variant='secondary' className='rounded-md font-normal'>
@@ -105,7 +117,7 @@ export function SelectWidget({
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
-          <SelectItem key={option} value={option}>
+          <SelectItem key={option} value={option} className='min-h-11 md:min-h-0'>
             {option}
           </SelectItem>
         ))}
@@ -131,10 +143,10 @@ export function MultiSelectWidget({
             variant='ghost'
             size='icon'
             aria-label={`${item} 선택 해제`}
-            className='size-5'
+            className='size-8 md:size-5'
             onClick={() => onChange(value.filter((entry) => entry !== item))}
           >
-            <Icons.close aria-hidden className='size-3' />
+            <Icons.close aria-hidden className='size-4 md:size-3' />
           </Button>
         </Badge>
       ))}
@@ -144,7 +156,7 @@ export function MultiSelectWidget({
             {...a11y}
             type='button'
             variant='ghost'
-            className={cn('h-9 justify-start font-normal text-muted-foreground', WORKFLOW_WIDGET_TONE)}
+            className={cn('h-11 justify-start font-normal text-muted-foreground md:h-9', WORKFLOW_WIDGET_TONE)}
           >
             옵션을 선택해 주세요.
           </Button>
@@ -202,7 +214,7 @@ export function DateWidget({
             type='button'
             variant='ghost'
             className={cn(
-              'h-9 w-full max-w-xs justify-between font-normal tabular-nums',
+              'h-11 w-full max-w-xs justify-between font-normal tabular-nums md:h-9',
               WORKFLOW_WIDGET_TONE,
               !value && 'text-muted-foreground'
             )}
@@ -229,7 +241,7 @@ export function DateWidget({
           type='button'
           variant='ghost'
           size='sm'
-          className='h-9 shrink-0 text-muted-foreground'
+          className='h-11 shrink-0 text-muted-foreground md:h-9'
           onClick={() => onChange('')}
         >
           지우기

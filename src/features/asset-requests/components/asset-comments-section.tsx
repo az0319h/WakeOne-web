@@ -164,7 +164,7 @@ function AssetCommentItem({
                   type='button'
                   variant='ghost'
                   size='sm'
-                  className='h-7 px-2 text-xs'
+                  className='h-9 px-3 text-sm md:h-7 md:px-2 md:text-xs'
                   data-testid={`asset-comment-reply-${comment.id}`}
                   onClick={() => {
                     onEditChange(null);
@@ -180,7 +180,7 @@ function AssetCommentItem({
                   type='button'
                   variant='ghost'
                   size='sm'
-                  className='h-7 px-2 text-xs'
+                  className='h-9 px-3 text-sm md:h-7 md:px-2 md:text-xs'
                   data-testid={`asset-comment-edit-${comment.id}`}
                   onClick={() => {
                     onReplyChange(null);
@@ -196,7 +196,7 @@ function AssetCommentItem({
                   type='button'
                   variant='ghost'
                   size='sm'
-                  className='h-7 px-2 text-xs text-destructive hover:text-destructive'
+                  className='h-9 px-3 text-sm text-destructive hover:text-destructive md:h-7 md:px-2 md:text-xs'
                   data-testid={`asset-comment-delete-${comment.id}`}
                   onClick={() => setDeleteOpen(true)}
                 >

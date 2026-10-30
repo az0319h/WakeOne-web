@@ -53,7 +53,7 @@ export function AssetManagerSection({
             type='button'
             variant='outline'
             size='sm'
-            className='h-9 md:h-8'
+            className='h-11 md:h-8'
             data-testid='asset-edit-button'
             onClick={onEdit}
           >
@@ -64,7 +64,7 @@ export function AssetManagerSection({
             type='button'
             variant='outline'
             size='sm'
-            className='h-9 text-destructive hover:text-destructive md:h-8'
+            className='h-11 text-destructive hover:text-destructive md:h-8'
             data-testid='asset-delete-button'
             disabled={hasRequests}
             aria-describedby={hasRequests ? DELETE_NOTE_ID : undefined}

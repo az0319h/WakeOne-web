@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import { Icons } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { BirthdayCelebrant } from '../api/types';
 import { findCenterIndex } from '../lib/birthday-order';
@@ -173,7 +175,9 @@ export function BirthdayWheel({
         data-ready={aligned ? 'true' : 'false'}
         aria-label={label}
         className={cn(
-          'absolute inset-0 snap-y snap-mandatory overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          // 터치 기기(pointer: coarse): 손가락 스와이프가 페이지를 스크롤하도록 목록 자체 스크롤을 막고
+          // 위/아래 버튼·줄 탭으로 이동 (마우스·트랙패드 휠은 그대로)
+          'absolute inset-0 snap-y snap-mandatory overflow-y-auto pointer-coarse:overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           'before:block before:h-[calc(50%-32px)] after:block after:h-[calc(50%-32px)]',
           BIRTHDAY_WHEEL_MASK_CLASS,
           !aligned && 'invisible'
@@ -195,6 +199,35 @@ export function BirthdayWheel({
           </li>
         ))}
       </ul>
+      {lastIndex > 0 ? (
+        <>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            aria-label='이전 생일'
+            data-testid='birthday-wheel-prev'
+            disabled={activeIndex <= 0}
+            onClick={() => scrollToIndex(activeIndex - 1)}
+            // 보이는 크기 32px · 투명 ::after로 44px 터치 영역
+            className='text-muted-foreground absolute top-1 left-1/2 z-10 hidden size-8 -translate-x-1/2 rounded-full pointer-coarse:inline-flex after:absolute after:-inset-1.5'
+          >
+            <Icons.chevronUp className='size-4' />
+          </Button>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            aria-label='다음 생일'
+            data-testid='birthday-wheel-next'
+            disabled={activeIndex >= lastIndex}
+            onClick={() => scrollToIndex(activeIndex + 1)}
+            className='text-muted-foreground absolute bottom-1 left-1/2 z-10 hidden size-8 -translate-x-1/2 rounded-full pointer-coarse:inline-flex after:absolute after:-inset-1.5'
+          >
+            <Icons.chevronDown className='size-4' />
+          </Button>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -96,11 +96,12 @@ export function ForgotPasswordEmailForm() {
       <form.Form className='w-full space-y-4'>
         <div className='space-y-2'>
           <Label htmlFor='localPart'>이메일</Label>
-          <div className='flex w-full items-end gap-2'>
+          {/* 모바일(<sm): 아이디 한 줄 · 「@ 도메인」 다음 줄 (flex-wrap) — sm 이상은 한 줄 그대로 */}
+          <div className='flex w-full flex-wrap items-end gap-2 sm:flex-nowrap'>
             <form.AppField
               name='localPart'
               children={(field) => (
-                <div className='min-w-0 flex-1'>
+                <div className='min-w-0 flex-1 max-sm:basis-full'>
                   <Input
                     id='localPart'
                     name={field.name}

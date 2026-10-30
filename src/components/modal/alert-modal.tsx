@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Modal } from '@/components/ui/modal';
 
 interface AlertModalProps {
@@ -52,18 +53,25 @@ export function AlertModal({
       }}
     >
       {children ? <div className='pt-4'>{children}</div> : null}
-      <div className='flex w-full items-center justify-end space-x-2 pt-6'>
-        <Button disabled={loading} variant='outline' onClick={onClose}>
+      {/* 휴대폰(md 미만): 확인 위 · 취소 아래 세로 꽉 찬 44px 버튼 / md↑: 기존처럼 오른쪽 정렬 가로 h-9 */}
+      <DialogFooter className='pt-6 sm:flex-col-reverse md:flex-row md:items-center md:justify-end'>
+        <Button
+          disabled={loading}
+          variant='outline'
+          className='h-11 w-full md:h-9 md:w-auto'
+          onClick={onClose}
+        >
           {cancelLabel}
         </Button>
         <Button
           isLoading={loading}
           variant={confirmVariant}
+          className='h-11 w-full md:h-9 md:w-auto'
           onClick={onConfirm}
         >
           {confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Modal>
   );
 }

@@ -123,7 +123,7 @@ export function UserApprovalSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex min-h-0 flex-col'>
+      <SheetContent className='flex min-h-0 w-full flex-col px-4 sm:px-6'>
         <SheetHeader>
           <SheetTitle>가입 요청 승인</SheetTitle>
           <SheetDescription>
@@ -140,7 +140,7 @@ export function UserApprovalSheet({
             <div className='grid gap-2 sm:grid-cols-2'>
               <div>
                 <p className='text-muted-foreground text-xs'>Google 이메일</p>
-                <p className='font-mono text-xs'>{user.google_email ?? '—'}</p>
+                <p className='font-mono text-xs break-all'>{user.google_email ?? '—'}</p>
               </div>
               <div>
                 <p className='text-muted-foreground text-xs'>Google 표시 이름</p>

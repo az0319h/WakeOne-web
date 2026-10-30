@@ -222,7 +222,9 @@ export function WorkflowAttachmentField({
         >
           <input {...getInputProps()} />
           <Icons.upload aria-hidden className='size-4 shrink-0' />
-          파일 추가 혹은 여기로 드래그 (20MB 이하, 최대 30개)
+          {/* 휴대폰은 끌어 놓기가 없으므로 「드래그」 문구를 뺀다 */}
+          <span className='md:hidden'>파일 추가 (20MB 이하, 최대 30개)</span>
+          <span className='max-md:hidden'>파일 추가 혹은 여기로 드래그 (20MB 이하, 최대 30개)</span>
         </div>
         {shownError ? (
           <p data-testid='workflow-attachment-error' role='alert' className='text-sm text-destructive'>

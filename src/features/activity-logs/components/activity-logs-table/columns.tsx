@@ -83,6 +83,7 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
       header: ({ column }: { column: Column<ActivityLog, unknown> }) => (
         <DataTableColumnHeader column={column} title='시간' />
       ),
+      size: 190,
       cell: ({ row }) => <TimeCell createdAt={row.original.created_at} />
     },
     {
@@ -92,6 +93,7 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
       header: '행위자',
       enableSorting: false,
       enableColumnFilter: false,
+      size: 160,
       cell: ({ row }) => <ActorCell log={row.original} />
     },
     {
@@ -99,6 +101,7 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
       accessorKey: 'action',
       header: '활동',
       enableSorting: false,
+      size: 120,
       enableColumnFilter: isAdmin,
       meta: isAdmin
         ? {
@@ -117,6 +120,7 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
       header: 'Endpoint',
       enableSorting: false,
       enableColumnFilter: false,
+      size: 200,
       cell: ({ row }) => <EndpointCell path={row.original.http_path} />
     },
     {
@@ -141,6 +145,7 @@ export function createColumns({ isAdmin }: CreateColumnsOptions): ColumnDef<Acti
       header: '결과',
       enableSorting: false,
       enableColumnFilter: false,
+      size: 90,
       cell: ({ row }) => <ResultCell httpStatus={row.original.http_status} />
     }
   ];

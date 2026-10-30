@@ -65,7 +65,8 @@ export function GoogleTasksKanbanBoard() {
   const cardDragRef = useRef<CardLiveDrag | null>(null);
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { distance: 8 } }),
+    // 터치: 짧게 누른 뒤 드래그 시작 — 가로 스크롤(snap)과 충돌 방지
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -343,7 +344,7 @@ export function GoogleTasksKanbanBoard() {
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className='w-full overflow-x-auto rounded-md pb-4'>
+        <div className='w-full snap-x snap-mandatory overflow-x-auto rounded-md pb-4 md:snap-none'>
           <KanbanBoardPrimitive className='h-auto w-max min-w-full items-start !h-auto !w-max !min-w-full'>
             {orderedTasklists.map((tasklist) => (
               <GoogleTasksColumn

@@ -20,6 +20,7 @@ import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { workflowReferenceSearchQueryOptions } from '../api/queries';
 import type { WorkflowReferenceDocument } from '../api/types';
 import { WORKFLOW_REFERENCE_MAX_COUNT } from '../lib/required-rules';
+import { useIsDesktop } from './use-is-desktop';
 import { WorkflowStatusBadge } from './workflow-status-badge';
 
 function ReferenceResults({
@@ -96,6 +97,7 @@ export function WorkflowReferencePickerDialog({
 }) {
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
+  const isDesktop = useIsDesktop();
   // 부모가 열 때마다 새로 마운트한다 → 초기 선택은 initializer로
   const [selected, setSelected] = useState<Map<string, WorkflowReferenceDocument>>(
     () => new Map(initialSelected.map((doc) => [doc.id, doc]))
@@ -120,7 +122,14 @@ export function WorkflowReferencePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent data-testid='workflow-reference-picker' className='flex max-h-[85dvh] flex-col sm:max-w-lg'>
+      <DialogContent
+        data-testid='workflow-reference-picker'
+        className='flex max-h-[85dvh] flex-col sm:max-w-lg'
+        // 휴대폰: 열자마자 검색칸에 포커스하면 키보드가 결과를 가린다 (양식 선택 Dialog와 동일)
+        onOpenAutoFocus={(event) => {
+          if (!isDesktop) event.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>참조문서 선택</DialogTitle>
           <DialogDescription>열람할 수 있는 문서만 검색됩니다.</DialogDescription>

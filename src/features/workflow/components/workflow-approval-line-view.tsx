@@ -1,6 +1,5 @@
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { WorkflowActorStatus, WorkflowDocumentDetail, WorkflowStepStatus } from '../api/types';
 import { WORKFLOW_NOTIFICATION_SETTING_LABELS } from '../lib/approval-line-rules';
@@ -71,20 +70,17 @@ export function WorkflowApprovalLineView({
             {document.referrers.map((referrer) => (
               <li key={referrer.user_id} className='flex min-h-12 items-center gap-2'>
                 <WorkflowPersonInfo person={referrer} />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant='outline' className='shrink-0 gap-1 rounded-full font-normal' tabIndex={0}>
-                      <Icons.notification aria-hidden className='size-3' />
-                      참조
-                      <span className='sr-only'>
-                        ({WORKFLOW_NOTIFICATION_SETTING_LABELS[referrer.notification_setting]})
-                      </span>
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
+                {/* 알림 설정은 툴팁(터치 불가)이 아니라 배지 글자로 보인다 */}
+                <Badge
+                  variant='outline'
+                  className='max-w-[45%] shrink-0 gap-1 rounded-full font-normal text-muted-foreground'
+                >
+                  <Icons.notification aria-hidden className='size-3' />
+                  <span className='sr-only'>참조 알림:</span>
+                  <span className='min-w-0 truncate'>
                     {WORKFLOW_NOTIFICATION_SETTING_LABELS[referrer.notification_setting]}
-                  </TooltipContent>
-                </Tooltip>
+                  </span>
+                </Badge>
               </li>
             ))}
           </ul>

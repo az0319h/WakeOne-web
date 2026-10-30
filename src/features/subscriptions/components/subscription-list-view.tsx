@@ -122,7 +122,8 @@ function SubscriptionListBody({
 
   return (
     <div className='flex min-w-0 flex-col gap-3'>
-      <div className='hidden min-w-0 md:block'>
+      {/* 768~1023px에서는 표 오른쪽 열(상태·만료·결제)이 잘려 lg부터 표 · 그 아래는 카드 */}
+      <div className='hidden min-w-0 lg:block'>
         <AssetLedgerTable
           data-testid='subscription-table'
           data={data.items}
@@ -133,7 +134,7 @@ function SubscriptionListBody({
           onRowClick={(row) => openRow(row.id)}
         />
       </div>
-      <ul data-testid='asset-list-cards' className='flex min-w-0 flex-col gap-3 md:hidden'>
+      <ul data-testid='asset-list-cards' className='flex min-w-0 flex-col gap-3 lg:hidden'>
         {data.items.map((item) => (
           <SubscriptionCard key={item.id} item={item} onOpen={openRow} />
         ))}

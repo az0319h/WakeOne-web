@@ -15,6 +15,9 @@ import type { SupportComment } from '../api/types';
 import { SupportCommentForm } from './support-comment-form';
 
 const MAX_VISUAL_DEPTH = 6;
+const MAX_MOBILE_VISUAL_DEPTH = 2;
+/** 모바일 터치 44px · 데스크톱(md 이상)은 기존 28px 유지 */
+const COMMENT_ACTION_BUTTON_CLASS = 'h-11 px-3 text-sm md:h-7 md:px-2 md:text-xs';
 
 interface SupportCommentItemProps {
   comment: SupportComment;
@@ -77,24 +80,25 @@ export function SupportCommentItem({
   return (
     <div
       className='relative'
-      style={{ '--comment-indent': `${visualDepth * 1.25}rem` } as React.CSSProperties}
+      style={
+        {
+          '--comment-indent': `${visualDepth * 1.25}rem`,
+          // 모바일(768px 미만): 깊이당 8px · 시각 깊이 최대 2
+          '--comment-indent-mobile': `${Math.min(comment.depth, MAX_MOBILE_VISUAL_DEPTH) * 0.5}rem`
+        } as React.CSSProperties
+      }
       data-testid={`support-comment-${comment.id}`}
     >
-      <div
-        className={cn(
-          'relative pl-[var(--comment-indent)]',
-          comment.depth > MAX_VISUAL_DEPTH && 'sm:pl-[var(--comment-indent)]'
-        )}
-      >
+      <div className='relative pl-[var(--comment-indent-mobile)] md:pl-[var(--comment-indent)]'>
         {comment.depth > 0 ? (
           <span
             aria-hidden='true'
-            className='bg-border absolute top-0 bottom-0 left-[calc(var(--comment-indent)-0.625rem)] w-px'
+            className='bg-border absolute top-0 bottom-0 left-[calc(var(--comment-indent-mobile)-0.25rem)] w-px md:left-[calc(var(--comment-indent)-0.625rem)]'
           />
         ) : null}
 
         <article className='bg-card rounded-xl border p-3 shadow-xs'>
-          <div className='flex min-w-0 items-start gap-3'>
+          <div className='flex min-w-0 items-start gap-2 md:gap-3'>
             <Avatar className='size-8'>
               <AvatarFallback className='text-xs'>{getInitials(comment.author_name)}</AvatarFallback>
             </Avatar>
@@ -102,7 +106,7 @@ export function SupportCommentItem({
               <div className='flex flex-wrap items-center gap-2'>
                 <span className='text-sm font-medium'>{comment.author_name}</span>
                 {comment.author_role === 'admin' ? (
-                  <Badge variant='outline' className='rounded-full px-2 py-0 text-[11px]'>
+                  <Badge variant='outline' className='rounded-full px-2 py-0 text-xs'>
                     admin
                   </Badge>
                 ) : null}
@@ -145,7 +149,7 @@ export function SupportCommentItem({
                       type='button'
                       variant='ghost'
                       size='sm'
-                      className='h-7 px-2 text-xs'
+                      className={COMMENT_ACTION_BUTTON_CLASS}
                       onClick={() => {
                         onEditChange(null);
                         onReplyChange(isReplying ? null : comment.id);
@@ -160,7 +164,7 @@ export function SupportCommentItem({
                       type='button'
                       variant='ghost'
                       size='sm'
-                      className='h-7 px-2 text-xs'
+                      className={COMMENT_ACTION_BUTTON_CLASS}
                       onClick={() => {
                         onReplyChange(null);
                         onEditChange(isEditing ? null : comment.id);
@@ -175,7 +179,10 @@ export function SupportCommentItem({
                       type='button'
                       variant='ghost'
                       size='sm'
-                      className='text-destructive hover:text-destructive h-7 px-2 text-xs'
+                      className={cn(
+                        'text-destructive hover:text-destructive',
+                        COMMENT_ACTION_BUTTON_CLASS
+                      )}
                       onClick={() => setDeleteOpen(true)}
                     >
                       <Icons.trash className='size-3.5' />

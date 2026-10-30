@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import {
   deleteGoogleTaskMutation,
@@ -104,28 +105,36 @@ export function EditGoogleTaskDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='sm:max-w-[425px]' data-testid='kanban-edit-task-dialog'>
-          <DialogHeader>
+        <DialogContent
+          className='flex max-h-[90dvh] flex-col sm:max-w-[425px]'
+          data-testid='kanban-edit-task-dialog'
+        >
+          <DialogHeader className='shrink-0'>
             <DialogTitle>할 일 수정</DialogTitle>
             <DialogDescription>제목과 설명을 수정합니다.</DialogDescription>
           </DialogHeader>
           <form.AppForm>
-            <form.Form className='grid gap-4 py-2'>
-              <FormTextField
-                name='title'
-                label='제목'
-                placeholder='할 일 제목'
-                required
-                disabled={isPending}
-              />
-              <FormTextareaField
-                name='notes'
-                label='설명'
-                placeholder='설명 (선택)'
-                rows={4}
-                disabled={isPending}
-              />
-              <DialogFooter>
+            <form.Form className='flex min-h-0 flex-1 flex-col gap-4'>
+              <ScrollArea className='-mx-1 flex min-h-0 flex-1 flex-col'>
+                <div className='grid gap-4 px-1 py-2'>
+                  <FormTextField
+                    name='title'
+                    label='제목'
+                    placeholder='할 일 제목'
+                    required
+                    disabled={isPending}
+                  />
+                  <FormTextareaField
+                    name='notes'
+                    label='설명'
+                    placeholder='설명 (선택)'
+                    rows={4}
+                    className='max-h-60 min-h-32 overflow-y-auto'
+                    disabled={isPending}
+                  />
+                </div>
+              </ScrollArea>
+              <DialogFooter className='shrink-0'>
                 <Button
                   type='button'
                   variant='destructive'

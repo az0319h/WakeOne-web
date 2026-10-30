@@ -5,6 +5,7 @@ import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useMobileColumnVisibility } from '@/hooks/use-mobile-column-visibility';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
@@ -12,6 +13,16 @@ import { usersQueryOptions } from '../../api/queries';
 import type { User } from '../../api/types';
 import { UserProfileModal } from '../user-profile-modal';
 import { createColumns } from './columns';
+
+/** 모바일(768px 미만): 아바타·이름(+상태 배지)·이메일·메뉴만 — 나머지는 숨긴다 */
+const USERS_MOBILE_HIDDEN_COLUMNS = [
+  'phone',
+  'birthday',
+  'system_role',
+  'affiliation',
+  'rank',
+  'status'
+] as const;
 
 interface UsersTableBodyProps {
   columns: ReturnType<typeof createColumns>;
@@ -68,6 +79,8 @@ function UsersTableBody({
       columnPinning: { right: ['actions'] }
     }
   });
+
+  useMobileColumnVisibility(table, USERS_MOBILE_HIDDEN_COLUMNS);
 
   return <DataTable table={table} />;
 }

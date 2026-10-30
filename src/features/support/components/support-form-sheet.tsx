@@ -69,7 +69,10 @@ export function SupportFormSheet({ open, onOpenChange }: SupportFormSheetProps) 
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className='flex min-h-0 flex-col' data-testid='support-form-sheet'>
+      <SheetContent
+        className='flex min-h-0 w-full flex-col px-4 sm:px-6'
+        data-testid='support-form-sheet'
+      >
         <SheetHeader>
           <SheetTitle>문의하기</SheetTitle>
           <SheetDescription>

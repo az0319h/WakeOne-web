@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useMobileColumnVisibility } from '@/hooks/use-mobile-column-visibility';
 import { getSortingStateParser } from '@/lib/parsers';
 import { formatAbsoluteDateKo } from '@/lib/format-date';
 import { myContractsQueryOptions } from '../../api/queries';
@@ -31,6 +32,15 @@ const SORTABLE_COLUMN_IDS = [
   'updated_at'
 ] as const;
 
+/** 모바일(768px 미만): 문서번호·승인일은 계약대상 셀 둘째 줄로 옮기고 나머지 보조 컬럼은 숨긴다 */
+const MY_CONTRACTS_MOBILE_HIDDEN_COLUMNS = [
+  'document_number',
+  'approved_at',
+  'author_name',
+  'contract_summary',
+  'amount'
+] as const;
+
 interface MyContractsTableProps {
   onView: (contract: ContractDocument) => void;
 }
@@ -38,6 +48,7 @@ interface MyContractsTableProps {
 interface MyContractsTableBodyProps {
   columns: ReturnType<typeof createMyContractColumns>;
   filters: ContractFilters;
+  onView: (contract: ContractDocument) => void;
 }
 
 function toDateInputValue(date: Date): string {
@@ -120,7 +131,7 @@ function MyContractDateRangeFilter() {
   );
 }
 
-function MyContractsTableBody({ columns, filters }: MyContractsTableBodyProps) {
+function MyContractsTableBody({ columns, filters, onView }: MyContractsTableBodyProps) {
   const { data } = useSuspenseQuery(myContractsQueryOptions(filters));
   const limit = filters.limit ?? 10;
   const pageCount = Math.max(1, Math.ceil(data.total / limit));
@@ -137,18 +148,30 @@ function MyContractsTableBody({ columns, filters }: MyContractsTableBodyProps) {
     }
   });
 
-  const handleRowClick = useCallback((contract: ContractDocument) => {
-    const externalUrl = getContractExternalDocumentUrl(contract);
-    if (!externalUrl) {
-      return;
-    }
+  const isMobile = useMobileColumnVisibility(table, MY_CONTRACTS_MOBILE_HIDDEN_COLUMNS);
 
-    window.open(externalUrl, '_blank', 'noopener,noreferrer');
-  }, []);
+  // 모바일은 행 탭으로 Flex(새 탭)를 열지 않고 앱 안 상세 Sheet를 연다 — 원문은 상세의 「Flex 문서 열기」로만
+  const handleRowClick = useCallback(
+    (contract: ContractDocument) => {
+      if (isMobile) {
+        onView(contract);
+        return;
+      }
+
+      const externalUrl = getContractExternalDocumentUrl(contract);
+      if (!externalUrl) {
+        return;
+      }
+
+      window.open(externalUrl, '_blank', 'noopener,noreferrer');
+    },
+    [isMobile, onView]
+  );
 
   const isRowClickable = useCallback(
-    (contract: ContractDocument) => Boolean(getContractExternalDocumentUrl(contract)),
-    []
+    (contract: ContractDocument) =>
+      isMobile || Boolean(getContractExternalDocumentUrl(contract)),
+    [isMobile]
   );
 
   return (
@@ -205,7 +228,7 @@ export function MyContractsTable({ onView }: MyContractsTableProps) {
       </div>
       <DataTableToolbar table={shellTable} />
       <Suspense key={querySignature} fallback={<PageLoadingSpinner variant='fill' />}>
-        <MyContractsTableBody columns={columns} filters={filters} />
+        <MyContractsTableBody columns={columns} filters={filters} onView={onView} />
       </Suspense>
     </div>
   );

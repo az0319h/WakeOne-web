@@ -2,6 +2,7 @@
 
 import { Suspense, useMemo, useState } from 'react';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useMobileColumnVisibility } from '@/hooks/use-mobile-column-visibility';
 import { getSortingStateParser } from '@/lib/parsers';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -12,6 +13,9 @@ import type { WalletBalanceEmailLogRun } from '../../api/types';
 import { createColumns } from './columns';
 import { RunDetailDialog } from './run-detail-dialog';
 import { WalletBalanceEmailLogsDataTable } from './wallet-balance-email-logs-data-table';
+
+/** 모바일(768px 미만): run_key·trigger는 숨긴다 — 전체 값은 행을 눌러 상세 Dialog에서 확인 */
+const WALLET_BALANCE_EMAIL_LOGS_MOBILE_HIDDEN_COLUMNS = ['run_key', 'trigger_source'] as const;
 
 interface WalletBalanceEmailLogsTableBodyProps {
   columns: ReturnType<typeof createColumns>;
@@ -42,6 +46,8 @@ function WalletBalanceEmailLogsTableBody({
       sorting: [{ id: 'created_at', desc: true }]
     }
   });
+
+  useMobileColumnVisibility(table, WALLET_BALANCE_EMAIL_LOGS_MOBILE_HIDDEN_COLUMNS);
 
   return <WalletBalanceEmailLogsDataTable table={table} onRowClick={onRowClick} />;
 }

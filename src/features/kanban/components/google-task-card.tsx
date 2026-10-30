@@ -167,13 +167,14 @@ function GoogleTaskCardInteractive({
   const isPending = completeMutation.isPending || uncompleteMutation.isPending;
 
   const content = (
-    <div className='flex items-start gap-2'>
+    <div className='flex items-start gap-3 md:gap-2'>
       {isCompleted ? null : (
         <Button
           type='button'
           variant='ghost'
           size='icon'
-          className='h-7 w-7 shrink-0 touch-none'
+          // 모바일: 44px 터치 영역(음수 margin으로 레이아웃·아이콘 위치 유지)
+          className='h-7 w-7 shrink-0 touch-none max-md:-my-2 max-md:-ml-2 max-md:size-11'
           aria-label={`${task.title} 카드 이동`}
           ref={dragHandle?.setActivatorNodeRef}
           {...(dragHandle?.attributes ?? {})}
@@ -185,7 +186,11 @@ function GoogleTaskCardInteractive({
       )}
       <Checkbox
         checked={isCompleted}
-        className={googleTaskCheckboxClassName}
+        // 모바일: 보이는 크기(20px)는 그대로, 투명 ::after로 44px 터치 영역
+        className={cn(
+          googleTaskCheckboxClassName,
+          'relative max-md:after:absolute max-md:after:-inset-3'
+        )}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
         onCheckedChange={() => {

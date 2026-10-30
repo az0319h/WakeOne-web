@@ -52,14 +52,15 @@ export function AnnouncementListRow({
       <button
         type='button'
         className={cn(
-          'flex min-w-0 flex-1 items-center gap-3 py-4 text-left transition-colors',
+          // 모바일: 1줄 제목 / 2줄 배지+날짜 (grid) · md 이상: 기존 한 줄 flex
+          'grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 py-4 text-left transition-colors md:flex',
           'hover:bg-black/[0.03] dark:hover:bg-white/[0.03]',
           'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
           isAdmin ? 'pr-1' : 'pr-0'
         )}
         onClick={() => onClick(announcement)}
       >
-        <div className='flex shrink-0 items-center gap-2'>
+        <div className='flex shrink-0 items-center gap-2 max-md:col-start-1 max-md:row-start-2'>
           <AnnouncementPriorityBadge
             priority={announcement.priority}
             className={LIST_PRIORITY_BADGE_CLASS[announcement.priority]}
@@ -69,13 +70,13 @@ export function AnnouncementListRow({
           ) : null}
         </div>
 
-        <span className='min-w-0 flex-1 truncate text-sm'>
+        <span className='min-w-0 text-sm max-md:col-span-2 max-md:row-start-1 max-md:line-clamp-2 md:flex-1 md:truncate'>
           {announcement.title}
         </span>
 
         <time
           dateTime={announcement.created_at}
-          className='text-muted-foreground shrink-0 text-sm whitespace-nowrap'
+          className='text-muted-foreground shrink-0 text-sm whitespace-nowrap max-md:col-start-2 max-md:row-start-2'
         >
           {formatListDate(announcement.created_at)}
         </time>
@@ -83,7 +84,7 @@ export function AnnouncementListRow({
         {!isAdmin ? (
           <Icons.chevronRight
             aria-hidden
-            className='text-muted-foreground/40 size-5 shrink-0'
+            className='text-muted-foreground/40 size-5 shrink-0 max-md:col-start-3 max-md:row-span-2 max-md:row-start-1'
           />
         ) : null}
       </button>

@@ -49,6 +49,7 @@ export function IosInstallBanner() {
             type='button'
             variant='outline'
             size='sm'
+            className='max-md:h-11'
             data-testid='ios-install-guide-open'
             onClick={() => setGuideOpen(true)}
           >
@@ -61,7 +62,8 @@ export function IosInstallBanner() {
           size='icon'
           aria-label='닫기'
           data-testid='ios-install-banner-dismiss'
-          className='absolute top-2 right-2 size-7'
+          // 모바일 44px 터치 영역 — 아이콘 중심 위치는 md 이상과 동일
+          className='absolute top-0 right-0 size-11 md:top-2 md:right-2 md:size-7'
           onClick={handleDismiss}
         >
           <Icons.close className='size-4' />

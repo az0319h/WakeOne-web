@@ -31,6 +31,7 @@ import { BenefitsAdminSummarySection } from "./benefits-admin-summary-section";
 import { BENEFITS_EARLIEST_MONTH } from "../lib/benefits-view-month";
 import { currentKstMonth } from "../lib/kst-month";
 import { aggregateBenefitsAdminSummary, formatBenefitMoney } from "./benefits-admin-utils";
+import { cn } from "@/lib/utils";
 
 const ADMIN_TABLE_COLUMN_COUNT = 8;
 
@@ -98,9 +99,14 @@ export function BenefitsAdminDashboard() {
             }
           }}
         >
-          <TabsList>
+          {/* 모바일(768px 미만)은 탭을 가로 꽉 채우고 터치 높이 44px */}
+          <TabsList className="h-auto w-full md:h-9 md:w-fit">
             {AFFILIATION_OPTIONS.map((option) => (
-              <TabsTrigger key={option.value} value={option.value}>
+              <TabsTrigger
+                key={option.value}
+                value={option.value}
+                className="h-11 md:h-[calc(100%-1px)]"
+              >
                 {option.label}
               </TabsTrigger>
             ))}
@@ -179,17 +185,18 @@ export function BenefitsAdminDashboard() {
             <p className="p-8 text-center text-sm text-destructive">{query.error.message}</p>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="min-w-[1120px]">
+              {/* 모바일(768px 미만): 구성원·상태만 — 사용/한도는 구성원 셀 둘째 줄, 나머지 컬럼은 숨김 */}
+              <Table className="md:min-w-[1120px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[220px]">구성원</TableHead>
-                    <TableHead className="w-[120px]">문서번호</TableHead>
-                    <TableHead className="w-[200px]">문서승인일</TableHead>
-                    <TableHead className="w-[200px]">사용 현황</TableHead>
-                    <TableHead>도서</TableHead>
-                    <TableHead>체력증진</TableHead>
-                    <TableHead>외부교육</TableHead>
-                    <TableHead className="w-24">상태</TableHead>
+                    <TableHead className="md:w-[220px]">구성원</TableHead>
+                    <TableHead className="w-[120px] max-md:hidden">문서번호</TableHead>
+                    <TableHead className="w-[200px] max-md:hidden">문서승인일</TableHead>
+                    <TableHead className="w-[200px] max-md:hidden">사용 현황</TableHead>
+                    <TableHead className="max-md:hidden">도서</TableHead>
+                    <TableHead className="max-md:hidden">체력증진</TableHead>
+                    <TableHead className="max-md:hidden">외부교육</TableHead>
+                    <TableHead className="w-24 max-md:text-right">상태</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -234,27 +241,43 @@ export function BenefitsAdminDashboard() {
                                 });
                               }}
                             >
-                              <TableCell>
+                              <TableCell className="max-md:whitespace-normal">
                                 <div className="flex items-center gap-2">
-                                  <span className="w-5 text-xs text-muted-foreground">{index}</span>
+                                  <span className="w-5 shrink-0 text-xs text-muted-foreground">
+                                    {index}
+                                  </span>
                                   {canExpand ? (
                                     isExpanded ? (
-                                      <Icons.chevronDown className="size-4" />
+                                      <Icons.chevronDown className="size-4 shrink-0" />
                                     ) : (
-                                      <Icons.chevronRight className="size-4" />
+                                      <Icons.chevronRight className="size-4 shrink-0" />
                                     )
                                   ) : (
-                                    <span className="size-4" />
+                                    <span className="size-4 shrink-0" />
                                   )}
                                   <span className="font-medium">{member.full_name}</span>
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="shrink-0 text-xs text-muted-foreground">
                                     {member.position_level}
                                   </span>
                                 </div>
+                                <p
+                                  className={cn(
+                                    "mt-1 pl-13 text-xs tabular-nums md:hidden",
+                                    member.overage > 0
+                                      ? "font-semibold text-red-600"
+                                      : "text-muted-foreground",
+                                  )}
+                                >
+                                  {formatBenefitMoney(member.total_used)} /{" "}
+                                  {formatBenefitMoney(member.limit)}
+                                  {member.overage > 0
+                                    ? ` · ${formatBenefitMoney(member.overage)} 초과`
+                                    : ""}
+                                </p>
                               </TableCell>
-                              <TableCell className="text-muted-foreground">—</TableCell>
-                              <TableCell className="text-muted-foreground">—</TableCell>
-                              <TableCell>
+                              <TableCell className="text-muted-foreground max-md:hidden">—</TableCell>
+                              <TableCell className="text-muted-foreground max-md:hidden">—</TableCell>
+                              <TableCell className="max-md:hidden">
                                 <div className="flex items-center gap-3">
                                   <div className="h-1.5 min-w-20 flex-1 overflow-hidden rounded-full bg-muted">
                                     <div
@@ -281,12 +304,16 @@ export function BenefitsAdminDashboard() {
                                   </span>
                                 </div>
                               </TableCell>
-                              <TableCell>{amountOrDash(member.category_totals.book)}</TableCell>
-                              <TableCell>{amountOrDash(member.category_totals.fitness)}</TableCell>
-                              <TableCell>
+                              <TableCell className="max-md:hidden">
+                                {amountOrDash(member.category_totals.book)}
+                              </TableCell>
+                              <TableCell className="max-md:hidden">
+                                {amountOrDash(member.category_totals.fitness)}
+                              </TableCell>
+                              <TableCell className="max-md:hidden">
                                 {amountOrDash(member.category_totals.education)}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="max-md:text-right">
                                 <Badge
                                   variant={member.overage > 0 ? "destructive" : "outline"}
                                   className="whitespace-nowrap"

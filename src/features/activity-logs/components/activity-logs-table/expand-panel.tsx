@@ -77,6 +77,8 @@ function TechnicalDetails({ log }: { log: ActivityLog }) {
     <dl className='flex flex-col gap-2 border-t pt-3'>
       <p className='text-muted-foreground text-xs font-medium'>기술 정보</p>
       <TechnicalEntry label='Method' value={log.http_method} />
+      {/* 모바일은 Endpoint 컬럼을 숨기므로 전체 경로를 여기서 보여준다 */}
+      <TechnicalEntry label='Endpoint' value={log.http_path} />
       <TechnicalEntry label='Request ID' value={log.request_id} />
       <TechnicalEntry label='HTTP 상태' value={log.http_status} />
     </dl>

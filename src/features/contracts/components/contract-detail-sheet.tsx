@@ -121,9 +121,10 @@ function AttachmentRow({
       )}
     >
       <div className='min-w-0'>
-        <div className='flex items-center gap-2'>
-          <Icons.paperclip className='h-4 w-4 shrink-0' />
-          <span className='truncate text-sm font-medium'>
+        <div className='flex items-start gap-2'>
+          <Icons.paperclip className='mt-0.5 h-4 w-4 shrink-0' />
+          {/* 긴 파일명은 잘라내지 않고 줄바꿈 */}
+          <span className='text-sm font-medium break-all' title={attachment.file_name}>
             {attachment.file_name}
           </span>
           {!isActive ? (
@@ -137,12 +138,13 @@ function AttachmentRow({
           {formatAbsoluteDateKoOrPlaceholder(attachment.created_at)}
         </p>
       </div>
-      <div className='flex gap-2'>
+      <div className='flex shrink-0 gap-2'>
         {canOpen ? (
           <Button
             type='button'
             variant='outline'
             size='icon'
+            className='size-11 md:size-9'
             disabled={!isActive}
             aria-label={`${attachment.file_name} 열기`}
             title='열기'
@@ -156,6 +158,7 @@ function AttachmentRow({
           type='button'
           variant='outline'
           size='icon'
+          className='size-11 md:size-9'
           isLoading={isDownloading}
           disabled={!isActive}
           aria-label={`${attachment.file_name} 다운로드`}
@@ -183,8 +186,9 @@ function ContractDetailContent({
 
   return (
     <>
-      <div className='space-y-6'>
-        <section className='rounded-lg border p-4'>
+      <div className='min-h-0 flex-1 space-y-6 overflow-auto py-2 pr-1'>
+        {/* 모바일(640px 미만)은 Sheet 안 카드 테두리·안쪽 여백을 빼서 본문 폭 확보 */}
+        <section className='sm:rounded-lg sm:border sm:p-4'>
           <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
             <div>
               <h3 className='text-base font-semibold'>
@@ -229,14 +233,15 @@ function ContractDetailContent({
               <DetailItem
                 label='원문 URL'
                 value={
-                  <a
-                    href={contract.source_document_url}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='text-primary inline-flex items-center gap-1 underline-offset-2 hover:underline'
+                  <Button
+                    asChild
+                    variant='link'
+                    className='h-11 gap-1 px-0 has-[>svg]:px-0 md:h-auto md:py-0'
                   >
-                    Flex 문서 열기 <Icons.externalLink className='h-3 w-3' />
-                  </a>
+                    <a href={contract.source_document_url} target='_blank' rel='noreferrer'>
+                      Flex 문서 열기 <Icons.externalLink className='size-3' />
+                    </a>
+                  </Button>
                 }
               />
             ) : null}
@@ -287,7 +292,8 @@ function ContractDetailContent({
         </section>
       </div>
 
-      <SheetFooter>
+      {/* 스크롤 영역 바깥 — 첨부가 많아도 「수정」이 항상 보이게 */}
+      <SheetFooter className='border-t pt-4 sm:flex-row sm:justify-end'>
         <Button
           type='button'
           variant='outline'
@@ -309,24 +315,29 @@ export function ContractDetailSheet({
 }: ContractDetailSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex min-h-0 flex-col sm:max-w-3xl'>
+      <SheetContent className='flex min-h-0 w-full flex-col px-4 sm:max-w-3xl sm:px-6'>
         <SheetHeader>
           <SheetTitle>계약서 상세</SheetTitle>
           <SheetDescription>
             계약 문서와 첨부파일 상태를 확인합니다.
           </SheetDescription>
         </SheetHeader>
-        <div className='min-h-0 flex-1 overflow-auto py-2 pr-1'>
-          {contract ? (
-            <Suspense fallback={<PageLoadingSpinner variant='compact' />}>
-              <ContractDetailContent
-                key={contract.id}
-                contractId={contract.id}
-                onEdit={onEdit}
-              />
-            </Suspense>
-          ) : null}
-        </div>
+        {contract ? (
+          <Suspense
+            fallback={
+              <div className='min-h-0 flex-1'>
+                <PageLoadingSpinner variant='compact' />
+              </div>
+            }
+          >
+            {/* 본문(스크롤)과 SheetFooter(고정)를 함께 렌더 */}
+            <ContractDetailContent
+              key={contract.id}
+              contractId={contract.id}
+              onEdit={onEdit}
+            />
+          </Suspense>
+        ) : null}
       </SheetContent>
     </Sheet>
   );

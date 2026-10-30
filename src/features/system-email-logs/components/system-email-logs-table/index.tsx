@@ -2,6 +2,7 @@
 
 import { Suspense, useMemo, useState } from 'react';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useMobileColumnVisibility } from '@/hooks/use-mobile-column-visibility';
 import { getSortingStateParser } from '@/lib/parsers';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -12,6 +13,9 @@ import type { SystemEmailLogRun } from '../../api/types';
 import { createColumns } from './columns';
 import { RunDetailDialog } from './run-detail-dialog';
 import { SystemEmailLogsDataTable } from './system-email-logs-data-table';
+
+/** 모바일(768px 미만): run_key·trigger는 숨긴다 — 전체 값은 행을 눌러 상세 Dialog에서 확인 */
+const SYSTEM_EMAIL_LOGS_MOBILE_HIDDEN_COLUMNS = ['run_key', 'trigger_source'] as const;
 
 interface SystemEmailLogsTableBodyProps {
   columns: ReturnType<typeof createColumns>;
@@ -42,6 +46,8 @@ function SystemEmailLogsTableBody({
       sorting: [{ id: 'created_at', desc: true }]
     }
   });
+
+  useMobileColumnVisibility(table, SYSTEM_EMAIL_LOGS_MOBILE_HIDDEN_COLUMNS);
 
   return <SystemEmailLogsDataTable table={table} onRowClick={onRowClick} />;
 }

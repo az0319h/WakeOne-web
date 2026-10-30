@@ -214,7 +214,7 @@ function AssetRequestScreen({
                     type='button'
                     variant='outline'
                     size='sm'
-                    className='h-9'
+                    className='h-11 md:h-9'
                     data-testid='asset-request-edit'
                     onClick={() => setEditing(true)}
                   >
@@ -227,7 +227,7 @@ function AssetRequestScreen({
                     type='button'
                     variant='outline'
                     size='sm'
-                    className='h-9 text-destructive hover:text-destructive'
+                    className='h-11 text-destructive hover:text-destructive md:h-9'
                     data-testid='asset-request-cancel'
                     onClick={() => setCancelOpen(true)}
                   >
@@ -247,7 +247,7 @@ function AssetRequestScreen({
                   <Button
                     type='button'
                     size='sm'
-                    className='h-9'
+                    className='h-11 md:h-9'
                     data-testid='asset-request-start'
                     isLoading={pendingStatus === 'in_progress'}
                     disabled={statusMutation.isPending}
@@ -263,7 +263,7 @@ function AssetRequestScreen({
                   <Button
                     type='button'
                     size='sm'
-                    className='h-9'
+                    className='h-11 md:h-9'
                     data-testid='asset-request-complete'
                     isLoading={pendingStatus === 'completed'}
                     disabled={statusMutation.isPending}
@@ -280,7 +280,7 @@ function AssetRequestScreen({
                     type='button'
                     variant='outline'
                     size='sm'
-                    className='h-9'
+                    className='h-11 md:h-9'
                     data-testid='asset-request-reject'
                     disabled={statusMutation.isPending}
                     onClick={() => setRejectOpen(true)}

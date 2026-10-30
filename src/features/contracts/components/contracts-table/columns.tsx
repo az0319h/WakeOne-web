@@ -56,6 +56,20 @@ function AttachmentStatusBadge({ contract }: { contract: ContractDocument }) {
   );
 }
 
+/** 계약 목록의 대표 셀 — 모바일(768px 미만)은 숨긴 문서번호·승인일을 둘째 줄로 보여준다 */
+export function ContractTargetCell({ contract }: { contract: ContractDocument }) {
+  return (
+    <div className='flex min-w-0 flex-col'>
+      <span className='block max-w-[150px] truncate md:max-w-[220px]'>
+        {contract.contract_target}
+      </span>
+      <span className='text-muted-foreground block max-w-[150px] truncate text-xs md:hidden'>
+        {contract.document_number} · {formatAbsoluteDateKoOrPlaceholder(contract.approved_at)}
+      </span>
+    </div>
+  );
+}
+
 export function createContractColumns({
   onView,
   onEdit
@@ -67,6 +81,7 @@ export function createContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='문서번호' />
       ),
+      size: 130,
       cell: ({ row }) => (
         <span className='font-medium'>{row.original.document_number}</span>
       ),
@@ -85,6 +100,7 @@ export function createContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='문서승인일' />
       ),
+      size: 120,
       cell: ({ row }) => formatAbsoluteDateKoOrPlaceholder(row.original.approved_at)
     },
     {
@@ -108,14 +124,14 @@ export function createContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='계약대상' />
       ),
-      cell: ({ row }) => <span className='block max-w-[220px] truncate'>{row.original.contract_target}</span>
+      cell: ({ row }) => <ContractTargetCell contract={row.original} />
     },
     {
       id: 'contract_summary',
       accessorKey: 'contract_summary',
       header: '계약 내용',
       cell: ({ row }) => (
-        <span className='text-muted-foreground block max-w-[260px] truncate'>
+        <span className='text-muted-foreground block max-w-[240px] truncate'>
           {row.original.contract_summary}
         </span>
       )
@@ -126,12 +142,14 @@ export function createContractColumns({
       header: ({ column }: { column: Column<ContractDocument, unknown> }) => (
         <DataTableColumnHeader column={column} title='금액' />
       ),
+      size: 120,
       cell: ({ row }) => formatAmount(row.original.amount)
     },
     {
       id: 'attachment_status',
       accessorKey: 'attachment_status',
       header: '첨부파일 상태',
+      size: 100,
       cell: ({ row }) => <AttachmentStatusBadge contract={row.original} />,
       meta: {
         label: '첨부 상태',
@@ -142,6 +160,8 @@ export function createContractColumns({
     },
     {
       id: 'actions',
+      size: 56,
+      enableHiding: false,
       cell: ({ row }) => (
         <ContractRowAction data={row.original} onView={onView} onEdit={onEdit} />
       )

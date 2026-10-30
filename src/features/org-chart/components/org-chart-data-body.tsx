@@ -18,7 +18,8 @@ interface OrgChartDataBodyProps {
   affiliation: OrgAffiliation;
 }
 
-const DESKTOP_MEDIA_QUERY = '(min-width: 768px)';
+/** lg(1024) 미만은 트리 — 768~1023에서 D3 차트 글자가 너무 작아 읽기 어려움 */
+const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';
 
 function subscribeToDesktopMediaQuery(onStoreChange: () => void) {
   const mediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);

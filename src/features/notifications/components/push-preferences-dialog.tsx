@@ -49,20 +49,26 @@ function PushPreferencesList() {
         const id = `push-group-${group.key}`;
         const checked = !data.disabled_groups.includes(group.key);
         return (
-          <li key={group.key} className='grid min-h-11 grid-cols-[1fr_auto] items-center gap-3 px-3 py-2'>
-            <div className='min-w-0'>
-              <Label htmlFor={id} className='cursor-pointer'>
-                {group.label}
-              </Label>
-              <p className='text-muted-foreground mt-0.5 text-xs'>{group.description}</p>
-            </div>
-            <Switch
-              id={id}
-              data-testid={id}
-              checked={checked}
-              aria-label={`${group.label} 휴대폰 알림`}
-              onCheckedChange={(next) => handleToggle(group.key, next)}
-            />
+          <li key={group.key}>
+            {/* 행 전체가 Label — 어디를 눌러도 스위치 토글 */}
+            <Label
+              htmlFor={id}
+              className='grid min-h-11 cursor-pointer grid-cols-[1fr_auto] items-center gap-3 px-3 py-2 leading-normal font-normal'
+            >
+              <span className='block min-w-0'>
+                <span className='block text-sm leading-none font-medium'>{group.label}</span>
+                <span className='text-muted-foreground mt-0.5 block text-xs'>
+                  {group.description}
+                </span>
+              </span>
+              <Switch
+                id={id}
+                data-testid={id}
+                checked={checked}
+                aria-label={`${group.label} 휴대폰 알림`}
+                onCheckedChange={(next) => handleToggle(group.key, next)}
+              />
+            </Label>
           </li>
         );
       })}

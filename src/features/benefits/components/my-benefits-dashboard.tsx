@@ -187,16 +187,17 @@ export function MyBenefitsDashboard({
                 query.data.documents.map((document) => {
                   const cancelled = isBenefitDocumentCancelled(document);
                   return (
-                    <div
+                    // 모바일(640px 미만) 2줄 카드: 1줄 「유형 · 금액」 / 2줄 「날짜 · 문서번호 · 열기」
+                    <Card
                       key={document.id}
                       data-testid='benefit-document-row'
                       data-document-number={document.document_number}
                       className={cn(
-                        'grid gap-2 rounded-lg border px-4 py-3 text-sm sm:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto] sm:items-center',
+                        'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-4 py-3 text-sm shadow-none max-sm:gap-x-3 max-sm:gap-y-1 sm:grid-cols-[1.3fr_0.8fr_0.8fr_1fr_auto]',
                         cancelled && 'opacity-70'
                       )}
                     >
-                      <div>
+                      <div className="order-1 col-span-2 min-w-0 sm:order-none sm:col-span-1">
                         <p
                           className={cn(
                             'font-semibold',
@@ -221,35 +222,50 @@ export function MyBenefitsDashboard({
                       </div>
                       <span
                         className={cn(
-                          'text-muted-foreground',
+                          'order-4 min-w-0 truncate text-muted-foreground max-sm:text-xs max-sm:before:mr-2 max-sm:before:content-["·"] sm:order-none',
                           cancelled && 'line-through'
                         )}
                       >
                         {document.document_number}
                       </span>
                       <span
-                        className={cn('font-semibold', cancelled && 'line-through text-muted-foreground')}
+                        className={cn(
+                          'order-2 justify-self-end font-semibold sm:order-none sm:justify-self-auto',
+                          cancelled && 'line-through text-muted-foreground'
+                        )}
                       >
                         {money(document.amount)}
                       </span>
-                      <span className={cancelled ? 'line-through text-muted-foreground' : ''}>
+                      <span
+                        className={cn(
+                          'order-3 whitespace-nowrap max-sm:text-xs max-sm:text-muted-foreground sm:order-none',
+                          cancelled && 'line-through text-muted-foreground'
+                        )}
+                      >
                         {formatAbsoluteDateKo(document.document_created_at)}
                       </span>
                       {cancelled ? (
-                        <Badge variant="outline" className="justify-self-end text-muted-foreground">
+                        <Badge
+                          variant="outline"
+                          className="order-5 justify-self-end text-muted-foreground sm:order-none"
+                        >
                           취소됨
                         </Badge>
                       ) : (
-                        <a
-                          href={document.source_document_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 font-medium hover:underline"
+                        <Button
+                          asChild
+                          variant="link"
+                          size="sm"
+                          className="order-5 size-11 justify-self-end px-0 text-foreground has-[>svg]:px-0 sm:order-none sm:h-8 sm:w-auto sm:justify-self-auto"
                         >
-                          Flex에서 열기 <Icons.externalLink className="size-3.5" />
-                        </a>
+                          {/* 모바일은 아이콘만(44px) — 접근 이름 「Flex에서 열기」는 유지 */}
+                          <a href={document.source_document_url} target="_blank" rel="noreferrer">
+                            <span className="max-sm:sr-only">Flex에서 열기</span>
+                            <Icons.externalLink className="size-3.5" />
+                          </a>
+                        </Button>
                       )}
-                    </div>
+                    </Card>
                   );
                 })
               )}

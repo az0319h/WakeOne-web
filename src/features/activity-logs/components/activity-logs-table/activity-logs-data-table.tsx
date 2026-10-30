@@ -44,7 +44,7 @@ export function ActivityLogsDataTable({
   return (
     <div className='flex min-w-0 flex-col space-y-4' data-testid='activity-logs-table-root'>
       {children}
-      <DataTableScrollContainer>
+      <DataTableScrollContainer className='@container'>
           <Table className='w-max min-w-full' data-testid='activity-logs-table'>
               <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -83,13 +83,13 @@ export function ActivityLogsDataTable({
                           {row.getVisibleCells().map((cell) => {
                             if (cell.column.id === 'expand') {
                               return (
-                                <TableCell key={cell.id} className='w-10 px-2'>
+                                <TableCell key={cell.id} className='w-10 px-1 md:px-2'>
                                   {expandable ? (
                                     <Button
                                       type='button'
                                       variant='ghost'
                                       size='icon'
-                                      className='size-7'
+                                      className='size-11 md:size-7'
                                       aria-expanded={isExpanded}
                                       aria-label={isExpanded ? '행 접기' : '행 펼치기'}
                                       onClick={() => toggleRow(row.id)}
@@ -121,7 +121,8 @@ export function ActivityLogsDataTable({
                         {expandable && isExpanded ? (
                           <TableRow className={cn('hover:bg-transparent', statusHintClass)}>
                             <TableCell colSpan={columnCount} className='p-0'>
-                              <div className='px-4 py-3'>
+                              {/* 표 전체 폭이 아니라 스크롤 영역(보이는 폭)에 맞춰 고정 — 긴 JSON·URL은 줄바꿈 */}
+                              <div className='sticky left-0 w-[100cqw] px-3 py-3 whitespace-normal md:px-4'>
                                 <ExpandPanel log={log} />
                               </div>
                             </TableCell>

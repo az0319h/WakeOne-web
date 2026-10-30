@@ -34,14 +34,14 @@ export function RunDetailDialog({ runId, open, onOpenChange }: RunDetailDialogPr
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className='flex max-h-[85vh] flex-col sm:max-w-3xl'
+        className='flex max-h-[85vh] flex-col p-4 sm:max-w-3xl sm:p-6'
         data-testid='wallet-balance-email-log-detail-dialog'
       >
         <DialogHeader>
           <DialogTitle>잔액 확인 이메일 run 상세</DialogTitle>
           {run ? (
             <DialogDescription className='flex flex-wrap items-center gap-2 pt-1'>
-              <span className='font-mono text-xs'>{run.run_key}</span>
+              <span className='font-mono text-xs break-all'>{run.run_key}</span>
               <span>·</span>
               <span className='font-mono text-xs whitespace-nowrap'>
                 {formatAbsoluteDateTimeKo(run.created_at)}

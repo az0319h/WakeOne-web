@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Icons } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AnnouncementListItem } from '../api/types';
 import { AnnouncementPinBadge } from './announcement-pin-badge';
@@ -27,14 +28,18 @@ export function AnnouncementsOverviewCard({
           <CardTitle className='text-base font-medium'>공지사항</CardTitle>
           <p className='text-muted-foreground text-sm'>최근 등록된 공지를 확인합니다.</p>
         </div>
-        <Link
-          href='/dashboard/announcements'
-          className='text-primary inline-flex shrink-0 items-center gap-1 text-sm font-medium hover:underline'
-          data-testid='announcements-overview-view-all'
+        <Button
+          asChild
+          variant='link'
+          size='sm'
+          // 모바일: 44px 터치 높이 · md 이상: 기존 텍스트 링크 높이
+          className='h-11 shrink-0 gap-1 px-0 has-[>svg]:px-0 md:h-auto'
         >
-          전체 보기
-          <Icons.chevronRight className='size-4' />
-        </Link>
+          <Link href='/dashboard/announcements' data-testid='announcements-overview-view-all'>
+            전체 보기
+            <Icons.chevronRight className='size-4' />
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent className='space-y-2'>
         {announcements.map((announcement) => (

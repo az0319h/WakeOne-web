@@ -7,6 +7,7 @@ import { Icons } from '@/components/icons';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Dialog,
   DialogDescription,
@@ -125,6 +126,56 @@ function ComposeHeader({ mode, onClose }: { mode: ComposeMode; onClose: () => vo
         <Icons.close aria-hidden />
       </Button>
     </header>
+  );
+}
+
+/**
+ * 양식 안내 — lg 미만은 3줄로 접고 「안내 펼치기」(첫 입력칸이 첫 화면에 보이게) · lg↑는 항상 전체.
+ * CollapsibleContent는 forceMount로 늘 렌더하고 접힘은 line-clamp로만 표현한다.
+ */
+function ComposeGuide({ guide }: { guide: string }) {
+  const [open, setOpen] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  const guideRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = guideRef.current;
+    if (!element) return;
+    // 접힌 상태에서 3줄을 넘는지 — ResizeObserver는 observe 직후 1회 호출된다
+    const observer = new ResizeObserver(() => {
+      if (element.dataset.state === 'closed') {
+        setClamped(element.scrollHeight > element.clientHeight + 1);
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className='flex flex-col gap-1'>
+      <CollapsibleContent
+        forceMount
+        ref={guideRef}
+        data-testid='workflow-guide'
+        className='text-sm leading-7 break-words whitespace-pre-wrap text-foreground data-[state=closed]:max-lg:line-clamp-3'
+      >
+        {guide}
+      </CollapsibleContent>
+      {clamped || open ? (
+        <CollapsibleTrigger asChild>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            data-testid='workflow-guide-toggle'
+            className='-ml-2 h-11 self-start px-2 text-muted-foreground lg:hidden'
+          >
+            {open ? '안내 접기' : '안내 펼치기'}
+            {open ? <Icons.chevronUp aria-hidden /> : <Icons.chevronDown aria-hidden />}
+          </Button>
+        </CollapsibleTrigger>
+      ) : null}
+    </Collapsible>
   );
 }
 
@@ -308,6 +359,7 @@ function ComposeForm({ init, chrome }: { init: ComposeInit; chrome: ComposeChrom
   const attachments = useWorkflowAttachments({ initial: init.attachments, bound: isEdit });
 
   const contentRef = useRef(init.contentHtml);
+  const lineSectionRef = useRef<HTMLElement>(null);
   const baselineRef = useRef({
     content: init.contentHtml,
     line: lineSignature(init.line),
@@ -477,6 +529,8 @@ function ComposeForm({ init, chrome }: { init: ComposeInit; chrome: ComposeChrom
   const isSubmitting = submitMutation.isPending || updateMutation.isPending;
   const rule = init.attachmentRule;
   const attachmentSourceKey = rule.attachment_required_when?.field_key ?? null;
+  const approverCount = line.steps.reduce((sum, step) => sum + step.actors.length, 0);
+  const referrerCount = line.referrers.length;
 
   return (
     <form
@@ -498,14 +552,27 @@ function ComposeForm({ init, chrome }: { init: ComposeInit; chrome: ComposeChrom
             <DialogDescription id={DESCRIPTION_ID} className='sr-only'>
               {isEdit ? '문서 내용을 수정합니다.' : '양식을 작성해 승인 요청을 보냅니다.'}
             </DialogDescription>
-            {init.guide ? (
-              <div
-                data-testid='workflow-guide'
-                className='text-sm leading-7 break-words whitespace-pre-wrap text-foreground'
-              >
-                {init.guide}
-              </div>
-            ) : null}
+            {init.guide ? <ComposeGuide guide={init.guide} /> : null}
+            {/* lg 미만 1열: 결재선(aside)이 맨 아래라 위에서 바로 이동 */}
+            <Button
+              type='button'
+              variant='outline'
+              data-testid='workflow-line-summary'
+              aria-invalid={lineError ? true : undefined}
+              className='h-11 justify-start gap-2 self-start lg:hidden'
+              onClick={() => lineSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            >
+              <Icons.teams aria-hidden />
+              승인·참조
+              {approverCount === 0 && !isEdit ? (
+                <Badge variant='destructive'>승인자 지정 필요</Badge>
+              ) : (
+                <Badge variant='secondary' className='tabular-nums'>
+                  승인 {approverCount}명 · 참조 {referrerCount}명
+                </Badge>
+              )}
+              <Icons.chevronDown aria-hidden className='text-muted-foreground' />
+            </Button>
           </div>
           <Separator />
           <div className='flex flex-col gap-4'>
@@ -568,7 +635,7 @@ function ComposeForm({ init, chrome }: { init: ComposeInit; chrome: ComposeChrom
             />
           ) : null}
         </main>
-        <aside aria-label='승인 · 참조' className={ASIDE_CLASS}>
+        <aside ref={lineSectionRef} aria-label='승인 · 참조' className={ASIDE_CLASS}>
           {isEdit && init.document ? (
             <WorkflowApprovalLineView document={init.document} />
           ) : (

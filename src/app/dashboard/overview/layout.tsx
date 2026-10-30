@@ -32,12 +32,13 @@ export default function OverViewLayout({
 }) {
   return (
     <PageContainer>
-      <div className='flex flex-1 flex-col space-y-2'>
+      {/* 모바일(<md): 실제 정보(생일·공지·식대·접속자) 먼저, 데모 KPI·차트는 order-1로 뒤로 */}
+      <div className='flex flex-1 flex-col gap-4 md:gap-2'>
         <div className='flex items-center justify-between'>
           <h2 className='text-2xl font-bold tracking-tight'>안녕하세요, 다시 오셨군요 👋</h2>
         </div>
 
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 [&_[data-slot=card]]:bg-gradient-to-t [&_[data-slot=card]]:from-primary/5 [&_[data-slot=card]]:to-card [&_[data-slot=card]]:shadow-xs dark:[&_[data-slot=card]]:bg-card'>
+        <div className='grid grid-cols-1 gap-4 max-md:order-1 md:grid-cols-2 lg:grid-cols-4 [&_[data-slot=card]]:bg-gradient-to-t [&_[data-slot=card]]:from-primary/5 [&_[data-slot=card]]:to-card [&_[data-slot=card]]:shadow-xs dark:[&_[data-slot=card]]:bg-card'>
           <MockDataOverlay>
             <Card className='@container/card'>
             <CardHeader>
@@ -127,7 +128,7 @@ export default function OverViewLayout({
             </Card>
           </MockDataOverlay>
         </div>
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7'>
+        <div className='contents md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-7'>
           <div className='col-span-4 flex flex-col gap-4 md:col-span-3'>
             <Suspense fallback={<BirthdayCelebrantsBannerSkeleton />}>
               <BirthdayCelebrantsSection />
@@ -139,18 +140,18 @@ export default function OverViewLayout({
               <WalletSummaryOverviewSection />
             </Suspense>
           </div>
-          <div className='col-span-4'>
+          <div className='col-span-4 max-md:order-1'>
             <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>
               {bar_stats}
             </MockDataOverlay>
           </div>
           <div className='col-span-4 md:col-span-3'>{sales}</div>
-          <div className='col-span-4'>
+          <div className='col-span-4 max-md:order-1'>
             <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>
               {area_stats}
             </MockDataOverlay>
           </div>
-          <div className='col-span-4 min-h-0 md:col-span-3'>
+          <div className='col-span-4 min-h-0 max-md:order-1 md:col-span-3'>
             <MockDataOverlay className='h-full [&_[data-slot=card]]:h-full'>
               {pie_stats}
             </MockDataOverlay>

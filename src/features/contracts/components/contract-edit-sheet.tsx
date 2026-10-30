@@ -230,9 +230,10 @@ function ContractAttachmentRow({
         cancelLabel='취소'
       />
       <div className='min-w-0'>
-        <div className='flex items-center gap-2'>
-          <Icons.paperclip className='h-4 w-4 shrink-0' />
-          <span className='truncate text-sm font-medium'>
+        <div className='flex items-start gap-2'>
+          <Icons.paperclip className='mt-0.5 h-4 w-4 shrink-0' />
+          {/* 긴 파일명은 잘라내지 않고 줄바꿈 */}
+          <span className='text-sm font-medium break-all' title={attachment.file_name}>
             {attachment.file_name}
           </span>
           {!isActive ? (
@@ -246,12 +247,13 @@ function ContractAttachmentRow({
           {formatAbsoluteDateKoOrPlaceholder(attachment.created_at)}
         </p>
       </div>
-      <div className='flex gap-2'>
+      <div className='flex shrink-0 gap-2'>
         {canOpen ? (
           <Button
             type='button'
             variant='outline'
             size='icon'
+            className='size-11 md:size-9'
             disabled={!isActive}
             aria-label={`${attachment.file_name} 열기`}
             title='열기'
@@ -265,6 +267,7 @@ function ContractAttachmentRow({
           type='button'
           variant='outline'
           size='icon'
+          className='size-11 md:size-9'
           isLoading={isDownloading}
           disabled={!isActive}
           aria-label={`${attachment.file_name} 다운로드`}
@@ -278,6 +281,7 @@ function ContractAttachmentRow({
           type='button'
           variant='outline'
           size='icon'
+          className='size-11 md:size-9'
           disabled={!isActive}
           aria-label={`${attachment.file_name} 삭제 처리`}
           title='삭제 처리'
@@ -413,7 +417,8 @@ function ContractAttachmentManager({
   }
 
   return (
-    <section className='space-y-3 rounded-lg border p-4'>
+    // 모바일(640px 미만)은 Sheet 안 카드 테두리·안쪽 여백을 빼서 본문 폭 확보
+    <section className='space-y-3 sm:rounded-lg sm:border sm:p-4'>
       <AlertModal
         isOpen={noAttachmentOpen}
         onClose={() => setNoAttachmentOpen(false)}
@@ -479,9 +484,9 @@ function ContractAttachmentManager({
                 className='flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between'
               >
                 <div className='min-w-0'>
-                  <div className='flex items-center gap-2'>
-                    <Icons.paperclip className='h-4 w-4 shrink-0' />
-                    <span className='truncate text-sm font-medium'>
+                  <div className='flex items-start gap-2'>
+                    <Icons.paperclip className='mt-0.5 h-4 w-4 shrink-0' />
+                    <span className='text-sm font-medium break-all' title={file.name}>
                       {file.name}
                     </span>
                     <Badge variant='outline' className='shrink-0'>
@@ -737,12 +742,15 @@ function ContractEditSheetContent({
                     </field.FieldSet>
                   )}
                 </form.AppField>
-                <FormTextField
-                  name='author_name'
-                  label='작성자'
-                  required
-                  placeholder='작성자'
-                />
+                {/* 2열 그리드의 세 번째 칸 — 혼자 반쪽만 쓰지 않게 전체 폭 */}
+                <div className='md:col-span-2'>
+                  <FormTextField
+                    name='author_name'
+                    label='작성자'
+                    required
+                    placeholder='작성자'
+                  />
+                </div>
               </div>
 
               <FormTextField
@@ -854,7 +862,7 @@ function ContractEditSheetContent({
           </form.Form>
         </form.AppForm>
 
-        <SheetFooter>
+        <SheetFooter className='sm:flex-row sm:justify-end'>
           <Button
             type='button'
             variant='outline'
@@ -882,7 +890,7 @@ export function ContractEditSheet({
 }: ContractEditSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex min-h-0 flex-col sm:max-w-2xl'>
+      <SheetContent className='flex min-h-0 w-full flex-col px-4 sm:max-w-2xl sm:px-6'>
         <SheetHeader>
           <SheetTitle>계약서 수정</SheetTitle>
           <SheetDescription>

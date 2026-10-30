@@ -1,5 +1,7 @@
 'use client';
 
+import { Icons } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { AuthProfile } from '@/features/auth/api/types';
 import { formatLeaderRoleLabel } from '@/features/org-chart/lib/format-person-label';
@@ -40,6 +42,14 @@ export function ProfilePageContent({ profile }: ProfilePageContentProps) {
 
   return (
     <div className='mx-auto flex w-full max-w-3xl flex-col gap-8'>
+      {/* 모바일: 휴대폰 알림 섹션이 2~3화면 아래라 상단 바로가기 */}
+      <Button asChild variant='outline' className='h-11 w-full md:hidden'>
+        <a href='#push' data-testid='profile-push-shortcut'>
+          <Icons.notification />
+          휴대폰 알림 설정으로 이동
+        </a>
+      </Button>
+
       <ProfileSection
         title='프로필'
         description='계정에 표시되는 기본 정보입니다. 조직 정보는 관리자만 수정할 수 있습니다.'

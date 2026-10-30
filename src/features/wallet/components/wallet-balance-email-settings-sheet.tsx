@@ -222,12 +222,14 @@ function WalletBalanceEmailSettingsForm({
         className='min-h-0 flex-1 space-y-6 overflow-auto py-2 pr-1'
         data-testid='wallet-balance-email-settings-sheet-body'
       >
-        <div className='flex items-center justify-between gap-4'>
-          <div className='space-y-1'>
-            <Label htmlFor='wallet-balance-email-enabled' className='text-sm font-medium'>
-              이메일 알림
-            </Label>
-            <p className='text-muted-foreground text-xs'>
+        {/* 행 전체가 Label — 어디를 눌러도 스위치 토글 (min-h-11 터치 영역) */}
+        <Label
+          htmlFor='wallet-balance-email-enabled'
+          className='min-h-11 cursor-pointer justify-between gap-4 leading-normal font-normal'
+        >
+          <span className='block space-y-1'>
+            <span className='block text-sm leading-none font-medium'>이메일 알림</span>
+            <span className='text-muted-foreground block text-xs'>
               {formState.enabled
                 ? formatBalanceEmailScheduleDelivery(
                     formState.hour,
@@ -236,15 +238,15 @@ function WalletBalanceEmailSettingsForm({
                     slot2Options
                   )
                 : '꺼져 있으면 발송되지 않습니다.'}
-            </p>
-          </div>
+            </span>
+          </span>
           <Switch
             id='wallet-balance-email-enabled'
             checked={formState.enabled}
             onCheckedChange={(enabled) => setFormState((current) => ({ ...current, enabled }))}
             data-testid='wallet-balance-email-enabled-switch'
           />
-        </div>
+        </Label>
 
         <div className='space-y-3'>
           {formState.slot2_enabled ? (
@@ -312,13 +314,14 @@ function WalletBalanceEmailSettingsForm({
           </Button>
         ) : null}
 
-        <div className='flex items-center justify-between gap-4'>
-          <div className='space-y-1'>
-            <Label htmlFor='wallet-balance-email-exclude-weekends' className='text-sm font-medium'>
-              주말 제외
-            </Label>
-            <p className='text-muted-foreground text-xs'>토·일에는 발송하지 않습니다.</p>
-          </div>
+        <Label
+          htmlFor='wallet-balance-email-exclude-weekends'
+          className='min-h-11 cursor-pointer justify-between gap-4 leading-normal font-normal has-[button:disabled]:cursor-not-allowed'
+        >
+          <span className='block space-y-1'>
+            <span className='block text-sm leading-none font-medium'>주말 제외</span>
+            <span className='text-muted-foreground block text-xs'>토·일에는 발송하지 않습니다.</span>
+          </span>
           <Switch
             id='wallet-balance-email-exclude-weekends'
             checked={formState.exclude_weekends}
@@ -328,7 +331,7 @@ function WalletBalanceEmailSettingsForm({
             disabled={!formState.enabled}
             data-testid='wallet-balance-email-exclude-weekends-switch'
           />
-        </div>
+        </Label>
       </div>
 
       <SheetFooter className='border-t pt-4 sm:justify-end'>
@@ -364,7 +367,7 @@ export function WalletBalanceEmailSettingsSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className='flex min-h-0 flex-col sm:max-w-3xl'
+        className='flex min-h-0 w-full flex-col sm:w-3/4 sm:max-w-3xl'
         data-testid='wallet-balance-email-settings-sheet'
       >
         <SheetHeader>
