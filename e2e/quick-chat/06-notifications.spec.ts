@@ -28,6 +28,12 @@ import {
   setProfileStatus,
   type ChatMessage
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 93 §D 알림 · §E 활동 로그 — docs/plans/93_quick-request-chat-plan.md (AC-22 ~ AC-27 · AC-29)
@@ -217,8 +223,13 @@ test.describe('plan 93 D·E. 알림 수신자 · 문구 · 활동 로그', () =>
     const chatCard = page.getByTestId(`notification-card-${chatRow!.id}`);
     await expect(chatCard).toBeVisible({ timeout: 20_000 });
     await expect(chatCard).toContainText(chatTitle(flowNo, admin.fullName));
-    await chatCard.getByRole('button', { name: '채팅 보기' }).click();
-    await expect(page).toHaveURL(new RegExp(`/dashboard/quick/chat\\?request=${flowNo}`));
+    // hydration 전 클릭은 무시될 수 있어 URL이 바뀔 때까지 다시 누른다 (plan 106 verifier · 타이밍)
+    await expect(async () => {
+      if (!page.url().includes('/dashboard/quick/chat')) {
+        await chatCard.getByRole('button', { name: '채팅 보기' }).click({ timeout: 5_000 });
+      }
+      await expect(page).toHaveURL(new RegExp(`/dashboard/quick/chat\\?request=${flowNo}`), { timeout: 5_000 });
+    }).toPass({ timeout: 30_000 });
     await expect(page.getByTestId('quick-chat-messenger')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId(`quick-chat-list-item-${flowNo}`)).toHaveAttribute('aria-current', 'true', {
       timeout: 20_000

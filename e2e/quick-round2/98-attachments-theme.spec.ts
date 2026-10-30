@@ -12,6 +12,12 @@ import {
   sendWithAttachmentsAs,
   type ChatMessageWithAttachments
 } from './98-helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 98 AC-21 — THEMES × light/dark 20조합 · 첨부 메시지(이미지 1 + 파일 1) 있는 대화 · 카드·썸네일 표시 · scrollWidth <= clientWidth

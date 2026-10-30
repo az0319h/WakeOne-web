@@ -148,10 +148,13 @@ export async function getConversationsAs(
 
 /** 계정의 안 읽은 대화를 전부 읽음 처리해 baseline 0으로 만든다 (사이드바·요약 판정 전) */
 export async function markAllConversationsReadAs(account: AccountKey) {
-  const { conversations } = await getConversationsAs(account, '?tab=unread');
-  for (const conversation of conversations) {
-    if (conversation.lastMessage) {
-      await markReadAs(account, conversation.requestNo, conversation.lastMessage.id);
+  // 안 읽음 탭은 한 번에 20건씩 — 공유 dev DB에 20건을 넘으면 비워질 때까지 반복 (plan 106 verifier)
+  for (let round = 0; round < 30; round += 1) {
+    const { conversations } = await getConversationsAs(account, '?tab=unread');
+    const pending = conversations.filter((conversation) => conversation.lastMessage);
+    if (pending.length === 0) break;
+    for (const conversation of pending) {
+      await markReadAs(account, conversation.requestNo, conversation.lastMessage!.id);
     }
   }
   await expect

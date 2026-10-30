@@ -51,6 +51,12 @@ import {
   participantsButton,
   systemLines
 } from './101-helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 101 — 퀵 채팅 참여자 추가(직원 초대 · 목록 · 제외 · 알림) · docs/plans/101_quick-chat-participants-plan.md (r1)
@@ -216,7 +222,8 @@ test.describe('plan 101. 퀵 채팅 참여자 (초대 · 목록 · 제외 · 알
     const joined = systemLines(page, 'joined', user2.userId).filter({ visible: true }).first();
     await expect(joined).toBeVisible({ timeout: 10_000 });
     await expect(joined).toContainText(PART_TEXT.systemJoined(user2.fullName));
-    await expect(joined).toContainText(ABSOLUTE_DATETIME_RE);
+    // plan 106 D-14 — 대화 안 시스템 줄 시각은 「· HH:mm」(참여자 목록의 초대 시각은 전체 시각 유지 · 위 row 판정)
+    await expect(joined).toContainText(/· \d{2}:\d{2}$/);
 
     const rows = await dbParticipants(requestId);
     expect(rows, 'DB 행 1').toHaveLength(1);
@@ -245,8 +252,13 @@ test.describe('plan 101. 퀵 채팅 참여자 (초대 · 목록 · 제외 · 알
       const card = page.getByTestId(`notification-card-${invite[0].id}`);
       await expect(card).toBeVisible({ timeout: 20_000 });
       await expect(card).toContainText(PART_TEXT.inviteTitle(requestNo));
-      await card.getByRole('button', { name: '채팅 보기' }).click();
-      await expect(page).toHaveURL(new RegExp(`/dashboard/quick/chat\\?request=${requestNo}`), { timeout: 20_000 });
+      // hydration 전 클릭은 무시될 수 있어 URL이 바뀔 때까지 다시 누른다 (plan 106 verifier · 타이밍)
+      await expect(async () => {
+        if (!page.url().includes('/dashboard/quick/chat')) {
+          await card.getByRole('button', { name: '채팅 보기' }).click({ timeout: 5_000 });
+        }
+        await expect(page).toHaveURL(new RegExp(`/dashboard/quick/chat\\?request=${requestNo}`), { timeout: 5_000 });
+      }).toPass({ timeout: 30_000 });
       await expect(page.getByTestId('quick-chat-messenger')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId(`quick-chat-list-item-${requestNo}`)).toHaveAttribute('aria-current', 'true', {
         timeout: 20_000

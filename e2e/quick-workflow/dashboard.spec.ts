@@ -213,7 +213,7 @@ test.describe('plan 89 E. 퀵 대시보드 · 조회 범위', () => {
     }
   });
 
-  test('AC-36: 375 동방 대시보드·상세 — 가로 스크롤 0 · 카드 리스트 · 버튼 ≥ 44px', async ({ browser }) => {
+  test('AC-36 (plan 106 판정): 375 동방 대시보드·상세 — 가로 스크롤 0 · 카드 리스트(덮는 링크) · 칩·필터 · 상세 주 버튼·「⋯」 안 수정/취소 ≥ 44px', async ({ browser }) => {
     const tag = uniqueTag('E2E89M');
     const created = await seedQuickRequest('dispatching', 'user', tag);
     const { context, page } = await pageAs(browser, 'dongbang', { viewport: VIEWPORT_MOBILE });
@@ -224,24 +224,36 @@ test.describe('plan 89 E. 퀵 대시보드 · 조회 범위', () => {
       await expect(page.getByTestId('quick-dashboard-table')).toBeHidden();
       await expect(page.getByTestId('quick-dashboard-cards')).toBeVisible();
       await expectNoHorizontalScroll(page);
+      // plan 106 — 휴대폰 카드 「상세 보기」 버튼 삭제(카드 덮는 링크) · 「초기화」는 「필터」 판 안으로
       for (const testId of [
-        `quick-card-detail-${created.requestNo}`,
+        `quick-card-link-${created.requestNo}`,
         `quick-card-action-${created.requestNo}`,
         'quick-dashboard-card-requested',
         'quick-dashboard-card-cancelled',
-        'quick-dashboard-reset'
+        'quick-dashboard-filter-button'
       ]) {
         const box = await page.getByTestId(testId).boundingBox();
         expect(box, testId).not.toBeNull();
         expect(box!.height, testId).toBeGreaterThanOrEqual(44);
       }
 
-      await page.getByTestId(`quick-card-detail-${created.requestNo}`).click();
+      await page.getByTestId(`quick-card-link-${created.requestNo}`).click();
       await expect(page).toHaveURL(new RegExp(`/dashboard/quick/${created.requestNo}$`));
       await expect(page.getByTestId('quick-detail')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId('quick-detail-dispatch')).toBeVisible();
       await expectNoHorizontalScroll(page);
-      for (const testId of ['quick-detail-dispatch', 'quick-detail-edit', 'quick-detail-cancel']) {
+      // plan 106 D-16 — 수정·취소는 「⋯」(quick-detail-more) 안: 메뉴 열기 전 0 → 연 뒤 판정
+      await expect(page.getByTestId('quick-detail-edit')).toHaveCount(0);
+      await expect(page.getByTestId('quick-detail-cancel')).toHaveCount(0);
+      for (const testId of ['quick-detail-dispatch', 'quick-detail-more']) {
+        const box = await page.getByTestId(testId).boundingBox();
+        expect(box, testId).not.toBeNull();
+        expect(box!.height, testId).toBeGreaterThanOrEqual(44);
+      }
+      await page.getByTestId('quick-detail-more').click();
+      await expect(page.getByRole('menu')).toBeVisible();
+      await page.waitForTimeout(300);
+      for (const testId of ['quick-detail-edit', 'quick-detail-cancel']) {
         const box = await page.getByTestId(testId).boundingBox();
         expect(box, testId).not.toBeNull();
         expect(box!.height, testId).toBeGreaterThanOrEqual(44);

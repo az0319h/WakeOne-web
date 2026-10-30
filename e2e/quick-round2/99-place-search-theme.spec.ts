@@ -9,6 +9,12 @@ import {
   type ColorMode
 } from '../quick-request/helpers';
 import { expectPlacesMockServer, ikseonDocs, isUnconfiguredRun, openPlaceTab, placeRow, searchPlace } from './99-helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 99 AC-13 — THEMES(theme.config.ts) × light/dark 20조합 · 「장소 검색」 탭 결과 표시 (86 AC-19 · 87 AC-26 패턴)

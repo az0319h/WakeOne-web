@@ -13,7 +13,7 @@ import {
 /**
  * plan 93 §A 모바일(375) — docs/plans/93_quick-request-chat-plan.md (AC-03 · AC-04 375)
  */
-test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 버튼', () => {
+test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 버튼 (plan 106 판정: 탭 바 · 전체 화면 한 줄 상단바)', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 });
 
   let requestNo = '';
@@ -33,6 +33,8 @@ test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 
       const conversation = page.getByTestId('quick-chat-conversation');
       await expect(list).toBeVisible();
       await expect(conversation).toBeHidden();
+      // plan 106 D-4 — 대화 목록은 퀵 하단 탭 바가 보인다
+      await expect(page.getByTestId('quick-mobile-tabbar')).toBeVisible();
       await expectNoHorizontalScroll(page);
 
       const item = page.getByTestId(`quick-chat-list-item-${requestNo}`);
@@ -42,6 +44,10 @@ test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 
       await expect(page).toHaveURL(new RegExp(`request=${requestNo}`));
       await expect(conversation).toBeVisible();
       await expect(list).toBeHidden();
+      // plan 106 D-12 — 대화방은 전체 화면: 한 줄 상단바(quick-chat-header) · 공통 상단바·탭 바 숨김
+      await expect(page.getByTestId('quick-chat-header')).toBeVisible();
+      await expect(page.getByRole('banner')).toBeHidden();
+      await expect(page.getByTestId('quick-mobile-tabbar')).toHaveCount(0);
       await expect(page.getByTestId('quick-chat-messages')).toContainText('모바일 확인용 메시지', { timeout: 20_000 });
       await expectNoHorizontalScroll(page);
 
@@ -51,6 +57,7 @@ test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 
       await expect(chips).toHaveCount(4);
       await expectTouchTarget(chips.first());
       const backButton = page.getByRole('button', { name: CHAT_TEXT.backToList });
+      await expect(backButton).toHaveAttribute('data-testid', 'quick-chat-back');
       await expectTouchTarget(backButton);
       await backButton.click();
       await expect(page).not.toHaveURL(/request=/);
@@ -96,7 +103,11 @@ test.describe('plan 93 A. 375 — 목록↔대화 전환 · 상세 「대화」 
       const full = page.getByTestId('quick-detail-chat');
       await expect(full).toBeVisible();
       await expect(full).toHaveAttribute('data-mode', 'full');
-      await expect(full.getByRole('heading', { name: CHAT_TEXT.detailChatTitle })).toBeVisible();
+      // plan 106 D-12 — 휴대폰 상세 대화는 한 줄 상단바(요청번호 + 상태 · 「⋯」) — PC 「요청 대화」 제목 대신
+      const header = page.getByTestId('quick-chat-header');
+      await expect(header).toBeVisible();
+      await expect(header.getByRole('heading', { name: fresh.requestNo })).toBeVisible();
+      await expect(page.getByRole('banner')).toBeHidden();
       await expect(page.getByTestId('quick-chat-empty')).toHaveText(CHAT_TEXT.emptyWritable, { timeout: 20_000 });
       await expect(composerInput(page)).toBeVisible();
       await expect(page.getByRole('button', { name: CHAT_TEXT.send, exact: true })).toBeVisible();

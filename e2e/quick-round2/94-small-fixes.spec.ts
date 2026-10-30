@@ -19,6 +19,12 @@ import {
 } from '../quick-workflow/helpers';
 import { sendMessageAs } from '../quick-chat/helpers';
 import { PLATE_INVALID, PLATE_VALID, TEXT, grepDir, profilePhone } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 94 §C 작은 수정 (7·8·9·12) — docs/plans/94_quick-realtime-and-small-fixes-plan.md
@@ -92,7 +98,7 @@ test.describe('plan 94 C. 행 클릭 · 부가세 · 자동차등록번호 · �
     }
   });
 
-  test('AC-15: 375 동방 — 카드 본문 탭 → 상세 · 카드 안 「접수」 탭은 접수만 · 「상세 보기」 링크(quick-card-detail) 유지', async ({
+  test('AC-15 (plan 106 AC-17): 375 동방 — 카드 본문 탭 → 상세 · 카드 안 「접수」 탭은 접수만 · 「상세 보기」 버튼 0 · 카드 덮는 링크(quick-card-link)', async ({
     browser
   }) => {
     const { requestNo } = await seedQuickRequest('requested', 'user', uniqueTag('E2E94CARD'));
@@ -101,12 +107,13 @@ test.describe('plan 94 C. 행 클릭 · 부가세 · 자동차등록번호 · �
       await gotoDashboard(page, `?search=${requestNo}`);
       const card = page.getByTestId(`quick-card-${requestNo}`);
       await expect(card).toBeVisible({ timeout: 30_000 });
-      await expect(card).toHaveCSS('cursor', 'pointer');
-      await expect(card.getByTestId(`quick-card-detail-${requestNo}`), '「상세 보기」 링크 유지').toBeVisible();
-      await expect(card.getByTestId(`quick-card-detail-${requestNo}`)).toHaveAttribute(
-        'href',
-        new RegExp(`/dashboard/quick/${requestNo}$`)
-      );
+      // plan 106 D-8 — 휴대폰 카드 「상세 보기」 버튼 삭제 · 카드 전체를 덮는 링크(`quick-card-link-{no}` · 「{no} 상세 보기」)
+      await expect(card.getByTestId(`quick-card-detail-${requestNo}`), '「상세 보기」 버튼 0').toHaveCount(0);
+      const link = card.getByTestId(`quick-card-link-${requestNo}`);
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAccessibleName(`${requestNo} 상세 보기`);
+      await expect(link).toHaveAttribute('href', new RegExp(`/dashboard/quick/${requestNo}$`));
+      await expect(link).toHaveCSS('cursor', 'pointer');
       // 본문(패딩 영역 · 버튼·링크 밖) 탭
       await card.click({ position: { x: 8, y: 8 } });
       await expectDetailUrl(page, requestNo);

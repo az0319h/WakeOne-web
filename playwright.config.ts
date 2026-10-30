@@ -77,7 +77,9 @@ const isQuickRequestE2eRun = process.argv.some((arg) => {
     // plan 93 — 퀵 대화(e2e/quick-chat): 2 context 실시간·계정 공유 → 직렬
     normalized.includes('e2e/quick-chat') ||
     // plan 94 — 퀵 2차(e2e/quick-round2): Broadcast 실시간·WebSocket 차단·계정 공유 → 직렬
-    normalized.includes('e2e/quick-round2')
+    normalized.includes('e2e/quick-round2') ||
+    // plan 106 — 퀵 휴대폰 화면 구조(e2e/quick-mobile): 계정 공유·2 context 실시간 → 직렬
+    normalized.includes('e2e/quick-mobile')
   );
 });
 
@@ -288,6 +290,7 @@ export default defineConfig({
         /quick-info[\\/]/,
         /quick-chat[\\/]/,
         /quick-round2[\\/]/,
+        /quick-mobile[\\/]/,
         /push-notifications[\\/]/,
         /subscription-equipment[\\/]/,
         /wallet-balance-email\/00-preferences-ui\.spec\.ts$/,
@@ -433,6 +436,19 @@ export default defineConfig({
       timeout: 150_000
     },
     {
+      // plan 106 — 퀵 휴대폰 화면 구조: 뷰포트(M360~T768 isMobile+hasTouch · D1024·D1280)는 spec에서 context마다 지정
+      // user·user2·admin·동방·구매물류 storageState + 2 context 실시간 → 직렬
+      name: 'chromium-quick-mobile',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user.json'
+      },
+      dependencies: ['setup', 'setup-user', 'setup-user2', 'setup-dongbang', 'setup-logistics'],
+      testMatch: [/quick-mobile[\\/].*\.spec\.ts$/],
+      fullyParallel: false,
+      timeout: 150_000
+    },
+    {
       // plan 91 — 휴대폰 웹 푸시: user.json 기본 + admin·동방특송 request 컨텍스트 · 공유 구독 상태 → 직렬
       name: 'chromium-push',
       use: {
@@ -522,6 +538,7 @@ export default defineConfig({
         /quick-workflow[\\/]/,
         /quick-chat[\\/]/,
         /quick-round2[\\/]/,
+        /quick-mobile[\\/]/,
         /push-notifications[\\/]/,
         /subscription-equipment[\\/]/,
         /auth[\\/]guard-parity\.api\.spec\.ts$/,

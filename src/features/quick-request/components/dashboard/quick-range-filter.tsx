@@ -20,7 +20,10 @@ import {
 import { QUICK_RANGE_DEFAULT_VALUE, type QuickRangeValue } from '../../lib/quick-range-search-params';
 import { useMatchMedia } from '../chat/use-match-media';
 
-const PRESETS: ReadonlyArray<{ value: Exclude<QuickRangeKind, 'custom'>; label: string }> = [
+export type QuickRangePreset = { value: Exclude<QuickRangeKind, 'custom'>; label: string };
+
+/** 기간 프리셋 (PC 툴바·휴대폰 필터 판 `QuickRangeSheetField` 공용 · plan 106 §3.8) */
+export const QUICK_RANGE_PRESETS: ReadonlyArray<QuickRangePreset> = [
   { value: '7d', label: '7일' },
   { value: '30d', label: '30일' },
   { value: '90d', label: '90일' },
@@ -38,21 +41,44 @@ export const QUICK_RANGE_FILTER_TEXT = {
 /** lg↑ 2개월 · 그 아래 1개월 (designer K1 — Popover 폭 clamp · Drawer 미사용) */
 const TWO_MONTHS_MEDIA_QUERY = '(min-width: 1024px)';
 
+/** 프리셋 접근 이름 — 「최근 7일」… · 「전체 기간」 */
+export function quickRangePresetAriaLabel(preset: QuickRangePreset): string {
+  return preset.value === 'all' ? '전체 기간' : `최근 ${preset.label}`;
+}
+
 /** URL `yyyy-MM-dd` → Calendar 로컬 Date (KST 해석은 서버 `parseQuickRange`) */
-function parseLocalDate(value: string | null): Date | undefined {
+export function parseLocalDate(value: string | null): Date | undefined {
   if (!isQuickRangeDate(value)) return undefined;
   const [year, month, day] = value.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
 
-function toDraft(value: QuickRangeValue): DateRange | undefined {
+/** 현재 값 → 달력 draft (직접 선택일 때만 범위 · 그 밖 undefined) */
+export function toDraft(value: QuickRangeValue): DateRange | undefined {
   if (value.range !== 'custom') return undefined;
   const from = parseLocalDate(value.from);
   const to = parseLocalDate(value.to);
   return from ? { from, to } : undefined;
 }
 
-function startOfToday(): Date {
+/** ToggleGroup 값 → URL 값 (빈 값·직접 선택·알 수 없는 값은 null → 무시) */
+export function toPresetRangeValue(next: string): QuickRangeValue | null {
+  if (!next || !isQuickRangeKind(next) || next === 'custom') return null;
+  return { range: next, from: null, to: null };
+}
+
+/** 달력 draft → URL 값 (`from` 없으면 null · `to` 없으면 `from`과 같은 날) */
+export function toCustomRangeValue(draft: DateRange | undefined): QuickRangeValue | null {
+  if (!draft?.from) return null;
+  return {
+    range: 'custom',
+    from: formatAbsoluteDateKo(draft.from),
+    to: formatAbsoluteDateKo(draft.to ?? draft.from)
+  };
+}
+
+/** 달력 `disabled={{ after: startOfToday() }}` — 오늘 이후 선택 금지 */
+export function startOfToday(): Date {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
@@ -93,8 +119,8 @@ export function QuickRangeFilter({
   }
 
   function handlePreset(next: string) {
-    if (!next || !isQuickRangeKind(next) || next === 'custom') return;
-    onChange({ range: next, from: null, to: null });
+    const preset = toPresetRangeValue(next);
+    if (preset) onChange(preset);
   }
 
   function handleClear() {
@@ -103,10 +129,9 @@ export function QuickRangeFilter({
   }
 
   function handleApply() {
-    if (!draft?.from) return;
-    const from = formatAbsoluteDateKo(draft.from);
-    const to = formatAbsoluteDateKo(draft.to ?? draft.from);
-    onChange({ range: 'custom', from, to });
+    const next = toCustomRangeValue(draft);
+    if (!next) return;
+    onChange(next);
     setOpen(false);
   }
 
@@ -149,11 +174,11 @@ export function QuickRangeFilter({
           onValueChange={handlePreset}
           className={cn('min-w-0', isSmall ? 'flex-1' : 'w-full lg:w-auto')}
         >
-          {PRESETS.map((preset) => (
+          {QUICK_RANGE_PRESETS.map((preset) => (
             <ToggleGroupItem
               key={preset.value}
               value={preset.value}
-              aria-label={preset.value === 'all' ? '전체 기간' : `최근 ${preset.label}`}
+              aria-label={quickRangePresetAriaLabel(preset)}
               data-testid={`${testIdPrefix}-range-${preset.value}`}
               className={cn(
                 'tabular-nums',

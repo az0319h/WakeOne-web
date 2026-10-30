@@ -175,6 +175,24 @@ export async function openDesktopPanel(page: Page): Promise<Locator> {
   return panel;
 }
 
+/** plan 106 D-2 · U-2 — lg 미만 퀵 화면 ⓘ (본문 첫 줄 · 「퀵 권한 안내 보기」) */
+export function mobileInfoButton(page: Page) {
+  return page.getByTestId('quick-mobile-info-button');
+}
+
+/** 주어진 ⓘ 버튼으로 모바일 Sheet를 연다 (hydration 전 클릭 무시 대비 재시도) */
+export async function openMobilePanelBy(page: Page, button: Locator): Promise<Locator> {
+  const panel = mobilePanel(page);
+  await expect(button).toBeVisible({ timeout: 30_000 });
+  await expect(async () => {
+    if ((await panel.count()) === 0) {
+      await button.click();
+    }
+    await expect(panel).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 30_000 });
+  return panel;
+}
+
 export async function openMobilePanel(page: Page): Promise<Locator> {
   const panel = mobilePanel(page);
   const button = infoButton(page);

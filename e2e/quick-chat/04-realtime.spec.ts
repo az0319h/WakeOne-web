@@ -19,6 +19,12 @@ import {
   waitForSubscribed
 } from './helpers';
 import type { AccountMeta } from '../quick-workflow/helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 93 §B 실시간 · §F 「입력 중…」 — docs/plans/93_quick-request-chat-plan.md (AC-12 · AC-13 · AC-14 · AC-36)

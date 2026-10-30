@@ -18,6 +18,7 @@ export default async function QuickDashboardRoute() {
 
   return (
     <PageContainer
+      mobileHeader='hidden'
       pageTitle={viewer.scope === 'all' ? '퀵 내역' : '나의 퀵 내역'}
       pageDescription={QUICK_DASHBOARD_DESCRIPTION}
       infoContent={quickInfoContent}

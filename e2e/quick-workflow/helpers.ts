@@ -10,6 +10,7 @@ import {
   type Page
 } from '@playwright/test';
 import { createOrgChartTestUser, uniqueOrgChartEmail } from '../helpers/org-chart';
+import { hideDevOverlays } from '../helpers/dev-overlay';
 
 /**
  * plan 89 · 92 — 퀵 업무 흐름 e2e 공용 (docs/plans/89 · docs/plans/92_quick-web-only-notifications-plan.md)
@@ -316,6 +317,20 @@ export async function pageAs(
     viewport: options.viewport ?? VIEWPORT_DESKTOP,
     permissions: options.clipboard ? ['clipboard-read', 'clipboard-write'] : []
   });
+  // plan 106 verifier — dev 전용 오버레이(Next 표시기 · TanStack Query Devtools 로고)가 휴대폰 폭 하단 고정 버튼
+  // (상세 「⋯」·요청 폼 「등록하기」 등)을 가로챈다. 운영에는 없으므로 테스트에서만 숨긴다(08-mobile·96과 같은 방식).
+  await hideDevOverlays(context);
+  // plan 106 verifier — dev 서버가 실제 AI 모드(QUICK_CHAT_AI_SUGGEST=1 · mock 없음)면 대화를 열 때마다 실제 Anthropic 호출이 난다.
+  // plan 100 mock 실행(E2E_ANTHROPIC_MOCK 지정)이 아니면 답장 추천 호출을 503으로 막는다(→ 규칙 칩 · 토스트 0).
+  if (!process.env.E2E_ANTHROPIC_MOCK) {
+    await context.route('**/api/quick-request/*/messages/suggest', (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: false, message: 'e2e: AI suggest blocked' })
+      })
+    );
+  }
   const page = await context.newPage();
   return { context, page };
 }
@@ -509,6 +524,14 @@ export function expectLogFor(action: string, requestNo: string, status = 200) {
 export async function gotoDashboard(page: Page, query = '') {
   await page.goto(`/dashboard/quick${query}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('quick-dashboard')).toBeVisible({ timeout: 30_000 });
+  // 본문(표·카드·빈 상태)은 hydration 뒤에만 그린다 → hydration 전 입력(검색 fill)이 사라지지 않게 기다린다
+  await expect(
+    page
+      .getByTestId('quick-dashboard-table')
+      .or(page.getByTestId('quick-dashboard-cards'))
+      .or(page.getByTestId('quick-dashboard-empty'))
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 export async function gotoDetail(page: Page, requestNo: string) {

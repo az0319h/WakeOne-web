@@ -33,8 +33,8 @@ type QuickUnreadChatBadgeProps = {
 };
 
 /**
- * plan 93 U-9 · AC-16 — 「새 대화 N」 Badge Link → 「퀵 대화」 그 건. 0이면 렌더 안 함.
- * 표·모바일 카드 둘 다 DOM에 있으므로 같은 testid가 2개 (verifier는 `.filter({ visible: true })`).
+ * plan 93 U-9 · AC-16 — 「새 대화 N」 Badge Link → 「퀵 대화」 그 건 (PC 표). 0이면 렌더 안 함.
+ * plan 106 — 휴대폰 카드는 44px 버튼(`quick-request-mobile-card.tsx`)을 쓰고, 표·카드는 폭에 따라 한 벌만 렌더(testid 1개).
  */
 export function QuickUnreadChatBadge({ requestNo, count, className }: QuickUnreadChatBadgeProps) {
   if (count <= 0) {
@@ -61,7 +61,7 @@ type QuickParticipantBadgeProps = {
 
 /**
  * plan 101 U-7 — 초대된 참여자로 보는 건 「참여」 outline Badge (표 「요청 정보」 셀 · 모바일 카드 번호 옆).
- * 표·카드 둘 다 DOM에 있으므로 같은 testid가 2개 (verifier는 `.filter({ visible: true })`).
+ * plan 106 — 표·카드는 폭에 따라 한 벌만 렌더하므로 testid는 1개.
  */
 export function QuickParticipantBadge({ requestNo, className }: QuickParticipantBadgeProps) {
   return (

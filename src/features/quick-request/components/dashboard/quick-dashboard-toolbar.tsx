@@ -18,6 +18,7 @@ import type { QuickRequestStatus } from '../../api/types';
 import type { QuickRangeValue } from '../../lib/quick-range-search-params';
 import { QUICK_REQUEST_STATUS_LABELS } from '../../lib/quick-request-status';
 import { isQuickRequestStatus, QUICK_REQUEST_STATUSES } from '../../schemas/quick-request-workflow';
+import { QuickDashboardFilterSheet } from './quick-dashboard-filter-sheet';
 import { QuickRangeFilter } from './quick-range-filter';
 import {
   hasActiveQuickDashboardFilters,
@@ -38,8 +39,9 @@ type QuickDashboardToolbarProps = {
 };
 
 /**
- * 1행 기간(ToggleGroup + 달력 · plan 97 U-1) / 2행 검색 · 상태 Select · 초기화 · 「총 N건」 — Suspense 밖 (plan 40).
- * 「초기화」는 상태·검색만 되돌리고 기간은 유지한다 (designer K3).
+ * lg 이상: 1행 기간(ToggleGroup + 달력 · plan 97 U-1) / 2행 검색 · 상태 Select · 초기화 · 「총 N건」 (지금 그대로).
+ * lg 미만: 검색 1줄 + 「필터」 버튼(판 · plan 106 D-7 · designer §3.6) — PC 컨트롤은 CSS로만 숨긴다(DOM 한 벌 · K2 ①).
+ * Suspense 밖 (plan 40). 「초기화」는 상태·검색만 되돌리고 기간은 유지한다 (designer K3).
  */
 export function QuickDashboardToolbar({
   filters,
@@ -83,8 +85,9 @@ export function QuickDashboardToolbar({
         size='default'
         testIdPrefix='quick-dashboard'
         labelPlacement='none'
+        className='hidden lg:flex'
       />
-      <div className='flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center'>
+      <div className='flex min-w-0 gap-2 lg:items-center'>
         <InputGroup className='h-11 min-w-0 lg:h-9 lg:w-72'>
           <InputGroupAddon>
             <Icons.search aria-hidden />
@@ -96,13 +99,22 @@ export function QuickDashboardToolbar({
             aria-label='퀵 요청 검색'
             autoComplete='off'
             data-testid='quick-dashboard-search'
+            className='max-lg:h-11'
             onChange={(event) => {
               setSearchInput(event.target.value);
               debouncedSearch(event.target.value);
             }}
           />
         </InputGroup>
-        <div className='flex min-w-0 items-center gap-2'>
+        <QuickDashboardFilterSheet
+          filters={filters}
+          onRangeChange={onRangeChange}
+          onStatusChange={onStatusChange}
+          onReset={handleReset}
+          canReset={hasFilters}
+          className='lg:hidden'
+        />
+        <div className='hidden min-w-0 items-center gap-2 lg:flex'>
           <Select
             value={filters.status ?? ALL_STATUS_VALUE}
             onValueChange={(next) => onStatusChange(isQuickRequestStatus(next) ? next : null)}

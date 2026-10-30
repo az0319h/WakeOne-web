@@ -6,6 +6,7 @@ import {
   SUBSCRIBE_SETTLE_MS,
   apiAsDongbang2,
   createDongbang2WithSession,
+  markAllConversationsReadAs,
   markReadAsDongbang2,
   pageAsDongbang2,
   sendMessageAs
@@ -20,14 +21,17 @@ test.describe('plan 93 F. 사이드바 전체 안 읽은 수', () => {
   test.beforeAll(async ({ browser }) => {
     await createDongbang2WithSession(browser);
     await apiAsDongbang2(async (api) => {
-      const response = await api.get('/api/quick-request/conversations?tab=unread');
-      const { data } = (await response.json()) as {
-        data: { conversations: { requestNo: string; lastMessage: { id: number } | null }[] };
-      };
-      for (const conversation of data.conversations) {
-        if (conversation.lastMessage) {
+      // 안 읽음 탭은 한 번에 20건씩 — 공유 dev DB에 20건을 넘으면 비워질 때까지 반복 (plan 106 verifier)
+      for (let round = 0; round < 30; round += 1) {
+        const response = await api.get('/api/quick-request/conversations?tab=unread');
+        const { data } = (await response.json()) as {
+          data: { conversations: { requestNo: string; lastMessage: { id: number } | null }[] };
+        };
+        const pending = data.conversations.filter((conversation) => conversation.lastMessage);
+        if (pending.length === 0) break;
+        for (const conversation of pending) {
           await api.put(`/api/quick-request/${conversation.requestNo}/messages/read`, {
-            data: { lastMessageId: conversation.lastMessage.id }
+            data: { lastMessageId: conversation.lastMessage!.id }
           });
         }
       }
@@ -89,6 +93,8 @@ test.describe('plan 93 F. 사이드바 전체 안 읽은 수', () => {
       await vendor.context.close();
     }
 
+    // user2의 기존 안 읽은 대화(다른 spec의 참여자 초대 등 공유 dev DB 잔여)를 먼저 비운다 — 판정은 「dongbang2 메시지가 user2 배지에 안 섞임」 (plan 106 verifier)
+    await markAllConversationsReadAs('user2');
     const other = await pageAs(browser, 'user2');
     try {
       await gotoDashboard(other.page);

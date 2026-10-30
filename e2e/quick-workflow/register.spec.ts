@@ -10,6 +10,12 @@ import {
 } from '../quick-request/helpers';
 import { expectDetailStatus, uniqueTag, VIEWPORT_DESKTOP, VIEWPORT_MOBILE } from './helpers';
 import { confirmPreviewAndRegister, readClipboard, writeClipboardSentinel } from './register-flow';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 // plan 89 §B 등록·번호 (UI) — docs/plans/89 · plan 92가 발송 판정(옛 AC-12·14)을 제거했다
 test.describe('plan 89 B. 퀵 요청 등록 (UI)', () => {

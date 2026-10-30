@@ -8,6 +8,12 @@ import {
   quickRequestHeading,
   quickRequestOrderPage
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 // plan 86 — docs/plans/86_quick-request-kakao-redesign-plan.md
 test.describe('퀵 배송 요청 nav · guard · kbar (plan 86)', () => {

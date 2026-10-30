@@ -18,6 +18,12 @@ import {
   VIEWPORT_TABLET,
   vehicleCard
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 // plan 86 — docs/plans/86_quick-request-kakao-redesign-plan.md (반응형 375 / 768 / 1280)
 const MIN_TOUCH_TARGET = 44;
@@ -39,6 +45,14 @@ test.describe('퀵 배송 요청 반응형 · 가로 스크롤 0 (plan 86 AC-14)
       await expectThemeApplied(page, 'vercel', 'light');
       await expectNoHorizontalScroll(page);
       await expectNoInnerHorizontalOverflow(page);
+      if (size.width < 1024) {
+        // plan 106 D-10 ① — lg 미만은 안쪽 상자가 아니라 페이지 전체가 스크롤된다
+        const metrics = await page.evaluate(() => ({
+          scrollHeight: document.documentElement.scrollHeight,
+          innerHeight: window.innerHeight
+        }));
+        expect(metrics.scrollHeight, '페이지 스크롤').toBeGreaterThan(metrics.innerHeight);
+      }
     });
   }
 
@@ -65,7 +79,7 @@ test.describe('퀵 배송 요청 반응형 · 가로 스크롤 0 (plan 86 AC-14)
   }
 });
 
-test.describe('퀵 배송 요청 모바일 375 (plan 86 AC-15~18)', () => {
+test.describe('퀵 배송 요청 모바일 375 (plan 86 AC-15~18 · plan 106 판정: 페이지 스크롤·주소 readonly·요약바 한 줄)', () => {
   test.use({
     storageState: 'e2e/.auth/user.json',
     permissions: ['clipboard-read', 'clipboard-write']
@@ -88,6 +102,14 @@ test.describe('퀵 배송 요청 모바일 375 (plan 86 AC-15~18)', () => {
       vehicles: ['다마스'],
       count: { preset: 2 }
     });
+
+    // plan 106 D-10 ⑦ — 하단 요약바 글자는 한 줄(말줄임) · 바 높이 ≤ 76
+    const barBox = await main.getByTestId('quick-request-mobile-bar').boundingBox();
+    expect(barBox!.height, '요약바 높이').toBeLessThanOrEqual(76);
+    const summaryParts = await main
+      .getByTestId('quick-request-mobile-summary-text')
+      .evaluate((el) => Array.from(el.children).map((child) => child.getClientRects().length));
+    expect(summaryParts.every((count) => count === 1), `요약 조각 한 줄 ${summaryParts.join(',')}`).toBe(true);
 
     await main.getByTestId('quick-request-mobile-summary-trigger').click();
     const drawer = page.getByTestId('quick-request-summary-drawer');
@@ -121,8 +143,8 @@ test.describe('퀵 배송 요청 모바일 375 (plan 86 AC-15~18)', () => {
     await fillQuickRequestOrder(page, { goodsSize: 'other', item: '' });
     const main = quickRequestMain(page);
     const itemField = main.getByTestId('quick-request-item-description');
-    // 결제(하단)까지 입력한 상태 — 물품 필드는 화면 밖에서 시작
-    await main.getByTestId('quick-request-freight-monthly').scrollIntoViewIfNeeded();
+    // 물품 필드는 화면 밖에서 시작 — plan 106 D-10 ① 페이지 스크롤이라 결제 칸과 물품 칸이 한 화면에 함께 보일 수 있다 → 맨 위로
+    await page.evaluate(() => window.scrollTo(0, 0));
     await expect(itemField).not.toBeInViewport();
 
     await clickMobileRegister(page);
@@ -162,5 +184,11 @@ test.describe('퀵 배송 요청 모바일 375 (plan 86 AC-15~18)', () => {
       expect(box, `${name} boundingBox`).not.toBeNull();
       expect(box!.height, `${name} height`).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
     }
+    // plan 106 D-10 ② — 375 주소 칸은 readonly(탭 = 주소 검색) · 칸 안 돋보기 아이콘 버튼 44×44 · 접근 이름 「주소 검색」
+    await expect(main.getByTestId('quick-request-origin-road-address')).toHaveAttribute('readonly', '');
+    const search = main.getByTestId('quick-request-origin-address-search');
+    await expect(search).toHaveAccessibleName('주소 검색');
+    const searchBox = await search.boundingBox();
+    expect(searchBox!.width, 'address-search width').toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
   });
 });

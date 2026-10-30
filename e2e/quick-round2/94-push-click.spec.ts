@@ -1,4 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 /**
  * plan 94 §B 푸시 클릭 (D-6) — docs/plans/94_quick-realtime-and-small-fixes-plan.md

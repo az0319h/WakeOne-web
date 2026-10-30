@@ -2,9 +2,11 @@
 
 import { useCallback, useMemo } from 'react';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
+import type { QuickRequestListInfiniteFilters } from '../../api/queries';
 import type { QuickRequestListFilters, QuickRequestRangeFilters, QuickRequestStatus } from '../../api/types';
 import {
   normalizeQuickRangeParams,
+  QUICK_RANGE_DEFAULT_VALUE,
   quickRangeParsers,
   toQuickRangeFilters,
   toQuickRangeParams,
@@ -99,6 +101,27 @@ export function toQuickRequestListFilters(filters: QuickDashboardFilters): Quick
     page: filters.page,
     limit: filters.perPage
   };
+}
+
+/** plan 106 D-9 — 휴대폰 무한 목록 키·조회용 (URL `page`/`perPage` 무시) */
+export function toQuickRequestListInfiniteFilters(
+  filters: QuickDashboardFilters
+): QuickRequestListInfiniteFilters {
+  return {
+    range: filters.range,
+    from: filters.from,
+    to: filters.to,
+    status: filters.status,
+    search: filters.search
+  };
+}
+
+/**
+ * plan 106 designer §3.6 — 휴대폰 「필터」 버튼 배지 숫자.
+ * (기간 ≠ 기본 7일 ? 1 : 0) + (상태 있음 ? 1 : 0) · 검색은 판 밖에 보이므로 세지 않는다 (AC-15 「2」→「1」).
+ */
+export function countQuickDashboardSheetFilters(filters: QuickDashboardFilters): number {
+  return (filters.range !== QUICK_RANGE_DEFAULT_VALUE.range ? 1 : 0) + (filters.status !== null ? 1 : 0);
 }
 
 /** 카드·메타바(summary) 쿼리 키용 — 기간만 */

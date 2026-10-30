@@ -1,5 +1,6 @@
 import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 import { formatAbsoluteDateTimeKo } from '../../src/lib/format-datetime';
+import { DEV_OVERLAY_CSS } from '../helpers/dev-overlay';
 
 /**
  * plan 86 — 카카오 스타일 단일 화면 (`quick-request-order-page`) e2e helpers
@@ -77,7 +78,10 @@ export async function gotoQuickRequest(
   await page.setViewportSize(viewport);
   await page.goto(QUICK_REQUEST_PATH, { waitUntil: 'domcontentloaded' });
   await expect(page).toHaveURL(QUICK_REQUEST_PATH);
-  await expect(quickRequestHeading(page)).toBeVisible({ timeout: 30_000 });
+  // plan 106 D-2 — lg 미만은 큰 제목을 숨긴다(상단바 「퀵 요청」이 대신) → 제목 확인은 lg 이상에서만
+  if (viewport.width >= 1024) {
+    await expect(quickRequestHeading(page)).toBeVisible({ timeout: 30_000 });
+  }
   await expect(quickRequestOrderPage(page)).toBeVisible({ timeout: 30_000 });
   await waitForOrderPageHydrated(page);
 }
@@ -149,7 +153,16 @@ export async function fillLocationByPrefix(
   }: { road: string; detail: string; name?: string; phone?: string }
 ) {
   const main = quickRequestMain(page);
-  await main.getByTestId(`${prefix}-road-address`).fill(road);
+  const roadInput = main.getByTestId(`${prefix}-road-address`);
+  // plan 106 D-10 ② — lg 미만은 주소 칸이 readonly(탭 = 주소 검색) → 「주소 직접 입력」으로 풀고 채운다 (lg 이상 그대로)
+  const isMobileWidth = (page.viewportSize()?.width ?? 1280) < 1024;
+  if (isMobileWidth && (await roadInput.getAttribute('readonly')) !== null) {
+    await roadInput.click();
+    await page.getByTestId('quick-request-address-picker-manual').click();
+    await expect(page.getByTestId('quick-request-address-picker')).toBeHidden();
+    await expect(roadInput).not.toHaveAttribute('readonly');
+  }
+  await roadInput.fill(road);
   await main.getByTestId(`${prefix}-detail-address`).fill(detail);
   if (name !== undefined) {
     await main.getByTestId(`${prefix}-contact-name`).fill(name);
@@ -247,6 +260,8 @@ export async function clickDesktopRegister(page: Page) {
 }
 
 export async function clickMobileRegister(page: Page) {
+  // plan 106 verifier — 하단 고정 「등록하기」를 dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 가리지 않게 숨긴다(운영엔 없음)
+  await page.addStyleTag({ content: DEV_OVERLAY_CSS });
   await quickRequestMain(page).getByTestId('quick-request-mobile-register-button').click();
 }
 

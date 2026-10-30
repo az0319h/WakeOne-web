@@ -11,6 +11,12 @@ import {
   VIEWPORT_DESKTOP,
   VIEWPORT_MOBILE
 } from './helpers';
+import { hideDevOverlays } from '../helpers/dev-overlay';
+
+// plan 106 verifier — dev 전용 오버레이(Next 표시기·TanStack Devtools 로고)가 하단 고정 버튼을 가로채지 않게 숨긴다(운영엔 없음)
+test.beforeEach(async ({ page }) => {
+  await hideDevOverlays(page);
+});
 
 // plan 86 AC-19 — THEMES(theme.config.ts) 전체 × light/dark · 1280 스모크 (테마 목록 하드코딩 금지)
 const MODES: ColorMode[] = ['light', 'dark'];

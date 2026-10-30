@@ -8,7 +8,7 @@ import {
   uniqueTag
 } from '../quick-workflow/helpers';
 import { expectNoHorizontalScroll, expectTouchTarget, gotoChat, sendMessageAs } from '../quick-chat/helpers';
-import { dbParticipants, openParticipants, participantRow, participantsButton, PART_TEXT } from './101-helpers';
+import { dbParticipants, participantRow, PART_TEXT } from './101-helpers';
 
 /**
  * plan 101 AC-18 — 375 · user.json 「참여자 N」 → Drawer 목록 · 추가 Combobox(입력창·후보가 화면 안) · 터치 ≥ 44px · 가로 스크롤 없음
@@ -17,7 +17,7 @@ import { dbParticipants, openParticipants, participantRow, participantsButton, P
 test.describe('plan 101. 참여자 모바일(375)', () => {
   test.describe.configure({ timeout: 150_000 });
 
-  test('AC-18: 375 user — 「참여자 N」 → Drawer 목록 · 추가 Combobox 키보드 가림 없음(입력·후보 viewport 안) · 터치 ≥ 44px · 가로 스크롤 없음', async ({
+  test('AC-18 (plan 106 판정 · ⋯ 경유): 375 user — 「⋯」 → 「참여자 N」 → Drawer 목록 · 추가 Combobox 키보드 가림 없음(입력·후보 viewport 안) · 터치 ≥ 44px · 가로 스크롤 없음', async ({
     browser
   }) => {
     const user2 = await fixtureUser('user2');
@@ -28,12 +28,21 @@ test.describe('plan 101. 참여자 모바일(375)', () => {
     const { context, page } = await pageAs(browser, 'user', { viewport: VIEWPORT_MOBILE });
     try {
       await gotoChat(page, requestNo);
-      const trigger = participantsButton(page);
-      await expect(trigger).toBeVisible({ timeout: 30_000 });
-      await expectTouchTarget(trigger);
+      // plan 106 D-12 · U-7 — 휴대폰 대화방 「참여자 N」은 한 줄 상단바 「⋯」(quick-chat-more) 메뉴 안
+      const more = page.getByTestId('quick-chat-more');
+      await expect(more).toBeVisible({ timeout: 30_000 });
+      await expectTouchTarget(more);
+      await expect(page.getByTestId('quick-chat-participants-button')).toHaveCount(0);
       await expectNoHorizontalScroll(page);
 
-      const drawer = await openParticipants(page, 'drawer');
+      await more.click();
+      const menuItem = page.getByTestId('quick-chat-more-participants');
+      await expect(menuItem).toBeVisible();
+      await expect(menuItem).toHaveText(/^참여자 \d+$/);
+      await menuItem.click();
+      const drawer = page.getByTestId('quick-chat-participants-drawer');
+      await expect(drawer).toBeVisible({ timeout: 10_000 });
+      await expect(drawer.getByTestId('quick-chat-participants-panel')).toHaveAttribute('data-mode', 'list');
       await expect(page.getByTestId('quick-chat-participants-popover')).toHaveCount(0);
       // vaul 열림 애니메이션(~500ms) 뒤 측정
       await page.waitForTimeout(700);

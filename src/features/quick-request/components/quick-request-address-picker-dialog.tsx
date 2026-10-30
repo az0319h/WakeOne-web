@@ -234,6 +234,11 @@ type QuickRequestAddressPickerDialogProps = {
    */
   placeSearchEnabled?: boolean;
   onPlaceSelect?: (place: QuickRequestPlace) => void;
+  /**
+   * plan 106 D-10 ② · U-6 — 있으면 아래 고정 「주소 직접 입력」(탈출구)을 그린다.
+   * 요청 폼 휴대폰(주소 칸 readonly)에서만 전달 — 수정 Sheet·PC는 전달하지 않아 지금 그대로.
+   */
+  onManualEntry?: () => void;
 };
 
 /** 주소 검색 Dialog — lg 미만 전체화면 · lg↑ 가운데 (plan 87 D3) */
@@ -246,7 +251,8 @@ export function QuickRequestAddressPickerDialog({
   showRecent = true,
   recentDirection = 'destination',
   placeSearchEnabled = false,
-  onPlaceSelect
+  onPlaceSelect,
+  onManualEntry
 }: QuickRequestAddressPickerDialogProps) {
   const showPlace = showRecent && placeSearchEnabled && onPlaceSelect != null;
   return (
@@ -271,7 +277,8 @@ export function QuickRequestAddressPickerDialog({
             'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0'
           )}
         >
-          <header className='flex shrink-0 items-start gap-3 border-b px-4 py-3 lg:px-6 lg:py-4'>
+          {/* plan 106 D-3 — viewport-fit=cover 설치 앱에서 상단 상태 표시줄 아래로 (inset 0이면 지금과 같음) */}
+          <header className='flex shrink-0 items-start gap-3 border-b px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 lg:px-6 lg:py-4'>
             <div className='min-w-0 flex-1 space-y-1'>
               <DialogTitle className='text-base font-semibold'>주소 검색</DialogTitle>
               <DialogDescription id={DESCRIPTION_ID} className='text-sm text-muted-foreground'>
@@ -307,6 +314,21 @@ export function QuickRequestAddressPickerDialog({
               recentDirection={recentDirection}
               onPlaceSelect={showPlace ? onPlaceSelect : undefined}
             />
+          ) : null}
+          {onManualEntry ? (
+            <footer className='flex shrink-0 items-center justify-between gap-3 border-t px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:px-6'>
+              <p className='min-w-0 text-sm text-muted-foreground'>찾는 주소가 없나요?</p>
+              <Button
+                type='button'
+                variant='ghost'
+                className='h-11 shrink-0 gap-1 px-3'
+                data-testid='quick-request-address-picker-manual'
+                onClick={onManualEntry}
+              >
+                주소 직접 입력
+                <Icons.chevronRight className='size-4' aria-hidden />
+              </Button>
+            </footer>
           ) : null}
         </DialogPrimitive.Content>
       </DialogPortal>

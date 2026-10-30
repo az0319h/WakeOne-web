@@ -89,9 +89,12 @@ test.describe('plan 95 동방특송 노출 범위 감사', () => {
   async function expectComboExcludesDongbang(page: Page, testId: string, dongbangEmails: string[]) {
     const combobox = page.getByTestId(testId);
     await expect(combobox).toBeVisible({ timeout: 30_000 });
-    await combobox.click();
     const search = page.getByPlaceholder(COMBO_PLACEHOLDER);
-    await expect(search).toBeVisible();
+    // hydration 전 클릭은 무시될 수 있어 검색칸이 열릴 때까지 다시 누른다 (plan 106 verifier · 타이밍)
+    await expect(async () => {
+      if (!(await search.isVisible())) await combobox.click({ timeout: 5_000 });
+      await expect(search).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
 
     await search.fill('wakecorp');
     // 「본인」 고정 항목 + 사용자 항목 ≥1 (목록이 비어 있지 않음을 먼저 확인)
@@ -121,9 +124,12 @@ test.describe('plan 95 동방특송 노출 범위 감사', () => {
     const meta = dongbang();
     const combobox = page.getByTestId(testId);
     await expect(combobox).toBeVisible({ timeout: 30_000 });
-    await combobox.click();
     const search = page.getByPlaceholder(COMBO_PLACEHOLDER);
-    await expect(search).toBeVisible();
+    // hydration 전 클릭은 무시될 수 있어 검색칸이 열릴 때까지 다시 누른다 (plan 106 verifier · 타이밍)
+    await expect(async () => {
+      if (!(await search.isVisible())) await combobox.click({ timeout: 5_000 });
+      await expect(search).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
     await search.fill(meta.email);
     const option = page.getByRole('option').filter({ hasText: meta.email });
     await expect(option, `${testId} 동방 항목`).toBeVisible({ timeout: 15_000 });
@@ -453,8 +459,12 @@ test.describe('plan 95 동방특송 노출 범위 감사', () => {
       await expect(page).toHaveURL(/\/dashboard\/profile$/, { timeout: 30_000 });
       const profileOpen = page.getByTestId('push-section-preferences-open');
       await expect(profileOpen).toBeVisible({ timeout: 30_000 });
-      await profileOpen.click();
       const profileDialog = page.getByTestId('push-preferences-dialog');
+      // hydration 전 클릭은 무시될 수 있어 Dialog가 열릴 때까지 다시 누른다 (plan 106 verifier · 타이밍)
+      await expect(async () => {
+        if (!(await profileDialog.isVisible())) await profileOpen.click({ timeout: 5_000 });
+        await expect(profileDialog).toBeVisible({ timeout: 3_000 });
+      }).toPass({ timeout: 30_000 });
       await expect(profileDialog.getByTestId('push-group-list')).toBeVisible({ timeout: 15_000 });
       await expect(profileDialog.getByRole('switch')).toHaveCount(2);
     } finally {

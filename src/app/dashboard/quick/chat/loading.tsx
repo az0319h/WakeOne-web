@@ -7,7 +7,11 @@ import {
 
 export default function Loading() {
   return (
-    <PageContainer pageTitle={QUICK_CHAT_PAGE_TITLE} pageDescription={QUICK_CHAT_PAGE_DESCRIPTION}>
+    <PageContainer
+      mobileHeader='hidden'
+      pageTitle={QUICK_CHAT_PAGE_TITLE}
+      pageDescription={QUICK_CHAT_PAGE_DESCRIPTION}
+    >
       <PageLoadingSpinner variant='fill' />
     </PageContainer>
   );

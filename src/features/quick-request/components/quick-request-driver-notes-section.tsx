@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { PageLoadingSpinner } from '@/components/ui/page-loading-spinner';
 import { Icons } from '@/components/icons';
 import { notifyError, notifySuccess } from '@/lib/notify';
+import { cn } from '@/lib/utils';
 import { deleteQuickRequestNoteMutation } from '../api/mutations';
 import { quickRequestKeys, quickRequestNotesQueryOptions } from '../api/queries';
 import type { QuickRequestNote } from '../api/types';
@@ -17,6 +18,10 @@ import {
 } from '../schemas/quick-request-note';
 import { removeNoteLabel, replaceNoteLabel, toggleNote } from '../schemas/quick-request-form';
 import type { QuickRequestOrderForm } from './quick-request-form-api';
+import {
+  QUICK_REQUEST_PAGE_INPUT_TEXT_CLASS,
+  useQuickRequestFormLayout
+} from './quick-request-form-layout';
 import { QuickRequestNoteCards } from './quick-request-note-cards';
 import {
   QuickRequestNoteEditorDialog,
@@ -39,12 +44,19 @@ export type QuickRequestDriverNotesColumnsProps = FormProps & {
   destinationNotes?: React.ReactNode;
 };
 
-/** 출발·도착 메모 칸 + 칩 슬롯 — plan 89 수정 Sheet(`QuickRequestEditNotesSection`)도 재사용 */
+/**
+ * 출발·도착 메모 칸 + 칩 슬롯 — plan 89 수정 Sheet(`QuickRequestEditNotesSection`)도 재사용.
+ * plan 106 K13 — 요청 폼 lg 미만: 메모 빈 칸 한 줄(44 · ui `Textarea`가 `field-sizing-content`라 `rows`가 아니라
+ * `min-h`가 높이를 정함 · 글자를 쓰면 늘어남 → 안쪽 스크롤 없음) · 간격 축소. 수정 Sheet·PC는 지금 그대로.
+ */
 export function QuickRequestDriverNotesColumns({ form, originNotes, destinationNotes }: QuickRequestDriverNotesColumnsProps) {
+  const isPage = useQuickRequestFormLayout() === 'page';
+  const memoClassName = cn('bg-muted/50', isPage && ['max-lg:min-h-11', QUICK_REQUEST_PAGE_INPUT_TEXT_CLASS]);
+  const columnClassName = cn('min-w-0', isPage ? 'space-y-3 lg:space-y-4' : 'space-y-4');
   return (
     <div className='@container min-w-0'>
-      <div className='grid gap-6 @2xl:grid-cols-2'>
-        <div className='min-w-0 space-y-4'>
+      <div className={cn('grid @2xl:grid-cols-2', isPage ? 'gap-4 lg:gap-6' : 'gap-6')}>
+        <div className={columnClassName}>
           {originNotes}
           <form.AppField name='origin.memo'>
             {(field) => (
@@ -53,14 +65,14 @@ export function QuickRequestDriverNotesColumns({ form, originNotes, destinationN
                 placeholder='픽업 시 참고 사항 (선택)…'
                 rows={3}
                 maxLength={500}
-                className='bg-muted/50'
+                className={memoClassName}
                 data-testid='quick-request-origin-memo'
               />
             )}
           </form.AppField>
         </div>
 
-        <div className='min-w-0 space-y-4'>
+        <div className={columnClassName}>
           {destinationNotes}
           <form.AppField name='destination.extraMemo'>
             {(field) => (
@@ -69,7 +81,7 @@ export function QuickRequestDriverNotesColumns({ form, originNotes, destinationN
                 placeholder='도착 시 참고 사항 (선택)…'
                 rows={3}
                 maxLength={500}
-                className='bg-muted/50'
+                className={memoClassName}
                 data-testid='quick-request-destination-extra-memo'
               />
             )}

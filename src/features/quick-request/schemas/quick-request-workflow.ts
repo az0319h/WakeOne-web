@@ -11,6 +11,7 @@ import {
   QUICK_REQUEST_VEHICLE_TYPES,
   refineQuickRequestCrossFields
 } from './quick-request-notify';
+import { refineQuickRequestCreateSchedule } from './quick-request-schedule-rules';
 
 /**
  * plan 89 — 퀵 업무 흐름 공유 상수·스키마 (Route Handler · FE Dialog/Sheet 공용).
@@ -86,14 +87,20 @@ const driverNameSchema = z
   .min(1, '기사 이름을 입력해 주세요.')
   .max(50, '기사 이름은 50자 이내로 입력해 주세요.');
 
-/** POST /api/quick-request — `requesterName`·`requestedAtIso`는 받더라도 무시(서버 결정) */
+/**
+ * POST /api/quick-request — `requesterName`·`requestedAtIso`는 받더라도 무시(서버 결정).
+ * plan 106 D-11 — 등록 전용 날짜 검사(서버 시각 · 5분 여유). PATCH(`quickRequestPatchBodySchema`)에는 붙이지 않는다.
+ */
 export const quickRequestCreateBodySchema = z
   .object({
     ...quickRequestPayloadFields,
     requestedAtIso: z.string().optional(),
     requesterName: z.string().optional()
   })
-  .superRefine(refineQuickRequestCrossFields);
+  .superRefine((data, ctx) => {
+    refineQuickRequestCrossFields(data, ctx);
+    refineQuickRequestCreateSchedule(data, ctx);
+  });
 
 export type QuickRequestCreateBody = z.infer<typeof quickRequestCreateBodySchema>;
 

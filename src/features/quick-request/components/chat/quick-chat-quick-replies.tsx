@@ -26,6 +26,7 @@ type QuickReplyChipProps = Omit<React.ComponentProps<'button'>, 'children' | 'ty
 };
 
 /**
+ * plan 106 — 휴대폰 규칙(lg 미만 · 태블릿 포함)은 44px, PC(lg↑)는 지금처럼 36px.
  * 긴 AI 문장은 `max-w` + 말줄임 (전체 문장은 Tooltip · 모바일은 탭하면 입력창에서 확인).
  * `TooltipTrigger asChild`가 넘기는 ref·이벤트·`data-state`·`aria-describedby`를 Button에 그대로 전달한다 (React 19 ref prop).
  */
@@ -37,7 +38,7 @@ function QuickReplyChip({ reply, index, onPick, onClick, className, ...props }: 
       variant='outline'
       size='sm'
       className={cn(
-        'h-11 max-w-[14rem] shrink-0 touch-manipulation rounded-full px-3 sm:h-9 sm:max-w-[16rem]',
+        'h-11 max-w-[14rem] shrink-0 touch-manipulation rounded-full px-3 sm:max-w-[16rem] lg:h-9',
         className
       )}
       data-testid={`quick-chat-quick-reply-${index}`}

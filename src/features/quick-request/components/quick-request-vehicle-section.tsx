@@ -23,6 +23,11 @@ import {
 import { toggleVehicleType } from '../schemas/quick-request-form';
 import { QuickRequestNativeInputField } from './quick-request-field-controls';
 import type { QuickRequestOrderForm } from './quick-request-form-api';
+import {
+  QUICK_REQUEST_PAGE_INPUT_TEXT_CLASS,
+  quickRequestEnterNextProps,
+  useQuickRequestFormLayout
+} from './quick-request-form-layout';
 import { QuickRequestSectionShell } from './quick-request-section-shell';
 
 function vehicleCardTestId(type: string) {
@@ -38,6 +43,8 @@ type QuickRequestVehicleCardProps = {
 function QuickRequestVehicleCard({ type, selected, onToggle }: QuickRequestVehicleCardProps) {
   const visual = QUICK_REQUEST_VEHICLE_VISUALS[type];
   const hasImage = visual.src !== null;
+  // plan 106 K13 · U-6 — 요청 폼 lg 미만: 3열 유지 · 사진 5:2 `contain`(옆모습이라 잘리지 않음) · lg 이상 4:3 그대로
+  const isPage = useQuickRequestFormLayout() === 'page';
 
   return (
     <Toggle
@@ -52,7 +59,12 @@ function QuickRequestVehicleCard({ type, selected, onToggle }: QuickRequestVehic
         !selected && 'group-data-[invalid=true]/field:border-destructive/60'
       )}
     >
-      <span className='relative flex aspect-4/3 items-center justify-center overflow-hidden rounded-md bg-muted'>
+      <span
+        className={cn(
+          'relative flex items-center justify-center overflow-hidden rounded-md bg-muted',
+          isPage ? 'aspect-5/2 lg:aspect-4/3' : 'aspect-4/3'
+        )}
+      >
         {visual.src ? (
           <Image
             src={visual.src}
@@ -60,7 +72,10 @@ function QuickRequestVehicleCard({ type, selected, onToggle }: QuickRequestVehic
             width={448}
             height={448}
             sizes='(min-width: 1024px) 160px, 34vw'
-            className='size-full object-cover object-bottom'
+            className={cn(
+              'size-full object-bottom',
+              isPage ? 'object-contain lg:object-cover' : 'object-cover'
+            )}
           />
         ) : (
           <Icons.dots className='size-6 text-muted-foreground' aria-hidden />
@@ -97,6 +112,7 @@ function QuickRequestVehicleCard({ type, selected, onToggle }: QuickRequestVehic
 }
 
 function QuickRequestVehicleTypeGrid() {
+  const isPage = useQuickRequestFormLayout() === 'page';
   const field = useFieldContext();
   const value = useStore(field.store, (s) => s.value) as QuickRequestVehicleType[];
   // useFieldContext의 formItemId는 FormFieldSet 밖에서 undefined — 고유 id 직접 생성
@@ -117,7 +133,12 @@ function QuickRequestVehicleTypeGrid() {
           </span>
         </p>
         <div className='@container min-w-0'>
-          <div className='grid grid-cols-3 gap-2 @lg:grid-cols-4 @3xl:grid-cols-5'>
+          <div
+            className={cn(
+              'grid grid-cols-3 @lg:grid-cols-4 @3xl:grid-cols-5',
+              isPage ? 'gap-1.5 lg:gap-2' : 'gap-2'
+            )}
+          >
             {QUICK_REQUEST_VEHICLE_TYPES.map((type) => (
               <QuickRequestVehicleCard
                 key={type}
@@ -139,6 +160,8 @@ type QuickRequestVehicleSectionProps = {
 };
 
 export function QuickRequestVehicleSection({ form }: QuickRequestVehicleSectionProps) {
+  const layout = useQuickRequestFormLayout();
+  const pageInputClass = layout === 'page' ? QUICK_REQUEST_PAGE_INPUT_TEXT_CLASS : undefined;
   const countLabelId = React.useId();
   const showOther = useStore(form.store, (s) => s.values.vehicleTypes.includes('기타'));
   const vehicleCountMode = useStore(form.store, (s) => s.values.vehicleCountMode);
@@ -162,8 +185,12 @@ export function QuickRequestVehicleSection({ form }: QuickRequestVehicleSectionP
                 required
                 placeholder='예: 윙바디 11톤…'
                 autoComplete='off'
-                className='h-11 bg-muted/50'
+                className={cn('h-11 bg-muted/50', pageInputClass)}
                 data-testid='quick-request-vehicle-other'
+                {...quickRequestEnterNextProps(
+                  layout,
+                  vehicleCountMode === 'custom' ? 'next' : 'done'
+                )}
               />
             )}
           </form.AppField>
@@ -223,6 +250,7 @@ export function QuickRequestVehicleSection({ form }: QuickRequestVehicleSectionP
                   inputMode='numeric'
                   suffix='대'
                   className='w-32'
+                  enterKeyHint='done'
                   data-testid='quick-request-vehicle-count-custom-input'
                 />
               )}

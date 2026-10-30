@@ -12,7 +12,7 @@ import { QuickRequestQueryBoundary } from '../quick-request-query-boundary';
 import { groupMessages } from './group-messages';
 import { QuickChatAttachmentTray } from './quick-chat-attachment-tray';
 import { QuickChatComposer } from './quick-chat-composer';
-import { QUICK_CHAT_TEXT } from './quick-chat-constants';
+import { QUICK_CHAT_MOBILE_MEDIA_QUERY, QUICK_CHAT_TEXT } from './quick-chat-constants';
 import { QuickChatDropzone } from './quick-chat-dropzone';
 import { QuickChatMessageList } from './quick-chat-message-list';
 import { QuickChatQuickReplies } from './quick-chat-quick-replies';
@@ -22,6 +22,7 @@ import { QuickChatTypingIndicator } from './quick-chat-typing-indicator';
 import { useAiSuggestions } from './use-ai-suggestions';
 import { useAttachmentUpload } from './use-attachment-upload';
 import { useMarkRead } from './use-mark-read';
+import { useMatchMedia } from './use-match-media';
 import { useSendMessage } from './use-send-message';
 import { useTypingBroadcast, useTypingReceiver } from './use-typing-broadcast';
 
@@ -30,10 +31,16 @@ export type QuickRequestConversationVariant = 'messenger' | 'detail';
 type QuickRequestConversationProps = {
   requestNo: string;
   variant: QuickRequestConversationVariant;
-  /** 데이터가 있어야 그릴 수 있는 헤더 (Messenger: 요청번호·상태·경로·상세 보기 / 상세: 없음) */
+  /** 데이터가 있어야 그릴 수 있는 헤더 (Messenger: 요청번호·상태·경로·상세 보기 / 상세: PC 없음 · lg 미만 전체 화면 상단바 — plan 106) */
   header?: (request: QuickRequestChatRequestSummary) => ReactNode;
   /** 404(권한 없음 포함) */
   notFound: ReactNode;
+  /**
+   * plan 106 §5.5 — 데이터 없이도 그릴 수 있는 상단바 틀(`QuickChatHeaderFrame` · 뒤로 + URL 번호 + 누를 수 없는 「⋯」).
+   * 로딩·오류·404 화면 위에 **lg 미만에서만** 그린다(전체 화면에는 공통 상단바가 없어 「뒤로」 필수 · M-6).
+   * 데이터가 오면 `header`가 대신한다(둘이 동시에 DOM에 없음 → testid 한 벌).
+   */
+  frameHeader?: ReactNode;
   /** 열릴 때 입력창 포커스 (상세 `?chat=1`) */
   autoFocus?: boolean;
   className?: string;
@@ -51,6 +58,9 @@ function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBo
   // 대화를 연 시점의 읽음 위치 — 갱신돼도 「여기부터 새 메시지」가 바로 사라지지 않는다 (C-13)
   const [initialLastReadId] = useState(data.myLastReadMessageId);
   const [draft, setDraft] = useState('');
+  // plan 106 D-13 ② — lg 미만은 입력칸에 글자가 있으면 AI·빠른 답장 칩 줄을 숨긴다(비면 다시 · 칩 탭 → 채워지고 숨김) · lg↑ 불변
+  const isMobile = useMatchMedia(QUICK_CHAT_MOBILE_MEDIA_QUERY);
+  const hideQuickReplies = isMobile && draft.trim() !== '';
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -137,12 +147,14 @@ function ConversationBody({ requestNo, data, header, autoFocus }: ConversationBo
       >
         {canWrite ? (
           <>
-            <QuickChatQuickReplies
-              replies={ai.state === 'ready' ? ai.suggestions : quickReplies}
-              onPick={handlePickReply}
-              source={ai.state === 'ready' ? 'ai' : 'rules'}
-              loading={ai.state === 'loading'}
-            />
+            {hideQuickReplies ? null : (
+              <QuickChatQuickReplies
+                replies={ai.state === 'ready' ? ai.suggestions : quickReplies}
+                onPick={handlePickReply}
+                source={ai.state === 'ready' ? 'ai' : 'rules'}
+                loading={ai.state === 'loading'}
+              />
+            )}
             <QuickChatAttachmentTray attachments={attachments} />
             <QuickChatComposer
               draft={draft}
@@ -177,11 +189,17 @@ function ConversationContent({
   requestNo,
   header,
   notFound,
+  frame,
   autoFocus
-}: Omit<QuickRequestConversationProps, 'variant' | 'className'>) {
+}: Omit<QuickRequestConversationProps, 'variant' | 'className' | 'frameHeader'> & { frame: ReactNode }) {
   const { data } = useSuspenseQuery(quickRequestMessagesQueryOptions(requestNo));
   if (!data) {
-    return <>{notFound}</>;
+    return (
+      <>
+        {frame}
+        {notFound}
+      </>
+    );
   }
   // 캐시에는 optimistic 임시 행(id: 'temp-…')이 섞인다 — `lib/quick-chat-cache.ts`
   const cache = data as QuickChatMessagesCache;
@@ -197,9 +215,13 @@ export function QuickRequestConversation({
   variant,
   header,
   notFound,
+  frameHeader,
   autoFocus,
   className
 }: QuickRequestConversationProps) {
+  // 틀은 lg 미만에서만 보이게 CSS로 감싼다 (ConversationBody의 헤더 줄과 같은 `border-b`)
+  const frame = frameHeader ? <div className='shrink-0 border-b lg:hidden'>{frameHeader}</div> : null;
+
   return (
     <div
       data-variant={variant}
@@ -208,10 +230,26 @@ export function QuickRequestConversation({
       <QuickRequestQueryBoundary
         errorMessage={QUICK_CHAT_TEXT.loadFailed}
         ssrQueryKey={quickRequestKeys.messages(requestNo)}
-        loadingFallback={<PageLoadingSpinner variant='compact' className='flex-1' />}
-        renderError={(alert) => <div className='p-4'>{alert}</div>}
+        loadingFallback={
+          <>
+            {frame}
+            <PageLoadingSpinner variant='compact' className='flex-1' />
+          </>
+        }
+        renderError={(alert) => (
+          <>
+            {frame}
+            <div className='p-4'>{alert}</div>
+          </>
+        )}
       >
-        <ConversationContent requestNo={requestNo} header={header} notFound={notFound} autoFocus={autoFocus} />
+        <ConversationContent
+          requestNo={requestNo}
+          header={header}
+          notFound={notFound}
+          frame={frame}
+          autoFocus={autoFocus}
+        />
       </QuickRequestQueryBoundary>
     </div>
   );
